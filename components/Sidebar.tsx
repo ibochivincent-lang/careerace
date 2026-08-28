@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, BookOpen, Target, TrendingUp, Bell,
-  Settings, Brain, Calendar
+  Settings, Brain, Sparkles, Database
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
@@ -13,6 +13,10 @@ import { useState, useEffect } from 'react'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard',     icon: LayoutDashboard },
+  // The memory-backed tutor. Everything below /tutor, /memory and /coaches
+  // reads one learning record stored on Walrus under the student's own address.
+  { label: 'Tutor',     href: '/tutor',         icon: Sparkles },
+  { label: 'Memory',    href: '/memory',        icon: Database },
   { label: 'Study',     href: '/session/new',   icon: BookOpen },
   { label: 'Practice',  href: '/practice',      icon: Target },
   { label: 'Progress',  href: '/progress',      icon: TrendingUp },
