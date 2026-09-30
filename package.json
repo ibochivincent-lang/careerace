@@ -1,6 +1,7 @@
 {
-  "name": "examace",
+  "name": "careerace",
   "version": "0.1.0",
+  "author": "IboTV (ibochivincent-lang)",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,10 +9,10 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types lib/contract.test.ts",
+    "test": "node --test --experimental-strip-types lib/contract_test.ts",
     "smoke": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --experimental-strip-types scripts/smoke.ts",
     "mcp": "node --experimental-strip-types mcp/server.mts",
-    "mcp:probe": "node --env-file-if-exists=.env.local scripts/mcp-probe.mjs"
+    "mcp:probe": "node --env-file-if-exists=.env.local scripts/mcp_probe.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

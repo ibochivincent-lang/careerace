@@ -25,9 +25,17 @@ import { z } from "zod";
 import {
   recallProfile, recallFeedback, rememberFact, forgetFact, resolveConflicts,
   claimsOfKind, isOffTheRecord,
-} from "../lib/memory-core.ts";
+} from "../lib/memory_core.ts";
 import { screenQuestion, buildTeachingConstraintsText, MISCONCEPTIONS } from "../lib/pedagogy.ts";
 import { profileNs, feedbackNs } from "../lib/namespaces.ts";
+import { parseCvText } from "../lib/cv_parser.ts";
+import { harvestJobsFromSources } from "../lib/job_harvester.ts";
+import { normalizeAndDeduplicateJobs } from "../lib/job_normaliser.ts";
+import { filterJobs } from "../lib/job_filter.ts";
+import { evaluateJobFit } from "../lib/job_evaluator.ts";
+import { generateTailoredCvAndCoverLetter } from "../lib/resume_tailor.ts";
+import { routeApplication } from "../lib/application_router.ts";
+import { syncApplicationToNotion } from "../lib/notion_sync.ts";
 
 const OWNER = process.env.EA_OWNER_ADDRESS;
 if (!OWNER) {
@@ -275,6 +283,66 @@ server.registerTool(
       return fail(`Listing failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   },
+);
+
+server.registerTool(
+  "harvest_jobs_tool",
+  {
+    title: "Harvest Job Postings",
+    description: "Harvest multi-source job postings across Remote, Onsite, and Hybrid channels.",
+    inputSchema: {
+      query: z.string().default("software engineer").describe("Job search query keyword")
+    }
+  },
+  async ({ query }) => {
+    try {
+      const raw = await harvestJobsFromSources(query);
+      const normalized = normalizeAndDeduplicateJobs(raw);
+      const filtered = filterJobs(normalized);
+      return text(`Harvested ${filtered.length} job(s):\n` + JSON.stringify(filtered.slice(0, 5), null, 2));
+    } catch (e) {
+      return fail(`Harvest failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+);
+
+server.registerTool(
+  "evaluate_job_tool",
+  {
+    title: "Evaluate Job Candidate Fit",
+    description: "Calculates candidate match score (1-10) against job description using stored history.",
+    inputSchema: {
+      job_title: z.string(),
+      job_company: z.string(),
+      job_description: z.string(),
+      cv_text: z.string()
+    }
+  },
+  async ({ job_title, job_company, job_description, cv_text }) => {
+    try {
+      const parsedCv = parseCvText(cv_text);
+      const job = {
+        job_id: "job_mcp_eval",
+        title: job_title,
+        company: job_company,
+        location: "Remote",
+        description: job_description,
+        apply_url: "https://example.com/apply",
+        source: "MCP",
+        posted_date: new Date().toISOString(),
+        is_remote: true,
+        job_type: "remote" as const
+      };
+      const result = evaluateJobFit(job, parsedCv);
+      const tailored = generateTailoredCvAndCoverLetter(job, parsedCv);
+      const routed = routeApplication(job, result, tailored);
+      await syncApplicationToNotion(routed);
+
+      return text(`Fit Score: ${result.fit_score}/10\nRecommendation: ${result.recommendation}\nStatus: ${routed.status}\nReason: ${result.match_reason}`);
+    } catch (e) {
+      return fail(`Evaluation failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 );
 
 server.registerResource(
