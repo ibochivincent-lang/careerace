@@ -3,7 +3,7 @@
 // =============================================================================
 
 import type { Message, CognitiveMap, ConfidenceLevel } from './types'
-import { SOCRATIC_RESPONSES } from './mock-data'
+import { SOCRATIC_RESPONSES } from './mock_data'
 
 function getRandomResponse(category: keyof typeof SOCRATIC_RESPONSES): string {
   const responses = SOCRATIC_RESPONSES[category]

@@ -1,18 +1,18 @@
 // =============================================================================
-// ExamAce — Local Storage Utilities
+// Career Ace — Local Storage Utilities
 // =============================================================================
 
 import type { CognitiveMap, Session } from './types'
-import { INITIAL_COGNITIVE_MAP } from './mock-data'
+import { INITIAL_COGNITIVE_MAP } from './mock_data'
 
 const STORAGE_KEYS = {
-  COGNITIVE_MAP:  'examace_cognitive_map',
-  SESSIONS:       'examace_sessions',
-  CURRENT_SESSION:'examace_current_session',
-  NOTIFICATIONS:  'examace_notifications',
-  STREAK:         'examace_streak',
-  STREAK_DATE:    'examace_streak_date',
-  DAILY_GOAL:     'examace_daily_goal',
+  COGNITIVE_MAP:  'careerace_cognitive_map',
+  SESSIONS:       'careerace_sessions',
+  CURRENT_SESSION:'careerace_current_session',
+  NOTIFICATIONS:  'careerace_notifications',
+  STREAK:         'careerace_streak',
+  STREAK_DATE:    'careerace_streak_date',
+  DAILY_GOAL:     'careerace_daily_goal',
 } as const
 
 // ── Cognitive Map ────────────────────────────────────────────────────────────

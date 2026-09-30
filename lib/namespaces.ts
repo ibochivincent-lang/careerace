@@ -13,7 +13,7 @@
 function scope(kind: string, address: string) {
   const addr = address.trim().toLowerCase();
   if (!addr) throw new Error("address required to build a namespace");
-  return `examace:${kind}:${addr}`;
+  return `careerace:${kind}:${addr}`;
 }
 
 /** Durable learner facts: exam target, misconceptions, weaknesses, mastery. */
