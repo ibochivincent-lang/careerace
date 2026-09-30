@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'ExamAce — Socratic AI Tutor',
+  title: 'Career Ace — Autonomous AI Career Assistant',
   description:
-    'Preparing Nigerian students for JAMB, WAEC, NECO, and Post-UTME through intelligent Socratic questioning.',
-  keywords: ['JAMB', 'WAEC', 'NECO', 'Nigerian students', 'AI tutor', 'exam prep'],
+    'Autonomous AI job matching, resume tailoring, application automation, and STAR+R interview coach by IboTV.',
+  keywords: ['Career Ace', 'AI Job Matcher', 'Resume Tailor', 'Application Automator', 'STAR Interview Coach'],
 }
 
 export default function RootLayout({
