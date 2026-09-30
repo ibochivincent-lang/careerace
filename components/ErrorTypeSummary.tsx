@@ -1,6 +1,6 @@
 'use client'
 
-import { ERROR_TYPE_INFO } from '@/lib/mock-data'
+import { ERROR_TYPE_INFO } from '@/lib/mock_data'
 import type { ErrorType, CognitiveMap } from '@/lib/types'
 import { cn } from './ui/utils'
 

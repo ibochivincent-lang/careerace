@@ -22,7 +22,7 @@ import { TopicReviewQueue } from '@/components/TopicReviewQueue'
 import { Brain, Settings, BookOpen, Plus } from 'lucide-react'
 import { getCognitiveMap, getSessions } from '@/lib/storage'
 import type { Subject, ExamTarget } from '@/lib/types'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 
 function DashboardContent() {
   const router = useRouter()

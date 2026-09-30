@@ -6,7 +6,7 @@ import { Badge } from './ui/badge'
 import { Progress } from './ui/progress'
 import { CheckCircle2, MessageSquare, Brain, RotateCcw, LayoutDashboard } from 'lucide-react'
 import type { Session } from '@/lib/types'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 
 interface PostSessionSummaryProps {
   session: Session

@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { ORDER, PROVIDERS, isProvider, type Provider } from "./providers.ts";
-import type { KeyBag } from "./model-select.ts";
+import type { KeyBag } from "./model_select.ts";
 
 /**
  * Bring-your-own-key storage.

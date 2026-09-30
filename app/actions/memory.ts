@@ -9,7 +9,7 @@ import {
   recallFeedback,
   resolveConflicts,
   type FactKind,
-} from "@/lib/memory-contract.ts";
+} from "@/lib/memory_contract.ts";
 
 async function requireAddress() {
   const address = await getOwnerAddress();

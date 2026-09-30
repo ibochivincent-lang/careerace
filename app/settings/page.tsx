@@ -15,7 +15,7 @@ import {
 import { clearAllData } from '@/lib/storage'
 import { toast } from 'sonner'
 import type { ExamTarget, Subject } from '@/lib/types'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 
 const EXAM_TARGETS: { value: ExamTarget; label: string }[] = [
   { value: 'JAMB',      label: 'JAMB / UTME'  },

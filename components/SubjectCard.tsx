@@ -5,7 +5,7 @@ import { Badge } from './ui/badge'
 import { ArrowRight } from 'lucide-react'
 import { cn } from './ui/utils'
 import type { Subject } from '@/lib/types'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 
 interface SubjectCardProps {
   subject: Subject

@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { StreakCounter } from '@/components/StreakCounter'
 import { TrendingUp, BookOpen, Calendar } from 'lucide-react'
 import { getCognitiveMap, getSessions, getStudyDates } from '@/lib/storage'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 import type { Subject } from '@/lib/types'
 import { cn } from '@/components/ui/utils'
 

@@ -2,7 +2,7 @@ import { Card } from './ui/card'
 import { Progress } from './ui/progress'
 import { Badge } from './ui/badge'
 import type { TopicRecord } from '@/lib/types'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 
 interface CognitiveMapCardProps {
   topicRecord: TopicRecord

@@ -22,8 +22,8 @@ import {
   updateDailyGoal,
   addNotification,
 } from '@/lib/storage'
-import { generateSocraticResponse, analyzeUserResponse } from '@/lib/socratic-engine'
-import { SAMPLE_QUESTIONS, SUBJECTS_INFO } from '@/lib/mock-data'
+import { generateSocraticResponse, analyzeUserResponse } from '@/lib/socratic_engine'
+import { SAMPLE_QUESTIONS, SUBJECTS_INFO } from '@/lib/mock_data'
 import type { Session as SessionType, Message, Subject, InputModality, CognitiveMap, ErrorType } from '@/lib/types'
 import { toast } from 'sonner'
 

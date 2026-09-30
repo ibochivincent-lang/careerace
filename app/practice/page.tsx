@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppShell } from '@/components/AppShell'
 import { Brain, ChevronRight, RotateCcw, CheckCircle2, XCircle, Trophy } from 'lucide-react'
-import { PRACTICE_QUESTIONS, SUBJECTS_INFO } from '@/lib/mock-data'
+import { PRACTICE_QUESTIONS, SUBJECTS_INFO } from '@/lib/mock_data'
 import type { Subject } from '@/lib/types'
 import { cn } from '@/components/ui/utils'
 

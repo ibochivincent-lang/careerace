@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
 import { getOwnerAddress } from '@/lib/session.ts'
-import { recallProfile, recallFeedback, resolveConflicts, claimsOfKind } from '@/lib/memory-contract.ts'
+import { recallProfile, recallFeedback, resolveConflicts, claimsOfKind } from '@/lib/memory_contract.ts'
 import { rankCoaches } from '@/lib/coaches.ts'
 import { AppShell } from '@/components/AppShell'
 import { MemoryHeader } from '@/components/MemoryHeader'

@@ -5,7 +5,7 @@ import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { EmptyState } from './EmptyState'
 import { CheckCircle2, Clock } from 'lucide-react'
-import { SUBJECTS_INFO } from '@/lib/mock-data'
+import { SUBJECTS_INFO } from '@/lib/mock_data'
 import type { TopicRecord } from '@/lib/types'
 import { cn } from './ui/utils'
 

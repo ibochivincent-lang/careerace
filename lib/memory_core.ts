@@ -1,4 +1,4 @@
-import { createMemWal as getMemWal, memwalMode, withRelayerRetry } from "./memwal-client.ts";
+import { createMemWal as getMemWal, memwalMode, withRelayerRetry } from "./memwal_client.ts";
 import { profileNs, feedbackNs } from "./namespaces.ts";
 import {
   DUPLICATE_DISTANCE,

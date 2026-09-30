@@ -4,14 +4,14 @@ import { getOwnerAddress } from "@/lib/session.ts";
 import {
   recallLearning, recallPreferences, recallFeedback, resolveConflicts,
   rememberFact, isOffTheRecord, claimsOfKind, unionFacts,
-} from "@/lib/memory-contract.ts";
+} from "@/lib/memory_contract.ts";
 import { extractFacts } from "@/lib/extract.ts";
 import { buildTeachingConstraintsText } from "@/lib/pedagogy.ts";
 
 export const maxDuration = 60;
 
 const BASE_PROMPT = [
-  "You are ExamAce, a Socratic tutor for Nigerian students sitting JAMB, WAEC, NECO and Post-UTME.",
+  "You are Career Ace, an autonomous AI career copilot by IboTV.",
   "You teach by asking. Lead the student to the answer with one question at a time; never hand it over. When they get there, say so plainly and move on.",
   // The failure this exists to stop: a full topic explanation delivered to a
   // student whose misconception about that exact topic is sitting in the

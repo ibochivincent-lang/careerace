@@ -20,7 +20,7 @@ import {
   screenQuestion, buildTeachingConstraintsText, targetKnown,
   normalizeMisconceptions, normalizeErrorTypes, examTargetOf,
 } from "./pedagogy.ts";
-import { keyFor, resolveProvider, modelId, resolveModels, type KeyBag } from "./model-select.ts";
+import { keyFor, resolveProvider, modelId, resolveModels, type KeyBag } from "./model_select.ts";
 import { NO_KEY_CODE } from "./providers.ts";
 import { rankCoaches } from "./coaches.ts";
 

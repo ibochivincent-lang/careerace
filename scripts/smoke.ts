@@ -24,7 +24,7 @@ import {
   formatFact, formatTombstone, factProbe, idempotencyKeyFor, resolveConflicts,
   factBody, factKind, sameFact, TOMBSTONE, DUPLICATE_DISTANCE, RELEVANCE_DISTANCE,
 } from "../lib/facts.ts";
-import { withRelayerRetry } from "../lib/memwal-client.ts";
+import { withRelayerRetry } from "../lib/memwal_client.ts";
 
 const SUBJECT = `0xsmoke${Date.now().toString(36)}`;
 const PROFILE = `examace:profile:${SUBJECT}`;

@@ -24,7 +24,7 @@ import "server-only";
 import type { LanguageModelV1 } from "ai";
 import { NO_KEY_CODE, type Provider } from "./providers.ts";
 import { readKeyBag } from "./keys.ts";
-import { keyFor, modelId, resolveModels, availableProviders, resolveProvider } from "./model-select.ts";
+import { keyFor, modelId, resolveModels, availableProviders, resolveProvider } from "./model_select.ts";
 
 export type { Provider };
 export { availableProviders, resolveProvider };

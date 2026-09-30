@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getOwnerAddress } from '@/lib/session.ts'
-import { recallProfile, recallFeedback, resolveConflicts } from '@/lib/memory-contract.ts'
+import { recallProfile, recallFeedback, resolveConflicts } from '@/lib/memory_contract.ts'
 import { AppShell } from '@/components/AppShell'
 import { MemoryHeader } from '@/components/MemoryHeader'
 import { MemoryChat } from '@/components/MemoryChat'

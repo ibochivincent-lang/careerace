@@ -5,4 +5,4 @@ import "server-only";
  * ./memory-core so the MCP server can share it verbatim; this module only adds
  * the `server-only` guard so a client component importing it fails the build.
  */
-export * from "./memory-core.ts";
+export * from "./memory_core.ts";

@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { generateObject } from "ai";
 import { extractModel, chatModel, describeModel } from "./model.ts";
-import type { FactKind } from "./memory-contract.ts";
+import type { FactKind } from "./memory_contract.ts";
 
 /**
  * The WRITE GATE.
