@@ -57,7 +57,35 @@ export async function POST(req: Request) {
      */
     const detail = error instanceof Error ? error.message : String(error);
     console.error("[examace] zkLogin verification failed:", detail);
-    return new Response(`Signature rejected: ${detail}`, { status: 401 });
+
+    let extraDetail = "";
+    try {
+      const diag = await suiGraphql.query({
+        query: `
+          query verifyZkLoginSignature($bytes: Base64!, $signature: Base64!, $intentScope: ZkLoginIntentScope!, $author: SuiAddress!) {
+            verifyZkLoginSignature(bytes: $bytes, signature: $signature, intentScope: $intentScope, author: $author) {
+              success
+            }
+          }
+        `,
+        variables: {
+          bytes: Buffer.from(bytes).toString("base64"),
+          signature,
+          intentScope: "PersonalMessage",
+          author: address,
+        },
+      });
+      if (diag.errors && diag.errors.length > 0) {
+        extraDetail = `: ${diag.errors.map((e) => e.message).join(", ")}`;
+        console.error("[examace] GraphQL node errors:", diag.errors);
+      } else {
+        console.error("[examace] GraphQL node data:", diag.data);
+      }
+    } catch (diagErr) {
+      console.error("[examace] GraphQL diagnostic failed:", diagErr);
+    }
+
+    return new Response(`Signature rejected: ${detail}${extraDetail}`, { status: 401 });
   }
 
   /*
