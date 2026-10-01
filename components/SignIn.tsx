@@ -63,20 +63,34 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   const [error, setError] = useState<string | null>(null)
   const [currentAddress, setCurrentAddress] = useState<string | null>(initialAddress ?? null)
 
+  function getOrInitWallet(): EnokiWallet {
+    if (wallet.current) return wallet.current
+    if (!ENOKI_KEY || !GOOGLE_CLIENT_ID) {
+      throw new Error(
+        'Missing Enoki API Key or Google Client ID. Ensure NEXT_PUBLIC_ENOKI_API_KEY and NEXT_PUBLIC_GOOGLE_CLIENT_ID are set in your environment.'
+      )
+    }
+    const { wallets } = registerEnokiWallets({
+      apiKey: ENOKI_KEY,
+      providers: { google: { clientId: GOOGLE_CLIENT_ID, redirectUrl: redirectUrl() } },
+      client: new SuiClient({ url: getFullnodeUrl(NETWORK) }),
+      network: NETWORK,
+    })
+    const w = wallets.google ?? null
+    if (!w) {
+      throw new Error('Google wallet provider could not be registered with Enoki. Check your Enoki API configuration.')
+    }
+    wallet.current = w
+    return w
+  }
+
   useEffect(() => {
     if (!CONFIGURED) return
 
     try {
-      const { wallets, unregister } = registerEnokiWallets({
-        apiKey: ENOKI_KEY!,
-        providers: { google: { clientId: GOOGLE_CLIENT_ID!, redirectUrl: redirectUrl() } },
-        client: new SuiClient({ url: getFullnodeUrl(NETWORK) }),
-        network: NETWORK,
-      })
-      wallet.current = wallets.google ?? null
-      return unregister
+      getOrInitWallet()
     } catch (err) {
-      console.warn('Enoki wallet registration notice:', err)
+      console.warn('Enoki wallet background initialization notice:', err)
     }
   }, [])
 
@@ -93,17 +107,13 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   }
 
   async function signIn() {
-    const enoki = wallet.current
-    if (!enoki) {
-      setError('Sign-in is still starting up. Give it a second and try again.')
-      return
-    }
     setBusy(true)
     setError(null)
     try {
+      const enoki = getOrInitWallet()
       const { accounts } = await enoki.features['standard:connect'].connect()
       const account = accounts[0]
-      if (!account) throw new Error('No account returned')
+      if (!account) throw new Error('No account returned from Google authentication')
 
       /*
        * Server issues the nonce, so a replayed signature is worthless.
@@ -138,7 +148,14 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       const destination = searchParams.get('callbackUrl') || '/'
       window.location.href = destination
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sign-in failed')
+      const msg = e instanceof Error ? e.message : 'Sign-in failed'
+      if (msg.includes('Failed to open popup')) {
+        setError('Popup was blocked by your browser. Please allow popups for careerace.vercel.app and try again.')
+      } else if (msg.includes('Popup closed')) {
+        setError('Google sign-in popup was closed before completing.')
+      } else {
+        setError(msg)
+      }
     } finally {
       setBusy(false)
     }
