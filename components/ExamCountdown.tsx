@@ -95,7 +95,7 @@ export function ExamCountdownHero({ className }: { className?: string }) {
   return (
     <div className={cn('text-center', className)}>
       <p className={cn('text-3xl font-bold', urgency.color)}>
-        {daysLeft < 0 ? '✓' : daysLeft}
+        {daysLeft < 0 ? 'Done' : daysLeft}
       </p>
       <p className="text-xs text-muted-foreground mt-0.5">
         {daysLeft < 0 ? 'Exam done' : `days to ${examName}`}

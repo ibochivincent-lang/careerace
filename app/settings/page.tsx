@@ -9,378 +9,259 @@ import { Separator } from '@/components/ui/separator'
 import { AppShell } from '@/components/AppShell'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
-  Brain, User, Target, BookOpen,
-  Calendar, Trash2, Moon, Bell, Info, Settings
+  User,
+  ShieldCheck,
+  Database,
+  Trash2,
+  Download,
+  Key,
+  ExternalLink,
+  CheckCircle2,
+  RefreshCw,
+  LogOut
 } from 'lucide-react'
-import { clearAllData } from '@/lib/storage'
 import { toast } from 'sonner'
-import type { ExamTarget, Subject } from '@/lib/types'
-import { SUBJECTS_INFO } from '@/lib/mock_data'
-
-const EXAM_TARGETS: { value: ExamTarget; label: string }[] = [
-  { value: 'JAMB',      label: 'JAMB / UTME'  },
-  { value: 'WAEC',      label: 'WAEC SSCE'    },
-  { value: 'NECO',      label: 'NECO'         },
-  { value: 'POST_UTME', label: 'Post-UTME'    },
-]
-
-const ALL_SUBJECTS: Subject[] = ['biology', 'chemistry', 'physics', 'mathematics', 'english', 'economics']
 
 export default function SettingsPage() {
   const router = useRouter()
-
-  const [name,       setName]       = useState('')
-  const [examTarget, setExamTarget] = useState<ExamTarget>('JAMB')
-  const [examDate,   setExamDate]   = useState('')
-  const [subjects,   setSubjects]   = useState<Subject[]>([])
-  const [notifPerm,  setNotifPerm]  = useState<NotificationPermission>('default')
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [candidateName, setCandidateName] = useState('')
+  const [targetTitle, setTargetTitle] = useState('')
+  const [sessionAddress, setSessionAddress] = useState<string | null>(null)
+  const [isLoadingSession, setIsLoadingSession] = useState(true)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   useEffect(() => {
-    setName(localStorage.getItem('examace_user_name') ?? '')
-    setExamTarget((localStorage.getItem('examace_exam_target') as ExamTarget) ?? 'JAMB')
-    setExamDate(localStorage.getItem('examace_exam_date') ?? '')
-    const stored = localStorage.getItem('examace_subjects')
-    setSubjects(stored ? JSON.parse(stored) : ALL_SUBJECTS)
-    if ('Notification' in window) setNotifPerm(Notification.permission)
+    // Load local profile settings
+    const storedName = localStorage.getItem('careerace_candidate_name') || ''
+    const storedTitle = localStorage.getItem('careerace_target_title') || ''
+    setCandidateName(storedName)
+    setTargetTitle(storedTitle)
+
+    // Load zkLogin session
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated && data.address) {
+          setSessionAddress(data.address)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingSession(false))
   }, [])
 
-  const saveProfile = () => {
-    localStorage.setItem('examace_user_name',   name.trim() || 'Student')
-    localStorage.setItem('examace_exam_target', examTarget)
-    localStorage.setItem('examace_exam_name',   examTarget === 'POST_UTME' ? 'Post-UTME' : examTarget)
-    localStorage.setItem('examace_subjects',    JSON.stringify(subjects))
-    if (examDate) {
-      localStorage.setItem('examace_exam_date', examDate)
-    } else {
-      localStorage.removeItem('examace_exam_date')
-    }
-    toast.success('Settings saved')
+  function handleSaveProfile() {
+    localStorage.setItem('careerace_candidate_name', candidateName.trim())
+    localStorage.setItem('careerace_target_title', targetTitle.trim())
+    toast.success('Candidate profile preferences saved.')
   }
 
-  const toggleSubject = (s: Subject) => {
-    setSubjects(prev =>
-      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
-    )
+  function handleExportVault() {
+    const backupData = {
+      candidate_name: candidateName,
+      target_title: targetTitle,
+      sui_address: sessionAddress,
+      parsed_profile: localStorage.getItem('careerace_parsed_profile'),
+      exported_at: new Date().toISOString()
+    }
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `careerace_vault_export_${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Career Vault exported successfully.')
   }
 
-  const handleClearData = () => {
-    clearAllData()
-    localStorage.removeItem('examace_user_name')
-    localStorage.removeItem('examace_exam_target')
-    localStorage.removeItem('examace_exam_name')
-    localStorage.removeItem('examace_exam_date')
-    localStorage.removeItem('examace_subjects')
-    localStorage.removeItem('examace_onboarding_done')
-    toast.success('All data cleared. Starting fresh.')
-    setShowDeleteConfirm(false)
-    router.push('/dashboard')
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      setSessionAddress(null)
+      toast.success('Disconnected zkLogin session.')
+      router.push('/')
+    } catch {
+      toast.error('Failed to log out.')
+    }
   }
 
-  const requestNotifications = async () => {
-    if (!('Notification' in window)) {
-      toast.error('Notifications not supported in this browser')
-      return
-    }
-    const perm = await Notification.requestPermission()
-    setNotifPerm(perm)
-    if (perm === 'granted') {
-      toast.success('Notifications enabled!')
-      new Notification('ExamAce', {
-        body: 'Study reminders are now active. Keep that streak going!',
-        icon: '/favicon.ico',
-      })
-    } else {
-      toast.error('Notification permission denied')
-    }
+  function handleClearCache() {
+    localStorage.removeItem('careerace_parsed_profile')
+    localStorage.removeItem('careerace_candidate_name')
+    localStorage.removeItem('careerace_target_title')
+    setShowClearConfirm(false)
+    setCandidateName('')
+    setTargetTitle('')
+    toast.success('Local browser profile cache cleared.')
   }
 
   return (
     <AppShell>
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-brand-gradient flex items-center justify-center md:hidden">
-            <Brain className="w-3.5 h-3.5 text-white" />
-          </div>
-          <Settings className="w-4 h-4 text-primary hidden md:block" />
-          <h1 className="font-semibold text-sm">Settings</h1>
-        </div>
-      </header>
-
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-
-        {/* ── Profile ───────────────────────────────────────── */}
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <User className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">Profile</h2>
-          </div>
+      <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              Display name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Your first name"
-              maxLength={40}
-              className="w-full px-3 py-2.5 rounded-lg border bg-input-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
-            />
-          </div>
-        </Card>
-
-        {/* ── Exam target ───────────────────────────────────── */}
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <Target className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">Exam Target</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {EXAM_TARGETS.map(t => (
-              <button
-                key={t.value}
-                onClick={() => setExamTarget(t.value)}
-                className={[
-                  'px-3 py-2.5 rounded-lg border-2 text-sm font-medium text-left transition-all',
-                  examTarget === t.value
-                    ? 'border-primary bg-brand-50 dark:bg-brand-500/10 text-primary'
-                    : 'border-border text-muted-foreground hover:border-border/80',
-                ].join(' ')}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        {/* ── Exam date ─────────────────────────────────────── */}
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">Exam Date</h2>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-              When is your {examTarget === 'POST_UTME' ? 'Post-UTME' : examTarget} exam?
-            </label>
-            <input
-              type="date"
-              value={examDate}
-              onChange={e => setExamDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2.5 rounded-lg border bg-input-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
-            />
-            {examDate && (
-              <button
-                onClick={() => setExamDate('')}
-                className="text-xs text-muted-foreground hover:text-destructive mt-1.5 transition-colors"
-              >
-                Clear exam date
-              </button>
-            )}
-          </div>
-        </Card>
-
-        {/* ── Subjects ──────────────────────────────────────── */}
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <BookOpen className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">Subjects</h2>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {ALL_SUBJECTS.map(s => {
-              const active = subjects.includes(s)
-              const info = SUBJECTS_INFO[s]
-              return (
-                <button
-                  key={s}
-                  onClick={() => toggleSubject(s)}
-                  className={[
-                    'flex flex-col items-center gap-1 py-3 rounded-xl border-2 text-xs font-medium transition-all',
-                    active
-                      ? 'border-primary bg-brand-50 dark:bg-brand-500/10 text-primary'
-                      : 'border-border text-muted-foreground',
-                  ].join(' ')}
-                >
-                  <span className="text-xl">{info.icon}</span>
-                  {info.name}
-                </button>
-              )
-            })}
-          </div>
-          {subjects.length === 0 && (
-            <p className="text-xs text-destructive">Select at least one subject.</p>
-          )}
-        </Card>
-
-        {/* ── Appearance ────────────────────────────────────── */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <Moon className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">Appearance</h2>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Dark mode</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Switch between light and dark theme</p>
-            </div>
-            <ThemeToggle />
-          </div>
-        </Card>
-
-        {/* ── Notifications ─────────────────────────────────── */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <Bell className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">Notifications</h2>
-            {notifPerm === 'granted' && (
-              <Badge variant="completed" className="text-[10px] ml-auto">Enabled</Badge>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Enable browser notifications to receive study reminders, exam countdown alerts, and streak nudges — even when ExamAce is closed.
+            <h1 className="text-2xl font-bold tracking-tight">Sovereign Settings & Identity</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage your decentralized Sui zkLogin credentials, Walrus vault configuration, and local profile data.
             </p>
+          </div>
+          <ThemeToggle />
+        </div>
 
-            {notifPerm !== 'granted' && notifPerm !== 'denied' && (
-              <Button size="sm" onClick={requestNotifications}>
-                <Bell className="w-3.5 h-3.5" />
-                Enable notifications
-              </Button>
-            )}
+        {/* zkLogin Wallet Card */}
+        <Card className="p-6 space-y-4 border-l-4 border-l-primary">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <h2 className="font-bold text-base">Sui zkLogin Authentication</h2>
+            </div>
+            <Badge variant="outline" className="font-mono text-xs">
+              {sessionAddress ? 'Authenticated' : 'Guest'}
+            </Badge>
+          </div>
 
-            {notifPerm === 'denied' && (
-              <p className="text-xs text-destructive">
-                Notifications are blocked. Enable them in your browser settings to receive reminders.
-              </p>
-            )}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Your identity is secured by zero-knowledge proofs deriving an ephemeral Sui keypair from your Google OAuth JWT.
+            No centralized server ever receives your private signing keys or unencrypted credentials.
+          </p>
 
-            {notifPerm === 'granted' && (
-              <div className="space-y-2 pt-1">
-                {[
-                  'Spaced repetition review reminders',
-                  'Exam countdown alerts (7 days, 3 days, 1 day)',
-                  'Daily study streak notifications',
-                  'Weekly progress summary',
-                ].map(item => (
-                  <div key={item} className="flex items-center gap-2 text-sm text-muted-foreground py-0.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                    {item}
-                  </div>
-                ))}
+          {sessionAddress ? (
+            <div className="space-y-3 pt-2">
+              <div className="rounded-lg border bg-muted/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-[11px] font-mono uppercase text-muted-foreground block">Sui Address</span>
+                  <span className="font-mono text-xs font-semibold select-all break-all">{sessionAddress}</span>
+                </div>
+                <a
+                  href={`https://suiscan.xyz/testnet/account/${sessionAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary flex items-center gap-1 hover:underline whitespace-nowrap"
+                >
+                  Suiscan <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
-            )}
-          </div>
-        </Card>
 
-        {/* ── About ────────────────────────────────────────── */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-primary">
-              <Info className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm">About ExamAce</h2>
-          </div>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Version</span>
-              <span className="font-medium text-foreground">0.1.0 (Demo)</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between">
-              <span>AI Engine</span>
-              <Badge variant="muted" className="text-[10px]">Simulated (Claude API — coming)</Badge>
-            </div>
-            <Separator />
-            <div className="flex justify-between">
-              <span>Storage</span>
-              <Badge variant="muted" className="text-[10px]">Local (Convex — coming)</Badge>
-            </div>
-            <Separator />
-            <div className="flex justify-between">
-              <span>Auth</span>
-              <Badge variant="muted" className="text-[10px]">None (Clerk — coming)</Badge>
-            </div>
-          </div>
-        </Card>
-
-        {/* ── Save button ──────────────────────────────────── */}
-        <Button
-          className="w-full"
-          onClick={saveProfile}
-          disabled={subjects.length === 0}
-        >
-          Save settings
-        </Button>
-
-        {/* ── Danger zone ──────────────────────────────────── */}
-        <Card className="p-5 border-destructive/30">
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center text-destructive">
-              <Trash2 className="w-4 h-4" />
-            </div>
-            <h2 className="font-semibold text-sm text-destructive">Danger zone</h2>
-          </div>
-
-          {!showDeleteConfirm ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Clear all data</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Wipes your cognitive map, sessions, and settings
-                </p>
+              <div className="flex justify-end pt-1">
+                <Button variant="outline" size="sm" onClick={handleLogout} className="text-xs gap-1.5 text-destructive hover:bg-destructive/10">
+                  <LogOut className="w-3.5 h-3.5" /> Disconnect zkLogin
+                </Button>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                Clear
-              </Button>
             </div>
           ) : (
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-destructive">
-                Are you sure? This cannot be undone.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                All your cognitive map data, session history, and settings will be permanently deleted.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="flex-1"
-                  onClick={handleClearData}
-                >
-                  Yes, clear everything
-                </Button>
-              </div>
+            <div className="pt-2">
+              <Button size="sm" onClick={() => router.push('/signin?callbackUrl=/settings')} className="text-xs gap-2">
+                Connect with Google zkLogin
+              </Button>
             </div>
           )}
+        </Card>
+
+        {/* Candidate Profile Preferences */}
+        <Card className="p-6 space-y-5">
+          <div className="flex items-center gap-2 border-b pb-3">
+            <User className="w-4 h-4 text-primary" />
+            <h2 className="font-bold text-base">Candidate Profile Information</h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="candidate-name" className="text-xs font-medium text-foreground block">
+                Full Name
+              </label>
+              <input
+                id="candidate-name"
+                type="text"
+                value={candidateName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCandidateName(e.target.value)}
+                placeholder="e.g. Alex Rivera"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="target-title" className="text-xs font-medium text-foreground block">
+                Primary Target Role
+              </label>
+              <input
+                id="target-title"
+                type="text"
+                value={targetTitle}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetTitle(e.target.value)}
+                placeholder="e.g. Staff Fullstack Engineer"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button size="sm" onClick={handleSaveProfile} className="text-xs">
+              Save Preferences
+            </Button>
+          </div>
+        </Card>
+
+        {/* Walrus Decentralized Storage Configuration */}
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b pb-3">
+            <Database className="w-4 h-4 text-emerald-500" />
+            <h2 className="font-bold text-base">Walrus Protocol Storage</h2>
+          </div>
+
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            All resume uploads, tailored cover letters, and STAR+R interview assessments are client-side encrypted
+            using AES-256-GCM and stored across decentralized storage nodes on Walrus Testnet.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2 text-xs">
+            <div className="rounded-lg border p-3 bg-card/40">
+              <span className="text-muted-foreground block text-[11px]">Publisher Endpoint</span>
+              <span className="font-mono text-xs font-semibold">https://publisher.walrus-testnet.walrus.space</span>
+            </div>
+            <div className="rounded-lg border p-3 bg-card/40">
+              <span className="text-muted-foreground block text-[11px]">Default Storage Duration</span>
+              <span className="font-mono text-xs font-semibold">5 Epochs (~15 Days on Testnet)</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Data Management & Export */}
+        <Card className="p-6 space-y-4 border-destructive/20">
+          <div className="flex items-center gap-2 border-b pb-3">
+            <Key className="w-4 h-4 text-amber-500" />
+            <h2 className="font-bold text-base">Data Sovereignty & Local Cache</h2>
+          </div>
+
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Export a full JSON backup of your local candidate profile and session settings, or clear locally cached
+            CV extracts from this browser.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Button variant="outline" size="sm" onClick={handleExportVault} className="text-xs gap-1.5">
+              <Download className="w-3.5 h-3.5" /> Export Career Vault (JSON)
+            </Button>
+
+            {showClearConfirm ? (
+              <div className="flex items-center gap-2">
+                <Button variant="destructive" size="sm" onClick={handleClearCache} className="text-xs">
+                  Confirm Clear Cache
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowClearConfirm(false)} className="text-xs">
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowClearConfirm(true)}
+                className="text-xs gap-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Clear Local Cache
+              </Button>
+            )}
+          </div>
         </Card>
       </div>
     </AppShell>

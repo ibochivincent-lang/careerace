@@ -187,7 +187,7 @@ export function NotificationBell() {
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
-                All caught up 🎉
+                All caught up
               </div>
             ) : (
               notifications.map(n => (

@@ -24,7 +24,7 @@ export function DemoInfoDialog() {
         <div className="space-y-4 mt-4">
           {/* Core rule */}
           <div>
-            <h4 className="font-semibold mb-2">🚫 The Core Rule</h4>
+            <h4 className="font-semibold mb-2">The Core Rule</h4>
             <p className="text-sm text-muted-foreground">
               ExamAce will <strong className="text-foreground">never give you the direct answer</strong>. This is intentional.
               The tutor responds with questions designed to help you discover the answer yourself.
@@ -33,7 +33,7 @@ export function DemoInfoDialog() {
 
           {/* Three-tier */}
           <div>
-            <h4 className="font-semibold mb-2">🎯 Three-Tier Intervention</h4>
+            <h4 className="font-semibold mb-2">Three-Tier Intervention</h4>
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Tier 1: Conceptual</p>
@@ -58,7 +58,7 @@ export function DemoInfoDialog() {
 
           {/* Confidence detection */}
           <div>
-            <h4 className="font-semibold mb-2">🧠 Confidence Detection</h4>
+            <h4 className="font-semibold mb-2">Confidence Detection</h4>
             <p className="text-sm text-muted-foreground mb-2">
               The system detects hedge words in your responses:
             </p>
@@ -84,7 +84,7 @@ export function DemoInfoDialog() {
 
           {/* Cognitive map */}
           <div>
-            <h4 className="font-semibold mb-2">📊 Cognitive Map</h4>
+            <h4 className="font-semibold mb-2">Cognitive Map</h4>
             <p className="text-sm text-muted-foreground">
               Your progress is tracked through a cognitive map that records:
             </p>
@@ -98,7 +98,7 @@ export function DemoInfoDialog() {
 
           {/* Tips */}
           <div>
-            <h4 className="font-semibold mb-2">💡 Tips for Success</h4>
+            <h4 className="font-semibold mb-2">Tips for Success</h4>
             <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
               <li>Explain your reasoning out loud, even if uncertain</li>
               <li>Don&apos;t just pick an option — explain WHY</li>
