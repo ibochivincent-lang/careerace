@@ -20,7 +20,7 @@ export async function GET() {
     return Response.json({ message: challengeText(nonce) });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Could not issue a sign-in challenge";
-    console.error("[examace] nonce route failed:", detail);
+    console.error("[careerace] nonce route failed:", detail);
     return Response.json({ error: detail }, { status: 503 });
   }
 }
