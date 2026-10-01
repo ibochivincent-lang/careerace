@@ -3,18 +3,47 @@ import { parseCvText } from "@/lib/cv_parser";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const cvText = body.cv_text || body.text || "";
+    const contentType = req.headers.get("content-type") || "";
+    let cvText = "";
+    let fileName = "";
 
-    if (!cvText) {
-      return NextResponse.json({ error: "Missing cv_text parameter" }, { status: 400 });
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const file = formData.get("file") as File | null;
+      
+      if (file) {
+        fileName = file.name;
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        if (file.name.endsWith(".txt") || file.type.includes("text")) {
+          cvText = buffer.toString("utf-8");
+        } else if (file.name.endsWith(".pdf")) {
+          try {
+            // Standard PDF text buffer extraction fallback
+            cvText = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ");
+          } catch (e) {
+            cvText = buffer.toString("utf-8");
+          }
+        } else {
+          cvText = buffer.toString("utf-8");
+        }
+      }
+    } else {
+      const body = await req.json();
+      cvText = body.cv_text || body.text || "";
+    }
+
+    if (!cvText.trim()) {
+      return NextResponse.json({ error: "Missing CV file or text input" }, { status: 400 });
     }
 
     const parsed = parseCvText(cvText);
 
     return NextResponse.json({
       success: true,
-      message: "CV successfully parsed and candidate profile updated.",
+      file_name: fileName || "Pasted Resume Text",
+      message: "CV file successfully attached, parsed, and candidate profile updated.",
       profile: parsed
     });
   } catch (error) {

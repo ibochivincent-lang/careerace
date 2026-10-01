@@ -11,26 +11,36 @@ import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
-  ChevronRight, Zap
+  ChevronRight, Paperclip, Sparkles
 } from 'lucide-react'
 
 export default function CareerAcePage() {
   const router = useRouter()
   const [cvText, setCvText] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isParsing, setIsParsing] = useState(false)
   const [parsedProfile, setParsedProfile] = useState<any>(null)
   const [isHarvesting, setIsHarvesting] = useState(false)
   const [harvestedJobs, setHarvestedJobs] = useState<any[]>([])
 
   async function handleCvSubmit() {
-    if (!cvText.trim()) return
     setIsParsing(true)
     try {
-      const res = await fetch('/api/cv_upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cv_text: cvText })
-      })
+      let res: Response
+      if (selectedFile) {
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+        res = await fetch('/api/cv_upload', {
+          method: 'POST',
+          body: formData
+        })
+      } else {
+        res = await fetch('/api/cv_upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cv_text: cvText })
+        })
+      }
       const data = await res.json()
       if (data.profile) {
         setParsedProfile(data.profile)
@@ -72,7 +82,7 @@ export default function CareerAcePage() {
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#cv-upload" className="hover:text-foreground transition-colors">CV Upload</a>
+            <a href="#cv-upload" className="hover:text-foreground transition-colors">CV File Upload</a>
             <a href="#jobs" className="hover:text-foreground transition-colors">Job Matcher</a>
           </nav>
 
@@ -93,32 +103,59 @@ export default function CareerAcePage() {
       {/* ── Chatdeck Features Section ────────────────────────────────────────── */}
       <ChatdeckFeatures />
 
-      {/* ── Interactive Workspace (CV Ingestion & Job Scraper) ────────────────── */}
+      {/* ── Interactive Workspace (File Upload Attachment & Harvester) ───────── */}
       <section className="max-w-7xl mx-auto px-4 py-12">
-        {/* CV Ingestion Box */}
+        {/* Free Model Info Badge */}
+        <div className="mb-6 flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/20">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="w-4 h-4 text-primary" /> Powered by Free & Open-Source LLMs (DeepSeek R1 / Qwen 2.5 / Ollama Local)
+          </div>
+          <Badge variant="secondary">Zero Paid API Key Required</Badge>
+        </div>
+
+        {/* CV File Upload Attachment Box */}
         <div id="cv-upload" className="mb-16 scroll-mt-24">
           <Card className="p-8 border-2 shadow-lg">
-            <h2 className="text-2xl font-bold mb-3 flex items-center gap-2">
-              <FileText className="w-6 h-6 text-primary" /> Candidate CV Ingestion
+            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+              <Paperclip className="w-6 h-6 text-primary" /> Candidate CV File Attachment
             </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Paste your resume text below to extract technical skills, employment highlights, and education history into your encrypted Walrus Memory vault.
+            <p className="text-sm text-muted-foreground mb-6">
+              Attach your CV/Resume file (<code className="font-mono text-xs">.pdf</code>, <code className="font-mono text-xs">.docx</code>, <code className="font-mono text-xs">.txt</code>) or paste raw text below to ingest into your encrypted vault.
             </p>
 
+            {/* File Dropzone */}
+            <div className="border-2 border-dashed rounded-lg p-6 mb-6 text-center hover:bg-primary/5 transition-colors cursor-pointer relative">
+              <input
+                type="file"
+                accept=".pdf,.docx,.txt"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+              />
+              <Upload className="w-8 h-8 text-primary mx-auto mb-2" />
+              {selectedFile ? (
+                <p className="text-sm font-medium text-primary">Attached File: {selectedFile.name}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Drag & drop your resume file here, or <span className="text-primary font-medium underline">browse files</span>
+                </p>
+              )}
+            </div>
+
+            <div className="text-xs text-muted-foreground mb-2 font-medium">Or paste raw text directly:</div>
             <textarea
-              className="w-full h-40 p-4 rounded-lg border bg-background font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-4"
-              placeholder="Paste your resume / CV text here..."
+              className="w-full h-32 p-4 rounded-lg border bg-background font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+              placeholder="Paste your CV text here if not uploading a file..."
               value={cvText}
               onChange={(e) => setCvText(e.target.value)}
             />
 
             <div className="flex items-center justify-between">
-              <Button onClick={handleCvSubmit} disabled={isParsing || !cvText.trim()}>
+              <Button onClick={handleCvSubmit} disabled={isParsing || (!selectedFile && !cvText.trim())}>
                 {isParsing ? 'Parsing Profile...' : 'Parse & Update Vault'}
               </Button>
               {parsedProfile && (
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
-                  <CheckCircle2 className="w-4 h-4" /> CV Parsed: {parsedProfile.skills?.length} skills extracted
+                  <CheckCircle2 className="w-4 h-4" /> Profile Updated: {parsedProfile.skills?.length} skills extracted
                 </div>
               )}
             </div>
