@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseCvText, parseCvWithAi } from "@/lib/cv_parser";
 import zlib from "zlib";
-import { PDFParse } from "pdf-parse";
 
 export async function POST(req: Request) {
   try {
@@ -13,20 +12,31 @@ export async function POST(req: Request) {
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
+      const clientExtractedText = formData.get("cv_text") as string | null;
 
-      if (file) {
+      // If client-side PDF.js already extracted the text in browser, prioritize it
+      if (clientExtractedText && clientExtractedText.trim().length > 10) {
+        cvText = clientExtractedText.trim();
+        extractionMethod = "browser_pdf_extraction";
+        if (file) fileName = file.name;
+      } else if (file) {
         fileName = file.name;
+        const lowerName = file.name.toLowerCase();
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        if (file.name.endsWith(".txt") || file.type.includes("text")) {
+        if (lowerName.endsWith(".txt") || file.type.includes("text")) {
           cvText = buffer.toString("utf-8");
           extractionMethod = "plaintext";
-        } else if (file.name.endsWith(".pdf")) {
+        } else if (
+          lowerName.endsWith(".pdf") ||
+          file.type.includes("pdf") ||
+          file.type === "application/pdf"
+        ) {
           cvText = await extractPdfText(buffer);
           extractionMethod = "pdf_extraction";
         } else if (
-          file.name.endsWith(".docx") ||
+          lowerName.endsWith(".docx") ||
           file.type.includes("officedocument.wordprocessingml")
         ) {
           cvText = extractDocxText(buffer);
@@ -166,21 +176,31 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
 }
 
 /**
- * Extract readable text from PDF buffer using PDFParse with multiple fallbacks.
+ * Extract readable text from PDF buffer using dynamic PDFParse with multiple fallbacks.
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Strategy 1: Official PDF.js engine via PDFParse
+  // Strategy 1: Official PDF.js engine via dynamic pdf-parse
   try {
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-    await parser.destroy();
-    if (result && typeof result.text === "string" && result.text.trim().length > 10) {
-      const clean = result.text
-        .replace(/-- \d+ of \d+ --/g, "")
-        .replace(/\r\n/g, "\n")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
-      if (clean.length > 10) return clean;
+    const pdfParseModule = await import("pdf-parse");
+    const PDFParseClass =
+      pdfParseModule.PDFParse ||
+      (pdfParseModule as any).default?.PDFParse ||
+      (pdfParseModule as any).default;
+
+    if (typeof PDFParseClass === "function") {
+      const parser = new PDFParseClass({ data: buffer });
+      const result = await parser.getText();
+      if (typeof parser.destroy === "function") {
+        await parser.destroy();
+      }
+      if (result && typeof result.text === "string" && result.text.trim().length > 10) {
+        const clean = result.text
+          .replace(/-- \d+ of \d+ --/g, "")
+          .replace(/\r\n/g, "\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        if (clean.length > 10) return clean;
+      }
     }
   } catch (err) {
     console.warn("[cv_upload] PDFParse standard parsing failed, attempting fallback:", err);
@@ -190,7 +210,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
   const textChunks: string[] = [];
   const rawLatin = buffer.toString("latin1");
 
-  const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  const streamRegex = /stream[\r\n]+([\s\S]*?)[\r\n]+endstream/g;
   let match: RegExpExecArray | null;
   while ((match = streamRegex.exec(rawLatin)) !== null) {
     const rawStreamData = match[1];
@@ -214,13 +234,21 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 
   extractFromPdfStream(rawLatin, textChunks);
 
-  if (textChunks.length > 5) {
+  if (textChunks.length > 3) {
     return textChunks.join("\n").replace(/[ \t]+/g, " ").trim();
   }
 
-  // Strategy 3: Printable ASCII strings
+  // Strategy 3: Printable ASCII strings with loose threshold
   const utf8 = buffer.toString("utf-8");
-  const printableRuns = utf8.match(/[\x20-\x7E\n\r\t]{12,}/g) || [];
+  const printableRuns = utf8.match(/[\x20-\x7E\n\r\t]{8,}/g) || [];
+  const filtered = printableRuns
+    .map((s) => s.trim())
+    .filter((s) => !s.startsWith("%PDF") && !s.includes("obj") && !s.includes("endobj") && s.length > 3);
+
+  if (filtered.length > 0) {
+    return filtered.join("\n").replace(/[ \t]+/g, " ").trim();
+  }
+
   return printableRuns.join("\n").replace(/[ \t]+/g, " ").trim();
 }
 

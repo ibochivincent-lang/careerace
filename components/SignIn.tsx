@@ -124,7 +124,9 @@ export function SignIn() {
       })
       if (!res.ok) throw new Error(await res.text())
 
-      window.location.href = '/tutor'
+      const searchParams = new URLSearchParams(window.location.search)
+      const destination = searchParams.get('callbackUrl') || '/'
+      window.location.href = destination
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed')
     } finally {

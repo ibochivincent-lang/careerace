@@ -12,8 +12,12 @@ const PROMISES = [
   'Autonomous job harvesting, fit score evaluation, and STAR+R interview preparation.',
 ]
 
-export default async function SignInPage() {
-  if (await getOwnerAddress()) redirect('/tutor')
+export default async function SignInPage(props: {
+  searchParams?: Promise<{ callbackUrl?: string }>
+}) {
+  const params = props.searchParams ? await props.searchParams : {}
+  const target = params?.callbackUrl || '/'
+  if (await getOwnerAddress()) redirect(target)
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">

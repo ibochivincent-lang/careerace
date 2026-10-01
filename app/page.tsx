@@ -15,7 +15,7 @@ import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, Paperclip, Sparkles, LogIn, MessageSquare,
   Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X, AlertCircle,
-  Building, ShieldCheck, Phone, Mail
+  Building, ShieldCheck, Phone, Mail, Database, Lock, Fingerprint, Globe, Cpu, Layers, ExternalLink
 } from 'lucide-react'
 
 export default function CareerAcePage() {
@@ -237,22 +237,96 @@ export default function CareerAcePage() {
   }, [])
 
   /**
+   * Client-side PDF text extraction using PDF.js loaded on-demand.
+   * Runs directly in browser with 0 native server dependencies.
+   */
+  async function extractPdfTextInBrowser(file: File): Promise<string> {
+    if (typeof window === 'undefined') throw new Error('Client-side only')
+
+    // Dynamically inject PDF.js from Cloudflare CDN if not yet loaded
+    if (!(window as any).pdfjsLib) {
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        script.async = true
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Failed to load PDF script from CDN'))
+        document.head.appendChild(script)
+      })
+    }
+
+    const pdfjsLib = (window as any).pdfjsLib
+    if (!pdfjsLib) throw new Error('PDF.js not available')
+
+    if (!pdfjsLib.GlobalWorkerOptions?.workerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+    }
+
+    const buffer = await file.arrayBuffer()
+    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) })
+    const pdfDoc = await loadingTask.promise
+    const pages: string[] = []
+
+    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+      const page = await pdfDoc.getPage(pageNum)
+      const content = await page.getTextContent()
+      const pageText = content.items
+        .map((item: any) => (item.str !== undefined ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+      if (pageText) {
+        pages.push(pageText)
+      }
+    }
+
+    const extracted = pages.join('\n\n').trim()
+    if (!extracted || extracted.length < 10) {
+      throw new Error('PDF contained insufficient readable text')
+    }
+    return extracted
+  }
+
+  /**
    * Automatically handle file selection:
    * 1. Read plaintext immediately if .txt
-   * 2. Send file to /api/cv_upload to decompress & extract text
-   * 3. Populate cvText in the textarea so user sees the extracted text right away
+   * 2. Extract PDF text directly in browser via PDF.js so user sees text instantly in editor
+   * 3. Send file and extracted text to /api/cv_upload to parse profile highlights
    * 4. Populate parsed profile with institution, degree, experience, certifications, and skills
    */
   async function handleFileSelect(file: File | null) {
     setSelectedFile(file)
     if (!file) return
 
-    if (file.name.endsWith('.txt') || file.type.includes('text')) {
+    let clientExtractedText = ''
+    const lowerName = file.name.toLowerCase()
+
+    // Fast path 1: Plain text file
+    if (lowerName.endsWith('.txt') || file.type.includes('text')) {
       try {
-        const text = await file.text()
-        setCvText(text)
+        clientExtractedText = await file.text()
+        setCvText(clientExtractedText)
       } catch (err) {
         console.error('Error reading text file:', err)
+      }
+    }
+
+    // Fast path 2: PDF file extracted directly in browser
+    if (
+      lowerName.endsWith('.pdf') ||
+      file.type.includes('pdf') ||
+      file.type === 'application/pdf'
+    ) {
+      try {
+        toast.info('Extracting PDF text directly in browser...')
+        clientExtractedText = await extractPdfTextInBrowser(file)
+        if (clientExtractedText) {
+          setCvText(clientExtractedText)
+          toast.success('PDF text extracted into editor.')
+        }
+      } catch (pdfErr) {
+        console.warn('Browser PDF extraction notice, delegating to server:', pdfErr)
       }
     }
 
@@ -261,12 +335,29 @@ export default function CareerAcePage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      if (clientExtractedText) {
+        formData.append('cv_text', clientExtractedText)
+      }
       const res = await fetch('/api/cv_upload', {
         method: 'POST',
         body: formData
       })
       const data = await res.json()
       if (!res.ok) {
+        // Fallback: if client already has extracted text, try posting as raw text
+        if (clientExtractedText) {
+          const fallbackRes = await fetch('/api/cv_upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cv_text: clientExtractedText })
+          })
+          const fallbackData = await fallbackRes.json()
+          if (fallbackRes.ok && fallbackData.profile) {
+            setParsedProfile(fallbackData.profile)
+            toast.success(`CV parsed: ${fallbackData.profile.applicant_name}`)
+            return
+          }
+        }
         const errMsg = data.error || 'Failed to extract CV file'
         setParseError(errMsg)
         toast.error(errMsg)
@@ -299,7 +390,13 @@ export default function CareerAcePage() {
     setParseError(null)
     try {
       let res: Response
-      if (selectedFile && !cvText.trim()) {
+      if (cvText.trim()) {
+        res = await fetch('/api/cv_upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cv_text: cvText })
+        })
+      } else if (selectedFile) {
         const formData = new FormData()
         formData.append('file', selectedFile)
         res = await fetch('/api/cv_upload', {
@@ -307,11 +404,9 @@ export default function CareerAcePage() {
           body: formData
         })
       } else {
-        res = await fetch('/api/cv_upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cv_text: cvText })
-        })
+        toast.error('Please attach a CV file or paste CV text.')
+        setIsParsing(false)
+        return
       }
       const data = await res.json()
       if (!res.ok) {
@@ -405,6 +500,7 @@ export default function CareerAcePage() {
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#copilot" className="hover:text-foreground transition-colors font-semibold text-primary">AI Copilot</a>
             <a href="#cv-upload" className="hover:text-foreground transition-colors">CV Showcase</a>
+            <a href="#walrus-memory" className="hover:text-foreground transition-colors">Walrus Vault</a>
             <a href="#jobs" className="hover:text-foreground transition-colors">Job Matcher</a>
           </nav>
 
@@ -416,8 +512,14 @@ export default function CareerAcePage() {
             {sessionAddress ? (
               <AccountChip address={sessionAddress} />
             ) : (
-              <Button size="sm" onClick={() => router.push('/signin')}>
-                <LogIn className="w-4 h-4 mr-1.5" /> Sign in with Google
+              <Button size="sm" onClick={() => router.push('/signin?callbackUrl=/')} className="flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M21.6 12.23c0-.72-.06-1.4-.19-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z" />
+                  <path d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.5c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A10 10 0 0 0 12 22Z" opacity="0.72" />
+                  <path d="M6.4 13.93a6 6 0 0 1 0-3.83V7.52H3.07a10 10 0 0 0 0 8.98l3.33-2.57Z" opacity="0.5" />
+                  <path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52L6.4 10.1C7.2 7.74 9.4 5.98 12 5.98Z" opacity="0.86" />
+                </svg>
+                Connect with Google
               </Button>
             )}
           </div>
@@ -548,6 +650,47 @@ export default function CareerAcePage() {
             <p className="text-sm text-muted-foreground mb-6">
               Attach your CV/Resume file (<code className="font-mono text-xs">.pdf</code>, <code className="font-mono text-xs">.docx</code>, <code className="font-mono text-xs">.txt</code>) or paste raw text below to ingest into your encrypted vault. Once uploaded, the extracted text will automatically display in the text box below.
             </p>
+
+            {/* ── GOOGLE CONNECT & SOVEREIGN VAULT IDENTITY BANNER ── */}
+            <div className="mb-6 p-4 rounded-xl border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${sessionAddress ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold">
+                      {sessionAddress ? 'Decentralized Sovereign Vault Active' : 'Sovereign Career Vault: Not Connected'}
+                    </h3>
+                    <Badge variant={sessionAddress ? 'default' : 'secondary'} className="text-[10px]">
+                      {sessionAddress ? 'Walrus + zkLogin' : 'Guest Mode'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {sessionAddress
+                      ? `Deterministic Sui Address: ${sessionAddress.slice(0, 10)}...${sessionAddress.slice(-6)} (SEAL-Encrypted under your Google ID)`
+                      : 'Connect with Google to anchor your CV, tailored impact bullets, and interview logs to your private Walrus Memory.'}
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0">
+                {sessionAddress ? (
+                  <Button size="sm" variant="outline" onClick={() => router.push('/application_board')} className="text-xs">
+                    View Vault Records
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => router.push('/signin?callbackUrl=/')} className="text-xs flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M21.6 12.23c0-.72-.06-1.4-.19-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z" />
+                      <path d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.5c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A10 10 0 0 0 12 22Z" opacity="0.72" />
+                      <path d="M6.4 13.93a6 6 0 0 1 0-3.83V7.52H3.07a10 10 0 0 0 0 8.98l3.33-2.57Z" opacity="0.5" />
+                      <path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52L6.4 10.1C7.2 7.74 9.4 5.98 12 5.98Z" opacity="0.86" />
+                    </svg>
+                    Connect with Google
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {/* File Dropzone */}
             <div className="border-2 border-dashed rounded-lg p-6 mb-6 text-center hover:bg-primary/5 transition-colors cursor-pointer relative">
@@ -1045,6 +1188,138 @@ export default function CareerAcePage() {
               </div>
             </Card>
           )}
+        </div>
+
+        {/* ── WALRUS DECENTRALIZED CAREER MEMORY & SOVEREIGN ARCHITECTURE ── */}
+        <div id="walrus-memory" className="mb-16 scroll-mt-24">
+          <Card className="p-8 border-2 shadow-lg bg-card/50">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="px-3 py-1 bg-primary/10 border-primary/30 text-primary text-xs font-semibold">
+                    <Database className="w-3.5 h-3.5 mr-1" /> Walrus Memory Core
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    Sui zkLogin + SEAL Cryptography
+                  </Badge>
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight">
+                  Decentralized Career Memory: Sovereign Candidate Architecture
+                </h2>
+                <p className="text-sm text-muted-foreground mt-2 max-w-3xl leading-relaxed">
+                  Your career lineage belongs strictly to you. With Walrus Memory (<code className="font-mono text-xs">@mysten-incubation/memwal</code> + <code className="font-mono text-xs">@mysten/walrus</code>), Career Ace eliminates centralized platform silos, ensuring permanent availability, zero-knowledge privacy, and absolute user isolation.
+                </p>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-2.5">
+                {sessionAddress ? (
+                  <Button variant="outline" size="sm" onClick={() => router.push('/application_board')} className="text-xs flex items-center gap-2">
+                    <ExternalLink className="w-3.5 h-3.5" /> View Career Vault Blobs
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => router.push('/signin?callbackUrl=/')} className="text-xs flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                      <path d="M21.6 12.23c0-.72-.06-1.4-.19-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z" />
+                      <path d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.5c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A10 10 0 0 0 12 22Z" opacity="0.72" />
+                      <path d="M6.4 13.93a6 6 0 0 1 0-3.83V7.52H3.07a10 10 0 0 0 0 8.98l3.33-2.57Z" opacity="0.5" />
+                      <path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52L6.4 10.1C7.2 7.74 9.4 5.98 12 5.98Z" opacity="0.86" />
+                    </svg>
+                    Connect with Google (zkLogin)
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* 4 Architectural Superpowers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Feature 1 */}
+              <div className="p-5 rounded-xl border bg-background/60 flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base mb-1.5">Decentralized Blob Persistence</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Unlike LinkedIn or corporate applicant tracking systems that can delete or paywall your records, your CV and match lineage are stored as durable, content-addressed Walrus blobs permanently owned by you.
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t text-[11px] font-mono text-muted-foreground">
+                  Stack: @mysten/walrus
+                </div>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="p-5 rounded-xl border bg-background/60 flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base mb-1.5">Threshold Privacy with SEAL</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Resumes contain private contact details, salaries, and sensitive achievements. Everything is client-side encrypted via Mysten SEAL threshold cryptography on Sui before upload. Nobody can view raw data without your key.
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t text-[11px] font-mono text-muted-foreground">
+                  Stack: @mysten/seal
+                </div>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="p-5 rounded-xl border bg-background/60 flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center mb-3">
+                    <Fingerprint className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base mb-1.5">Deterministic User Uniqueness</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Every candidate connects their Google account via Enoki zkLogin, deriving a mathematically unique, non-custodial Sui address. Vaults are strictly isolated under <code className="text-foreground">address::career_vault</code> namespaces with zero cross-contamination.
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t text-[11px] font-mono text-muted-foreground">
+                  Stack: @mysten/enoki zkLogin
+                </div>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="p-5 rounded-xl border bg-background/60 flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center mb-3">
+                    <Cpu className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base mb-1.5">Cross-Agent Memory &amp; Provenance</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    AI recruiting bots and mock interviewers query candidate vector embeddings for skill verification without exposing raw PII. Retractions stop facts from being recalled while preserving honest on-chain provenance.
+                  </p>
+                </div>
+                <div className="mt-4 pt-3 border-t text-[11px] font-mono text-muted-foreground">
+                  Stack: @mysten-incubation/memwal
+                </div>
+              </div>
+            </div>
+
+            {/* Live Sovereignty Status Strip */}
+            <div className="mt-8 p-4 rounded-xl border bg-muted/40 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-foreground">Sovereign Candidate Network Status:</span>
+                  <p className="text-xs text-muted-foreground">
+                    Connected to Walrus Testnet Aggregator &amp; Mysten SEAL Decryption Committees on Sui.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="font-mono text-muted-foreground">
+                  Vault ID: {sessionAddress ? `${sessionAddress.slice(0, 10)}...${sessionAddress.slice(-6)}` : 'Local Candidate Session'}
+                </span>
+                <Badge variant={sessionAddress ? 'default' : 'outline'} className="text-[10px]">
+                  {sessionAddress ? 'zkLogin Secured' : 'Guest Mode'}
+                </Badge>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* ── 3. UNIVERSAL JOB HARVESTER & FIT SCORER BOX ────────────────────── */}

@@ -16,7 +16,7 @@ export function ChatdeckFeatures() {
     {
       title: "Trained On Your Candidate Vault",
       description:
-        "Career Ace extracts skills, work experience, and academic history from your uploaded CV, persisting encrypted entries on Walrus Memory.",
+        "Career Ace extracts skills, work experience, and academic history from your uploaded CV, persisting threshold SEAL-encrypted entries on decentralized Walrus Memory unique to your Google zkLogin Sui address.",
       icon: <BookOpen className="w-6 h-6" />,
     },
     {
