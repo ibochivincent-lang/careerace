@@ -177,7 +177,7 @@ async function persist(address: string, userTurn: string, asked: string): Promis
     return { written, failed: null };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    console.error("[examace] memory write failed:", detail);
+    console.error("[careerace] memory write failed:", detail);
     return { written, failed: detail };
   }
 }

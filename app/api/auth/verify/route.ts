@@ -56,7 +56,7 @@ export async function POST(req: Request) {
      * here, and only the last one is the user's problem.
      */
     const detail = error instanceof Error ? error.message : String(error);
-    console.error("[examace] zkLogin verification failed:", detail);
+    console.error("[careerace] zkLogin verification failed:", detail);
 
     let extraDetail = "";
     try {
@@ -77,12 +77,12 @@ export async function POST(req: Request) {
       });
       if (diag.errors && diag.errors.length > 0) {
         extraDetail = `: ${diag.errors.map((e) => e.message).join(", ")}`;
-        console.error("[examace] GraphQL node errors:", diag.errors);
+        console.error("[careerace] GraphQL node errors:", diag.errors);
       } else {
-        console.error("[examace] GraphQL node data:", diag.data);
+        console.error("[careerace] GraphQL node data:", diag.data);
       }
     } catch (diagErr) {
-      console.error("[examace] GraphQL diagnostic failed:", diagErr);
+      console.error("[careerace] GraphQL diagnostic failed:", diagErr);
     }
 
     return new Response(`Signature rejected: ${detail}${extraDetail}`, { status: 401 });
