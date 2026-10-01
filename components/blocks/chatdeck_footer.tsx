@@ -15,10 +15,12 @@ export function ChatdeckFooter() {
         <p className="text-xs text-center md:text-left">
           Created exclusively by IboTV (<code className="text-xs font-mono">ibochivincent-lang</code>). All rights reserved.
         </p>
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
           <a href="#features" className="hover:text-foreground">Features</a>
           <a href="#cv-upload" className="hover:text-foreground">CV Upload</a>
           <a href="#jobs" className="hover:text-foreground">Job Matcher</a>
+          <a href="/privacy" className="hover:text-foreground">Privacy Policy</a>
+          <a href="/terms" className="hover:text-foreground">Terms of Service</a>
         </div>
       </div>
     </footer>

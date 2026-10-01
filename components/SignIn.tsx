@@ -245,6 +245,12 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
         Autonomous career guidance & job matching. Your candidate work experience and accomplishments are encrypted before
         leaving this device, and stored in decentralized Walrus Memory under your Sui zkLogin key.
       </p>
+
+      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+        <a href="/privacy" className="hover:text-foreground underline underline-offset-4">Privacy Policy</a>
+        <span>&bull;</span>
+        <a href="/terms" className="hover:text-foreground underline underline-offset-4">Terms of Service</a>
+      </div>
     </div>
   )
 }
