@@ -20,12 +20,12 @@ const EXAM_TARGETS: { value: ExamTarget; label: string; description: string; col
 ]
 
 const SUBJECTS: { value: Subject; label: string; icon: string }[] = [
-  { value: 'biology',     label: 'Biology',     icon: '🧬' },
-  { value: 'chemistry',   label: 'Chemistry',   icon: '⚗️' },
-  { value: 'physics',     label: 'Physics',     icon: '⚡' },
-  { value: 'mathematics', label: 'Mathematics', icon: '📐' },
-  { value: 'english',     label: 'English',     icon: '📚' },
-  { value: 'economics',   label: 'Economics',   icon: '💰' },
+  { value: 'biology',     label: 'Biology',     icon: 'B' },
+  { value: 'chemistry',   label: 'Chemistry',   icon: 'C' },
+  { value: 'physics',     label: 'Physics',     icon: 'P' },
+  { value: 'mathematics', label: 'Mathematics', icon: 'M' },
+  { value: 'english',     label: 'English',     icon: 'E' },
+  { value: 'economics',   label: 'Economics',   icon: 'Ec' },
 ]
 
 export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
