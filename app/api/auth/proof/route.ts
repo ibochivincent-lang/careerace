@@ -1,9 +1,9 @@
 import { type NextRequest } from "next/server";
 
-const PROVER_URL =
-  process.env.NEXT_PUBLIC_SUI_NETWORK === "mainnet"
-    ? "https://prover.mystenlabs.com/v1"
-    : "https://prover-dev.mystenlabs.com/v1";
+const rawNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "").trim().toLowerCase();
+const PROVER_URL = rawNetwork.startsWith("mainnet")
+  ? "https://prover.mystenlabs.com/v1"
+  : "https://prover-dev.mystenlabs.com/v1";
 
 /**
  * Server-side proxy for the Mysten Labs zkLogin ZK prover.

@@ -7,7 +7,10 @@ import crypto from "node:crypto";
  * on trust from the client.
  */
 const SECRET = () => {
-  return process.env.SESSION_SECRET || "careerace_sovereign_session_secret_2026_ibotv";
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET.trim();
+  const match = process.env.NEXT_PUBLIC_SUI_NETWORK?.match(/SESSION_SECRET=([^\s]+)/);
+  if (match) return match[1].trim();
+  return "careerace_sovereign_session_secret_2026_ibotv";
 };
 
 export const SESSION_COOKIE = "ea_session";

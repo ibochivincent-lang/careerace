@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { SuiGraphQLClient } from "@mysten/sui/graphql";
 
-const SUI_NETWORK = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "testnet") as "testnet" | "mainnet";
+const rawNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "").trim().toLowerCase();
+const SUI_NETWORK: "mainnet" | "testnet" = rawNetwork.startsWith("mainnet") ? "mainnet" : "testnet";
 const GRAPHQL_URL = `https://graphql.${SUI_NETWORK}.sui.io/graphql`;
 
 // Safe baseline epoch fallback (testnet is currently ~1240).

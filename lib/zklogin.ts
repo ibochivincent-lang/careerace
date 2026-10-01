@@ -10,7 +10,8 @@ import {
   genAddressSeed,
 } from "@mysten/sui/zklogin";
 
-const NETWORK = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "testnet") as "testnet" | "mainnet";
+const rawNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "").trim().toLowerCase();
+const NETWORK: "mainnet" | "testnet" = rawNetwork.startsWith("mainnet") ? "mainnet" : "testnet";
 
 const GRAPHQL_URL = `https://graphql.${NETWORK}.sui.io/graphql`;
 const STORAGE_KEYS = {
