@@ -1,4 +1,4 @@
-import { NormalizedJob } from "./job_normaliser";
+import type { NormalizedJob } from "./job_normaliser.ts";
 
 export interface FilterConfig {
   allowed_regions: string[];

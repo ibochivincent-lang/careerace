@@ -1,5 +1,5 @@
-import { ParsedCv } from "./cv_parser";
-import { NormalizedJob } from "./job_normaliser";
+import type { ParsedCv } from "./cv_parser.ts";
+import type { NormalizedJob } from "./job_normaliser.ts";
 
 export interface TailoredPackage {
   job_id: string;

@@ -8,44 +8,56 @@ import { createHash } from "node:crypto";
 
 export type FactKind =
   /**
-   * A wrong mental model the student actually holds — "thinks force = mass x
-   * velocity", "believes osmosis moves solute". This is the single most
-   * valuable thing in the record and the reason the whole app exists: a tutor
-   * that does not know the misconception will re-explain the topic in the same
-   * words that produced it, and the student will nod and stay wrong.
+   * Candidate work experience, role title, company, accomplishments, metrics.
+   * e.g. "Senior Frontend Engineer at Acme Corp: reduced bundle size by 35% and built microfrontends."
    */
-  | "misconception"
+  | "experience"
   /**
-   * A topic they have demonstrated they understand. Recording it is what stops
-   * the tutor spending a session re-drilling what is already solid.
+   * Academic credentials, degrees, universities, certifications, honors.
+   * e.g. "B.S. Computer Science from Stanford University, First Class Honours."
    */
-  | "mastery"
-  /** A topic or skill they struggle with, without a specific wrong model yet. */
-  | "weakness"
-  /** The exam they are sitting and when — "JAMB - April 2026". */
-  | "goal"
+  | "education"
   /**
-   * A recurring mistake shape rather than a topic: unit confusion, sign
-   * errors, falling for the same distractor. Evidence from sessions.
+   * Verified technical, architectural, or domain skills with demonstrated proficiency.
+   * e.g. "Proficient in Next.js, TypeScript, Sui Move, and Walrus storage integration."
    */
-  | "error_pattern"
+  | "skill"
   /**
-   * A standing preference about how they want to be taught — "wants worked
-   * examples before theory", "will not read long paragraphs". Never overrides
-   * a pedagogical requirement; it shapes delivery, not content.
+   * Desired career direction, target role titles, seniority, target compensation/markets.
+   * e.g. "Targeting Staff AI Software Engineer or Web3 Protocols Lead."
+   */
+  | "target_role"
+  /**
+   * Tailored resume bullet points, cover letters, and custom project highlights.
+   * e.g. "Tailored CV v2: emphasized distributed systems experience for Stripe Staff Backend role."
+   */
+  | "tailored_cv"
+  /**
+   * Stored job application records, company name, match score, routing outcome.
+   * e.g. "Applied to Vercel for Senior Platform Engineer: 9.4/10 fit score via direct ATS."
+   */
+  | "application"
+  /**
+   * STAR+R interview coach assessments, simulated responses, interviewer critique, gaps to address.
+   * e.g. "Demonstrated strong Situation & Task in distributed rollback question; needs stronger Results metric."
+   */
+  | "interview_feedback"
+  /**
+   * Candidate standing career preferences: remote/hybrid, tech stack, company size, communication style.
+   * e.g. "Prefers remote-first engineering teams with asynchronous communication culture."
    */
   | "preference"
   /**
-   * An explicit NEGATIVE assertion — "I have no exam date yet", "I'm fine with
-   * organic chemistry".
-   *
-   * Storing the absence matters as much as storing the presence. Without it,
-   * "nothing recalled" is ambiguous between "they told us they are clear" and
-   * "we have never asked", and the tutor cannot tell whether it is safe to
-   * build a study plan or obliged to ask first. This is what stops it asking
-   * the same question every single session.
+   * Explicit clearance or absence of a constraint or restriction.
+   * e.g. "No relocation restrictions", "open to any global time zone".
    */
-  | "clearance";
+  | "clearance"
+  /** Legacy kinds retained for backward compatibility */
+  | "misconception"
+  | "mastery"
+  | "weakness"
+  | "goal"
+  | "error_pattern";
 
 /**
  * Not a kind you can ask for. A tombstone is written by `forgetFact` to retract

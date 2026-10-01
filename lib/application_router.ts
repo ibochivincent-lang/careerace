@@ -1,6 +1,6 @@
-import { NormalizedJob } from "./job_normaliser";
-import { EvaluationResult } from "./job_evaluator";
-import { TailoredPackage } from "./resume_tailor";
+import type { NormalizedJob } from "./job_normaliser.ts";
+import type { EvaluationResult } from "./job_evaluator.ts";
+import type { TailoredPackage } from "./resume_tailor.ts";
 
 export interface ProcessedApplication {
   job_id: string;

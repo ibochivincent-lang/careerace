@@ -61,16 +61,21 @@ const RECALL_TOKEN_BUDGET = 700;
 const RESTORE_LIMIT = 25;
 
 const KIND_NAMESPACE: Record<FactKind, (a: string) => string> = {
+  experience: profileNs,
+  education: profileNs,
+  skill: profileNs,
+  target_role: profileNs,
+  tailored_cv: profileNs,
+  application: feedbackNs,
+  interview_feedback: feedbackNs,
+  preference: feedbackNs,
+  clearance: profileNs,
+  // Legacy kinds mapped safely
   misconception: profileNs,
   mastery: profileNs,
   weakness: profileNs,
   goal: profileNs,
-  // A clearance is a statement about what the student does NOT struggle with,
-  // so it belongs with the weaknesses it negates — not in the preferences
-  // namespace where a recall for weak topics would never see it.
-  clearance: profileNs,
   error_pattern: feedbackNs,
-  preference: feedbackNs,
 };
 
 export type { FactKind, RecalledFact };
@@ -79,37 +84,36 @@ export {
   factBody, factDate, factKind, retractionTarget, RELEVANCE_DISTANCE, unionFacts,
 } from "./facts.ts";
 
-/** Read durable learner facts. Call ONCE per turn, never per route. */
+/** Read durable candidate career facts. Call ONCE per turn, never per route. */
 export const recallProfile = (address: string, query: string) => recallFrom(profileNs(address), query);
 
-/** Read session evidence and study preferences. */
+/** Read session feedback, STAR+R coaching, and job application records. */
 export const recallFeedback = (address: string, query: string) => recallFrom(feedbackNs(address), query);
 
 /*
- * STABLE QUERIES.
+ * STABLE QUERIES FOR CAREER ACE.
  *
  * Recall is a similarity search with a relevance floor, so WHAT YOU ASK FOR
- * decides what the model gets to see. Asking with the student's own turn means
- * "explain projectile motion" is the query against their learning record —
- * and `misconception | thinks force = mass x velocity` sits nowhere near that
- * in embedding space, so it falls below the floor and the tutor explains the
- * topic in exactly the words that produced the misconception in the first
- * place.
- *
- * A misconception is not relevant only when the student happens to name it.
- * These queries are fixed so the facts that change how a topic must be taught
- * come back on EVERY turn, whatever was asked.
+ * decides what the model gets to see. Asking with candidate credentials ensures
+ * that target role, skills, work accomplishments, and interview prep feedback
+ * come back on every turn.
  */
-export const LEARNING_QUERY =
-  "exam target, misconceptions held, weak topics and topics already mastered";
-export const PREFERENCE_QUERY =
-  "recurring mistakes made and how this student prefers to be taught";
+export const CAREER_QUERY =
+  "target role, work experience, education, technical skills and verified accomplishments";
+export const COACHING_QUERY =
+  "interview feedback, STAR+R coaching assessments, job application history and career preferences";
 
-/** Exam target, misconceptions, weaknesses, mastery — retrieved every turn. */
-export const recallLearning = (address: string) => recallFrom(profileNs(address), LEARNING_QUERY);
+/** Target role, experiences, skills, education — retrieved on every turn. */
+export const recallCareerProfile = (address: string) => recallFrom(profileNs(address), CAREER_QUERY);
 
-/** Standing preferences and error patterns — likewise always relevant. */
-export const recallPreferences = (address: string) => recallFrom(feedbackNs(address), PREFERENCE_QUERY);
+/** Standing preferences and STAR+R interview coach assessments — always relevant. */
+export const recallCareerCoaching = (address: string) => recallFrom(feedbackNs(address), COACHING_QUERY);
+
+/** Legacy aliases */
+export const LEARNING_QUERY = CAREER_QUERY;
+export const PREFERENCE_QUERY = COACHING_QUERY;
+export const recallLearning = recallCareerProfile;
+export const recallPreferences = recallCareerCoaching;
 
 /**
  * The relevance floor is an EMBEDDING distance, so it only means anything

@@ -1,4 +1,4 @@
-import { ProcessedApplication } from "./application_router";
+import type { ProcessedApplication } from "./application_router.ts";
 
 export interface NotionSyncConfig {
   database_id: string;

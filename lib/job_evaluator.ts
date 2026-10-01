@@ -1,5 +1,5 @@
-import { NormalizedJob } from "./job_normaliser";
-import { ParsedCv } from "./cv_parser";
+import type { NormalizedJob } from "./job_normaliser.ts";
+import type { ParsedCv } from "./cv_parser.ts";
 
 export interface EvaluationResult {
   job_id: string;
