@@ -58,3 +58,14 @@ function timingSafeEqual(a: string, b: string) {
 export function challengeText(nonce: string) {
   return `Sign in to Career Ace.\n\nThis proves you own this address so your sovereign career vault can be unlocked.\n\nNonce: ${nonce}`;
 }
+
+/**
+ * Deterministically derives a 128-bit user salt from the JWT issuer and subject claim.
+ * Eliminates the need for any paid external salt service while ensuring the user's
+ * address is permanent and recoverable across logins.
+ */
+export function deriveUserSalt(iss: string, sub: string): string {
+  const hash = crypto.createHmac("sha256", SECRET()).update(`zklogin-salt:${iss}:${sub}`).digest("hex");
+  return BigInt("0x" + hash.slice(0, 32)).toString();
+}
+
