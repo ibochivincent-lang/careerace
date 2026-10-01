@@ -510,21 +510,55 @@ export default function CareerAcePage() {
               Applications
             </Button>
             {sessionAddress ? (
-              <AccountChip address={sessionAddress} />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => document.getElementById('copilot')?.scrollIntoView({ behavior: 'smooth' })} className="hidden sm:flex text-xs font-medium">
+                  Workspace
+                </Button>
+                <AccountChip address={sessionAddress} />
+              </div>
             ) : (
-              <Button size="sm" onClick={() => router.push('/signin?callbackUrl=/')} className="flex items-center gap-2">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M21.6 12.23c0-.72-.06-1.4-.19-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z" />
-                  <path d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.5c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A10 10 0 0 0 12 22Z" opacity="0.72" />
-                  <path d="M6.4 13.93a6 6 0 0 1 0-3.83V7.52H3.07a10 10 0 0 0 0 8.98l3.33-2.57Z" opacity="0.5" />
-                  <path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52L6.4 10.1C7.2 7.74 9.4 5.98 12 5.98Z" opacity="0.86" />
-                </svg>
-                Connect with Google
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => router.push('/signin?mode=signin&callbackUrl=/#copilot')} className="text-xs font-semibold">
+                  Sign In
+                </Button>
+                <Button size="sm" onClick={() => router.push('/signin?mode=signup&callbackUrl=/#copilot')} className="flex items-center gap-1.5 text-xs font-semibold">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M21.6 12.23c0-.72-.06-1.4-.19-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.3 2.99-7.36Z" />
+                    <path d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.23-2.5c-.9.6-2.04.96-3.39.96-2.6 0-4.8-1.76-5.6-4.12H3.07v2.58A10 10 0 0 0 12 22Z" opacity="0.72" />
+                    <path d="M6.4 13.93a6 6 0 0 1 0-3.83V7.52H3.07a10 10 0 0 0 0 8.98l3.33-2.57Z" opacity="0.5" />
+                    <path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52L6.4 10.1C7.2 7.74 9.4 5.98 12 5.98Z" opacity="0.86" />
+                  </svg>
+                  Sign Up
+                </Button>
+              </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* ── Authenticated Workspace Quick-Nav ─────────────────────────────── */}
+      {sessionAddress && (
+        <div className="bg-primary/5 border-b border-primary/20 py-2.5 px-4">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 font-medium">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span>Sovereign Vault Connected:</span>
+              <span className="font-mono text-muted-foreground">{sessionAddress.slice(0, 10)}...{sessionAddress.slice(-6)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => document.getElementById('copilot')?.scrollIntoView({ behavior: 'smooth' })}>
+                AI Copilot
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => document.getElementById('cv-upload')?.scrollIntoView({ behavior: 'smooth' })}>
+                Upload CV & Attachments
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => document.getElementById('jobs')?.scrollIntoView({ behavior: 'smooth' })}>
+                Job Harvester
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Chatdeck Hero Block ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4">

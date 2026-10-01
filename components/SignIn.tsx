@@ -25,6 +25,15 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentAddress, setCurrentAddress] = useState<string | null>(initialAddress ?? null)
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('mode') === 'signup') {
+      setMode('signup')
+    }
+  }, [])
 
   // Detect OAuth redirect callback from Google in URL hash (#id_token=... or #error=...)
   useEffect(() => {
@@ -55,13 +64,13 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       try {
         const { address } = await completeGoogleZkLogin(idToken)
         setCurrentAddress(address)
-        setStatusMessage('Authentication successful! Redirecting…')
+        setStatusMessage('Authentication successful! Opening workspace…')
 
         // Clean up hash from address bar without reloading
         window.history.replaceState(null, '', window.location.pathname)
 
         const searchParams = new URLSearchParams(window.location.search)
-        const destination = searchParams.get('callbackUrl') || '/'
+        const destination = searchParams.get('callbackUrl') || '/#copilot'
         window.location.href = destination
       } catch (err) {
         console.error('[zklogin] Callback completion error:', err)
@@ -125,7 +134,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
 
         <div className="mt-6 flex flex-col gap-3">
           <a
-            href="/"
+            href="/#copilot"
             className="flex h-12 w-full items-center justify-center rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
           >
             Go to Career Ace Workspace
@@ -145,17 +154,49 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
 
   return (
     <div className="w-full max-w-md">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sign in</p>
-      <h2 className="mt-3 text-2xl font-bold tracking-tight">No wallet, no seed phrase.</h2>
-      <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-        Google sign-in creates your sovereign Sui address via zero-knowledge cryptography. Zero gas fees, zero subscriptions.
+      {/* Sign In vs Sign Up Tabs */}
+      <div className="flex border-b border-border/70 mb-6 gap-6">
+        <button
+          type="button"
+          onClick={() => setMode('signin')}
+          className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            mode === 'signin'
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Sign In
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('signup')}
+          className={`pb-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            mode === 'signup'
+              ? 'border-primary text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Sign Up
+        </button>
+      </div>
+
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
+      </p>
+      <h2 className="mt-2 text-2xl font-bold tracking-tight">
+        {mode === 'signup' ? 'Create your sovereign vault.' : 'Sign in to your vault.'}
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        {mode === 'signup'
+          ? 'Connect with Google to instantiate your encrypted candidate vault on Walrus & Sui. Zero seed phrases, zero gas fees.'
+          : 'Access your saved CV attachments, Universal Job Harvester, and AI Copilot under your zero-knowledge key.'}
       </p>
 
       <button
         type="button"
         onClick={signIn}
         disabled={busy || !CONFIGURED}
-        className="mt-7 flex h-13 w-full items-center justify-center gap-2.5 rounded-xl bg-primary py-3.5 text-[15px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        className="mt-6 flex h-13 w-full items-center justify-center gap-2.5 rounded-xl bg-primary py-3.5 text-[15px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? (
           <div className="flex items-center gap-2">
@@ -173,7 +214,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
               <path d="M6.4 13.93a6 6 0 0 1 0-3.83V7.52H3.07a10 10 0 0 0 0 8.98l3.33-2.57Z" opacity="0.5" />
               <path d="M12 5.98c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.95 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52L6.4 10.1C7.2 7.74 9.4 5.98 12 5.98Z" opacity="0.86" />
             </svg>
-            <span>Continue with Google</span>
+            <span>{mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}</span>
           </>
         )}
       </button>
