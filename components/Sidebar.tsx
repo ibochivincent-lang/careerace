@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, BookOpen, Target, TrendingUp, Bell,
-  Settings, Brain, Sparkles, Database
+  Settings, Brain, Sparkles, Database, Briefcase
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
@@ -12,19 +12,17 @@ import { getStreak } from '@/lib/storage'
 import { useState, useEffect } from 'react'
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard',     icon: LayoutDashboard },
-  // The memory-backed tutor. Everything below /tutor, /memory and /coaches
-  // reads one learning record stored on Walrus under the student's own address.
-  { label: 'Tutor',     href: '/tutor',         icon: Sparkles },
-  { label: 'Memory',    href: '/memory',        icon: Database },
-  { label: 'Study',     href: '/session/new',   icon: BookOpen },
-  { label: 'Practice',  href: '/practice',      icon: Target },
-  { label: 'Progress',  href: '/progress',      icon: TrendingUp },
-  { label: 'Notifications', href: '/notifications', icon: Bell },
+  { label: 'Job Engine & CV',  href: '/',                  icon: Briefcase },
+  { label: 'Applications',     href: '/application_board', icon: LayoutDashboard },
+  { label: 'Interview Room',   href: '/interview_room',    icon: Target },
+  { label: 'Career Vault',     href: '/memory',            icon: Database },
+  { label: 'Career Coach',     href: '/tutor',             icon: Sparkles },
+  { label: 'Accomplishments',  href: '/progress',          icon: TrendingUp },
+  { label: 'Notifications',    href: '/notifications',     icon: Bell },
 ]
 
 function isActive(href: string, pathname: string): boolean {
-  if (href === '/dashboard') return pathname === '/dashboard'
+  if (href === '/') return pathname === '/'
   return pathname.startsWith(href.split('?')[0])
 }
 
@@ -41,12 +39,12 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-60 bg-sidebar border-r border-sidebar-border z-30">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 h-14 border-b border-sidebar-border flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-brand-gradient flex items-center justify-center flex-shrink-0">
-          <Brain className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground font-bold">
+          <Briefcase className="w-4 h-4" />
         </div>
         <div>
-          <span className="font-bold text-sm leading-none block text-sidebar-foreground">ExamAce</span>
-          <span className="text-[10px] text-muted-foreground leading-none">Socratic AI Tutor</span>
+          <span className="font-bold text-sm leading-none block text-sidebar-foreground">Career Ace</span>
+          <span className="text-[10px] text-muted-foreground leading-none">by IboTV</span>
         </div>
       </div>
 

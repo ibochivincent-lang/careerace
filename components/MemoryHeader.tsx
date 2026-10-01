@@ -4,9 +4,11 @@ import { ApiKeysMenu } from './ApiKeysMenu'
 import { cn } from './ui/utils'
 
 const TABS = [
-  { href: '/tutor', label: 'Tutor' },
-  { href: '/memory', label: 'Memory' },
-  { href: '/coaches', label: 'Coaches' },
+  { href: '/', label: 'Job Engine & CV' },
+  { href: '/application_board', label: 'Applications' },
+  { href: '/interview_room', label: 'Interview Room' },
+  { href: '/memory', label: 'Career Vault' },
+  { href: '/tutor', label: 'Career Coach' },
 ]
 
 /**

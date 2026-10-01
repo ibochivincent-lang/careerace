@@ -23,6 +23,9 @@ export default function CareerAcePage() {
   const [isHarvesting, setIsHarvesting] = useState(false)
   const [harvestedJobs, setHarvestedJobs] = useState<any[]>([])
 
+  const [evaluatingJobId, setEvaluatingJobId] = useState<string | null>(null)
+  const [evaluationResults, setEvaluationResults] = useState<Record<string, any>>({})
+
   async function handleCvSubmit() {
     setIsParsing(true)
     try {
@@ -64,6 +67,31 @@ export default function CareerAcePage() {
       console.error(e)
     } finally {
       setIsHarvesting(false)
+    }
+  }
+
+  async function handleEvaluateJob(job: any) {
+    setEvaluatingJobId(job.job_id)
+    try {
+      const res = await fetch('/api/evaluation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job,
+          cv_text: cvText || (parsedProfile ? JSON.stringify(parsedProfile) : "")
+        })
+      })
+      const data = await res.json()
+      if (data.evaluation) {
+        setEvaluationResults((prev) => ({
+          ...prev,
+          [job.job_id]: data
+        }))
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setEvaluatingJobId(null)
     }
   }
 
@@ -181,24 +209,70 @@ export default function CareerAcePage() {
             </Card>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
-              {harvestedJobs.map((job, idx) => (
-                <Card key={idx} className="p-6 transition-all hover:shadow-md">
-                  <div className="flex justify-between items-start mb-3">
+              {harvestedJobs.map((job, idx) => {
+                const evalData = evaluationResults[job.job_id];
+                const isEvaluating = evaluatingJobId === job.job_id;
+
+                return (
+                  <Card key={idx} className="p-6 transition-all hover:shadow-md flex flex-col justify-between">
                     <div>
-                      <h3 className="font-bold text-lg">{job.title}</h3>
-                      <p className="text-sm text-muted-foreground">{job.company} • {job.location}</p>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-bold text-lg">{job.title}</h3>
+                          <p className="text-sm text-muted-foreground">{job.company} • {job.location}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge variant="secondary" className="capitalize">{job.job_type || 'Remote'}</Badge>
+                          {evalData && (
+                            <Badge variant={evalData.evaluation.fit_score >= 6 ? "default" : "destructive"}>
+                              Score: {evalData.evaluation.fit_score}/10
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-sm line-clamp-3 mb-4 text-muted-foreground">{job.description}</p>
+
+                      {evalData && (
+                        <div className="mb-4 p-3 rounded-md bg-secondary/30 text-xs space-y-1">
+                          <div className="font-semibold text-foreground">
+                            {evalData.application.track === "track_a_auto_apply" ? "Track A: Auto-Apply Ready" : "Track B: Manual Review Queue"}
+                          </div>
+                          <div className="text-muted-foreground">{evalData.evaluation.match_reason}</div>
+                          {evalData.tailored_package && (
+                            <div className="text-primary font-medium mt-1">
+                              Cover letter & tailored CV generated and logged.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <Badge variant="secondary" className="capitalize">{job.job_type || 'Remote'}</Badge>
-                  </div>
-                  <p className="text-sm line-clamp-3 mb-4 text-muted-foreground">{job.description}</p>
-                  <div className="flex items-center justify-between pt-3 border-t text-xs">
-                    <span className="text-muted-foreground">Source: {job.source}</span>
-                    <a href={job.apply_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
-                      Apply Direct <ChevronRight className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                </Card>
-              ))}
+
+                    <div className="pt-3 border-t text-xs flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-muted-foreground">Source: {job.source}</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleEvaluateJob(job)}
+                          disabled={isEvaluating}
+                        >
+                          <Sparkles className="w-3.5 h-3.5 mr-1" />
+                          {isEvaluating ? 'Scoring...' : evalData ? 'Re-Score' : 'Score Fit'}
+                        </Button>
+                        <a
+                          href={job.apply_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                        >
+                          Apply Direct <ChevronRight className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

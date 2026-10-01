@@ -34,6 +34,11 @@ export { availableProviders, resolveProvider };
 // from the person's cookie.
 async function factory(provider: Provider, apiKey: string) {
   switch (provider) {
+    case "openrouter":
+      return (await import("@ai-sdk/openai")).createOpenAI({
+        apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+      });
     case "anthropic":
       return (await import("@ai-sdk/anthropic")).createAnthropic({ apiKey });
     case "openai":

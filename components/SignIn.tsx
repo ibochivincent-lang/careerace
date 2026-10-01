@@ -181,8 +181,8 @@ export function SignIn() {
       )}
 
       <p className="mt-7 border-t pt-5 text-[11px] leading-relaxed text-muted-foreground">
-        Study support only — not a substitute for your teacher. Your record is encrypted before it
-        leaves this device, and only you hold the keys.
+        Autonomous career guidance & job matching. Your candidate work experience and accomplishments are encrypted before
+        leaving this device, and stored in decentralized Walrus Memory under your Sui zkLogin key.
       </p>
     </div>
   )
