@@ -1,12 +1,41 @@
 import { NextResponse } from "next/server";
 import { parseCvText } from "@/lib/cv_parser";
-import { generatePostApplicationInterviewPrep } from "@/lib/interview_coach";
+import { generatePostApplicationInterviewPrep, evaluateStarAnswer } from "@/lib/interview_coach";
+import { getOwnerAddress } from "@/lib/session";
+import { rememberFact } from "@/lib/memory_contract";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { application, cv_text } = body;
+    const { action, question, answer, application, cv_text } = body;
 
+    // Action: evaluate candidate STAR+R response
+    if (action === "evaluate_answer") {
+      if (!answer || typeof answer !== "string" || !answer.trim()) {
+        return NextResponse.json({ error: "Candidate answer text is required." }, { status: 400 });
+      }
+
+      const qText = question || "Technical behavioral interview question";
+      const evaluation = evaluateStarAnswer(qText, answer, application?.title);
+
+      // Record interview assessment into candidate's sovereign Walrus Memory
+      try {
+        const address = await getOwnerAddress();
+        if (address) {
+          const summary = `STAR+R Evaluation: ${evaluation.overall_score}/10 on "${qText.slice(0, 48)}..." | ${evaluation.coach_critique}`;
+          await rememberFact(address, "interview_feedback", summary).catch(() => {});
+        }
+      } catch (err) {
+        console.warn("[interview] Walrus Memory feedback indexing skipped:", err);
+      }
+
+      return NextResponse.json({
+        success: true,
+        evaluation,
+      });
+    }
+
+    // Default action: generate questions
     const cv = parseCvText(cv_text || "");
     const appData = application || {
       job_id: `job_${Date.now()}`,
@@ -27,7 +56,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Interview prep generation failed" },
+      { error: error instanceof Error ? error.message : "Interview prep failed" },
       { status: 500 }
     );
   }
