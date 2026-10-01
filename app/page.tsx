@@ -12,7 +12,8 @@ import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
-  ChevronRight, Paperclip, Sparkles, LogIn
+  ChevronRight, Paperclip, Sparkles, LogIn, MessageSquare,
+  Award, User, GraduationCap, Send, Bot, Check
 } from 'lucide-react'
 
 export default function CareerAcePage() {
@@ -27,6 +28,48 @@ export default function CareerAcePage() {
 
   const [evaluatingJobId, setEvaluatingJobId] = useState<string | null>(null)
   const [evaluationResults, setEvaluationResults] = useState<Record<string, any>>({})
+
+  // Active AI Copilot Chatbot state
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    {
+      role: 'assistant',
+      content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV or paste it above to get instant role matching, tailored CV impact points, and mock interview prep.'
+    }
+  ])
+  const [chatInput, setChatInput] = useState('')
+  const [isSending, setIsSending] = useState(false)
+
+  async function handleSendMessage(customPrompt?: string) {
+    const text = customPrompt || chatInput
+    if (!text.trim() || isSending) return
+
+    const newMsgs = [...chatMessages, { role: 'user' as const, content: text }]
+    setChatMessages(newMsgs)
+    if (!customPrompt) setChatInput('')
+    setIsSending(true)
+
+    try {
+      const res = await fetch('/api/copilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMsgs,
+          cv_profile: parsedProfile
+        })
+      })
+      const data = await res.json()
+      if (data.content) {
+        setChatMessages((prev) => [...prev, { role: 'assistant', content: data.content }])
+      }
+    } catch (e) {
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Could not connect right now. Please try again.' }
+      ])
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -123,7 +166,8 @@ export default function CareerAcePage() {
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#cv-upload" className="hover:text-foreground transition-colors">CV File Upload</a>
+            <a href="#cv-upload" className="hover:text-foreground transition-colors">CV Showcase</a>
+            <a href="#copilot" className="hover:text-foreground transition-colors">AI Copilot</a>
             <a href="#jobs" className="hover:text-foreground transition-colors">Job Matcher</a>
           </nav>
 
@@ -203,9 +247,193 @@ export default function CareerAcePage() {
               </Button>
               {parsedProfile && (
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
-                  <CheckCircle2 className="w-4 h-4" /> Profile Updated: {parsedProfile.skills?.length} skills extracted
+                  <CheckCircle2 className="w-4 h-4" /> Profile Ingested & Highlighted
                 </div>
               )}
+            </div>
+          </Card>
+
+          {/* Interactive Candidate CV Showcase & Highlight Panel */}
+          {parsedProfile && (
+            <Card className="p-8 border-2 border-primary/20 bg-card/60 shadow-md mt-6 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-primary" />
+                    <h3 className="text-xl font-bold">{parsedProfile.applicant_name}</h3>
+                    <Badge variant="outline">Verified Candidate</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {parsedProfile.email} {parsedProfile.github_url && `• ${parsedProfile.github_url}`}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {parsedProfile.target_roles?.map((role: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="px-3 py-1 font-semibold">
+                      {role}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Skills Highlights */}
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" /> Highlighted Technical Skills
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {parsedProfile.skills?.map((skill: string, idx: number) => (
+                    <Badge
+                      key={idx}
+                      variant="outline"
+                      className="px-3 py-1 bg-primary/10 text-primary border-primary/30 text-sm font-medium"
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Work Experience Showcase */}
+              {parsedProfile.work_experience?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-primary" /> Verified Work Experience
+                  </h4>
+                  <div className="space-y-3">
+                    {parsedProfile.work_experience.map((exp: any, idx: number) => (
+                      <div key={idx} className="p-4 rounded-lg border bg-background/50">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-bold text-sm text-foreground">{exp.role} @ {exp.company}</span>
+                          <span className="text-xs text-muted-foreground">{exp.duration}</span>
+                        </div>
+                        <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mt-2">
+                          {exp.highlights?.map((h: string, hIdx: number) => (
+                            <li key={hIdx} className="leading-relaxed">{h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Academic History & Certifications */}
+              {parsedProfile.academic_history?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-primary" /> Academic History & Certifications
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {parsedProfile.academic_history.map((edu: any, idx: number) => (
+                      <div key={idx} className="p-4 rounded-lg border bg-background/50 text-xs">
+                        <div className="font-bold text-foreground">{edu.degree} in {edu.field_of_study}</div>
+                        <div className="text-muted-foreground">{edu.institution} • {edu.graduation_year}</div>
+                        {edu.achievements && (
+                          <div className="mt-2 text-primary font-medium">{edu.achievements.join(" • ")}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+
+        {/* ── Active AI Career Copilot Chatbot ──────────────────────────────── */}
+        <div id="copilot" className="mb-16 scroll-mt-24">
+          <Card className="p-6 border-2 shadow-lg bg-card flex flex-col h-[560px]">
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Career Ace AI Copilot</h3>
+                  <p className="text-xs text-muted-foreground">Autonomous Job Matching, CV Bullet Polishing & Interview Coaching</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live & Ready
+              </Badge>
+            </div>
+
+            {/* Chat Messages Log */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {msg.role === 'assistant' && (
+                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                      AI
+                    </div>
+                  )}
+                  <div
+                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[80%] whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                        : 'bg-muted/70 text-foreground rounded-tl-sm border border-border/40'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isSending && (
+                <div className="flex gap-3 justify-start">
+                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                    AI
+                  </div>
+                  <div className="rounded-2xl px-4 py-2.5 text-sm bg-muted/70 text-muted-foreground rounded-tl-sm border border-border/40 animate-pulse">
+                    Thinking and strategizing...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Prompt Starters */}
+            <div className="flex flex-wrap gap-2 pt-3 border-t mt-3">
+              <button
+                type="button"
+                onClick={() => handleSendMessage("Analyze my uploaded CV and tell me my strongest roles")}
+                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+              >
+                Analyze my top roles
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage("How can I tailor my CV bullets to get higher match scores?")}
+                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+              >
+                Improve CV match score
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage("Give me a STAR+R interview question for fullstack engineering")}
+                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+              >
+                Mock interview question
+              </button>
+            </div>
+
+            {/* Chat Input Bar */}
+            <div className="flex items-center gap-2 mt-3 pt-2">
+              <input
+                type="text"
+                placeholder="Ask Career Ace anything about your job search, CV, or interview prep..."
+                className="flex-1 bg-background border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSendMessage()
+                }}
+              />
+              <Button onClick={() => handleSendMessage()} disabled={isSending || !chatInput.trim()}>
+                <Send className="w-4 h-4 mr-1.5" /> Send
+              </Button>
             </div>
           </Card>
         </div>
