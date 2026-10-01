@@ -23,13 +23,21 @@ function toRows(facts: { text: string; distance: number }[]): Row[] {
 }
 
 const KIND_COLOR: Record<string, string> = {
+  experience: 'var(--primary)',
+  education: '#38bdf8',
+  skill: '#34d399',
+  target_role: '#a78bfa',
+  tailored_cv: '#f472b6',
+  application: '#fbbf24',
+  interview_feedback: 'var(--reward)',
+  preference: 'var(--muted-foreground)',
+  clearance: '#94a3b8',
+  // legacy fallbacks
   misconception: 'var(--destructive)',
   weakness: 'var(--reward)',
   error_pattern: 'var(--reward)',
   mastery: 'var(--primary)',
-  goal: 'var(--primary)',
-  clearance: 'var(--primary)',
-  preference: 'var(--muted-foreground)',
+  goal: '#a78bfa',
 }
 
 export default async function MemoryPage() {
@@ -51,10 +59,16 @@ export default async function MemoryPage() {
         <div className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-10">
           <div className="flex flex-wrap items-end justify-between gap-8">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Your learning record</h1>
-              <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-muted-foreground">
-                Everything the tutor can recall about you, and nothing it can&apos;t. Every entry is
-                dated, so a newer fact always beats an older one.
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                  Walrus Memory
+                </span>
+                <span className="font-mono text-xs text-muted-foreground">careerace:profile</span>
+              </div>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight">Your Sovereign Career Vault</h1>
+              <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-muted-foreground">
+                Verified work history, competencies, tailored CV versions, and STAR+R interview coach records
+                persisted on Walrus decentralized storage. Every entry is cryptographically sealed under your Sui zkLogin identity.
               </p>
             </div>
             <dl className="flex gap-7 pb-1">
@@ -74,23 +88,26 @@ export default async function MemoryPage() {
           </div>
 
           {/* the ledger */}
-          <div className="mt-7 overflow-hidden rounded-xl border">
-            <div className="grid grid-cols-[104px_120px_minmax(0,1fr)_88px_76px] gap-4 border-b bg-muted/40 px-4 py-2.5">
-              {['Date', 'Kind', 'Fact', 'Distance', ''].map((h, i) => (
+          <div className="mt-7 overflow-hidden rounded-xl border bg-card">
+            <div className="grid grid-cols-[104px_140px_minmax(0,1fr)_88px_76px] gap-4 border-b bg-muted/40 px-4 py-2.5">
+              {['Date', 'Kind', 'Career Record', 'Distance', ''].map((h, i) => (
                 <span key={i} className="text-[10px] uppercase tracking-wider text-muted-foreground">{h}</span>
               ))}
             </div>
 
             {active.length === 0 && superseded.length === 0 && retracted.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-                Nothing stored yet. Work through a question with the tutor and it will appear here.
-              </p>
+              <div className="px-4 py-14 text-center">
+                <p className="text-sm font-medium">Nothing stored in your Career Vault yet.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Upload your CV on the Job Engine or practice in the Interview Room to index your verified credentials on Walrus.
+                </p>
+              </div>
             ) : (
               <>
                 {active.map((r, i) => (
                   <div
                     key={`${r.date}-${r.claim}-${i}`}
-                    className="grid grid-cols-[104px_120px_minmax(0,1fr)_88px_76px] items-center gap-4 border-b px-4 py-3.5 last:border-b-0"
+                    className="grid grid-cols-[104px_140px_minmax(0,1fr)_88px_76px] items-center gap-4 border-b px-4 py-3.5 last:border-b-0"
                   >
                     <span className="font-mono text-xs text-muted-foreground">{r.date}</span>
                     <span
@@ -132,27 +149,25 @@ export default async function MemoryPage() {
             <section className="rounded-xl border border-reward/50 bg-reward/5 px-5 py-4">
               <h2 className="mb-2.5 flex items-center gap-2.5 text-sm font-medium">
                 <AlertTriangle className="size-4 text-reward" />
-                About forgetting
+                About Sovereign Retractions
               </h2>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Forgetting writes a retraction that outranks the fact, so nothing can recall it
-                again — not this app, not any agent holding your key. It is not deletion: there is
+                Forgetting writes an onchain retraction tombstone that outranks the fact, ensuring nothing can recall it
+                again — not this app, not any external AI agent holding your delegate key. It is not deletion: there is
                 no delete in Walrus Memory. The encrypted entry stays on Walrus, under keys only
-                you hold, until its storage period expires. We won&apos;t pretend otherwise.
+                you hold, until its storage period expires.
               </p>
             </section>
 
             <section className="rounded-xl border border-destructive/40 px-5 py-4">
               <h2 className="mb-2.5 flex items-center gap-2.5 text-sm font-medium">
                 <RotateCcw className="size-4 text-destructive" />
-                Revoke app access
+                Revoke App Access
               </h2>
               <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-                Removes this app&apos;s delegate key from your account onchain, without asking the
-                app. Only you can undo it. Be clear on what it does: revocation is forward-only.
-                The key stops reading anything saved after you revoke it — but entries already
-                saved stay readable to that key until they are re-encrypted. If you need those
-                closed off too, retract them above.
+                Removes this app&apos;s delegate key from your Sui account onchain. Revocation is forward-only:
+                the key stops reading anything saved after you revoke it, while previously saved entries remain readable
+                to that key until re-encrypted. If you need older entries closed off, retract them above.
               </p>
               <button
                 type="button"

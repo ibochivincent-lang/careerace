@@ -70,15 +70,22 @@ const CORRECTED =
 try {
   const init = await call("initialize", {
     protocolVersion: "2024-11-05", capabilities: {},
-    clientInfo: { name: "examace-probe", version: "1" },
+    clientInfo: { name: "careerace-probe", version: "1" },
   });
-  check("handshake", init.result?.serverInfo?.name === "examace", init.result?.protocolVersion);
+  check("handshake", init.result?.serverInfo?.name === "careerace", init.result?.protocolVersion);
 
   child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
 
   const tools = await call("tools/list", {});
   const names = tools.result.tools.map((t) => t.name).sort();
-  check("tools advertised", names.length === 5, names.join(", "));
+  check(
+    "tools advertised",
+    names.includes("upload_resume_tool") &&
+    names.includes("recall_career_vault_tool") &&
+    names.includes("tailor_cv_tool") &&
+    names.includes("fill_application_tool"),
+    names.join(", ")
+  );
 
   const resources = await call("resources/list", {});
   check("resource advertised", resources.result.resources.length === 1, resources.result.resources[0]?.uri);

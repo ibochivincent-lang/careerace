@@ -1,4 +1,4 @@
-import { RawJob } from "./job_harvester";
+import type { RawJob } from "./job_harvester.ts";
 
 export interface NormalizedJob {
   job_id: string;

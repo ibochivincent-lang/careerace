@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { parseCvText, parseCvWithAi } from "@/lib/cv_parser";
+import { getOwnerAddress } from "@/lib/session";
+import { uploadEncryptedResumeToWalrus } from "@/lib/walrus_storage";
+import { rememberFact } from "@/lib/memory_contract";
 import zlib from "zlib";
 
 export async function POST(req: Request) {
@@ -8,6 +11,7 @@ export async function POST(req: Request) {
     let cvText = "";
     let fileName = "";
     let extractionMethod = "text";
+    let fileBuffer: Buffer | null = null;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -18,12 +22,17 @@ export async function POST(req: Request) {
       if (clientExtractedText && clientExtractedText.trim().length > 10) {
         cvText = clientExtractedText.trim();
         extractionMethod = "browser_pdf_extraction";
-        if (file) fileName = file.name;
+        if (file) {
+          fileName = file.name;
+          const arrayBuffer = await file.arrayBuffer();
+          fileBuffer = Buffer.from(arrayBuffer);
+        }
       } else if (file) {
         fileName = file.name;
         const lowerName = file.name.toLowerCase();
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        fileBuffer = buffer;
 
         if (lowerName.endsWith(".txt") || file.type.includes("text")) {
           cvText = buffer.toString("utf-8");
@@ -88,6 +97,56 @@ export async function POST(req: Request) {
       // AI parsing failed silently; rule-based result is used
     }
 
+    // Walrus Sovereign Encrypted Resume Storage & Career Vault Memory Indexing
+    let walrusVaultResult = null;
+    try {
+      const address = await getOwnerAddress();
+      if (address) {
+        const uploadBuffer = fileBuffer || Buffer.from(cvText, "utf-8");
+        const docName = fileName || "Candidate_Resume.txt";
+        const walrusResult = await uploadEncryptedResumeToWalrus(
+          uploadBuffer,
+          address,
+          docName
+        );
+
+        await rememberFact(
+          address,
+          "tailored_cv",
+          `Walrus Encrypted Resume: ${docName} | blobId: ${walrusResult.blobId} | digest: ${walrusResult.sha256Digest.slice(0, 16)}`
+        ).catch(() => {});
+
+        // Index core skills into candidate's sovereign profile
+        if (finalProfile.skills && Array.isArray(finalProfile.skills)) {
+          for (const skill of finalProfile.skills.slice(0, 5)) {
+            await rememberFact(address, "skill", `Skill: ${skill}`).catch(() => {});
+          }
+        }
+
+        // Index target roles
+        if (finalProfile.target_roles && Array.isArray(finalProfile.target_roles)) {
+          for (const role of finalProfile.target_roles.slice(0, 2)) {
+            await rememberFact(address, "target_role", `Target role: ${role}`).catch(() => {});
+          }
+        }
+
+        // Index primary work experience
+        if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
+          for (const exp of finalProfile.work_experience.slice(0, 2)) {
+            await rememberFact(
+              address,
+              "experience",
+              `${exp.role} at ${exp.company}${exp.duration ? ` (${exp.duration})` : ""}`
+            ).catch(() => {});
+          }
+        }
+
+        walrusVaultResult = walrusResult;
+      }
+    } catch (walrusErr) {
+      console.warn("[cv_upload] Walrus storage indexing skipped or failed:", walrusErr);
+    }
+
     return NextResponse.json({
       success: true,
       file_name: fileName || "Pasted Resume Text",
@@ -96,6 +155,7 @@ export async function POST(req: Request) {
       extracted_text_length: cvText.length,
       extracted_text: cvText,
       profile: finalProfile,
+      walrus_vault: walrusVaultResult,
     });
   } catch (error) {
     console.error("[cv_upload] Error:", error);
