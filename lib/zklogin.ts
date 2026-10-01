@@ -11,11 +11,6 @@ import {
 const NETWORK = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "testnet") as "testnet" | "mainnet";
 
 const GRAPHQL_URL = `https://graphql.${NETWORK}.sui.io/graphql`;
-const PROVER_URL =
-  NETWORK === "mainnet"
-    ? "https://prover.mystenlabs.com/v1"
-    : "https://prover-dev.mystenlabs.com/v1";
-
 const STORAGE_KEYS = {
   EPHEMERAL_KEY: "ea_zk_ephemeral_key",
   MAX_EPOCH: "ea_zk_max_epoch",
@@ -112,12 +107,10 @@ export async function completeGoogleZkLogin(jwt: string): Promise<{ address: str
   // 2. Derive Sui zkLogin address
   const suiAddress = jwtToAddress(jwt, userSalt, false);
 
-  // 3. Request ZK proof from Mysten's public prover
-  const extendedEphemeralPublicKey = getExtendedEphemeralPublicKey(
-    ephemeralKeypair.getPublicKey()
-  );
+  // 3. Request ZK proof via our server-side proxy (avoids CORS issues with direct browser calls)
+  const extendedEphemeralPublicKey = getExtendedEphemeralPublicKey(ephemeralKeypair.getPublicKey());
 
-  const proverRes = await fetch(PROVER_URL, {
+  const proverRes = await fetch("/api/auth/proof", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -132,7 +125,7 @@ export async function completeGoogleZkLogin(jwt: string): Promise<{ address: str
 
   if (!proverRes.ok) {
     const errorBody = await proverRes.text();
-    throw new Error(`Sui ZK Prover error: ${errorBody}`);
+    throw new Error(`ZK proof generation failed: ${errorBody}`);
   }
 
   const zkProof = await proverRes.json();
