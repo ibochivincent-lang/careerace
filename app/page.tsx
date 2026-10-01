@@ -14,7 +14,8 @@ import { toast } from 'sonner'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, Paperclip, Sparkles, LogIn, MessageSquare,
-  Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X, AlertCircle
+  Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X, AlertCircle,
+  Building, ShieldCheck
 } from 'lucide-react'
 
 export default function CareerAcePage() {
@@ -38,10 +39,22 @@ export default function CareerAcePage() {
       content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV or paste it above to get instant role matching, tailored CV impact points, and mock interview prep.'
     }
   ])
+
   // Editable custom skills and achievements
   const [newSkillInput, setNewSkillInput] = useState('')
   const [newAchievementInput, setNewAchievementInput] = useState('')
   const [newRoleInput, setNewRoleInput] = useState('')
+
+  // Editable institutions, degrees, experiences, and certifications
+  const [newInstInput, setNewInstInput] = useState('')
+  const [newDegreeInput, setNewDegreeInput] = useState('')
+  const [newEduYearInput, setNewEduYearInput] = useState('')
+
+  const [newExpCompany, setNewExpCompany] = useState('')
+  const [newExpRole, setNewExpRole] = useState('')
+  const [newExpDuration, setNewExpDuration] = useState('')
+
+  const [newCertInput, setNewCertInput] = useState('')
 
   function handleAddSkill() {
     if (!newSkillInput.trim() || !parsedProfile) return
@@ -58,6 +71,25 @@ export default function CareerAcePage() {
     const updated = {
       ...parsedProfile,
       skills: (parsedProfile.skills || []).filter((s: string) => s !== skillToRemove)
+    }
+    setParsedProfile(updated)
+  }
+
+  function handleAddRole() {
+    if (!newRoleInput.trim() || !parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      target_roles: [...(parsedProfile.target_roles || []), newRoleInput.trim()]
+    }
+    setParsedProfile(updated)
+    setNewRoleInput('')
+  }
+
+  function handleRemoveRole(roleToRemove: string) {
+    if (!parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      target_roles: (parsedProfile.target_roles || []).filter((r: string) => r !== roleToRemove)
     }
     setParsedProfile(updated)
   }
@@ -81,21 +113,79 @@ export default function CareerAcePage() {
     setParsedProfile(updated)
   }
 
-  function handleAddRole() {
-    if (!newRoleInput.trim() || !parsedProfile) return
+  function handleAddEducation() {
+    if ((!newInstInput.trim() && !newDegreeInput.trim()) || !parsedProfile) return
+    const newEdu = {
+      institution: newInstInput.trim() || 'Higher Institution',
+      degree: newDegreeInput.trim() || "Bachelor's Degree",
+      field_of_study: newDegreeInput.trim(),
+      graduation_year: newEduYearInput.trim() || '',
+      achievements: []
+    }
     const updated = {
       ...parsedProfile,
-      target_roles: [...(parsedProfile.target_roles || []), newRoleInput.trim()]
+      academic_history: [...(parsedProfile.academic_history || []), newEdu]
     }
     setParsedProfile(updated)
-    setNewRoleInput('')
+    setNewInstInput('')
+    setNewDegreeInput('')
+    setNewEduYearInput('')
+    toast.success('Education entry added.')
   }
 
-  function handleRemoveRole(roleToRemove: string) {
+  function handleRemoveEducation(idxToRemove: number) {
     if (!parsedProfile) return
     const updated = {
       ...parsedProfile,
-      target_roles: (parsedProfile.target_roles || []).filter((r: string) => r !== roleToRemove)
+      academic_history: (parsedProfile.academic_history || []).filter((_: any, idx: number) => idx !== idxToRemove)
+    }
+    setParsedProfile(updated)
+  }
+
+  function handleAddExperience() {
+    if ((!newExpCompany.trim() && !newExpRole.trim()) || !parsedProfile) return
+    const newExp = {
+      company: newExpCompany.trim() || 'Organization',
+      role: newExpRole.trim() || 'Specialist',
+      duration: newExpDuration.trim() || 'Present',
+      highlights: []
+    }
+    const updated = {
+      ...parsedProfile,
+      work_experience: [...(parsedProfile.work_experience || []), newExp]
+    }
+    setParsedProfile(updated)
+    setNewExpCompany('')
+    setNewExpRole('')
+    setNewExpDuration('')
+    toast.success('Work experience entry added.')
+  }
+
+  function handleRemoveExperience(idxToRemove: number) {
+    if (!parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      work_experience: (parsedProfile.work_experience || []).filter((_: any, idx: number) => idx !== idxToRemove)
+    }
+    setParsedProfile(updated)
+  }
+
+  function handleAddCertification() {
+    if (!newCertInput.trim() || !parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      certifications: [...(parsedProfile.certifications || []), newCertInput.trim()]
+    }
+    setParsedProfile(updated)
+    setNewCertInput('')
+    toast.success('Certification added.')
+  }
+
+  function handleRemoveCertification(certToRemove: string) {
+    if (!parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      certifications: (parsedProfile.certifications || []).filter((c: string) => c !== certToRemove)
     }
     setParsedProfile(updated)
   }
@@ -146,12 +236,70 @@ export default function CareerAcePage() {
       .catch(() => {})
   }, [])
 
+  /**
+   * Automatically handle file selection:
+   * 1. Read plaintext immediately if .txt
+   * 2. Send file to /api/cv_upload to decompress & extract text
+   * 3. Populate cvText in the textarea so user sees the extracted text right away
+   * 4. Populate parsed profile with institution, degree, experience, certifications, and skills
+   */
+  async function handleFileSelect(file: File | null) {
+    setSelectedFile(file)
+    if (!file) return
+
+    if (file.name.endsWith('.txt') || file.type.includes('text')) {
+      try {
+        const text = await file.text()
+        setCvText(text)
+      } catch (err) {
+        console.error('Error reading text file:', err)
+      }
+    }
+
+    setIsParsing(true)
+    setParseError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/cv_upload', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        const errMsg = data.error || 'Failed to extract CV file'
+        setParseError(errMsg)
+        toast.error(errMsg)
+        return
+      }
+      if (data.extracted_text) {
+        setCvText(data.extracted_text)
+      }
+      if (data.profile) {
+        setParsedProfile(data.profile)
+        const skillCount = data.profile.skills?.length || 0
+        const expCount = data.profile.work_experience?.length || 0
+        const eduCount = data.profile.academic_history?.length || 0
+        const certCount = data.profile.certifications?.length || 0
+        toast.success(
+          `CV uploaded: Text displayed in box. Found ${eduCount} education/institution, ${expCount} experience, ${certCount} certs, ${skillCount} skills.`
+        )
+      }
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : 'Upload extraction failed'
+      setParseError(errMsg)
+      toast.error(errMsg)
+    } finally {
+      setIsParsing(false)
+    }
+  }
+
   async function handleCvSubmit() {
     setIsParsing(true)
     setParseError(null)
     try {
       let res: Response
-      if (selectedFile) {
+      if (selectedFile && !cvText.trim()) {
         const formData = new FormData()
         formData.append('file', selectedFile)
         res = await fetch('/api/cv_upload', {
@@ -172,12 +320,17 @@ export default function CareerAcePage() {
         toast.error(errMsg)
         return
       }
+      if (data.extracted_text && !cvText.trim()) {
+        setCvText(data.extracted_text)
+      }
       if (data.profile) {
         setParsedProfile(data.profile)
         const skillCount = data.profile.skills?.length || 0
         const expCount = data.profile.work_experience?.length || 0
+        const eduCount = data.profile.academic_history?.length || 0
+        const certCount = data.profile.certifications?.length || 0
         toast.success(
-          `CV parsed successfully: ${skillCount} skills, ${expCount} work entries found.`
+          `CV parsed: ${eduCount} institution/degree, ${expCount} work entries, ${certCount} certifications, ${skillCount} skills.`
         )
       } else {
         setParseError('No profile data returned. Try pasting your CV text directly.')
@@ -216,7 +369,7 @@ export default function CareerAcePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job,
-          cv_text: cvText || (parsedProfile ? JSON.stringify(parsedProfile) : "")
+          cv_text: cvText || (parsedProfile ? JSON.stringify(parsedProfile) : '')
         })
       })
       const data = await res.json()
@@ -294,7 +447,7 @@ export default function CareerAcePage() {
               <Paperclip className="w-6 h-6 text-primary" /> Candidate CV File Attachment
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Attach your CV/Resume file (<code className="font-mono text-xs">.pdf</code>, <code className="font-mono text-xs">.docx</code>, <code className="font-mono text-xs">.txt</code>) or paste raw text below to ingest into your encrypted vault.
+              Attach your CV/Resume file (<code className="font-mono text-xs">.pdf</code>, <code className="font-mono text-xs">.docx</code>, <code className="font-mono text-xs">.txt</code>) or paste raw text below to ingest into your encrypted vault. Once uploaded, the extracted text will automatically display in the text box below.
             </p>
 
             {/* File Dropzone */}
@@ -303,11 +456,14 @@ export default function CareerAcePage() {
                 type="file"
                 accept=".pdf,.docx,.txt"
                 className="absolute inset-0 opacity-0 cursor-pointer"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
               />
               <Upload className="w-8 h-8 text-primary mx-auto mb-2" />
               {selectedFile ? (
-                <p className="text-sm font-medium text-primary">Attached File: {selectedFile.name}</p>
+                <div>
+                  <p className="text-sm font-medium text-primary">Attached File: {selectedFile.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">File uploaded and text extracted below.</p>
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Drag & drop your resume file here, or <span className="text-primary font-medium underline">browse files</span>
@@ -315,21 +471,30 @@ export default function CareerAcePage() {
               )}
             </div>
 
-            <div className="text-xs text-muted-foreground mb-2 font-medium">Or paste raw text directly:</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground font-medium">
+                CV / Resume Text (Extracted from file or pasted directly):
+              </span>
+              {cvText && (
+                <span className="text-xs text-muted-foreground">
+                  {cvText.length} characters loaded
+                </span>
+              )}
+            </div>
             <textarea
-              className="w-full h-32 p-4 rounded-lg border bg-background font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-4"
-              placeholder="Paste your CV text here if not uploading a file..."
+              className="w-full h-40 p-4 rounded-lg border bg-background font-mono text-xs focus:outline-none focus:ring-2 focus:ring-primary mb-4 leading-relaxed"
+              placeholder="Paste your CV text here or attach a file above to view extracted text..."
               value={cvText}
               onChange={(e) => setCvText(e.target.value)}
             />
 
             <div className="flex items-center justify-between">
               <Button onClick={handleCvSubmit} disabled={isParsing || (!selectedFile && !cvText.trim())}>
-                {isParsing ? 'Parsing Profile...' : 'Parse & Update Vault'}
+                {isParsing ? 'Extracting & Parsing Profile...' : 'Parse & Update Vault'}
               </Button>
               {parsedProfile && (
                 <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
-                  <CheckCircle2 className="w-4 h-4" /> Profile Ingested & Highlighted
+                  <CheckCircle2 className="w-4 h-4" /> Profile Ingested & Highlights Ready
                 </div>
               )}
               {parseError && (
@@ -340,7 +505,7 @@ export default function CareerAcePage() {
             </div>
             {isParsing && (
               <div className="mt-3 text-xs text-muted-foreground animate-pulse">
-                Extracting text and analyzing your CV... This may take a few seconds.
+                Extracting CV content, detecting institution, degree, work experience, certifications, and skills...
               </div>
             )}
           </Card>
@@ -348,6 +513,7 @@ export default function CareerAcePage() {
           {/* Interactive Candidate CV Showcase & Highlight Panel */}
           {parsedProfile && (
             <Card className="p-8 border-2 border-primary/20 bg-card/60 shadow-md mt-6 space-y-6">
+              {/* Header Info */}
               <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -394,7 +560,286 @@ export default function CareerAcePage() {
                 </div>
               </div>
 
-              {/* Skills Highlights with Add / Remove Ability */}
+              {/* ── Key Profile Highlights (Institution, Degree, Experience, Certifications) ── */}
+              <div className="p-5 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Core Candidate Highlights
+                  </span>
+                  <Badge variant="secondary" className="text-xs">Highlighted Key Details</Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Highlight 1: Institution & Degree */}
+                  <div className="p-3.5 rounded-lg border bg-background/90 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <GraduationCap className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Institution & Degree
+                      </span>
+                    </div>
+                    {parsedProfile.academic_history && parsedProfile.academic_history.length > 0 ? (
+                      <div>
+                        <div className="font-bold text-sm text-foreground line-clamp-1">
+                          {parsedProfile.academic_history[0].institution}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <Badge variant="outline" className="text-xs font-medium bg-primary/10 text-primary border-primary/30">
+                            {parsedProfile.academic_history[0].degree}
+                          </Badge>
+                          {parsedProfile.academic_history[0].graduation_year && (
+                            <span className="text-xs text-muted-foreground">
+                              ({parsedProfile.academic_history[0].graduation_year})
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Add your institution / degree below</span>
+                    )}
+                  </div>
+
+                  {/* Highlight 2: Work Experience */}
+                  <div className="p-3.5 rounded-lg border bg-background/90 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Briefcase className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Work Experience
+                      </span>
+                    </div>
+                    {parsedProfile.work_experience && parsedProfile.work_experience.length > 0 ? (
+                      <div>
+                        <div className="font-bold text-sm text-foreground line-clamp-1">
+                          {parsedProfile.work_experience[0].role}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {parsedProfile.work_experience[0].company} • {parsedProfile.work_experience[0].duration || 'Verified'}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Add your work experience below</span>
+                    )}
+                  </div>
+
+                  {/* Highlight 3: Certifications */}
+                  <div className="p-3.5 rounded-lg border bg-background/90 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Award className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Certifications & Licenses
+                      </span>
+                    </div>
+                    {parsedProfile.certifications && parsedProfile.certifications.length > 0 ? (
+                      <div>
+                        <div className="font-bold text-sm text-foreground line-clamp-1">
+                          {parsedProfile.certifications[0]}
+                        </div>
+                        <div className="text-xs text-primary font-medium mt-0.5">
+                          {parsedProfile.certifications.length} verified credential{parsedProfile.certifications.length > 1 ? 's' : ''}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Add professional certifications below</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Institution & Bachelor's Degree / Academic History Showcase ── */}
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-primary" /> Institution & Degree History ({parsedProfile.academic_history?.length || 0})
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Institution (e.g. University)..."
+                      value={newInstInput}
+                      onChange={(e) => setNewInstInput(e.target.value)}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-40"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Degree (e.g. Bachelor of Science)..."
+                      value={newDegreeInput}
+                      onChange={(e) => setNewDegreeInput(e.target.value)}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Year (e.g. 2022)..."
+                      value={newEduYearInput}
+                      onChange={(e) => setNewEduYearInput(e.target.value)}
+                      className="text-xs px-2 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-24"
+                    />
+                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddEducation}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {parsedProfile.academic_history?.map((edu: any, idx: number) => (
+                    <div key={idx} className="p-4 rounded-lg border bg-background/50 text-xs relative group">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-semibold">
+                              {edu.degree}
+                            </Badge>
+                            {edu.graduation_year && (
+                              <span className="text-muted-foreground">Class of {edu.graduation_year}</span>
+                            )}
+                          </div>
+                          <div className="font-bold text-sm text-foreground flex items-center gap-1.5 mt-1">
+                            <Building className="w-3.5 h-3.5 text-primary" /> {edu.institution}
+                          </div>
+                          {edu.field_of_study && edu.field_of_study !== edu.degree && (
+                            <div className="text-muted-foreground mt-0.5">Major / Field: {edu.field_of_study}</div>
+                          )}
+                          {edu.achievements && edu.achievements.length > 0 && (
+                            <div className="mt-2 text-primary font-medium">{edu.achievements.join(' • ')}</div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEducation(idx)}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                          title="Remove education entry"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(!parsedProfile.academic_history || parsedProfile.academic_history.length === 0) && (
+                    <p className="text-xs text-muted-foreground italic col-span-2">
+                      No academic history detected. Add your institution and degree using the fields above.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Verified Work Experience Showcase ── */}
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-primary" /> Verified Work Experience ({parsedProfile.work_experience?.length || 0})
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Role (e.g. Senior Engineer)..."
+                      value={newExpRole}
+                      onChange={(e) => setNewExpRole(e.target.value)}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-36"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Company..."
+                      value={newExpCompany}
+                      onChange={(e) => setNewExpCompany(e.target.value)}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Duration (e.g. 2021 - 2024)..."
+                      value={newExpDuration}
+                      onChange={(e) => setNewExpDuration(e.target.value)}
+                      className="text-xs px-2 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-36"
+                    />
+                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddExperience}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {parsedProfile.work_experience?.map((exp: any, idx: number) => (
+                    <div key={idx} className="p-4 rounded-lg border bg-background/50">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-sm text-foreground">
+                          {exp.role} @ {exp.company}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">{exp.duration}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExperience(idx)}
+                            className="text-muted-foreground hover:text-destructive transition-colors ml-1"
+                            title="Remove experience entry"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mt-2">
+                        {exp.highlights?.map((h: string, hIdx: number) => (
+                          <li key={hIdx} className="leading-relaxed">{h}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  {(!parsedProfile.work_experience || parsedProfile.work_experience.length === 0) && (
+                    <p className="text-xs text-muted-foreground italic">
+                      No work experience detected. Add your roles and company details above.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Certifications & Professional Licenses ── */}
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Award className="w-4 h-4 text-primary" /> Professional Certifications & Credentials ({parsedProfile.certifications?.length || 0})
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Add certification (e.g. AWS Solutions Architect)..."
+                      value={newCertInput}
+                      onChange={(e) => setNewCertInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddCertification()
+                      }}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-60"
+                    />
+                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddCertification}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {parsedProfile.certifications?.map((cert: string, idx: number) => (
+                    <Badge
+                      key={idx}
+                      variant="outline"
+                      className="px-3 py-1.5 bg-amber-500/10 text-foreground border-amber-500/30 text-xs font-medium flex items-center gap-1.5"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                      {cert}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCertification(cert)}
+                        className="hover:text-destructive transition-colors ml-1"
+                        title="Remove certification"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {(!parsedProfile.certifications || parsedProfile.certifications.length === 0) && (
+                    <span className="text-xs text-muted-foreground italic">
+                      No certifications listed. Add your credentials (AWS, Google, CompTIA, PMP, Cisco, etc.) above.
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Skills Highlights with Add / Remove Ability ── */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -484,50 +929,6 @@ export default function CareerAcePage() {
                   )}
                 </div>
               </div>
-
-              {/* Work Experience Showcase */}
-              {parsedProfile.work_experience?.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-primary" /> Verified Work Experience
-                  </h4>
-                  <div className="space-y-3">
-                    {parsedProfile.work_experience.map((exp: any, idx: number) => (
-                      <div key={idx} className="p-4 rounded-lg border bg-background/50">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="font-bold text-sm text-foreground">{exp.role} @ {exp.company}</span>
-                          <span className="text-xs text-muted-foreground">{exp.duration}</span>
-                        </div>
-                        <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mt-2">
-                          {exp.highlights?.map((h: string, hIdx: number) => (
-                            <li key={hIdx} className="leading-relaxed">{h}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Academic History & Certifications */}
-              {parsedProfile.academic_history?.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-primary" /> Academic History & Certifications
-                  </h4>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {parsedProfile.academic_history.map((edu: any, idx: number) => (
-                      <div key={idx} className="p-4 rounded-lg border bg-background/50 text-xs">
-                        <div className="font-bold text-foreground">{edu.degree} in {edu.field_of_study}</div>
-                        <div className="text-muted-foreground">{edu.institution} • {edu.graduation_year}</div>
-                        {edu.achievements && edu.achievements.length > 0 && (
-                          <div className="mt-2 text-primary font-medium">{edu.achievements.join(" • ")}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </Card>
           )}
         </div>

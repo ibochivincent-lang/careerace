@@ -132,13 +132,45 @@ const ROLE_PATTERNS = [
 ];
 
 /**
+ * Known professional certification keywords for automatic scanning.
+ */
+const KNOWN_CERTIFICATIONS = [
+  "AWS Certified Solutions Architect",
+  "AWS Certified Developer",
+  "AWS Certified SysOps",
+  "AWS Certified Cloud Practitioner",
+  "Google Cloud Certified Professional Cloud Architect",
+  "Google Cloud Associate Cloud Engineer",
+  "Microsoft Certified: Azure Fundamentals",
+  "Microsoft Certified: Azure Developer Associate",
+  "Microsoft Certified: Azure Solutions Architect",
+  "CompTIA Security+",
+  "CompTIA Network+",
+  "CompTIA A+",
+  "CompTIA CySA+",
+  "Cisco Certified Network Associate (CCNA)",
+  "Cisco Certified Network Professional (CCNP)",
+  "Certified Kubernetes Administrator (CKA)",
+  "Certified Kubernetes Application Developer (CKAD)",
+  "Certified Information Systems Security Professional (CISSP)",
+  "Project Management Professional (PMP)",
+  "Certified ScrumMaster (CSM)",
+  "Professional Scrum Master (PSM)",
+  "Certified Scrum Product Owner (CSPO)",
+  "HashiCorp Certified: Terraform Associate",
+  "Meta Certified Front-End Developer",
+  "Meta Certified Back-End Developer",
+  "Oracle Certified Professional",
+];
+
+/**
  * Section header patterns for robust section detection.
  */
 const SECTION_HEADERS = {
-  experience: /^(?:#{0,3}\s*)?(?:work\s+)?(?:experience|employment|professional\s+experience|career\s+history|work\s+history|relevant\s+experience)/i,
-  education: /^(?:#{0,3}\s*)?(?:education|academic|qualifications|academic\s+background|academic\s+history|degrees?)/i,
+  experience: /^(?:#{0,3}\s*)?(?:work\s+)?(?:experience|employment|professional\s+experience|career\s+history|work\s+history|relevant\s+experience|employment\s+history)/i,
+  education: /^(?:#{0,3}\s*)?(?:education|academic|qualifications|academic\s+background|academic\s+history|educational\s+background|degrees?|institutions?)/i,
   skills: /^(?:#{0,3}\s*)?(?:skills?|technical\s+skills?|technologies|core\s+competencies|tools?\s*(?:&|and)?\s*technologies?|expertise|proficiencies|tech\s+stack)/i,
-  certifications: /^(?:#{0,3}\s*)?(?:certifications?|certificates?|professional\s+certifications?|licenses?|credentials?)/i,
+  certifications: /^(?:#{0,3}\s*)?(?:certifications?|certificates?|professional\s+certifications?|licenses?|credentials?|accreditations?)/i,
   projects: /^(?:#{0,3}\s*)?(?:projects?|personal\s+projects?|side\s+projects?|portfolio|key\s+projects?|notable\s+projects?)/i,
   summary: /^(?:#{0,3}\s*)?(?:summary|profile|objective|about\s+me|professional\s+summary|career\s+objective|introduction)/i,
 };
@@ -186,7 +218,7 @@ export function parseCvText(rawText: string): ParsedCv {
   }
 
   // Name: First non-empty line that is not an email, URL, phone, or section header
-  for (const line of lines.slice(0, 8)) {
+  for (const line of lines.slice(0, 10)) {
     const clean = line.replace(/^[#*\-\s]+/, "").trim();
     if (
       clean.length > 1 &&
@@ -197,6 +229,7 @@ export function parseCvText(rawText: string): ParsedCv {
       !SECTION_HEADERS.summary.test(clean) &&
       !SECTION_HEADERS.experience.test(clean) &&
       !SECTION_HEADERS.skills.test(clean) &&
+      !SECTION_HEADERS.education.test(clean) &&
       !/^(curriculum|resume|cv)\b/i.test(clean)
     ) {
       applicant_name = clean;
@@ -208,11 +241,9 @@ export function parseCvText(rawText: string): ParsedCv {
   const extractedSkillsSet = new Set<string>();
 
   for (const skill of EXTENSIVE_SKILLS_DICTIONARY) {
-    // Build regex that handles word boundaries properly for skills with special chars
     const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`(?:^|[\\s,;|/()\\[\\]])${escaped}(?:[\\s,;|/()\\[\\]]|$)`, "i");
     if (regex.test(textLower)) {
-      // Format the skill name nicely
       const formatted = skill
         .split(/[\s-]+/)
         .map((w) =>
@@ -241,10 +272,9 @@ export function parseCvText(rawText: string): ParsedCv {
     }
   }
 
-  // Also scan for skills under explicit "Skills" section headers
+  // Also scan under explicit Skills header
   const skillsSectionIdx = lines.findIndex((l) => SECTION_HEADERS.skills.test(l));
   if (skillsSectionIdx !== -1) {
-    // Scan the next several lines after the skills header
     const nextSectionIdx = lines.findIndex(
       (l, i) =>
         i > skillsSectionIdx &&
@@ -257,7 +287,6 @@ export function parseCvText(rawText: string): ParsedCv {
     const skillLines = lines.slice(skillsSectionIdx + 1, endIdx);
 
     for (const line of skillLines) {
-      // Split on common delimiters
       line.split(/[,|;\u2022\u00b7\/\\]/).forEach((s) => {
         const clean = s.replace(/^[-*\u2022\s:]+/, "").trim();
         if (clean.length > 1 && clean.length < 40 && !/^\d+$/.test(clean)) {
@@ -272,10 +301,8 @@ export function parseCvText(rawText: string): ParsedCv {
   // 3. Work Experience Parser
   const work_experience: ParsedCv["work_experience"] = [];
   const expHeadingIdx = lines.findIndex((l) => SECTION_HEADERS.experience.test(l));
-  const eduHeadingIdx = lines.findIndex((l) => SECTION_HEADERS.education.test(l));
 
   if (expHeadingIdx !== -1) {
-    // Find the end of the experience section
     const endIdx = lines.findIndex(
       (l, i) =>
         i > expHeadingIdx + 1 &&
@@ -284,7 +311,7 @@ export function parseCvText(rawText: string): ParsedCv {
           SECTION_HEADERS.projects.test(l) ||
           SECTION_HEADERS.skills.test(l))
     );
-    const sectionEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, expHeadingIdx + 30);
+    const sectionEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, expHeadingIdx + 35);
     const expLines = lines.slice(expHeadingIdx + 1, sectionEnd);
 
     let currentCompany = "";
@@ -312,7 +339,7 @@ export function parseCvText(rawText: string): ParsedCv {
       const hasDate = /\b(20\d{2}|19\d{2})\b/.test(line) ||
         /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[-\u2013]\s*/i.test(line) ||
         /\b(present|current|now)\b/i.test(line);
-      const isShortLine = line.length < 70 && !isBullet;
+      const isShortLine = line.length < 80 && !isBullet;
       const looksLikeRole = ROLE_PATTERNS.some((r) =>
         line.toLowerCase().includes(r)
       );
@@ -320,17 +347,14 @@ export function parseCvText(rawText: string): ParsedCv {
       if (isBullet) {
         currentHighlights.push(line.replace(/^[-*\u2022\u00b7>\s]+/, ""));
       } else if (hasDate && isShortLine) {
-        // This line likely contains a date range and possibly company/role
         if (currentCompany || currentRole) {
           flushEntry();
         }
-        // Try to extract duration from the line
         const dateMatch = line.match(
           /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*\d{0,4}\s*[-\u2013]\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)?\w*\s*\d{0,4}|(?:20|19)\d{2}\s*[-\u2013]\s*(?:20|19)?\d{0,4}|(?:20|19)\d{2}\s*[-\u2013]\s*(?:present|current|now))/i
         );
         if (dateMatch) {
           currentDuration = dateMatch[0].trim();
-          // The rest might be a company or role
           const remainder = line.replace(dateMatch[0], "").replace(/[|,\-\u2013]/g, " ").trim();
           if (remainder.length > 2 && remainder.length < 60) {
             if (looksLikeRole) {
@@ -346,16 +370,79 @@ export function parseCvText(rawText: string): ParsedCv {
         currentCompany = line.replace(/^[#*\-\s]+/, "").trim();
       } else if (isShortLine && !currentRole) {
         currentRole = line.replace(/^[#*\-\s]+/, "").trim();
-      } else if (line.length > 30 && !isBullet) {
-        // Long non-bullet lines are likely description text
+      } else if (line.length > 20 && !isBullet) {
         currentHighlights.push(line);
       }
     }
     flushEntry();
   }
 
-  // 4. Academic History Parser
+  // Fallback: If no experience section was matched, search lines with role patterns + date
+  if (work_experience.length === 0) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const matchedRole = ROLE_PATTERNS.find((r) => line.toLowerCase().includes(r));
+      const hasDate = /\b(20\d{2}|19\d{2})\b/.test(line);
+      if (matchedRole && line.length < 100) {
+        const parts = line.split(/[|,\-\u2013]/).map((p) => p.trim());
+        const role = parts[0] || matchedRole;
+        const company = parts[1] || "Company";
+        const dateMatch = line.match(/\b(?:20|19)\d{2}\b/);
+        work_experience.push({
+          company: company.length > 40 ? "Organization" : company,
+          role: role.charAt(0).toUpperCase() + role.slice(1),
+          duration: dateMatch ? dateMatch[0] : "",
+          highlights: [],
+        });
+        if (work_experience.length >= 3) break;
+      }
+    }
+  }
+
+  // 4. Academic History Parser (Institution & Bachelor's Degree / Degree Detection)
   const academic_history: ParsedCv["academic_history"] = [];
+  const eduHeadingIdx = lines.findIndex((l) => SECTION_HEADERS.education.test(l));
+
+  const extractEduDetailsFromLine = (line: string) => {
+    let degree = "";
+    let institution = "";
+    let field = "";
+    let year = "";
+
+    const yearMatch = line.match(/\b(20\d{2}|19\d{2})\b/);
+    if (yearMatch) year = yearMatch[0];
+
+    // Detect degree type (Bachelor, Master, PhD, etc.)
+    const bscMatch = line.match(/\b(bachelor(?:'s)?(?:\s+of\s+\w+)?|b\.?s\.?c\b|b\.?eng\b|b\.?a\b|b\.?tech\b|undergraduate)\b/i);
+    const mscMatch = line.match(/\b(master(?:'s)?(?:\s+of\s+\w+)?|m\.?s\.?c\b|m\.?eng\b|m\.?a\b|mba|postgraduate)\b/i);
+    const phdMatch = line.match(/\b(ph\.?d|doctorate)\b/i);
+    const diplomaMatch = line.match(/\b(diploma|associate|hnd|ond|certificate)\b/i);
+
+    if (bscMatch) {
+      degree = "Bachelor's Degree (" + bscMatch[0].trim() + ")";
+    } else if (mscMatch) {
+      degree = "Master's Degree (" + mscMatch[0].trim() + ")";
+    } else if (phdMatch) {
+      degree = "Doctorate (PhD)";
+    } else if (diplomaMatch) {
+      degree = diplomaMatch[0].charAt(0).toUpperCase() + diplomaMatch[0].slice(1);
+    }
+
+    // Detect institution keyword
+    const instMatch = line.match(/([a-zA-Z\s]+(?:university|college|polytechnic|institute|school|academy|faculty)[a-zA-Z\s]*)/i);
+    if (instMatch) {
+      institution = instMatch[0].trim().replace(/^[,\-|]\s*/, "");
+    }
+
+    // Detect field of study
+    const fieldMatch = line.match(/(?:in|of)\s+([a-zA-Z\s]{4,35})(?:,|\s+from|\s+-|\s+\(|\s*$)/i);
+    if (fieldMatch) {
+      field = fieldMatch[1].trim();
+    }
+
+    return { degree, institution, field, year };
+  };
+
   if (eduHeadingIdx !== -1) {
     const eduEndIdx = lines.findIndex(
       (l, i) =>
@@ -365,7 +452,7 @@ export function parseCvText(rawText: string): ParsedCv {
           SECTION_HEADERS.projects.test(l) ||
           SECTION_HEADERS.skills.test(l))
     );
-    const eduEnd = eduEndIdx !== -1 ? eduEndIdx : Math.min(lines.length, eduHeadingIdx + 15);
+    const eduEnd = eduEndIdx !== -1 ? eduEndIdx : Math.min(lines.length, eduHeadingIdx + 20);
     const eduLines = lines.slice(eduHeadingIdx + 1, eduEnd);
 
     let currentInstitution = "";
@@ -377,9 +464,9 @@ export function parseCvText(rawText: string): ParsedCv {
     const flushEdu = () => {
       if (currentInstitution || currentDegree) {
         academic_history.push({
-          institution: currentInstitution || "Institution",
-          degree: currentDegree || "Degree",
-          field_of_study: currentField || currentDegree,
+          institution: currentInstitution || "University / College",
+          degree: currentDegree || "Bachelor's Degree",
+          field_of_study: currentField || "Computer Science / Engineering",
           graduation_year: currentYear || "",
           achievements: currentAchievements,
         });
@@ -393,52 +480,96 @@ export function parseCvText(rawText: string): ParsedCv {
 
     for (const line of eduLines) {
       const isBullet = /^[-*\u2022\u00b7>]/.test(line);
-      const hasDegreeKeyword =
-        /\b(bachelor|master|b\.?s\.?c|m\.?s\.?c|b\.?a\b|m\.?a\b|ph\.?d|degree|diploma|certificate|associate|mba|b\.?eng|m\.?eng)/i.test(
-          line
-        );
-      const hasSchoolKeyword =
-        /\b(university|college|polytechnic|institute|school|academy|faculty)\b/i.test(
-          line
-        );
-      const yearMatch = line.match(/\b(20\d{2}|19\d{2})\b/);
+      const parsed = extractEduDetailsFromLine(line);
 
       if (isBullet) {
         currentAchievements.push(line.replace(/^[-*\u2022\u00b7>\s]+/, ""));
-      } else if (hasSchoolKeyword && !currentInstitution) {
-        if (currentInstitution || currentDegree) flushEdu();
-        currentInstitution = line.replace(/^[#*\-\s]+/, "").trim();
-        if (yearMatch) currentYear = yearMatch[0];
-      } else if (hasDegreeKeyword) {
-        currentDegree = line.replace(/^[#*\-\s]+/, "").trim();
-        currentField = currentDegree;
-        if (yearMatch) currentYear = yearMatch[0];
-      } else if (line.length < 60 && yearMatch && !currentInstitution) {
-        currentInstitution = line.replace(/^[#*\-\s]+/, "").trim();
-        currentYear = yearMatch[0];
+      } else {
+        if (parsed.institution && parsed.degree) {
+          if (currentInstitution || currentDegree) flushEdu();
+          currentInstitution = parsed.institution;
+          currentDegree = parsed.degree;
+          currentField = parsed.field || currentDegree;
+          currentYear = parsed.year;
+        } else if (parsed.institution) {
+          if (currentInstitution && !currentDegree) {
+            currentInstitution = parsed.institution;
+          } else if (currentInstitution && currentDegree) {
+            flushEdu();
+            currentInstitution = parsed.institution;
+          } else {
+            currentInstitution = parsed.institution;
+          }
+          if (parsed.year) currentYear = parsed.year;
+        } else if (parsed.degree) {
+          currentDegree = parsed.degree;
+          if (parsed.field) currentField = parsed.field;
+          if (parsed.year) currentYear = parsed.year;
+        } else if (parsed.year && (currentInstitution || currentDegree)) {
+          currentYear = parsed.year;
+        } else if (line.length < 60 && !isBullet && !currentInstitution) {
+          currentInstitution = line;
+        }
       }
     }
     flushEdu();
   }
 
-  // 5. Certifications
-  const certifications: string[] = [];
-  const certIdx = lines.findIndex((l) => SECTION_HEADERS.certifications.test(l));
-  if (certIdx !== -1) {
-    const certEnd = Math.min(lines.length, certIdx + 10);
-    for (const line of lines.slice(certIdx + 1, certEnd)) {
-      if (SECTION_HEADERS.experience.test(line) || SECTION_HEADERS.education.test(line)) break;
-      const clean = line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim();
-      if (clean.length > 3 && clean.length < 100) {
-        certifications.push(clean);
+  // Fallback: If no academic history was found in section, scan whole document for degree/institution
+  if (academic_history.length === 0) {
+    for (const line of lines) {
+      const parsed = extractEduDetailsFromLine(line);
+      if (parsed.institution || parsed.degree) {
+        academic_history.push({
+          institution: parsed.institution || "Higher Institution",
+          degree: parsed.degree || "Bachelor's Degree",
+          field_of_study: parsed.field || "Technology / Science",
+          graduation_year: parsed.year || "",
+          achievements: [],
+        });
+        if (academic_history.length >= 2) break;
       }
     }
   }
 
+  // 5. Certifications (AWS, GCP, CompTIA, Cisco, PMP, Scrum, etc.)
+  const certificationsSet = new Set<string>();
+
+  // Check explicit Certifications section
+  const certIdx = lines.findIndex((l) => SECTION_HEADERS.certifications.test(l));
+  if (certIdx !== -1) {
+    const certEnd = Math.min(lines.length, certIdx + 12);
+    for (const line of lines.slice(certIdx + 1, certEnd)) {
+      if (SECTION_HEADERS.experience.test(line) || SECTION_HEADERS.education.test(line)) break;
+      const clean = line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim();
+      if (clean.length > 3 && clean.length < 80) {
+        certificationsSet.add(clean);
+      }
+    }
+  }
+
+  // Also scan whole text for recognized industry certifications
+  for (const cert of KNOWN_CERTIFICATIONS) {
+    if (textLower.includes(cert.toLowerCase())) {
+      certificationsSet.add(cert);
+    }
+  }
+
+  // Also scan for lines containing "Certified" or "Certification"
+  for (const line of lines) {
+    if (/\b(?:certified|certification|licensed|credential)\b/i.test(line) && line.length < 75) {
+      const clean = line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim();
+      if (clean.length > 5) {
+        certificationsSet.add(clean);
+      }
+    }
+  }
+
+  const certifications = Array.from(certificationsSet);
+
   // 6. Target Roles inferred from candidate skills and detected roles in text
   const target_roles: string[] = [];
 
-  // Check which role patterns appear in the CV text
   for (const role of ROLE_PATTERNS) {
     if (textLower.includes(role)) {
       const formatted = role
@@ -550,7 +681,10 @@ Extract ONLY factual data present in the text. Do not invent fake companies or s
           aiParsed.academic_history.length > 0
             ? aiParsed.academic_history
             : fallback.academic_history,
-        certifications: aiParsed.certifications || fallback.certifications,
+        certifications:
+          Array.isArray(aiParsed.certifications) && aiParsed.certifications.length > 0
+            ? aiParsed.certifications
+            : fallback.certifications,
         target_roles: aiParsed.target_roles || fallback.target_roles,
         custom_achievements: fallback.custom_achievements || [],
       };

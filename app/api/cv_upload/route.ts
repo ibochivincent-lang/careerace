@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseCvText, parseCvWithAi } from "@/lib/cv_parser";
+import zlib from "zlib";
 
 export async function POST(req: Request) {
   try {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     // Clean up extracted text
-    cvText = cvText.replace(/\s+/g, " ").trim();
+    cvText = cvText.replace(/\r\n/g, "\n").trim();
 
     if (!cvText || cvText.length < 10) {
       return NextResponse.json(
@@ -79,10 +80,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       file_name: fileName || "Pasted Resume Text",
-      message:
-        "CV successfully parsed and candidate profile updated.",
+      message: "CV successfully parsed and candidate profile updated.",
       extraction_method: extractionMethod,
       extracted_text_length: cvText.length,
+      extracted_text: cvText,
       profile: finalProfile,
     });
   } catch (error) {
@@ -100,103 +101,181 @@ export async function POST(req: Request) {
 }
 
 /**
- * Extract readable text from raw PDF buffer without external libraries.
- * Uses multiple strategies: BT/ET text blocks, parenthesized strings, and
- * printable ASCII fallback.
+ * Decode PDF literal strings (escaping and basic octal sequences).
  */
-function extractPdfText(buffer: Buffer): string {
-  const raw = buffer.toString("latin1");
-  const textChunks: string[] = [];
+function decodePdfLiteralString(str: string): string {
+  return str
+    .replace(/\\([0-7]{1,3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)))
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r")
+    .replace(/\\t/g, "\t")
+    .replace(/\\\(/g, "(")
+    .replace(/\\\)/g, ")")
+    .replace(/\\\\/g, "\\");
+}
 
-  // Strategy 1: Extract text from BT...ET (Begin Text / End Text) blocks
-  const btBlocks = raw.match(/BT[\s\S]*?ET/g) || [];
+/**
+ * Extract text instructions from raw or decompressed PDF stream content.
+ */
+function extractFromPdfStream(streamString: string, outputChunks: string[]) {
+  // 1. Text blocks: BT ... ET
+  const btBlocks = streamString.match(/BT[\s\S]*?ET/g) || [];
   for (const block of btBlocks) {
+    // TJ array: [(text) num (text)] TJ
+    const tjArrays = block.match(/\[([^\]]+)\]\s*TJ/gi);
+    if (tjArrays) {
+      for (const arr of tjArrays) {
+        const parts = arr.match(/\(([^()]*)\)/g);
+        if (parts) {
+          const combined = parts
+            .map((p) => decodePdfLiteralString(p.slice(1, -1)))
+            .join("");
+          if (combined.trim()) outputChunks.push(combined.trim());
+        }
+      }
+    }
+
     // Tj operator: (text) Tj
     const tjMatches = block.match(/\(([^()]+)\)\s*T[jJ]/g);
     if (tjMatches) {
       for (const m of tjMatches) {
         const inner = m.replace(/\)\s*T[jJ]$/, "").replace(/^\(/, "");
-        const decoded = inner
-          .replace(/\\n/g, "\n")
-          .replace(/\\r/g, "\r")
-          .replace(/\\t/g, "\t")
-          .replace(/\\\(/g, "(")
-          .replace(/\\\)/g, ")")
-          .replace(/\\\\/g, "\\");
-        if (decoded.trim()) textChunks.push(decoded);
+        const decoded = decodePdfLiteralString(inner).trim();
+        if (decoded) outputChunks.push(decoded);
       }
     }
-    // TJ operator: [(text) num (text)] TJ
-    const tjArrayMatches = block.match(/\[([^\]]+)\]\s*TJ/gi);
-    if (tjArrayMatches) {
-      for (const arr of tjArrayMatches) {
-        const innerParts = arr.match(/\(([^()]*)\)/g);
-        if (innerParts) {
-          for (const p of innerParts) {
-            const decoded = p
-              .slice(1, -1)
-              .replace(/\\n/g, "\n")
-              .replace(/\\r/g, "\r")
-              .replace(/\\\(/g, "(")
-              .replace(/\\\)/g, ")")
-              .replace(/\\\\/g, "\\");
-            if (decoded.trim()) textChunks.push(decoded);
-          }
-        }
+
+    // Single quotes: ' or '' operators
+    const quoteMatches = block.match(/\(([^()]+)\)\s*['"]/g);
+    if (quoteMatches) {
+      for (const m of quoteMatches) {
+        const inner = m.replace(/\)\s*['"]$/, "").replace(/^\(/, "");
+        const decoded = decodePdfLiteralString(inner).trim();
+        if (decoded) outputChunks.push(decoded);
       }
     }
   }
 
-  if (textChunks.length > 3) {
-    return textChunks.join(" ").replace(/\s+/g, " ").trim();
-  }
-
-  // Strategy 2: Extract all parenthesized strings longer than 2 chars
-  const parenMatches = raw.match(/\(([^()]{3,})\)/g) || [];
-  const filtered = parenMatches
-    .map((m) => m.slice(1, -1))
-    .filter((s) => {
-      // Filter out binary/control sequences
+  // Fallback: parenthesized strings longer than 3 characters if BT/ET produced few results
+  if (outputChunks.length < 5) {
+    const parenMatches = streamString.match(/\(([^()]{3,})\)/g) || [];
+    for (const m of parenMatches) {
+      const s = m.slice(1, -1);
       const printable = s.replace(/[^\x20-\x7E]/g, "");
-      return printable.length > s.length * 0.6 && printable.length > 2;
-    });
-
-  if (filtered.length > 5) {
-    return filtered.join(" ").replace(/\s+/g, " ").trim();
+      if (printable.length > s.length * 0.7 && printable.trim().length > 3) {
+        outputChunks.push(printable.trim());
+      }
+    }
   }
-
-  // Strategy 3: Extract any printable ASCII runs from the buffer
-  const utf8 = buffer.toString("utf-8");
-  const printableRuns = utf8.match(/[\x20-\x7E\n\r\t]{10,}/g) || [];
-  return printableRuns.join(" ").replace(/\s+/g, " ").trim();
 }
 
 /**
- * Extract readable text from DOCX buffer (which is a ZIP containing XML).
- * Without a zip library, we extract text from XML tags in the raw buffer.
+ * Extract readable text from raw PDF buffer without external libraries.
+ * Handles both uncompressed text and FlateDecode streams decompressed with built-in zlib.
  */
-function extractDocxText(buffer: Buffer): string {
-  const raw = buffer.toString("utf-8");
+function extractPdfText(buffer: Buffer): string {
+  const textChunks: string[] = [];
+  const rawLatin = buffer.toString("latin1");
 
-  // DOCX stores content in <w:t> tags within document.xml
-  const wtMatches = raw.match(/<w:t[^>]*>([^<]*)<\/w:t>/gi) || [];
-  if (wtMatches.length > 0) {
-    const text = wtMatches
-      .map((m) => {
-        const inner = m.replace(/<[^>]+>/g, "");
-        return inner;
-      })
-      .join(" ");
+  // Decompress streams in PDF
+  const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  let match: RegExpExecArray | null;
+  while ((match = streamRegex.exec(rawLatin)) !== null) {
+    const rawStreamData = match[1];
+    const streamBuffer = Buffer.from(rawStreamData, "latin1");
 
-    if (text.trim().length > 20) {
-      return text.replace(/\s+/g, " ").trim();
+    let decompressed: string | null = null;
+    try {
+      decompressed = zlib.inflateSync(streamBuffer).toString("latin1");
+    } catch {
+      try {
+        decompressed = zlib.inflateRawSync(streamBuffer).toString("latin1");
+      } catch {
+        // Stream not compressed or unsupported compression
+      }
+    }
+
+    if (decompressed) {
+      extractFromPdfStream(decompressed, textChunks);
     }
   }
 
-  // Fallback: strip all XML/binary and keep printable text
-  return raw
-    .replace(/<[^>]+>/g, " ")
-    .replace(/[^\x20-\x7E\n\r\t]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  // Also check uncompressed blocks in the overall PDF file
+  extractFromPdfStream(rawLatin, textChunks);
+
+  if (textChunks.length > 5) {
+    return textChunks.join("\n").replace(/[ \t]+/g, " ").trim();
+  }
+
+  // Ultimate fallback: Printable ASCII strings
+  const utf8 = buffer.toString("utf-8");
+  const printableRuns = utf8.match(/[\x20-\x7E\n\r\t]{12,}/g) || [];
+  return printableRuns.join("\n").replace(/[ \t]+/g, " ").trim();
+}
+
+/**
+ * Extract readable text from DOCX buffer (which is a ZIP containing word/document.xml).
+ * Uses built-in zlib to parse the ZIP structure and extract document text accurately.
+ */
+function extractDocxText(buffer: Buffer): string {
+  try {
+    let offset = 0;
+    while (offset < buffer.length - 30) {
+      // Zip local file header signature: 0x04034b50
+      if (buffer.readUInt32LE(offset) === 0x04034b50) {
+        const compressionMethod = buffer.readUInt16LE(offset + 8);
+        const compressedSize = buffer.readUInt32LE(offset + 18);
+        const fileNameLength = buffer.readUInt16LE(offset + 26);
+        const extraFieldLength = buffer.readUInt16LE(offset + 28);
+        const fileName = buffer.toString("utf8", offset + 30, offset + 30 + fileNameLength);
+
+        const dataStart = offset + 30 + fileNameLength + extraFieldLength;
+        const dataEnd = dataStart + compressedSize;
+
+        if (fileName === "word/document.xml" && dataEnd <= buffer.length) {
+          const fileData = buffer.subarray(dataStart, dataEnd);
+          let xml = "";
+          if (compressionMethod === 8) {
+            xml = zlib.inflateRawSync(fileData).toString("utf8");
+          } else if (compressionMethod === 0) {
+            xml = fileData.toString("utf8");
+          }
+
+          if (xml) {
+            // Extract text from <w:t> tags
+            const wtMatches = xml.match(/<w:t[^>]*>([^<]*)<\/w:t>/gi) || [];
+            const textLines: string[] = [];
+            let currentLine = "";
+
+            for (const wt of wtMatches) {
+              const val = wt.replace(/<[^>]+>/g, "");
+              currentLine += val + " ";
+              if (currentLine.length > 80) {
+                textLines.push(currentLine.trim());
+                currentLine = "";
+              }
+            }
+            if (currentLine.trim()) textLines.push(currentLine.trim());
+
+            if (textLines.length > 0) {
+              return textLines.join("\n");
+            }
+          }
+        }
+        offset = dataEnd;
+      } else {
+        offset++;
+      }
+    }
+  } catch (err) {
+    console.warn("[cv_upload] DOCX zip extraction fallback:", err);
+  }
+
+  // Fallback: strip XML tags from raw buffer
+  const raw = buffer.toString("utf-8");
+  const wtMatches = raw.match(/<w:t[^>]*>([^<]*)<\/w:t>/gi) || [];
+  if (wtMatches.length > 0) {
+    return wtMatches.map((m) => m.replace(/<[^>]+>/g, "")).join(" ").trim();
+  }
+  return raw.replace(/<[^>]+>/g, " ").replace(/[^\x20-\x7E\n\r\t]/g, " ").trim();
 }
