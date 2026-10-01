@@ -52,7 +52,7 @@ function redirectUrl() {
  * wallet-standard `signPersonalMessage` feature, which is what proves address
  * ownership to our own server.
  */
-export function SignIn() {
+export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   /*
    * The wallet lives in a ref, not in state. Registering it is a browser-only
    * side effect and nothing in the markup depends on the handle itself, so
@@ -61,19 +61,36 @@ export function SignIn() {
   const wallet = useRef<EnokiWallet | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentAddress, setCurrentAddress] = useState<string | null>(initialAddress ?? null)
 
   useEffect(() => {
     if (!CONFIGURED) return
 
-    const { wallets, unregister } = registerEnokiWallets({
-      apiKey: ENOKI_KEY!,
-      providers: { google: { clientId: GOOGLE_CLIENT_ID!, redirectUrl: redirectUrl() } },
-      client: new SuiClient({ url: getFullnodeUrl(NETWORK) }),
-      network: NETWORK,
-    })
-    wallet.current = wallets.google ?? null
-    return unregister
+    try {
+      const { wallets, unregister } = registerEnokiWallets({
+        apiKey: ENOKI_KEY!,
+        providers: { google: { clientId: GOOGLE_CLIENT_ID!, redirectUrl: redirectUrl() } },
+        client: new SuiClient({ url: getFullnodeUrl(NETWORK) }),
+        network: NETWORK,
+      })
+      wallet.current = wallets.google ?? null
+      return unregister
+    } catch (err) {
+      console.warn('Enoki wallet registration notice:', err)
+    }
   }, [])
+
+  async function handleSignOut() {
+    setBusy(true)
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      setCurrentAddress(null)
+    } catch (e) {
+      console.error('Logout error:', e)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function signIn() {
     const enoki = wallet.current
@@ -90,11 +107,6 @@ export function SignIn() {
 
       /*
        * Server issues the nonce, so a replayed signature is worthless.
-       *
-       * Read the status before the body. Calling .json() straight off the
-       * response turns every server-side failure into "Unexpected end of JSON
-       * input" — a parse error standing in for the real one, which is usually a
-       * missing environment variable in the deployment.
        */
       const nonceRes = await fetch('/api/auth/nonce')
       const nonceBody = await nonceRes.text()
@@ -109,12 +121,6 @@ export function SignIn() {
       }
       const { message } = JSON.parse(nonceBody)
 
-      /*
-       * `chain` is required. The wallet-standard type marks it optional, but
-       * Enoki validates it on every call and rejects an undefined value, so
-       * omitting it fails at signing time with an error that reads like a
-       * misconfigured OAuth client rather than a missing argument.
-       */
       const { signature } = await enoki.features['sui:signPersonalMessage'].signPersonalMessage({
         message: new TextEncoder().encode(message),
         account,
@@ -136,6 +142,38 @@ export function SignIn() {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (currentAddress) {
+    return (
+      <div className="w-full max-w-md">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Account Active</p>
+        <h2 className="mt-3 text-2xl font-bold tracking-tight">Already Connected</h2>
+        <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+          Your sovereign career vault is active and encrypted under Sui address:
+        </p>
+        <div className="mt-4 p-3 rounded-lg border bg-muted/50 font-mono text-xs break-all">
+          {currentAddress}
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3">
+          <a
+            href="/"
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            Go to Career Ace Workspace
+          </a>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={busy}
+            className="flex h-11 w-full items-center justify-center rounded-xl border py-2.5 text-sm font-medium hover:bg-accent transition-colors"
+          >
+            {busy ? 'Signing out...' : 'Sign Out / Switch Account'}
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

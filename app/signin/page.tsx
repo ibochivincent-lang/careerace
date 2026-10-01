@@ -12,25 +12,11 @@ const PROMISES = [
   'Autonomous job harvesting, fit score evaluation, and STAR+R interview preparation.',
 ]
 
-export default async function SignInPage(props: {
-  searchParams?: Promise<{ callbackUrl?: string }>
-}) {
-  let target = '/'
+export default async function SignInPage() {
+  let address: string | null = null
   try {
-    const params = props.searchParams ? await props.searchParams : {}
-    target = params?.callbackUrl || '/'
-    const address = await getOwnerAddress()
-    if (address) redirect(target)
+    address = await getOwnerAddress()
   } catch (err) {
-    if (
-      err &&
-      typeof err === 'object' &&
-      'digest' in err &&
-      typeof (err as any).digest === 'string' &&
-      (err as any).digest.startsWith('NEXT_REDIRECT')
-    ) {
-      throw err
-    }
     console.warn('[signin] Session check warning:', err)
   }
 
@@ -64,7 +50,7 @@ export default async function SignInPage(props: {
       </div>
 
       <div className="flex flex-col justify-center px-8 py-12 lg:px-16">
-        <SignIn />
+        <SignIn initialAddress={address} />
       </div>
     </div>
   )
