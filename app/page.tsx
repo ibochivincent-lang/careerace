@@ -10,10 +10,11 @@ import { AccountChip } from '@/components/AccountChip'
 import { ChatdeckHero } from '@/components/blocks/chatdeck_hero'
 import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
+import { toast } from 'sonner'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, Paperclip, Sparkles, LogIn, MessageSquare,
-  Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X
+  Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X, AlertCircle
 } from 'lucide-react'
 
 export default function CareerAcePage() {
@@ -23,6 +24,7 @@ export default function CareerAcePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isParsing, setIsParsing] = useState(false)
   const [parsedProfile, setParsedProfile] = useState<any>(null)
+  const [parseError, setParseError] = useState<string | null>(null)
   const [isHarvesting, setIsHarvesting] = useState(false)
   const [harvestedJobs, setHarvestedJobs] = useState<any[]>([])
 
@@ -146,6 +148,7 @@ export default function CareerAcePage() {
 
   async function handleCvSubmit() {
     setIsParsing(true)
+    setParseError(null)
     try {
       let res: Response
       if (selectedFile) {
@@ -163,10 +166,27 @@ export default function CareerAcePage() {
         })
       }
       const data = await res.json()
+      if (!res.ok) {
+        const errMsg = data.error || 'Failed to parse CV'
+        setParseError(errMsg)
+        toast.error(errMsg)
+        return
+      }
       if (data.profile) {
         setParsedProfile(data.profile)
+        const skillCount = data.profile.skills?.length || 0
+        const expCount = data.profile.work_experience?.length || 0
+        toast.success(
+          `CV parsed successfully: ${skillCount} skills, ${expCount} work entries found.`
+        )
+      } else {
+        setParseError('No profile data returned. Try pasting your CV text directly.')
+        toast.error('No profile data could be extracted.')
       }
     } catch (e) {
+      const errMsg = e instanceof Error ? e.message : 'Network error during CV upload'
+      setParseError(errMsg)
+      toast.error(errMsg)
       console.error(e)
     } finally {
       setIsParsing(false)
@@ -312,7 +332,17 @@ export default function CareerAcePage() {
                   <CheckCircle2 className="w-4 h-4" /> Profile Ingested & Highlighted
                 </div>
               )}
+              {parseError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-medium">
+                  <AlertCircle className="w-4 h-4" /> {parseError}
+                </div>
+              )}
             </div>
+            {isParsing && (
+              <div className="mt-3 text-xs text-muted-foreground animate-pulse">
+                Extracting text and analyzing your CV... This may take a few seconds.
+              </div>
+            )}
           </Card>
 
           {/* Interactive Candidate CV Showcase & Highlight Panel */}
