@@ -24,8 +24,8 @@ export default async function SignInPage() {
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       <div className="flex flex-col justify-between border-r bg-sidebar px-10 py-10 lg:px-14">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground font-bold">
-            <Brain className="size-4 text-primary-foreground" />
+          <span className="grid size-9 place-items-center rounded-lg bg-card border border-border/70 shadow-sm p-1">
+            <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain dark:invert" />
           </span>
           <span className="text-lg font-bold">Career Ace</span>
         </Link>

@@ -489,8 +489,8 @@ export default function CareerAcePage() {
       <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary text-primary-foreground font-bold">
-              <Briefcase className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-card border border-border/70 shadow-sm p-1">
+              <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain dark:invert" />
             </div>
             <span className="font-bold text-lg">Career Ace</span>
             <Badge variant="outline" className="text-xs hidden sm:inline-flex">by IboTV</Badge>

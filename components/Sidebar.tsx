@@ -39,8 +39,8 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-60 bg-sidebar border-r border-sidebar-border z-30">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 h-14 border-b border-sidebar-border flex-shrink-0">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground font-bold">
-          <Briefcase className="w-4 h-4" />
+        <div className="w-8 h-8 rounded-lg bg-card border border-border/70 shadow-sm flex items-center justify-center flex-shrink-0 p-1">
+          <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain dark:invert" />
         </div>
         <div>
           <span className="font-bold text-sm leading-none block text-sidebar-foreground">Career Ace</span>

@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   description:
     'Autonomous AI job matching, resume tailoring, application automation, and STAR+R interview coach by IboTV.',
   keywords: ['Career Ace', 'AI Job Matcher', 'Resume Tailor', 'Application Automator', 'STAR Interview Coach'],
+  icons: {
+    icon: '/careerace_logo.png',
+    shortcut: '/favicon.ico',
+    apple: '/careerace_logo.png',
+  },
 }
 
 export default function RootLayout({
