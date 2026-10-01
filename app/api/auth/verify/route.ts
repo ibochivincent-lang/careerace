@@ -60,22 +60,33 @@ export async function POST(req: Request) {
 
     let extraDetail = "";
     try {
-      const diag = await suiGraphql.query({
+      const diag = await suiGraphql.query<{
+        verifyZkLoginSignature?: {
+          success?: boolean;
+          errors?: string[];
+        };
+      }>({
         query: `
           query verifyZkLoginSignature($bytes: Base64!, $signature: Base64!, $intentScope: ZkLoginIntentScope!, $author: SuiAddress!) {
             verifyZkLoginSignature(bytes: $bytes, signature: $signature, intentScope: $intentScope, author: $author) {
               success
+              errors
             }
           }
         `,
         variables: {
           bytes: Buffer.from(bytes).toString("base64"),
           signature,
-          intentScope: "PersonalMessage",
+          intentScope: "PERSONAL_MESSAGE",
           author: address,
         },
       });
-      if (diag.errors && diag.errors.length > 0) {
+
+      const onChainErrors = diag.data?.verifyZkLoginSignature?.errors;
+      if (Array.isArray(onChainErrors) && onChainErrors.length > 0) {
+        extraDetail = `: ${onChainErrors.join("; ")}`;
+        console.error("[careerace] GraphQL on-chain zkLogin verification errors:", onChainErrors);
+      } else if (diag.errors && diag.errors.length > 0) {
         extraDetail = `: ${diag.errors.map((e) => e.message).join(", ")}`;
         console.error("[careerace] GraphQL node errors:", diag.errors);
       } else {
