@@ -15,9 +15,24 @@ const PROMISES = [
 export default async function SignInPage(props: {
   searchParams?: Promise<{ callbackUrl?: string }>
 }) {
-  const params = props.searchParams ? await props.searchParams : {}
-  const target = params?.callbackUrl || '/'
-  if (await getOwnerAddress()) redirect(target)
+  let target = '/'
+  try {
+    const params = props.searchParams ? await props.searchParams : {}
+    target = params?.callbackUrl || '/'
+    const address = await getOwnerAddress()
+    if (address) redirect(target)
+  } catch (err) {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'digest' in err &&
+      typeof (err as any).digest === 'string' &&
+      (err as any).digest.startsWith('NEXT_REDIRECT')
+    ) {
+      throw err
+    }
+    console.warn('[signin] Session check warning:', err)
+  }
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">

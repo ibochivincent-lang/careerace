@@ -38,7 +38,11 @@ const CONFIGURED = Boolean(ENOKI_KEY && GOOGLE_CLIENT_ID)
  * Reads `window` on purpose, so it is only ever called from the browser.
  */
 function redirectUrl() {
-  const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? window.location.origin
+  if (typeof window === 'undefined') {
+    const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://careerace.vercel.app'
+    return `${origin}/signin`
+  }
+  const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin
   return `${origin}/signin`
 }
 
