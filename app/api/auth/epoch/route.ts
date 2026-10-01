@@ -28,11 +28,9 @@ export async function GET() {
       return Response.json({ epoch: epochId });
     }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? (err.stack || err.message) : "Unknown error";
     console.warn("[zklogin] Primary Sui GraphQL epoch query failed, using safe fallback:", msg);
+    return Response.json({ epoch: SAFE_DEFAULT_EPOCH, fallback: true, error: msg });
   }
-
-  // Graceful fallback to ensure zkLogin initiation never hard-crashes
-  return Response.json({ epoch: SAFE_DEFAULT_EPOCH, fallback: true });
 }
 
