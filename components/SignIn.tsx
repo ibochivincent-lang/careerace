@@ -26,16 +26,25 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   const [error, setError] = useState<string | null>(null)
   const [currentAddress, setCurrentAddress] = useState<string | null>(initialAddress ?? null)
 
-  // Detect OAuth redirect callback from Google in URL hash (#id_token=...)
+  // Detect OAuth redirect callback from Google in URL hash (#id_token=... or #error=...)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const hash = window.location.hash
-    if (!hash || !hash.includes('id_token=')) return
+    if (!hash) return
 
     const params = new URLSearchParams(hash.replace(/^#/, ''))
-    const jwt = params.get('id_token')
 
+    // Google returns an error fragment (e.g. access_denied, invalid_request)
+    const oauthError = params.get('error')
+    if (oauthError) {
+      const desc = params.get('error_description') ?? oauthError
+      setError(`Google sign-in error: ${decodeURIComponent(desc.replace(/\+/g, ' '))}`)
+      window.history.replaceState(null, '', window.location.pathname)
+      return
+    }
+
+    const jwt = params.get('id_token')
     if (!jwt) return
 
     async function handleAuthCallback(idToken: string) {

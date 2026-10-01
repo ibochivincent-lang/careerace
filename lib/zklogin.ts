@@ -68,6 +68,8 @@ export async function initiateGoogleZkLogin(googleClientId: string, redirectUri:
   googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
   googleAuthUrl.searchParams.set("scope", "openid email profile");
   googleAuthUrl.searchParams.set("nonce", nonce);
+  // Force account picker so the nonce is always freshly embedded in the JWT
+  googleAuthUrl.searchParams.set("prompt", "select_account");
 
   window.location.href = googleAuthUrl.toString();
 }
