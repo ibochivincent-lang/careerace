@@ -185,13 +185,18 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       )}
 
       {error && (
-        <div role="alert" className="mt-4 rounded-lg border border-destructive/40 px-3 py-2.5 text-sm text-destructive">
-          <p>{error}</p>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            This app sends{' '}
-            <code className="font-mono break-all text-foreground">{redirectUrl()}</code> as its
-            redirect URI. Ensure it is listed in Authorized Redirect URIs in your Google Cloud Console.
-          </p>
+        <div role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <p className="font-medium">{error}</p>
+          {(error.toLowerCase().includes('redirect') ||
+            error.toLowerCase().includes('oauth') ||
+            error.toLowerCase().includes('google') ||
+            error.toLowerCase().includes('client id')) && (
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              This app sends{' '}
+              <code className="font-mono break-all text-foreground">{redirectUrl()}</code> as its
+              redirect URI. Ensure it is listed in Authorized Redirect URIs in your Google Cloud Console.
+            </p>
+          )}
         </div>
       )}
 
