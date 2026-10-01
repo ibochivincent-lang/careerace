@@ -1,21 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { AccountChip } from '@/components/AccountChip'
 import { ChatdeckHero } from '@/components/blocks/chatdeck_hero'
 import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
-  ChevronRight, Paperclip, Sparkles
+  ChevronRight, Paperclip, Sparkles, LogIn
 } from 'lucide-react'
 
 export default function CareerAcePage() {
   const router = useRouter()
+  const [sessionAddress, setSessionAddress] = useState<string | null>(null)
   const [cvText, setCvText] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isParsing, setIsParsing] = useState(false)
@@ -25,6 +27,17 @@ export default function CareerAcePage() {
 
   const [evaluatingJobId, setEvaluatingJobId] = useState<string | null>(null)
   const [evaluationResults, setEvaluationResults] = useState<Record<string, any>>({})
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.authenticated && data.address) {
+          setSessionAddress(data.address)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   async function handleCvSubmit() {
     setIsParsing(true)
@@ -116,9 +129,16 @@ export default function CareerAcePage() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button size="sm" onClick={() => router.push('/application_board')}>
-              Application Tracker
+            <Button size="sm" variant="outline" onClick={() => router.push('/application_board')}>
+              Applications
             </Button>
+            {sessionAddress ? (
+              <AccountChip address={sessionAddress} />
+            ) : (
+              <Button size="sm" onClick={() => router.push('/signin')}>
+                <LogIn className="w-4 h-4 mr-1.5" /> Sign in with Google
+              </Button>
+            )}
           </div>
         </div>
       </header>
