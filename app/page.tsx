@@ -13,7 +13,7 @@ import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, Paperclip, Sparkles, LogIn, MessageSquare,
-  Award, User, GraduationCap, Send, Bot, Check
+  Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X
 } from 'lucide-react'
 
 export default function CareerAcePage() {
@@ -36,6 +36,68 @@ export default function CareerAcePage() {
       content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV or paste it above to get instant role matching, tailored CV impact points, and mock interview prep.'
     }
   ])
+  // Editable custom skills and achievements
+  const [newSkillInput, setNewSkillInput] = useState('')
+  const [newAchievementInput, setNewAchievementInput] = useState('')
+  const [newRoleInput, setNewRoleInput] = useState('')
+
+  function handleAddSkill() {
+    if (!newSkillInput.trim() || !parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      skills: [...(parsedProfile.skills || []), newSkillInput.trim()]
+    }
+    setParsedProfile(updated)
+    setNewSkillInput('')
+  }
+
+  function handleRemoveSkill(skillToRemove: string) {
+    if (!parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      skills: (parsedProfile.skills || []).filter((s: string) => s !== skillToRemove)
+    }
+    setParsedProfile(updated)
+  }
+
+  function handleAddAchievement() {
+    if (!newAchievementInput.trim() || !parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      custom_achievements: [...(parsedProfile.custom_achievements || []), newAchievementInput.trim()]
+    }
+    setParsedProfile(updated)
+    setNewAchievementInput('')
+  }
+
+  function handleRemoveAchievement(idxToRemove: number) {
+    if (!parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      custom_achievements: (parsedProfile.custom_achievements || []).filter((_: any, idx: number) => idx !== idxToRemove)
+    }
+    setParsedProfile(updated)
+  }
+
+  function handleAddRole() {
+    if (!newRoleInput.trim() || !parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      target_roles: [...(parsedProfile.target_roles || []), newRoleInput.trim()]
+    }
+    setParsedProfile(updated)
+    setNewRoleInput('')
+  }
+
+  function handleRemoveRole(roleToRemove: string) {
+    if (!parsedProfile) return
+    const updated = {
+      ...parsedProfile,
+      target_roles: (parsedProfile.target_roles || []).filter((r: string) => r !== roleToRemove)
+    }
+    setParsedProfile(updated)
+  }
+
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
 
@@ -267,30 +329,129 @@ export default function CareerAcePage() {
                     {parsedProfile.email} {parsedProfile.github_url && `• ${parsedProfile.github_url}`}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {parsedProfile.target_roles?.map((role: string, idx: number) => (
-                    <Badge key={idx} variant="secondary" className="px-3 py-1 font-semibold">
-                      {role}
-                    </Badge>
-                  ))}
+                <div>
+                  <div className="text-xs text-muted-foreground font-semibold mb-1">Target Roles:</div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {parsedProfile.target_roles?.map((role: string, idx: number) => (
+                      <Badge key={idx} variant="secondary" className="px-2.5 py-1 text-xs font-semibold flex items-center gap-1">
+                        {role}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRole(role)}
+                          className="hover:text-destructive transition-colors ml-0.5"
+                          title="Remove role"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="+ Add role..."
+                        value={newRoleInput}
+                        onChange={(e) => setNewRoleInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddRole()
+                        }}
+                        className="text-xs px-2 py-0.5 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-24"
+                      />
+                      <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={handleAddRole}>
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Skills Highlights */}
+              {/* Skills Highlights with Add / Remove Ability */}
               <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" /> Highlighted Technical Skills
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" /> Highlighted Technical Skills ({parsedProfile.skills?.length || 0})
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Add custom skill (e.g. Next.js)..."
+                      value={newSkillInput}
+                      onChange={(e) => setNewSkillInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddSkill()
+                      }}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                    />
+                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddSkill}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap gap-2">
                   {parsedProfile.skills?.map((skill: string, idx: number) => (
                     <Badge
                       key={idx}
                       variant="outline"
-                      className="px-3 py-1 bg-primary/10 text-primary border-primary/30 text-sm font-medium"
+                      className="px-3 py-1 bg-primary/10 text-primary border-primary/30 text-sm font-medium flex items-center gap-1.5"
                     >
                       {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:text-destructive transition-colors"
+                        title="Remove skill"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </Badge>
                   ))}
+                  {(!parsedProfile.skills || parsedProfile.skills.length === 0) && (
+                    <span className="text-xs text-muted-foreground italic">No skills listed yet. Type above to add your core tech stack.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Custom Key Achievements & Projects */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Award className="w-4 h-4 text-primary" /> Key Achievements & Portfolio Highlights
+                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Add achievement or metric..."
+                      value={newAchievementInput}
+                      onChange={(e) => setNewAchievementInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddAchievement()
+                      }}
+                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-56"
+                    />
+                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddAchievement}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {parsedProfile.custom_achievements?.map((ach: string, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border bg-background/50 text-xs">
+                      <span className="font-medium text-foreground">{ach}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAchievement(idx)}
+                        className="text-muted-foreground hover:text-destructive transition-colors ml-2"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {(!parsedProfile.custom_achievements || parsedProfile.custom_achievements.length === 0) && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Add custom accomplishments, awards, or quantified milestones you want highlight in your applications.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -329,7 +490,7 @@ export default function CareerAcePage() {
                       <div key={idx} className="p-4 rounded-lg border bg-background/50 text-xs">
                         <div className="font-bold text-foreground">{edu.degree} in {edu.field_of_study}</div>
                         <div className="text-muted-foreground">{edu.institution} • {edu.graduation_year}</div>
-                        {edu.achievements && (
+                        {edu.achievements && edu.achievements.length > 0 && (
                           <div className="mt-2 text-primary font-medium">{edu.achievements.join(" • ")}</div>
                         )}
                       </div>

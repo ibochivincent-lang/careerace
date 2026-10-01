@@ -60,3 +60,23 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
   // 3. Fallback Rule-Based Free Model Response Generator
   return `Evaluated using Career Ace Open-Source Fallback Model: Highly aligned candidate profile based on technical stack and experience parameters.`;
 }
+
+export async function callFreeLlmJson<T>(prompt: string, system_prompt: string): Promise<T | null> {
+  const raw = await callFreeLlm({
+    prompt,
+    system_prompt: `${system_prompt}\nReturn ONLY a valid, raw JSON object without markdown formatting or backticks.`,
+    max_tokens: 1500,
+  });
+
+  try {
+    const clean = raw.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const firstBrace = clean.indexOf("{");
+    const lastBrace = clean.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      return JSON.parse(clean.substring(firstBrace, lastBrace + 1)) as T;
+    }
+    return JSON.parse(clean) as T;
+  } catch (err) {
+    return null;
+  }
+}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseCvText } from "@/lib/cv_parser";
+import { parseCvWithAi } from "@/lib/cv_parser";
 
 export async function POST(req: Request) {
   try {
@@ -20,8 +20,17 @@ export async function POST(req: Request) {
           cvText = buffer.toString("utf-8");
         } else if (file.name.endsWith(".pdf")) {
           try {
-            // Standard PDF text buffer extraction fallback
-            cvText = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ");
+            // Extract printable text chunks from PDF streams
+            const raw = buffer.toString("latin1");
+            const textMatches = raw.match(/\(([^()]{2,})\)|\[([^\[\]]{2,})\]/g);
+            if (textMatches && textMatches.length > 10) {
+              cvText = textMatches
+                .map(m => m.slice(1, -1).replace(/\\[rnbtf]/g, " "))
+                .join(" ")
+                .replace(/\s+/g, " ");
+            } else {
+              cvText = buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ");
+            }
           } catch (e) {
             cvText = buffer.toString("utf-8");
           }
@@ -38,7 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing CV file or text input" }, { status: 400 });
     }
 
-    const parsed = parseCvText(cvText);
+    const parsed = await parseCvWithAi(cvText);
 
     return NextResponse.json({
       success: true,
