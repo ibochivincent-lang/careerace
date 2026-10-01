@@ -15,7 +15,7 @@ import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, Paperclip, Sparkles, LogIn, MessageSquare,
   Award, User, GraduationCap, Send, Bot, Check, Edit3, Plus, X, AlertCircle,
-  Building, ShieldCheck
+  Building, ShieldCheck, Phone, Mail
 } from 'lucide-react'
 
 export default function CareerAcePage() {
@@ -36,7 +36,7 @@ export default function CareerAcePage() {
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
-      content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV or paste it above to get instant role matching, tailored CV impact points, and mock interview prep.'
+      content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV below or paste it into the vault to get instant role matching, tailored CV impact points, and mock interview prep.'
     }
   ])
 
@@ -282,7 +282,7 @@ export default function CareerAcePage() {
         const eduCount = data.profile.academic_history?.length || 0
         const certCount = data.profile.certifications?.length || 0
         toast.success(
-          `CV uploaded: Text displayed in box. Found ${eduCount} education/institution, ${expCount} experience, ${certCount} certs, ${skillCount} skills.`
+          `CV uploaded: Text displayed in box. Found candidate ${data.profile.applicant_name}, ${eduCount} institution/degree, ${expCount} experience, ${certCount} certs.`
         )
       }
     } catch (e) {
@@ -330,7 +330,7 @@ export default function CareerAcePage() {
         const eduCount = data.profile.academic_history?.length || 0
         const certCount = data.profile.certifications?.length || 0
         toast.success(
-          `CV parsed: ${eduCount} institution/degree, ${expCount} work entries, ${certCount} certifications, ${skillCount} skills.`
+          `CV parsed: ${data.profile.applicant_name} - ${eduCount} institution/degree, ${expCount} work entries, ${certCount} certifications, ${skillCount} skills.`
         )
       } else {
         setParseError('No profile data returned. Try pasting your CV text directly.')
@@ -353,9 +353,11 @@ export default function CareerAcePage() {
       const data = await res.json()
       if (data.jobs) {
         setHarvestedJobs(data.jobs)
+        toast.success(`Harvested ${data.jobs.length} live remote job postings across 9 verified feeds.`)
       }
     } catch (e) {
       console.error(e)
+      toast.error('Failed to refresh job listings.')
     } finally {
       setIsHarvesting(false)
     }
@@ -401,8 +403,8 @@ export default function CareerAcePage() {
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
+            <a href="#copilot" className="hover:text-foreground transition-colors font-semibold text-primary">AI Copilot</a>
             <a href="#cv-upload" className="hover:text-foreground transition-colors">CV Showcase</a>
-            <a href="#copilot" className="hover:text-foreground transition-colors">AI Copilot</a>
             <a href="#jobs" className="hover:text-foreground transition-colors">Job Matcher</a>
           </nav>
 
@@ -424,13 +426,13 @@ export default function CareerAcePage() {
 
       {/* ── Chatdeck Hero Block ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4">
-        <ChatdeckHero onStart={() => document.getElementById('cv-upload')?.scrollIntoView({ behavior: 'smooth' })} />
+        <ChatdeckHero onStart={() => document.getElementById('copilot')?.scrollIntoView({ behavior: 'smooth' })} />
       </div>
 
       {/* ── Chatdeck Features Section ────────────────────────────────────────── */}
       <ChatdeckFeatures />
 
-      {/* ── Interactive Workspace (File Upload Attachment & Harvester) ───────── */}
+      {/* ── Interactive Workspace ──────────────────────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 py-12">
         {/* Free Model Info Badge */}
         <div className="mb-6 flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/20">
@@ -440,7 +442,104 @@ export default function CareerAcePage() {
           <Badge variant="secondary">Zero Paid API Key Required</Badge>
         </div>
 
-        {/* CV File Upload Attachment Box */}
+        {/* ── 1. ACTIVE AI CAREER COPILOT CHATBOT (Positioned before CV attachment) ── */}
+        <div id="copilot" className="mb-16 scroll-mt-24">
+          <Card className="p-6 border-2 shadow-lg bg-card flex flex-col h-[560px]">
+            <div className="flex items-center justify-between border-b pb-4 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Career Ace AI Copilot</h3>
+                  <p className="text-xs text-muted-foreground">Autonomous Job Matching, CV Bullet Polishing & Interview Coaching</p>
+                </div>
+              </div>
+              <Badge variant="outline" className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live & Ready
+              </Badge>
+            </div>
+
+            {/* Chat Messages Log */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {msg.role === 'assistant' && (
+                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                      AI
+                    </div>
+                  )}
+                  <div
+                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[80%] whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                        : 'bg-muted/70 text-foreground rounded-tl-sm border border-border/40'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isSending && (
+                <div className="flex gap-3 justify-start">
+                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                    AI
+                  </div>
+                  <div className="rounded-2xl px-4 py-2.5 text-sm bg-muted/70 text-muted-foreground rounded-tl-sm border border-border/40 animate-pulse">
+                    Thinking and strategizing...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Prompt Starters */}
+            <div className="flex flex-wrap gap-2 pt-3 border-t mt-3">
+              <button
+                type="button"
+                onClick={() => handleSendMessage("Analyze my uploaded CV and tell me my strongest roles")}
+                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+              >
+                Analyze my top roles
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage("How can I tailor my CV bullets to get higher match scores?")}
+                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+              >
+                Improve CV match score
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage("Give me a STAR+R interview question for fullstack engineering")}
+                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+              >
+                Mock interview question
+              </button>
+            </div>
+
+            {/* Chat Input Bar */}
+            <div className="flex items-center gap-2 mt-3 pt-2">
+              <input
+                type="text"
+                placeholder="Ask Career Ace anything about your job search, CV, or interview prep..."
+                className="flex-1 bg-background border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSendMessage()
+                }}
+              />
+              <Button onClick={() => handleSendMessage()} disabled={isSending || !chatInput.trim()}>
+                <Send className="w-4 h-4 mr-1.5" /> Send
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* ── 2. CANDIDATE CV FILE ATTACHMENT & HIGHLIGHT SHOWCASE ────────────── */}
         <div id="cv-upload" className="mb-16 scroll-mt-24">
           <Card className="p-8 border-2 shadow-lg">
             <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
@@ -466,7 +565,7 @@ export default function CareerAcePage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Drag & drop your resume file here, or <span className="text-primary font-medium underline">browse files</span>
+                  Drag & drop your resume file here (<span className="text-primary font-semibold">PDF, DOCX, TXT</span>), or <span className="text-primary font-medium underline">browse files</span>
                 </p>
               )}
             </div>
@@ -505,7 +604,7 @@ export default function CareerAcePage() {
             </div>
             {isParsing && (
               <div className="mt-3 text-xs text-muted-foreground animate-pulse">
-                Extracting CV content, detecting institution, degree, work experience, certifications, and skills...
+                Extracting CV content, reading text, detecting institution, degree, work experience, certifications, and skills...
               </div>
             )}
           </Card>
@@ -513,7 +612,7 @@ export default function CareerAcePage() {
           {/* Interactive Candidate CV Showcase & Highlight Panel */}
           {parsedProfile && (
             <Card className="p-8 border-2 border-primary/20 bg-card/60 shadow-md mt-6 space-y-6">
-              {/* Header Info */}
+              {/* Header Info: Name, Phone, Email, URLs */}
               <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -521,9 +620,24 @@ export default function CareerAcePage() {
                     <h3 className="text-xl font-bold">{parsedProfile.applicant_name}</h3>
                     <Badge variant="outline">Verified Candidate</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {parsedProfile.email} {parsedProfile.github_url && `• ${parsedProfile.github_url}`}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1.5">
+                    {parsedProfile.email && (
+                      <span className="flex items-center gap-1 font-medium text-foreground">
+                        <Mail className="w-3.5 h-3.5 text-primary" /> {parsedProfile.email}
+                      </span>
+                    )}
+                    {parsedProfile.phone && (
+                      <span className="flex items-center gap-1 font-semibold text-primary">
+                        <Phone className="w-3.5 h-3.5 text-primary" /> {parsedProfile.phone}
+                      </span>
+                    )}
+                    {parsedProfile.github_url && (
+                      <span className="text-xs">GitHub: {parsedProfile.github_url}</span>
+                    )}
+                    {parsedProfile.linkedin_url && (
+                      <span className="text-xs">LinkedIn: {parsedProfile.linkedin_url}</span>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground font-semibold mb-1">Target Roles:</div>
@@ -721,7 +835,7 @@ export default function CareerAcePage() {
                 </div>
               </div>
 
-              {/* ── Verified Work Experience Showcase ── */}
+              {/* ── Verified Work Experience Showcase (Matching CV) ── */}
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                   <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -933,119 +1047,26 @@ export default function CareerAcePage() {
           )}
         </div>
 
-        {/* ── Active AI Career Copilot Chatbot ──────────────────────────────── */}
-        <div id="copilot" className="mb-16 scroll-mt-24">
-          <Card className="p-6 border-2 shadow-lg bg-card flex flex-col h-[560px]">
-            <div className="flex items-center justify-between border-b pb-4 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">Career Ace AI Copilot</h3>
-                  <p className="text-xs text-muted-foreground">Autonomous Job Matching, CV Bullet Polishing & Interview Coaching</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live & Ready
-              </Badge>
-            </div>
-
-            {/* Chat Messages Log */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-              {chatMessages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
-                      AI
-                    </div>
-                  )}
-                  <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[80%] whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                        : 'bg-muted/70 text-foreground rounded-tl-sm border border-border/40'
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {isSending && (
-                <div className="flex gap-3 justify-start">
-                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
-                    AI
-                  </div>
-                  <div className="rounded-2xl px-4 py-2.5 text-sm bg-muted/70 text-muted-foreground rounded-tl-sm border border-border/40 animate-pulse">
-                    Thinking and strategizing...
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Prompt Starters */}
-            <div className="flex flex-wrap gap-2 pt-3 border-t mt-3">
-              <button
-                type="button"
-                onClick={() => handleSendMessage("Analyze my uploaded CV and tell me my strongest roles")}
-                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
-              >
-                Analyze my top roles
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage("How can I tailor my CV bullets to get higher match scores?")}
-                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
-              >
-                Improve CV match score
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage("Give me a STAR+R interview question for fullstack engineering")}
-                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
-              >
-                Mock interview question
-              </button>
-            </div>
-
-            {/* Chat Input Bar */}
-            <div className="flex items-center gap-2 mt-3 pt-2">
-              <input
-                type="text"
-                placeholder="Ask Career Ace anything about your job search, CV, or interview prep..."
-                className="flex-1 bg-background border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendMessage()
-                }}
-              />
-              <Button onClick={() => handleSendMessage()} disabled={isSending || !chatInput.trim()}>
-                <Send className="w-4 h-4 mr-1.5" /> Send
-              </Button>
-            </div>
-          </Card>
-        </div>
-
-        {/* Job Harvester & Fit Scorer Box */}
+        {/* ── 3. UNIVERSAL JOB HARVESTER & FIT SCORER BOX ────────────────────── */}
         <div id="jobs" className="mb-16 scroll-mt-24">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-3xl font-bold">Universal Job Harvester</h2>
-              <p className="text-sm text-muted-foreground">Scans Remote, Onsite, and Hybrid listings matched against your candidate profile.</p>
+              <p className="text-sm text-muted-foreground">
+                Aggregates live remote listings across Remotive, WeWorkRemotely, Jobicy, RemoteOK, Himalayas, Nodesk, FreshRemote, Jobberman, and Google Jobs.
+              </p>
             </div>
             <Button variant="outline" onClick={handleHarvest} disabled={isHarvesting}>
-              <Search className="w-4 h-4 mr-2" /> {isHarvesting ? 'Scanning...' : 'Refresh Listings'}
+              <Search className="w-4 h-4 mr-2" /> {isHarvesting ? 'Scanning All Feeds...' : 'Refresh Listings'}
             </Button>
           </div>
 
           {harvestedJobs.length === 0 ? (
             <Card className="p-12 text-center border-dashed">
-              <p className="text-muted-foreground mb-4">No harvested jobs loaded yet. Click 'Refresh Listings' to scan public job channels.</p>
-              <Button onClick={handleHarvest} disabled={isHarvesting}>Run Harvester</Button>
+              <p className="text-muted-foreground mb-4">No harvested jobs loaded yet. Click 'Scan Live Feeds' to aggregate public job channels.</p>
+              <Button onClick={handleHarvest} disabled={isHarvesting}>
+                {isHarvesting ? 'Scanning All 9 Feeds...' : 'Scan Live Feeds'}
+              </Button>
             </Card>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">

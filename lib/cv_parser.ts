@@ -198,10 +198,15 @@ export function parseCvText(rawText: string): ParsedCv {
       if (emailMatch) email = emailMatch[0];
     }
     if (!phone) {
-      const phoneMatch = line.match(
-        /(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,4}/
-      );
-      if (phoneMatch) phone = phoneMatch[0];
+      const phoneLabelMatch = line.match(/(?:phone|tel|mobile|cell|contact|whatsapp)[\s:]*([+\d\s().-]{7,25})/i);
+      if (phoneLabelMatch) {
+        phone = phoneLabelMatch[1].trim();
+      } else {
+        const phoneMatch = line.match(/(?:\+?\d{1,4}[-.\s]?)?(?:\(?\d{2,5}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,5}\b/);
+        if (phoneMatch && phoneMatch[0].length >= 7 && !/^\d{4}$/.test(phoneMatch[0].trim())) {
+          phone = phoneMatch[0].trim();
+        }
+      }
     }
     if (!github_url && /github\.com/i.test(line)) {
       const gitMatch = line.match(
@@ -217,20 +222,27 @@ export function parseCvText(rawText: string): ParsedCv {
     }
   }
 
-  // Name: First non-empty line that is not an email, URL, phone, or section header
+  // Name: First non-empty line in the top of the CV that is not a label, URL, email, or section
   for (const line of lines.slice(0, 10)) {
     const clean = line.replace(/^[#*\-\s]+/, "").trim();
+    const nameLabelMatch = clean.match(/^name[\s:]+([A-Za-z\s'-]{2,40})$/i);
+    if (nameLabelMatch) {
+      applicant_name = nameLabelMatch[1].trim();
+      break;
+    }
     if (
-      clean.length > 1 &&
+      clean.length > 2 &&
       clean.length < 50 &&
       !clean.includes("@") &&
       !clean.includes("http") &&
+      !clean.includes(".com") &&
       !/^\+?\d/.test(clean) &&
       !SECTION_HEADERS.summary.test(clean) &&
       !SECTION_HEADERS.experience.test(clean) &&
       !SECTION_HEADERS.skills.test(clean) &&
       !SECTION_HEADERS.education.test(clean) &&
-      !/^(curriculum|resume|cv)\b/i.test(clean)
+      !SECTION_HEADERS.certifications.test(clean) &&
+      !/^(curriculum\s+vitae|resume|cv|contact\s+details|personal\s+profile|portfolio)\b/i.test(clean)
     ) {
       applicant_name = clean;
       break;

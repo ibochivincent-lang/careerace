@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseCvText, parseCvWithAi } from "@/lib/cv_parser";
 import zlib from "zlib";
+import { PDFParse } from "pdf-parse";
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
           cvText = buffer.toString("utf-8");
           extractionMethod = "plaintext";
         } else if (file.name.endsWith(".pdf")) {
-          cvText = extractPdfText(buffer);
+          cvText = await extractPdfText(buffer);
           extractionMethod = "pdf_extraction";
         } else if (
           file.name.endsWith(".docx") ||
@@ -118,10 +119,8 @@ function decodePdfLiteralString(str: string): string {
  * Extract text instructions from raw or decompressed PDF stream content.
  */
 function extractFromPdfStream(streamString: string, outputChunks: string[]) {
-  // 1. Text blocks: BT ... ET
   const btBlocks = streamString.match(/BT[\s\S]*?ET/g) || [];
   for (const block of btBlocks) {
-    // TJ array: [(text) num (text)] TJ
     const tjArrays = block.match(/\[([^\]]+)\]\s*TJ/gi);
     if (tjArrays) {
       for (const arr of tjArrays) {
@@ -135,7 +134,6 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
       }
     }
 
-    // Tj operator: (text) Tj
     const tjMatches = block.match(/\(([^()]+)\)\s*T[jJ]/g);
     if (tjMatches) {
       for (const m of tjMatches) {
@@ -145,7 +143,6 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
       }
     }
 
-    // Single quotes: ' or '' operators
     const quoteMatches = block.match(/\(([^()]+)\)\s*['"]/g);
     if (quoteMatches) {
       for (const m of quoteMatches) {
@@ -156,7 +153,6 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
     }
   }
 
-  // Fallback: parenthesized strings longer than 3 characters if BT/ET produced few results
   if (outputChunks.length < 5) {
     const parenMatches = streamString.match(/\(([^()]{3,})\)/g) || [];
     for (const m of parenMatches) {
@@ -170,14 +166,30 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
 }
 
 /**
- * Extract readable text from raw PDF buffer without external libraries.
- * Handles both uncompressed text and FlateDecode streams decompressed with built-in zlib.
+ * Extract readable text from PDF buffer using PDFParse with multiple fallbacks.
  */
-function extractPdfText(buffer: Buffer): string {
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  // Strategy 1: Official PDF.js engine via PDFParse
+  try {
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
+    if (result && typeof result.text === "string" && result.text.trim().length > 10) {
+      const clean = result.text
+        .replace(/-- \d+ of \d+ --/g, "")
+        .replace(/\r\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      if (clean.length > 10) return clean;
+    }
+  } catch (err) {
+    console.warn("[cv_upload] PDFParse standard parsing failed, attempting fallback:", err);
+  }
+
+  // Strategy 2: Decompress flate streams in PDF
   const textChunks: string[] = [];
   const rawLatin = buffer.toString("latin1");
 
-  // Decompress streams in PDF
   const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
   let match: RegExpExecArray | null;
   while ((match = streamRegex.exec(rawLatin)) !== null) {
@@ -191,7 +203,7 @@ function extractPdfText(buffer: Buffer): string {
       try {
         decompressed = zlib.inflateRawSync(streamBuffer).toString("latin1");
       } catch {
-        // Stream not compressed or unsupported compression
+        // Not compressed
       }
     }
 
@@ -200,14 +212,13 @@ function extractPdfText(buffer: Buffer): string {
     }
   }
 
-  // Also check uncompressed blocks in the overall PDF file
   extractFromPdfStream(rawLatin, textChunks);
 
   if (textChunks.length > 5) {
     return textChunks.join("\n").replace(/[ \t]+/g, " ").trim();
   }
 
-  // Ultimate fallback: Printable ASCII strings
+  // Strategy 3: Printable ASCII strings
   const utf8 = buffer.toString("utf-8");
   const printableRuns = utf8.match(/[\x20-\x7E\n\r\t]{12,}/g) || [];
   return printableRuns.join("\n").replace(/[ \t]+/g, " ").trim();
@@ -215,13 +226,11 @@ function extractPdfText(buffer: Buffer): string {
 
 /**
  * Extract readable text from DOCX buffer (which is a ZIP containing word/document.xml).
- * Uses built-in zlib to parse the ZIP structure and extract document text accurately.
  */
 function extractDocxText(buffer: Buffer): string {
   try {
     let offset = 0;
     while (offset < buffer.length - 30) {
-      // Zip local file header signature: 0x04034b50
       if (buffer.readUInt32LE(offset) === 0x04034b50) {
         const compressionMethod = buffer.readUInt16LE(offset + 8);
         const compressedSize = buffer.readUInt32LE(offset + 18);
@@ -242,7 +251,6 @@ function extractDocxText(buffer: Buffer): string {
           }
 
           if (xml) {
-            // Extract text from <w:t> tags
             const wtMatches = xml.match(/<w:t[^>]*>([^<]*)<\/w:t>/gi) || [];
             const textLines: string[] = [];
             let currentLine = "";
