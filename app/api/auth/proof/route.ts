@@ -1,11 +1,18 @@
 import { type NextRequest } from "next/server";
 
 const rawNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "").trim().toLowerCase();
-const PROVER_URL =
+// Mysten Labs public prover for Testnet & Devnet is prover-dev.mystenlabs.com,
+// which accepts all registered OAuth Client IDs without requiring an Enoki enterprise whitelist.
+const PRIMARY_PROVER =
   process.env.ZKLOGIN_PROVER_URL?.trim() ||
-  (rawNetwork.startsWith("devnet")
-    ? "https://prover-dev.mystenlabs.com/v1"
-    : "https://prover.mystenlabs.com/v1");
+  (rawNetwork.startsWith("mainnet")
+    ? "https://prover.mystenlabs.com/v1"
+    : "https://prover-dev.mystenlabs.com/v1");
+
+const FALLBACK_PROVER =
+  PRIMARY_PROVER === "https://prover-dev.mystenlabs.com/v1"
+    ? "https://prover.mystenlabs.com/v1"
+    : "https://prover-dev.mystenlabs.com/v1";
 
 /**
  * Server-side proxy for the Mysten Labs zkLogin ZK prover.
@@ -24,13 +31,34 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const proverRes = await fetch(PROVER_URL, {
+    let proverRes = await fetch(PRIMARY_PROVER, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    const proverText = await proverRes.text();
+    let proverText = await proverRes.text();
+
+    // If primary prover rejects audience or returns 400 with "not supported", attempt the fallback prover
+    if (!proverRes.ok && (proverText.includes("not supported") || proverRes.status === 400 || proverRes.status === 502)) {
+      console.warn(`[zklogin] Primary prover (${PRIMARY_PROVER}) returned ${proverRes.status}: ${proverText}. Retrying with fallback: ${FALLBACK_PROVER}`);
+      try {
+        const fallbackRes = await fetch(FALLBACK_PROVER, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const fallbackText = await fallbackRes.text();
+        if (fallbackRes.ok) {
+          proverRes = fallbackRes;
+          proverText = fallbackText;
+        } else {
+          console.error(`[zklogin] Fallback prover (${FALLBACK_PROVER}) also failed:`, fallbackRes.status, fallbackText);
+        }
+      } catch (fallbackErr) {
+        console.error("[zklogin] Fallback prover fetch error:", fallbackErr);
+      }
+    }
 
     if (!proverRes.ok) {
       console.error("[zklogin] Prover returned error:", proverRes.status, proverText);
