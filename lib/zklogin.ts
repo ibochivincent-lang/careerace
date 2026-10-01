@@ -6,6 +6,8 @@ import {
   getExtendedEphemeralPublicKey,
   jwtToAddress,
   getZkLoginSignature,
+  decodeJwt,
+  genAddressSeed,
 } from "@mysten/sui/zklogin";
 
 const NETWORK = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "testnet") as "testnet" | "mainnet";
@@ -162,9 +164,20 @@ export async function completeGoogleZkLogin(jwt: string): Promise<{ address: str
   const messageBytes = new TextEncoder().encode(message);
   const signed = await ephemeralKeypair.signPersonalMessage(messageBytes);
 
-  // 6. Wrap into zkLogin signature
+  // 6. Derive addressSeed and wrap into zkLogin signature
+  const decodedJwt = decodeJwt(jwt);
+  const addressSeed = genAddressSeed(
+    userSalt,
+    "sub",
+    decodedJwt.sub,
+    decodedJwt.aud
+  ).toString();
+
   const zkLoginSignature = getZkLoginSignature({
-    inputs: zkProof,
+    inputs: {
+      ...zkProof,
+      addressSeed,
+    },
     maxEpoch,
     userSignature: signed.signature,
   });
