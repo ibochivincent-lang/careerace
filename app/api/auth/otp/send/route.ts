@@ -49,8 +49,12 @@ export async function POST(req: Request) {
 
     if (otpError) {
       console.error("[otp/send] Supabase error:", otpError.message);
-      if (otpError.message.toLowerCase().includes("rate limit")) {
+      const errLower = otpError.message.toLowerCase();
+      if (errLower.includes("rate limit")) {
         return new Response("Supabase email rate limit reached. Please wait a few moments or connect a custom SMTP provider (e.g. Resend) in your Supabase dashboard.", { status: 429 });
+      }
+      if (errLower.includes("error sending") || errLower.includes("magic link") || errLower.includes("confirmation email")) {
+        return new Response("Supabase failed to send the email. If you enabled 'Custom SMTP' in Supabase, ensure your SMTP password/API key is valid, or toggle 'Enable Custom SMTP' OFF in Supabase SMTP Settings to use the default mailer.", { status: 500 });
       }
       return new Response(otpError.message || "Failed to send verification code.", {
         status: otpError.status || 400,
