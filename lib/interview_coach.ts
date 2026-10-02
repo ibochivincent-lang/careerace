@@ -1,5 +1,6 @@
 import type { ProcessedApplication } from "./application_router.ts";
 import type { ParsedCv } from "./cv_parser.ts";
+import { callFreeLlmJson } from "./free_llm.ts";
 
 export interface StarQuestion {
   question_id: string;
@@ -18,29 +19,60 @@ export function generatePostApplicationInterviewPrep(
   application: ProcessedApplication,
   cv: ParsedCv
 ): StarQuestion[] {
+  const primarySkill = cv.skills?.[0] || "TypeScript";
+  const secondarySkill = cv.skills?.[1] || "React";
+  const company = application.company || "Target Tech Company";
+  const role = application.title || "Software Engineer";
+  const prevCompany = cv.work_experience?.[0]?.company || "previous tech organization";
+  const prevRole = cv.work_experience?.[0]?.role || "Software Developer";
+
   return [
     {
       question_id: `q_${application.job_id}_1`,
       category: "technical",
-      question_text: `Can you describe a challenging technical problem you solved using ${cv.skills[0] || "React"} at your previous role?`,
+      question_text: `Can you describe a complex technical challenge you solved using ${primarySkill} and ${secondarySkill} at ${prevCompany}?`,
       suggested_star_angle: {
-        situation: `Working at ${cv.work_experience[0]?.company || "previous company"}, system latency was impacting user retention.`,
-        task: "Refactor core API response handling and optimize component rendering.",
-        action: "Implemented memoization, virtualized lists, and asynchronous query caching.",
-        result: "Reduced page load time by 40% and improved throughput.",
-        reflection: "Learned the value of proactive performance profiling during early architecture planning."
+        situation: `Working at ${prevCompany}, high latency and scalability bottlenecks affected core customer workflows.`,
+        task: `Refactor backend service endpoints and optimize client state caching without disrupting active users.`,
+        action: `Implemented asynchronous query batching, structured error boundaries, and Redis caching layers.`,
+        result: `Reduced endpoint response latency by 45% and improved customer satisfaction scores.`,
+        reflection: `Learned the critical value of proactive telemetry and benchmarking before initiating deep architectural refactors.`
       }
     },
     {
       question_id: `q_${application.job_id}_2`,
       category: "behavioral",
-      question_text: `How do you approach aligning code implementations with tight business deadlines at ${application.company}?`,
+      question_text: `Tell me about a time you navigated shifting product priorities and tight deadlines while building for ${role} level expectations.`,
       suggested_star_angle: {
-        situation: `During the launch phase for ${cv.work_experience[0]?.role || "Engineering team"}, requirements shifted close to deadline.`,
-        task: "Deliver core features on time without compromising production quality or security.",
-        action: "Prioritized MVP features, set up automated integration tests, and maintained continuous communication with product managers.",
-        result: "Successfully shipped key features on schedule with zero critical bugs.",
-        reflection: "Demonstrated that transparent scope management is key to delivering high quality software under tight deadlines."
+        situation: `During a major release cycle, key feature specifications changed two weeks before launch.`,
+        task: `Re-evaluate implementation scope to deliver core business value without introducing security vulnerabilities.`,
+        action: `Conducted rapid triage with product stakeholders, isolated MVP deliverables, and established clear milestone boundaries.`,
+        result: `Shipped critical functionality on schedule with zero high-severity production regressions.`,
+        reflection: `Transparent, early communication across engineering and product is the most effective safeguard against deadline slippage.`
+      }
+    },
+    {
+      question_id: `q_${application.job_id}_3`,
+      category: "architecture",
+      question_text: `How would you architect a fault-tolerant, high-throughput service for ${company}'s core business domains?`,
+      suggested_star_angle: {
+        situation: `Designing a mission-critical subsystem requiring high availability across multiple geographic regions.`,
+        task: `Ensure zero single points of failure, partition tolerance, and strict data consistency guarantees.`,
+        action: `Leveraged decoupled message queues, idempotency tokens, and eventual consistency models with automated dead-letter retries.`,
+        result: `Achieved 99.99% service availability during stress testing with automated disaster failover.`,
+        reflection: `Architectural simplicity and defensive design principles yield far greater resilience than premature complexity.`
+      }
+    },
+    {
+      question_id: `q_${application.job_id}_4`,
+      category: "leadership",
+      question_text: `Describe a situation where you advocated for engineering best practices (such as testing or security) against pressure to ship quickly.`,
+      suggested_star_angle: {
+        situation: `Engineering team was accumulating technical debt and skipping end-to-end integration tests to meet sprint goals.`,
+        task: `Demonstrate the tangible cost of defects and establish sustainable quality standards for future releases.`,
+        action: `Presented incident metrics linking test gaps to outage hours; introduced automated CI validation gates with team buy-in.`,
+        result: `Reduced post-release rollback frequency by 60% within two quarters.`,
+        reflection: `Influencing team culture requires empirical data and empathy rather than top-down process mandates.`
       }
     }
   ];
@@ -60,11 +92,45 @@ export interface StarEvaluation {
   coach_critique: string;
 }
 
-export function evaluateStarAnswer(
+export async function evaluateStarAnswer(
   question: string,
   answer: string,
   roleContext?: string
-): StarEvaluation {
+): Promise<StarEvaluation> {
+  // 1. Attempt Genuine AI Evaluation using configured LLM
+  try {
+    const prompt = `Evaluate candidate interview answer for role "${roleContext || "Software Engineer"}":
+Question: "${question}"
+Candidate Answer: "${answer}"
+
+Provide rigorous STAR+R analysis (Situation, Task, Action, Result, Reflection).`;
+
+    const systemPrompt = `You are a Principal Technical Interview Coach. Analyze the response and return ONLY valid JSON:
+{
+  "overall_score": number (1-10),
+  "dimensions": {
+    "situation": { "score": number (1-10), "feedback": "string" },
+    "task": { "score": number (1-10), "feedback": "string" },
+    "action": { "score": number (1-10), "feedback": "string" },
+    "result": { "score": number (1-10), "feedback": "string" },
+    "reflection": { "score": number (1-10), "feedback": "string" }
+  },
+  "strengths": ["string", "string"],
+  "improvements": ["string", "string"],
+  "coach_critique": "string"
+}`;
+
+    const aiResult = await callFreeLlmJson<StarEvaluation>(prompt, systemPrompt);
+    if (aiResult && typeof aiResult.overall_score === "number" && aiResult.dimensions) {
+      return aiResult;
+    }
+  } catch (_aiErr) {}
+
+  // 2. Deterministic Rubric Fallback
+  return fallbackStarEvaluation(question, answer);
+}
+
+function fallbackStarEvaluation(question: string, answer: string): StarEvaluation {
   const text = answer.trim().toLowerCase();
   const wordCount = answer.trim().split(/\s+/).length;
 
@@ -102,12 +168,12 @@ export function evaluateStarAnswer(
   const strengths: string[] = [];
   const improvements: string[] = [];
 
-  if (hasAction) strengths.push("Strong personal agency and clear ownership in technical action steps.");
-  if (hasSituation) strengths.push("Clear framing of organizational context and background constraints.");
-  if (hasResult) strengths.push("Demonstrated business impact with concrete outcome indicators.");
-  else improvements.push("Quantify your results with concrete metrics (e.g. latency reduced by X%, throughput increased by Y).");
+  if (hasAction) strengths.push("Clear personal ownership and proactive technical execution steps.");
+  if (hasSituation) strengths.push("Strong initial framing of operational context and organizational stakes.");
+  if (hasResult) strengths.push("Concrete business impact demonstrated with measurable outcome metrics.");
+  else improvements.push("Quantify results with hard metrics (e.g. latency reduced by X%, throughput increased by Y).");
 
-  if (!hasReflection) improvements.push("Add a +Reflection closing statement on what technical insights you gained and how they influenced future architecture.");
+  if (!hasReflection) improvements.push("Conclude with a +Reflection on what architectural insights or lessons you carried into future systems.");
   if (wordCount < 40) improvements.push("Elaborate on specific architectural tradeoffs and technical decisions made during implementation.");
 
   return {
@@ -148,7 +214,7 @@ export function evaluateStarAnswer(
     improvements,
     coach_critique:
       overall >= 8
-        ? "Excellent STAR+R response. Clear demonstration of technical ownership, quantifiable impact, and reflective maturity."
+        ? "Strong STAR+R answer. Demonstrates decisive technical ownership, quantifiable impact, and reflective leadership."
         : "Good foundation. Focusing on quantitative results and closing with a forward-looking reflection will make this response stand out to senior engineering interviewers.",
   };
 }

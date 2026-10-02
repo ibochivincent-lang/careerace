@@ -2,11 +2,9 @@
 // Career Ace — Local Storage Utilities
 // =============================================================================
 
-import type { CognitiveMap, Session } from './types'
-import { INITIAL_COGNITIVE_MAP } from './mock_data'
+import type { Session } from './types'
 
 const STORAGE_KEYS = {
-  COGNITIVE_MAP:  'careerace_cognitive_map',
   SESSIONS:       'careerace_sessions',
   CURRENT_SESSION:'careerace_current_session',
   NOTIFICATIONS:  'careerace_notifications',
@@ -14,25 +12,6 @@ const STORAGE_KEYS = {
   STREAK_DATE:    'careerace_streak_date',
   DAILY_GOAL:     'careerace_daily_goal',
 } as const
-
-// ── Cognitive Map ────────────────────────────────────────────────────────────
-
-export function getCognitiveMap(): CognitiveMap {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.COGNITIVE_MAP)
-    return stored ? JSON.parse(stored) : INITIAL_COGNITIVE_MAP
-  } catch {
-    return INITIAL_COGNITIVE_MAP
-  }
-}
-
-export function saveCognitiveMap(map: CognitiveMap): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.COGNITIVE_MAP, JSON.stringify(map))
-  } catch (e) {
-    console.error('Failed to save cognitive map:', e)
-  }
-}
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 

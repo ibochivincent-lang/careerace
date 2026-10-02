@@ -10,26 +10,40 @@ export interface TailoredPackage {
 }
 
 export function generateTailoredCvAndCoverLetter(job: NormalizedJob, cv: ParsedCv): TailoredPackage {
-  const tailored_summary = `Results-oriented software engineer with proven expertise in ${cv.skills.slice(0, 4).join(", ")}, specializing in scalable web application development. Tailored for ${job.title} at ${job.company}.`;
+  const jobKeywords = `${job.title} ${job.description}`.toLowerCase();
+  const matchingSkills = (cv.skills || []).filter(s => jobKeywords.includes(s.toLowerCase()));
+  const skillsToFeature = matchingSkills.length > 0 ? matchingSkills : (cv.skills || []).slice(0, 4);
+
+  const tailored_summary = `Results-driven engineer with verified expertise in ${skillsToFeature.slice(0, 4).join(", ")}, specializing in high-performance production systems. Profile aligned for ${job.title} at ${job.company}.`;
 
   const aligned_highlights: string[] = [];
-  for (const exp of cv.work_experience) {
-    for (const highlight of exp.highlights) {
-      aligned_highlights.push(`${highlight} (Aligned with ${job.company} requirements)`);
+  for (const exp of cv.work_experience || []) {
+    for (const highlight of exp.highlights || []) {
+      // Pick out highlights that match role technologies or have quantified outcomes
+      if (jobKeywords.split(/\s+/).some(kw => kw.length > 3 && highlight.toLowerCase().includes(kw)) || /\d+%|\bscalable\b|\boptimized\b/i.test(highlight)) {
+        aligned_highlights.push(`${highlight}`);
+      } else if (aligned_highlights.length < 3) {
+        aligned_highlights.push(highlight);
+      }
     }
   }
 
-  const cover_letter = `Dear Hiring Manager at ${job.company},
+  const primarySkill = skillsToFeature[0] || "TypeScript";
+  const secondarySkill = skillsToFeature[1] || "Modern Web Frameworks";
+  const prevRole = cv.work_experience?.[0]?.role || "Software Engineer";
+  const prevComp = cv.work_experience?.[0]?.company || "previous tech organization";
 
-I am writing to express my strong interest in the ${job.title} role. With a solid background in ${cv.skills.join(", ")}, I have built resilient web applications and high-throughput APIs.
+  const cover_letter = `Dear Hiring Team at ${job.company},
 
-At my previous role as ${cv.work_experience[0]?.role || "Engineer"} at ${cv.work_experience[0]?.company || "Software Firm"}, I successfully optimized system performance and delivered production-grade features using modern frameworks like ${cv.skills[0] || "React"} and ${cv.skills[1] || "Node.js"}.
+I am writing to express my strong interest in the ${job.title} position. With hands-on experience in ${skillsToFeature.join(", ")}, I have designed resilient production architectures and delivered high-throughput APIs.
 
-I am particularly excited about ${job.company}'s mission and would welcome the opportunity to bring my technical skills and problem-solving experience to your engineering team.
+In my recent experience as ${prevRole} at ${prevComp}, I led performance optimizations and built scalable features using ${primarySkill} and ${secondarySkill}. My technical background directly aligns with the key qualifications outlined for ${job.company}'s engineering objectives.
+
+I would welcome the opportunity to discuss how my technical proficiencies and problem-solving background can contribute to your team.
 
 Sincerely,
-${cv.applicant_name}
-${cv.email}
+${cv.applicant_name || "Candidate"}
+${cv.email || ""}
 ${cv.github_url || ""}
 ${cv.linkedin_url || ""}`;
 

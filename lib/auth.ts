@@ -13,8 +13,8 @@ const SECRET = () => {
   return "careerace_sovereign_session_secret_2026_ibotv";
 };
 
-export const SESSION_COOKIE = "ea_session";
-export const NONCE_COOKIE = "ea_nonce";
+export const SESSION_COOKIE = "careerace_session";
+export const NONCE_COOKIE = "careerace_nonce";
 const TTL_MS = 1000 * 60 * 60 * 12;
 
 function sign(payload: string) {
@@ -64,11 +64,21 @@ export function challengeText(nonce: string) {
 
 /**
  * Deterministically derives a 128-bit user salt from the JWT issuer and subject claim.
- * Eliminates the need for any paid external salt service while ensuring the user's
- * address is permanent and recoverable across logins.
+ * Uses a persistent master key so candidate blockchain addresses remain stable
+ * across session renewals and server restarts.
  */
 export function deriveUserSalt(iss: string, sub: string): string {
-  const hash = crypto.createHmac("sha256", SECRET()).update(`zklogin-salt:${iss}:${sub}`).digest("hex");
+  const masterKey = process.env.ZKLOGIN_SALT_MASTER_KEY?.trim() || SECRET();
+  const hash = crypto.createHmac("sha256", masterKey).update(`zklogin-salt:${iss}:${sub}`).digest("hex");
   return BigInt("0x" + hash.slice(0, 32)).toString();
+}
+
+/**
+ * Deterministically derives a 66-character sovereign hex address (0x...) from a user ID or email.
+ * This guarantees consistent vault access and data isolation for username/email credentials.
+ */
+export function deriveVaultAddressFromUserId(userId: string): string {
+  const hash = crypto.createHash("sha256").update(`careerace:user:${userId.trim().toLowerCase()}`).digest("hex");
+  return `0x${hash}`;
 }
 

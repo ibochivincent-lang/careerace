@@ -75,23 +75,27 @@ export async function POST(req: Request) {
   const activeLearning = resolveConflicts(learning).active;
   const activeFeedback = resolveConflicts(feedback).active;
   const profile = {
-    goal: claimsOfKind(activeLearning, "goal"),
-    misconceptions: claimsOfKind(activeLearning, "misconception"),
+    targetRoles: claimsOfKind(activeLearning, "target_role"),
+    skills: claimsOfKind(activeLearning, "skill"),
+    experiences: claimsOfKind(activeLearning, "experience"),
+    education: claimsOfKind(activeLearning, "education"),
+    tailoredCv: claimsOfKind(activeLearning, "tailored_cv"),
+    applications: claimsOfKind(activeFeedback, "application"),
+    interviewFeedback: claimsOfKind(activeFeedback, "interview_feedback"),
+    preferences: claimsOfKind(activeFeedback, "preference"),
     weaknesses: claimsOfKind(activeLearning, "weakness"),
     mastery: claimsOfKind(activeLearning, "mastery"),
+    goal: claimsOfKind(activeLearning, "goal"),
+    misconceptions: claimsOfKind(activeLearning, "misconception"),
     errorPatterns: claimsOfKind(activeFeedback, "error_pattern"),
-    preferences: claimsOfKind(activeFeedback, "preference"),
-    // An explicit "I have no exam date yet" is a fact we stored. Without
-    // reading it back, the tutor cannot distinguish "they told us" from "we
-    // never asked", and would interrogate them again every session.
     cleared: claimsOfKind(activeLearning, "clearance").length > 0,
   };
 
   const memoryBlock = [...activeLearning, ...activeFeedback].length
-    ? `WHAT YOU ALREADY KNOW ABOUT THIS STUDENT (from their own stored memory, carried across sessions):\n${
+    ? `WHAT YOU ALREADY KNOW ABOUT THIS CANDIDATE (from their own stored memory, carried across sessions):\n${
         [...activeLearning, ...activeFeedback].map((f) => `- ${f.text}`).join("\n")
-      }\nThese were retrieved for THIS turn regardless of what was asked. Use them without asking the student to repeat them. If two facts disagree, trust the newer date and say so out loud.`
-    : "You have no stored facts about this student yet. This is a genuinely empty record, not a failed lookup - the exam target and misconceptions are fetched every turn with a fixed query, so an empty list means they have never told you.";
+      }\nThese were retrieved for THIS turn regardless of what was asked. Use them without asking the candidate to repeat them. If two facts disagree, trust the newer date and say so out loud.`
+    : "You have no stored facts about this candidate yet. This is a genuinely empty record, not a failed lookup - the target roles, verified skills, and work accomplishments are fetched every turn with a fixed query, so an empty list means they have never told you.";
 
   const system = [
     BASE_PROMPT,

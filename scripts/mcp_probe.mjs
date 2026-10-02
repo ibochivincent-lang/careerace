@@ -1,5 +1,5 @@
 /**
- * Verifies the ExamAce MCP server actually speaks MCP: handshake, tool
+ * Verifies the Career Ace MCP server actually speaks MCP: handshake, tool
  * discovery, and one call of each tool.
  *
  *   pnpm mcp:probe

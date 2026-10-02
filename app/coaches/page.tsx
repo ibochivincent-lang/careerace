@@ -14,15 +14,15 @@ export default async function CoachesPage() {
   if (!address) redirect('/signin')
 
   const [profile, feedback] = await Promise.all([
-    recallProfile(address, 'weak topics and misconceptions').catch(() => []),
-    recallFeedback(address, 'recurring mistakes').catch(() => []),
+    recallProfile(address, 'skills, target roles and technical areas').catch(() => []),
+    recallFeedback(address, 'interview coaching and feedback').catch(() => []),
   ])
 
   const p = resolveConflicts(profile).active
   const f = resolveConflicts(feedback).active
   const ranked = rankCoaches(
-    [...claimsOfKind(p, 'weakness'), ...claimsOfKind(p, 'misconception')],
-    claimsOfKind(f, 'error_pattern'),
+    [...claimsOfKind(p, 'skill'), ...claimsOfKind(p, 'target_role'), ...claimsOfKind(p, 'weakness'), ...claimsOfKind(p, 'misconception')],
+    [...claimsOfKind(f, 'interview_feedback'), ...claimsOfKind(f, 'error_pattern')],
   )
   const anyMatch = ranked.some((c) => c.score > 0)
 
@@ -32,11 +32,11 @@ export default async function CoachesPage() {
         <MemoryHeader address={address} active="/coaches" />
 
         <div className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-10">
-          <h1 className="text-3xl font-bold tracking-tight">Coaches</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Executive &amp; Technical Coaches</h1>
           <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-muted-foreground">
             {anyMatch
-              ? 'Ranked from what your tutor remembers — not from a search box you filled in. Revoke its access and this list goes flat.'
-              : 'Unranked. Your tutor has no stored weak topics yet, or its access to them was revoked.'}
+              ? 'Ranked from what your Career Ace copilot remembers — not from a search box you filled in. Stored on Walrus and owned by you.'
+              : 'Unranked. Your career vault has no stored skill targets or coaching records yet, or access was revoked.'}
           </p>
 
           <ol className="mt-7 flex flex-col gap-3">

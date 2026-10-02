@@ -1,15 +1,15 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, Target, TrendingUp, User } from 'lucide-react'
+import { Briefcase, LayoutDashboard, Target, Database, Sparkles } from 'lucide-react'
 import { cn } from './ui/utils'
 
 const navItems = [
-  { label: 'Home',     href: '/dashboard',       icon: LayoutDashboard },
-  { label: 'Study',    href: '/session/new',      icon: BookOpen },
-  { label: 'Practice', href: '/practice',         icon: Target },
-  { label: 'Progress', href: '/progress',         icon: TrendingUp },
-  { label: 'Profile',  href: '/settings',         icon: User },
+  { label: 'Workspace',    href: '/dashboard',         icon: Briefcase },
+  { label: 'Applications', href: '/application_board', icon: LayoutDashboard },
+  { label: 'Interview',    href: '/interview_room',    icon: Target },
+  { label: 'Vault',        href: '/memory',            icon: Database },
+  { label: 'Coach',        href: '/tutor',             icon: Sparkles },
 ]
 
 function isActive(href: string, pathname: string): boolean {

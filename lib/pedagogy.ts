@@ -142,8 +142,12 @@ const TOPIC_TOKENS: Record<string, string[]> = {
   oral_english: ["oral english", "vowel sound", "consonant sound", "stress pattern", "rhyme"],
   demand_supply: ["demand curve", "supply curve", "equilibrium price", "market"],
   elasticity: ["elasticity", "elastic demand", "inelastic"],
-  national_income: ["gdp", "gnp", "national income", "per capita"],
   money_banking: ["central bank", "monetary policy", "commercial bank", "inflation"],
+  system_design: ["system design", "architecture", "microservices", "scalability", "load balancer", "database scaling"],
+  frontend_architecture: ["react", "frontend", "next.js", "nextjs", "css", "state management", "web vitals"],
+  smart_contracts: ["smart contract", "sui move", "move", "blockchain", "web3", "walrus"],
+  behavioral_star: ["star", "behavioral", "leadership", "incident", "conflict", "team"],
+  career_strategy: ["negotiation", "salary", "compensation", "offer", "resume", "cv"],
 };
 
 const TOPIC_SYNONYMS: Record<string, string> = Object.fromEntries(
@@ -208,33 +212,45 @@ const ANSWER_REVEAL_TOKENS = [
 ];
 
 export type LearnerProfile = {
+  /** Target roles & job titles */
+  targetRoles?: string[];
+  /** Verified technical and professional skills */
+  skills?: string[];
+  /** Work experiences & achievements */
+  experiences?: string[];
+  /** Academic credentials */
+  education?: string[];
+  /** Tailored CV sections */
+  tailoredCv?: string[];
+  /** Applications submitted or queued */
+  applications?: string[];
+  /** Interview feedback and STAR+R assessments */
+  interviewFeedback?: string[];
   /** Exam target and date, as stored: "JAMB - April 2026". */
   goal?: string[];
   /** Wrong models they hold. Never restate one as true. */
   misconceptions?: string[];
-  /** Topics they struggle with. */
+  /** Topics or skills they struggle with. */
   weaknesses?: string[];
-  /** Topics already demonstrated. Re-drilling these wastes the session. */
+  /** Topics or skills already demonstrated. */
   mastery?: string[];
   /** Recurring mistake shapes. */
   errorPatterns?: string[];
   /** Standing delivery preferences. Never a pedagogical override. */
   preferences?: string[];
-  /** They explicitly told us they have no exam date / no weak topics yet. */
+  /** They explicitly told us they have no restrictions yet. */
   cleared?: boolean;
 };
 
 /**
- * Do we actually know what this student is preparing for?
- *
- * "Nothing recalled" is NOT the same as "nothing to work on". Until they have
- * either named an exam target and something they find hard, or explicitly said
- * they have neither, the honest answer is that we do not know — and a tutor
- * that builds a study plan in that state is guessing with someone's exam.
+ * Do we actually know what this candidate/student is preparing for?
  */
 export function targetKnown(profile: LearnerProfile = {}) {
   return (
     Boolean(profile.cleared) ||
+    normalizeList(profile.targetRoles).length > 0 ||
+    normalizeList(profile.skills).length > 0 ||
+    normalizeList(profile.experiences).length > 0 ||
     normalizeList(profile.goal).length > 0 ||
     normalizeList(profile.weaknesses).length > 0 ||
     normalizeList(profile.misconceptions).length > 0
@@ -273,9 +289,6 @@ export function normalizeMisconceptions(list: string[] | string | undefined): st
   for (const raw of normalizeList(list)) {
     const value = raw.toLowerCase().trim();
     const matched = matchTerms(value, MISCONCEPTION_SYNONYMS);
-    // Unrecognised misconceptions are kept verbatim so callers can still show
-    // them — the table is a safety net, not the set of wrong ideas a student
-    // is allowed to have.
     if (matched.length) matched.forEach((k) => keys.add(k));
     else keys.add(value);
   }
@@ -339,27 +352,43 @@ export function buildBlocklist(profile: LearnerProfile = {}) {
 /** Hard constraints folded into the system prompt — defence in depth, before screening. */
 export function buildTeachingConstraintsText(profile: LearnerProfile) {
   const { misconceptionKeys, errorTypes, target } = buildBlocklist(profile);
-  const lines = ["HARD TEACHING CONSTRAINTS - every reply must comply:"];
+  const lines = ["HARD COACHING & PEDAGOGICAL CONSTRAINTS - every reply must comply:"];
 
-  /*
-   * EVERYTHING THEY TOLD US GOES IN, VERBATIM, FIRST.
-   *
-   * The tables below are keyed off hardcoded terms, so anything outside them
-   * would otherwise be dropped in silence — a misconception about vectors that
-   * the table has never heard of produces an EMPTY constraints block, and the
-   * tutor teaches as though it was never mentioned.
-   */
+  // Career Ace specific profile elements
+  const statedTargetRoles = normalizeList(profile.targetRoles);
+  const statedSkills = normalizeList(profile.skills);
+  const statedExperiences = normalizeList(profile.experiences);
+  const statedEducation = normalizeList(profile.education);
+  const statedInterviewFeedback = normalizeList(profile.interviewFeedback);
+  const statedApplications = normalizeList(profile.applications);
+
+  if (statedTargetRoles.length) {
+    lines.push(`- Candidate is actively targeting: ${statedTargetRoles.join("; ")}. Tailor all interview simulations, role evaluations, and CV impact metrics directly to these target positions.`);
+  }
+  if (statedSkills.length) {
+    lines.push(`- Candidate verified technical skills: ${statedSkills.join(", ")}. Reference and probe these skills in technical and architecture evaluations.`);
+  }
+  if (statedExperiences.length) {
+    lines.push(`- Verified career background & accomplishments: ${statedExperiences.join("; ")}. Ground all behavioral questions and resume bullet points in these real achievements.`);
+  }
+  if (statedInterviewFeedback.length) {
+    lines.push(`- Previous interview coaching feedback: ${statedInterviewFeedback.join("; ")}. Proactively drill candidate on these weak areas in STAR+R format.`);
+  }
+  if (statedApplications.length) {
+    lines.push(`- Application history: ${statedApplications.join("; ")}.`);
+  }
+
   const statedMisconceptions = normalizeList(profile.misconceptions);
   const statedWeaknesses = normalizeList(profile.weaknesses);
   const statedMastery = normalizeList(profile.mastery);
   const statedGoal = normalizeList(profile.goal);
 
   if (statedGoal.length) {
-    lines.push(`- They are preparing for: ${statedGoal.join("; ")}. Keep every example inside that exam's scope and style.`);
+    lines.push(`- Target objective: ${statedGoal.join("; ")}. Keep every example inside that objective's scope and style.`);
   }
   if (statedMisconceptions.length) {
     lines.push(
-      `- They currently believe these WRONG things: ${statedMisconceptions.join("; ")}. Never state any of them as true, not even to paraphrase the student. When the topic comes up, surface the wrong model and make them test it against a case where it fails.`,
+      `- They currently believe these WRONG things: ${statedMisconceptions.join("; ")}. Never state any of them as true, not even to paraphrase the candidate/student. When the topic comes up, surface the wrong model and make them test it against a case where it fails.`,
     );
   }
   if (statedWeaknesses.length) {
@@ -369,13 +398,13 @@ export function buildTeachingConstraintsText(profile: LearnerProfile) {
     lines.push(`- They have already demonstrated: ${statedMastery.join("; ")}. Do not re-teach these from scratch; build on them instead.`);
   }
   if (errorTypes.length) {
-    lines.push(`- Their recurring error patterns: ${errorTypes.map((e) => ERROR_TYPE_LABELS[e]).join(", ")}. Watch for these specifically in their working.`);
+    lines.push(`- Recurring error patterns: ${errorTypes.map((e) => ERROR_TYPE_LABELS[e]).join(", ")}. Watch for these specifically in their responses.`);
   }
 
   for (const key of misconceptionKeys) {
     const known = MISCONCEPTIONS[key];
     if (known) {
-      lines.push(`- On "${known.label}": your reply must contradict it explicitly if the topic arises. Saying the correct thing without naming the wrong one leaves the student thinking both are the same.`);
+      lines.push(`- On "${known.label}": your reply must contradict it explicitly if the topic arises. Saying the correct thing without naming the wrong one leaves the candidate thinking both are the same.`);
     }
   }
 
@@ -383,11 +412,6 @@ export function buildTeachingConstraintsText(profile: LearnerProfile) {
     lines.push(`- Exam scope is ${target.replace(/_/g, "-")}. Anything beyond that syllabus is off limits, however interesting.`);
   }
 
-  /*
-   * Name the gap out loud. A misconception with no entry in the table is not
-   * screened by screenQuestion() after the fact, so the model is the only
-   * thing standing between the student and having it reinforced.
-   */
   const unscreened = statedMisconceptions.filter((m) => {
     const keys = normalizeMisconceptions([m]);
     return !keys.some((k) => MISCONCEPTIONS[k]);
@@ -399,25 +423,23 @@ export function buildTeachingConstraintsText(profile: LearnerProfile) {
   }
 
   /*
-   * The gate. An empty record is a question to ask, not a default to apply —
-   * a full study plan generated for a student nobody has asked about is the
-   * failure this app exists to remove.
+   * The gate. An empty record is a question to ask, not a default to apply.
    */
   if (!targetKnown(profile)) {
     lines.push(
-      "- You DO NOT KNOW what this student is preparing for or where they struggle. Do not produce a study plan, a topic list, or a set of practice questions until you do.",
-      "- Ask them, in one short question, which exam they are sitting and which topic is giving them the most trouble. Tell them they only have to say it once.",
-      "- If they say they have no exam date yet, accept that and go on teaching normally.",
+      "- You DO NOT KNOW what this student or candidate is preparing for or where they struggle. Do not produce a study plan, ungrounded career plan, or set of practice questions until you do.",
+      "- Ask them, in one short question, what role or exam they are preparing for and which topic or skill is giving them the most trouble. Tell them they only have to say it once.",
+      "- If they say they have no target date or preference yet, accept that and go on coaching normally.",
     );
-  } else if (profile.cleared && !statedWeaknesses.length && !statedMisconceptions.length) {
-    lines.push("- They have told you they have no particular weak topic yet. Do not keep asking; find out by working through a question with them.");
+  } else if (profile.cleared && !statedWeaknesses.length && !statedMisconceptions.length && !statedSkills.length) {
+    lines.push("- They have told you they have no particular weak topic yet. Do not keep asking; find out by working through a scenario with them.");
   }
 
   const preferences = normalizeList(profile.preferences);
   if (preferences.length) {
     lines.push(
       `- Delivery preferences: ${preferences.join("; ")}. Respect them.`,
-      "- A preference shapes HOW you teach, never WHAT is true. It never justifies skipping a correction or confirming a wrong answer to keep them comfortable.",
+      "- A preference shapes HOW you coach/teach, never WHAT is true. It never justifies skipping a correction or confirming a wrong answer to keep them comfortable.",
     );
   }
 

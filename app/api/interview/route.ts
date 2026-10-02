@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       }
 
       const qText = question || "Technical behavioral interview question";
-      const evaluation = evaluateStarAnswer(qText, answer, application?.title);
+      const evaluation = await evaluateStarAnswer(qText, answer, application?.title);
 
       // Record interview assessment into candidate's sovereign Walrus Memory
       try {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       job_id: `job_${Date.now()}`,
       title: "Fullstack Engineer",
       company: "Tech Corp",
-      apply_url: "https://example.com",
+      apply_url: "",
       fit_score: 8,
       track: "track_a_auto_apply",
       status: "Applied",

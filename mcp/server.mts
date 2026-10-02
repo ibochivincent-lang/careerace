@@ -424,9 +424,10 @@ server.registerTool(
       job_company: z.string(),
       job_description: z.string(),
       cv_text: z.string(),
+      apply_url: z.string().optional(),
     },
   },
-  async ({ job_title, job_company, job_description, cv_text }) => {
+  async ({ job_title, job_company, job_description, cv_text, apply_url }) => {
     try {
       const parsedCv = parseCvText(cv_text);
       const job = {
@@ -435,7 +436,7 @@ server.registerTool(
         company: job_company,
         location: "Remote",
         description: job_description,
-        apply_url: "https://example.com/apply",
+        apply_url: apply_url || "",
         source: "MCP",
         posted_date: new Date().toISOString(),
         is_remote: true,
@@ -466,10 +467,11 @@ server.registerTool(
       job_company: z.string().describe("Hiring company"),
       job_description: z.string().describe("Complete job description"),
       cv_text: z.string().describe("Candidate CV text"),
+      apply_url: z.string().optional().describe("Job application URL"),
     },
     annotations: { readOnlyHint: true, openWorldHint: true },
   },
-  async ({ job_title, job_company, job_description, cv_text }) => {
+  async ({ job_title, job_company, job_description, cv_text, apply_url }) => {
     try {
       const parsedCv = parseCvText(cv_text);
       const job = {
@@ -478,7 +480,7 @@ server.registerTool(
         company: job_company,
         location: "Remote",
         description: job_description,
-        apply_url: "https://example.com/apply",
+        apply_url: apply_url || "",
         source: "MCP",
         posted_date: new Date().toISOString(),
         is_remote: true,
@@ -510,7 +512,7 @@ server.registerTool(
       job_company: z.string(),
       job_description: z.string(),
       cv_text: z.string(),
-      apply_url: z.string().optional().default("https://example.com/apply"),
+      apply_url: z.string().optional().default(""),
     },
     annotations: { destructiveHint: false, idempotentHint: true, openWorldHint: true },
   },
@@ -523,7 +525,7 @@ server.registerTool(
         company: job_company,
         location: "Remote",
         description: job_description,
-        apply_url: apply_url || "https://example.com/apply",
+        apply_url: apply_url || "",
         source: "MCP",
         posted_date: new Date().toISOString(),
         is_remote: true,

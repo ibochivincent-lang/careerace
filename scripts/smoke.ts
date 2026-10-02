@@ -27,8 +27,8 @@ import {
 import { withRelayerRetry } from "../lib/memwal_client.ts";
 
 const SUBJECT = `0xsmoke${Date.now().toString(36)}`;
-const PROFILE = `examace:profile:${SUBJECT}`;
-const FEEDBACK = `examace:feedback:${SUBJECT}`;
+const PROFILE = `careerace:profile:${SUBJECT}`;
+const FEEDBACK = `careerace:feedback:${SUBJECT}`;
 
 /**
  * One client per namespace, reused. A fresh MemWal per call makes the relayer

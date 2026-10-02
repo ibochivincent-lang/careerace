@@ -5,7 +5,6 @@ import { Bell, X, CheckCheck, BookOpen, Zap, Calendar, TrendingUp, Brain } from 
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { cn } from './ui/utils'
-import { getCognitiveMap } from '@/lib/storage'
 
 interface Notification {
   id: string
@@ -37,78 +36,42 @@ function buildNotifications(): Notification[] {
   const notifications: Notification[] = []
 
   try {
-    const map = getCognitiveMap()
-    const now = new Date()
-
-    // Overdue topics
-    const overdue = Object.values(map.topicRecords).filter(
-      t => new Date(t.nextReviewAt) <= now
-    )
-    if (overdue.length > 0) {
-      notifications.push({
-        id: 'review-due',
-        type: 'review_due',
-        title: `${overdue.length} topic${overdue.length > 1 ? 's' : ''} due for review`,
-        body: `${overdue.map(t => t.topic).slice(0, 2).join(', ')}${overdue.length > 2 ? ` +${overdue.length - 2} more` : ''} need attention.`,
-        time: 'Now',
-        read: false,
-        icon: 'book',
-      })
-    }
-
-    // Exam countdown
-    const examDate = localStorage.getItem('examace_exam_date')
-    const examName = localStorage.getItem('examace_exam_name') || 'JAMB'
-    if (examDate) {
-      const days = Math.ceil((new Date(examDate).getTime() - now.getTime()) / 86400000)
-      if (days > 0 && days <= 30) {
+    const rawProfile = typeof window !== 'undefined' ? localStorage.getItem('careerace_parsed_profile') : null
+    if (rawProfile) {
+      try {
+        const parsed = JSON.parse(rawProfile)
+        const primaryRole = parsed.target_roles?.[0] || 'Software Engineer'
         notifications.push({
-          id: 'exam-soon',
-          type: 'exam_soon',
-          title: `${days} days to ${examName}`,
-          body: days <= 14 ? 'Critical zone — focus on weak topics now.' : 'Keep up your daily sessions.',
-          time: 'Today',
+          id: 'job-matches-ready',
+          type: 'achievement',
+          title: `Job matches ready: ${primaryRole}`,
+          body: `Verified openings matching your ${parsed.skills?.slice(0, 3).join(', ') || 'core'} stack are available on Universal Harvester.`,
+          time: 'Now',
           read: false,
           icon: 'calendar',
         })
-      }
+      } catch {}
     }
 
-    // Dominant error tip
-    if (map.dominantErrorType) {
-      const tips: Record<string, string> = {
-        conceptual_misconception: 'Your biggest pattern is misconceptions. Explain concepts out loud.',
-        procedural_error:         'You often get the concept right but the steps wrong. Practice derivations.',
-        unit_confusion:           'Units trip you up most. Always write units at each step.',
-        sign_error:               'Sign errors are costing you marks. Slow down on sign checks.',
-        recall_gap:               'You have recall gaps. Short daily reviews beat long cramming sessions.',
-      }
-      const tip = tips[map.dominantErrorType]
-      if (tip) {
-        notifications.push({
-          id: 'tip-error',
-          type: 'tip',
-          title: 'Your study pattern insight',
-          body: tip,
-          time: 'Today',
-          read: true,
-          icon: 'brain',
-        })
-      }
-    }
+    notifications.push({
+      id: 'star-interview-tip',
+      type: 'tip',
+      title: 'STAR+R Interview Coach',
+      body: 'Practice your interview scenarios in the STAR+R Interview Room with live AI scoring.',
+      time: 'Today',
+      read: true,
+      icon: 'brain',
+    })
 
-    // Achievement nudge
-    if (map.sessionCount === 0) {
-      notifications.push({
-        id: 'first-session',
-        type: 'achievement',
-        title: 'Start your first session',
-        body: 'Complete your first Socratic session to begin building your cognitive map.',
-        time: 'Welcome',
-        read: false,
-        icon: 'zap',
-      })
-    }
+    notifications.push({
+      id: 'careerace-welcome',
+      type: 'achievement',
+      title: 'Career Ace AI Sovereign Vault',
+      body: 'Your credentials and career memory are secured with Sui zkLogin and Walrus storage.',
+      time: 'Welcome',
+      read: false,
+      icon: 'zap',
+    })
   } catch {
     // fallback — no notifications
   }

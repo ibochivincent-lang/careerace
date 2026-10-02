@@ -15,8 +15,9 @@ export function evaluateJobFit(job: NormalizedJob, cv: ParsedCv): EvaluationResu
   
   const matched_skills: string[] = [];
   const missing_skills: string[] = [];
+  const userSkillSet = new Set((cv.skills || []).map((s) => s.toLowerCase().trim()));
 
-  for (const skill of cv.skills) {
+  for (const skill of cv.skills || []) {
     if (jobText.includes(skill.toLowerCase())) {
       matched_skills.push(skill);
     }
@@ -25,7 +26,7 @@ export function evaluateJobFit(job: NormalizedJob, cv: ParsedCv): EvaluationResu
   // Common high priority stack keywords
   const targetKeywords = ["react", "node", "typescript", "python", "next.js", "rest", "api", "sql", "aws"];
   for (const kw of targetKeywords) {
-    if (jobText.includes(kw) && !cv.skills.includes(kw)) {
+    if (jobText.includes(kw) && !userSkillSet.has(kw)) {
       missing_skills.push(kw);
     }
   }

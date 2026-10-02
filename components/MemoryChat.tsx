@@ -9,9 +9,9 @@ import { NO_KEY_CODE } from '@/lib/providers'
 import { cn } from './ui/utils'
 
 const STARTERS = [
-  "I'm writing JAMB in April and physics calculations kill me",
-  'Ask me a question on Newton laws',
-  'Why did I get that one wrong?',
+  "I'm targeting Staff AI and Fullstack roles with Next.js and Sui Move",
+  "Help me refine a STAR+R response for distributed system incident response",
+  "Tailor my resume accomplishments for high-throughput cloud infrastructure",
 ]
 
 /** Shape of the provenance the route attaches to each assistant message. */
