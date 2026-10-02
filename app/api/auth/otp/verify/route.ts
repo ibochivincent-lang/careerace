@@ -47,13 +47,28 @@ export async function POST(req: Request) {
         cleanUsername = cleanEmail.split("@")[0];
       }
 
-      const { data: authData, error: verifyError } = await anonClient.auth.verifyOtp({
-        email: cleanEmail,
-        token: cleanToken,
-        type: "email",
-      });
+      let authData: any = null;
+      let verifyError: any = null;
 
-      if (verifyError || !authData.user) {
+      const otpTypes: ("email" | "signup" | "magiclink")[] = ["email", "signup", "magiclink"];
+
+      for (const otpType of otpTypes) {
+        const result = await anonClient.auth.verifyOtp({
+          email: cleanEmail,
+          token: cleanToken,
+          type: otpType,
+        });
+
+        if (!result.error && result.data?.user) {
+          authData = result.data;
+          verifyError = null;
+          break;
+        } else {
+          verifyError = result.error;
+        }
+      }
+
+      if (verifyError || !authData?.user) {
         console.error("[otp/verify] Verification failed:", verifyError?.message);
         return new Response(verifyError?.message || "Invalid or expired verification code.", {
           status: 401,

@@ -34,6 +34,11 @@ export async function POST(req: Request) {
       }
     }
 
+    // Determine origin for redirect
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "careerace.vercel.app";
+    const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const origin = `${proto}://${host}`;
+
     // Trigger Supabase Email OTP
     const anonClient = createClient(url, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -43,6 +48,7 @@ export async function POST(req: Request) {
       email: cleanEmail,
       options: {
         shouldCreateUser: true,
+        emailRedirectTo: `${origin}/signin`,
         data: username ? { username: username.trim() } : undefined,
       },
     });
