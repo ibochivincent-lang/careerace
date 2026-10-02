@@ -63,14 +63,12 @@ export async function POST(req: Request) {
       const diag = await suiGraphql.query<{
         verifyZkLoginSignature?: {
           success?: boolean;
-          errors?: string[];
         };
       }>({
         query: `
           query verifyZkLoginSignature($bytes: Base64!, $signature: Base64!, $intentScope: ZkLoginIntentScope!, $author: SuiAddress!) {
             verifyZkLoginSignature(bytes: $bytes, signature: $signature, intentScope: $intentScope, author: $author) {
               success
-              errors
             }
           }
         `,
@@ -82,15 +80,12 @@ export async function POST(req: Request) {
         },
       });
 
-      const onChainErrors = diag.data?.verifyZkLoginSignature?.errors;
-      if (Array.isArray(onChainErrors) && onChainErrors.length > 0) {
-        extraDetail = `: ${onChainErrors.join("; ")}`;
-        console.error("[careerace] GraphQL on-chain zkLogin verification errors:", onChainErrors);
-      } else if (diag.errors && diag.errors.length > 0) {
+      if (diag.errors && diag.errors.length > 0) {
         extraDetail = `: ${diag.errors.map((e) => e.message).join(", ")}`;
         console.error("[careerace] GraphQL node errors:", diag.errors);
-      } else {
-        console.error("[careerace] GraphQL node data:", diag.data);
+      } else if (diag.data?.verifyZkLoginSignature?.success === false) {
+        extraDetail = ": zkLogin on-chain verification returned success=false";
+        console.error("[careerace] GraphQL on-chain verification returned success=false");
       }
     } catch (diagErr) {
       console.error("[careerace] GraphQL diagnostic failed:", diagErr);
