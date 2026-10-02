@@ -1,15 +1,16 @@
 import { redirect } from 'next/navigation'
-import { AlertTriangle, RotateCcw, Trash2, CornerDownRight } from 'lucide-react'
+import { AlertTriangle, RotateCcw, Trash2, CornerDownRight, Database, Lock } from 'lucide-react'
 import { getOwnerAddress } from '@/lib/session.ts'
 import { listMemory } from '@/app/actions/memory'
 import { AppShell } from '@/components/AppShell'
 import { ForgetButton } from '@/components/ForgetButton'
+import { MemoryPlayground } from '@/components/MemoryPlayground'
 
 export const dynamic = 'force-dynamic'
 
-type Row = { date: string; kind: string; claim: string; distance: number }
+type Row = { date: string; kind: string; claim: string; distance: number; blobId?: string }
 
-function toRows(facts: { text: string; distance: number }[]): Row[] {
+function toRows(facts: { text: string; distance: number; blobId?: string }[]): Row[] {
   return facts.map((f) => {
     const [date, kind, body] = f.text.split('|').map((p) => p.trim())
     return {
@@ -17,6 +18,7 @@ function toRows(facts: { text: string; distance: number }[]): Row[] {
       kind: kind ?? 'fact',
       claim: (body ?? f.text).split(' - SUPERSEDES:')[0].trim(),
       distance: f.distance,
+      blobId: f.blobId,
     }
   })
 }
@@ -84,6 +86,9 @@ export default async function MemoryPage() {
             </dl>
           </div>
 
+          {/* Hackathon Interactive Semantic Memory Playground */}
+          <MemoryPlayground />
+
           {/* the ledger */}
           <div className="mt-7 overflow-hidden rounded-xl border bg-card">
             <div className="grid grid-cols-[104px_140px_minmax(0,1fr)_88px_76px] gap-4 border-b bg-muted/40 px-4 py-2.5">
@@ -113,7 +118,17 @@ export default async function MemoryPage() {
                     >
                       {r.kind.replace(/_/g, ' ')}
                     </span>
-                    <span className="min-w-0 break-words text-[13px]">{r.claim}</span>
+                    <div className="min-w-0">
+                      <div className="break-words text-[13px]">{r.claim}</div>
+                      {r.blobId && (
+                        <div className="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
+                          <Database className="w-2.5 h-2.5 text-cyan-400" />
+                          <span>Walrus Blob:</span>
+                          <span className="text-foreground/80">{r.blobId.slice(0, 10)}...{r.blobId.slice(-6)}</span>
+                          <span className="ml-1 text-primary">· Seal Encrypted</span>
+                        </div>
+                      )}
+                    </div>
                     <span className="font-mono text-xs tabular-nums text-muted-foreground">
                       {r.distance.toFixed(3)}
                     </span>

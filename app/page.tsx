@@ -66,6 +66,13 @@ export default function CareerAceLandingPage() {
             <a href="#walrus-memory" className="hover:text-foreground transition-colors">Walrus Architecture</a>
             <button
               type="button"
+              onClick={() => router.push('/memory')}
+              className="hover:text-foreground transition-colors font-medium text-left"
+            >
+              Walrus Vault &amp; Memory
+            </button>
+            <button
+              type="button"
               onClick={handleOpenWorkspace}
               className="hover:text-foreground transition-colors font-medium text-left"
             >
@@ -173,7 +180,10 @@ export default function CareerAceLandingPage() {
                 </p>
               </div>
 
-              <div className="shrink-0 flex items-center gap-2.5">
+              <div className="shrink-0 flex flex-wrap items-center gap-2.5">
+                <Button variant="outline" size="sm" onClick={() => router.push('/memory')} className="text-xs flex items-center gap-2 border-primary/30 text-primary">
+                  <Database className="w-3.5 h-3.5" /> Memory Sandbox &amp; Vault
+                </Button>
                 {sessionAddress ? (
                   <Button variant="outline" size="sm" onClick={() => router.push('/application_board')} className="text-xs flex items-center gap-2">
                     <ExternalLink className="w-3.5 h-3.5" /> View Career Vault Blobs

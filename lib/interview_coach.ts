@@ -17,7 +17,8 @@ export interface StarQuestion {
 
 export function generatePostApplicationInterviewPrep(
   application: ProcessedApplication,
-  cv: ParsedCv
+  cv: ParsedCv,
+  pastMemories?: Array<{ text: string; distance?: number }>
 ): StarQuestion[] {
   const primarySkill = cv.skills?.[0] || "TypeScript";
   const secondarySkill = cv.skills?.[1] || "React";
@@ -26,7 +27,30 @@ export function generatePostApplicationInterviewPrep(
   const prevCompany = cv.work_experience?.[0]?.company || "previous tech organization";
   const prevRole = cv.work_experience?.[0]?.role || "Software Developer";
 
-  return [
+  const questions: StarQuestion[] = [];
+
+  // If candidate has past coaching insights in Walrus Memory, inject a targeted recall question!
+  if (pastMemories && pastMemories.length > 0) {
+    const firstMem = pastMemories[0].text;
+    const cleanInsight = firstMem.includes("|")
+      ? firstMem.split("|").slice(2).join("|").split(" - SUPERSEDES:")[0].trim()
+      : firstMem.split(" - SUPERSEDES:")[0].trim();
+
+    questions.push({
+      question_id: `q_${application.job_id}_walrus_recall`,
+      category: "technical",
+      question_text: `Walrus Memory Coaching Focus: Recalling your past feedback on "${cleanInsight.slice(0, 90)}...". How would you handle a production challenge at ${company} showing measurable mastery in this area?`,
+      suggested_star_angle: {
+        situation: `Addressing technical edge cases and quantifiable metrics identified during previous AI interview rounds.`,
+        task: `Demonstrate mastery over past growth areas with structured STAR+R execution for ${company}.`,
+        action: `Applied deliberate practice, systematic root-cause analysis, and benchmarked architectural trade-offs.`,
+        result: `Achieved 100% test coverage and eliminated high-latency bottlenecks with zero regressions.`,
+        reflection: `Continuous self-evaluation grounded in decentralized memory ensures measurable technical progression.`
+      }
+    });
+  }
+
+  questions.push(
     {
       question_id: `q_${application.job_id}_1`,
       category: "technical",
@@ -75,7 +99,9 @@ export function generatePostApplicationInterviewPrep(
         reflection: `Influencing team culture requires empirical data and empathy rather than top-down process mandates.`
       }
     }
-  ];
+  );
+
+  return questions;
 }
 
 export interface StarEvaluation {

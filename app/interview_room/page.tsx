@@ -19,7 +19,8 @@ import {
   Award,
   RefreshCw,
   Building2,
-  Compass
+  Compass,
+  Database
 } from 'lucide-react'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -27,6 +28,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   behavioral: 'Behavioral Questions',
   architecture: 'Architectural Questions',
   leadership: 'Leadership & Experiential Questions',
+  walrus_recall: '🧠 Walrus Memory Recall',
 }
 
 interface QuestionItem {
@@ -68,6 +70,12 @@ export default function InterviewRoomPage() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null)
   const [vaultSaved, setVaultSaved] = useState(false)
+  const [recalledMemories, setRecalledMemories] = useState<Array<{
+    date: string
+    kind: string
+    insight: string
+    distance: number
+  }>>([])
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -122,7 +130,12 @@ export default function InterviewRoomPage() {
         setQuestions(data.questions)
         setSelectedQuestionIndex(0)
         setAnswer('')
-        toast.success(`Generated ${data.questions.length} role-specific STAR+R questions.`)
+        if (data.recalled_memories && data.recalled_memories.length > 0) {
+          setRecalledMemories(data.recalled_memories)
+          toast.success(`Recalled ${data.recalled_memories.length} coaching insights from Walrus Memory!`)
+        } else {
+          toast.success(`Generated ${data.questions.length} role-specific STAR+R questions.`)
+        }
       }
     } catch (e) {
       toast.error('Failed to load interview questions.')
@@ -238,11 +251,50 @@ export default function InterviewRoomPage() {
             </Badge>
           </div>
 
+          {/* Walrus Memory Cross-Session Recall Banner */}
+          {recalledMemories.length > 0 && (
+            <div className="rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-background to-blue-950/40 p-4 mb-6 backdrop-blur shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                  <Database className="w-4 h-4 animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                        Cross-Session Sovereign Memory Active
+                      </span>
+                      <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-[10px] py-0">
+                        MemWal Recalled
+                      </Badge>
+                    </div>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {recalledMemories.length} historical feedback items recovered
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    CareerAce has recalled your previous coaching performance from your encrypted Walrus Memory vault. 
+                    Your interview session now targets your verified growth areas instead of generic questions.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {recalledMemories.slice(0, 3).map((m, i) => (
+                      <div key={i} className="rounded-md border border-cyan-500/20 bg-background/60 px-3 py-1.5 text-[11px] text-foreground max-w-md">
+                        <span className="font-semibold text-cyan-400">{m.kind.replace('_', ' ')}: </span>
+                        <span className="text-muted-foreground">{m.insight}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Question selection pills (Technical, Behavioral, Architectural, Leadership & Experiential) */}
           {questions.length > 0 && (
             <div className="mb-6 flex flex-wrap gap-2">
               {questions.map((q, idx) => {
                 const label = CATEGORY_LABELS[q.category?.toLowerCase()] || q.category
+                const isWalrusRecall = q.category?.toLowerCase() === 'walrus_recall' || q.question_id?.includes('walrus')
                 return (
                   <button
                     key={q.question_id || idx}
@@ -254,8 +306,12 @@ export default function InterviewRoomPage() {
                     }}
                     className={`rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-all ${
                       selectedQuestionIndex === idx
-                        ? 'border-primary bg-primary/15 text-primary shadow-xs'
-                        : 'border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                        ? isWalrusRecall 
+                          ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-xs'
+                          : 'border-primary bg-primary/15 text-primary shadow-xs'
+                        : isWalrusRecall
+                          ? 'border-cyan-500/40 bg-cyan-950/30 text-cyan-400 hover:bg-cyan-900/40'
+                          : 'border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                     }`}
                   >
                     {label}
@@ -268,13 +324,25 @@ export default function InterviewRoomPage() {
           {activeQuestion && (
             <Card className="mb-6 border bg-card p-6">
               <div className="mb-3 flex items-center justify-between">
-                <Badge variant="secondary" className="capitalize">
+                <Badge 
+                  variant="secondary" 
+                  className={activeQuestion.category?.toLowerCase() === 'walrus_recall' || activeQuestion.question_id?.includes('walrus') ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300 capitalize' : 'capitalize'}
+                >
                   {CATEGORY_LABELS[activeQuestion.category?.toLowerCase()] || activeQuestion.category}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   Target: {targetRole} @ {company}
                 </span>
               </div>
+
+              {(activeQuestion.category?.toLowerCase() === 'walrus_recall' || activeQuestion.question_id?.includes('walrus')) && (
+                <div className="mb-4 flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-300">
+                  <Sparkles className="h-4 w-4 shrink-0 text-cyan-400" />
+                  <span>
+                    <strong>Walrus Memory Targeted Focus:</strong> This question specifically challenges you on growth areas identified in past interview sessions stored in your decentralized memory vault.
+                  </span>
+                </div>
+              )}
 
               <h2 className="mb-4 text-xl font-bold leading-snug">{activeQuestion.question_text}</h2>
 
