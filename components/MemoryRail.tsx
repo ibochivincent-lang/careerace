@@ -3,7 +3,22 @@ import { cn } from './ui/utils'
 
 export type RailFact = {
   date: string
-  kind: 'misconception' | 'mastery' | 'weakness' | 'goal' | 'error_pattern' | 'preference' | 'clearance' | 'fact'
+  kind:
+    | 'experience'
+    | 'education'
+    | 'skill'
+    | 'target_role'
+    | 'tailored_cv'
+    | 'application'
+    | 'interview_feedback'
+    | 'preference'
+    | 'clearance'
+    | 'misconception'
+    | 'mastery'
+    | 'weakness'
+    | 'goal'
+    | 'error_pattern'
+    | 'fact'
   claim: string
   superseded?: boolean
 }
@@ -13,13 +28,20 @@ export type RailFact = {
  * knows about you, a memory agent has every reason.
  */
 const DOT: Record<string, string> = {
+  experience: 'var(--primary)',
+  education: '#38bdf8',
+  skill: '#34d399',
+  target_role: '#a78bfa',
+  tailored_cv: '#f472b6',
+  application: '#fbbf24',
+  interview_feedback: 'var(--reward)',
+  preference: 'var(--muted-foreground)',
+  clearance: '#94a3b8',
   misconception: 'var(--destructive)',
   weakness: 'var(--reward)',
   error_pattern: 'var(--reward)',
   mastery: 'var(--primary)',
-  goal: 'var(--primary)',
-  clearance: 'var(--primary)',
-  preference: 'var(--muted-foreground)',
+  goal: '#a78bfa',
   fact: 'var(--muted-foreground)',
 }
 
@@ -30,14 +52,14 @@ export function MemoryRail({ facts }: { facts: RailFact[] }) {
     <aside className="hidden lg:flex flex-col gap-4 border-l bg-sidebar px-5 py-7">
       <div className="flex items-baseline justify-between">
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          What it knows
+          Walrus Sovereign Facts
         </span>
         <span className="font-mono text-[11px] text-muted-foreground">{active.length}</span>
       </div>
 
       {facts.length === 0 ? (
         <p className="rounded-xl border border-dashed px-3 py-5 text-center text-xs leading-relaxed text-muted-foreground">
-          Nothing yet. Tell it which exam you are sitting, or get one wrong, and it will appear here.
+          No profile facts stored yet. Chat with Career Ace on the left to index your education, skills, and target roles directly into Walrus.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

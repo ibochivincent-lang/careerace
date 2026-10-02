@@ -42,7 +42,8 @@ export default function DashboardPage() {
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
-      content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV below or paste it into the vault to get instant role matching, tailored CV impact points, and mock interview prep.'
+      content:
+        "Hello! I am Career Ace, your autonomous AI career copilot and CV profiler. The reason I ask these questions is to get to know you, your background, and your aspirations so we can construct your verified CV in Walrus decentralized memory, match you with live tech jobs, and prepare personalized interview coaching.\n\nTo get started: What is your name, where are you located, and what kind of work or role are you looking for (e.g. Entry-level Software Engineer, Senior Fullstack, Product Manager)?"
     }
   ])
 
@@ -229,6 +230,9 @@ export default function DashboardPage() {
       const data = await res.json()
       if (data.content) {
         setChatMessages((prev) => [...prev, { role: 'assistant', content: data.content }])
+        if (data.stored && Array.isArray(data.stored) && data.stored.length > 0) {
+          toast.success(`Encrypted & saved to Walrus Memory: ${data.stored[0]}`)
+        }
       }
     } catch (e) {
       setChatMessages((prev) => [
@@ -524,24 +528,31 @@ export default function DashboardPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSendMessage("Analyze my uploaded CV and tell me my strongest roles")}
-                  className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+                  onClick={() => handleSendMessage("Hi Career Ace! I'd like to start my career discovery and build my verified CV profile.")}
+                  className="text-xs px-2.5 py-1 rounded-full border border-primary/25 bg-primary/5 hover:bg-primary/10 text-primary transition-colors font-medium"
                 >
-                  Analyze my top roles
+                  🚀 Start CV &amp; Career Discovery
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSendMessage("How can I tailor my CV bullets to get higher match scores?")}
+                  onClick={() => handleSendMessage("I am targeting Entry-level / Junior Software Engineer roles.")}
                   className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
                 >
-                  Improve CV match score
+                  💼 Targeting Entry-Level Developer Role
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSendMessage("Give me a STAR+R interview question for fullstack engineering")}
+                  onClick={() => handleSendMessage("I want remote-first fullstack engineering roles with Next.js and TypeScript.")}
                   className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
                 >
-                  Mock interview question
+                  🌐 Remote Fullstack Roles
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage("My highest institution is a B.S. in Computer Science.")}
+                  className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+                >
+                  🎓 Add Higher Education
                 </button>
               </div>
 
