@@ -80,6 +80,46 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       return
     }
 
+    const accessToken = params.get('access_token')
+    if (accessToken) {
+      async function handleMagicLinkCallback(token: string) {
+        setBusy(true)
+        setStatusMessage('Verifying your email confirmation link…')
+        setError(null)
+        try {
+          const res = await fetch('/api/auth/otp/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: token }),
+          })
+          if (!res.ok) {
+            const errText = await res.text()
+            throw new Error(errText || 'Failed to verify email confirmation link.')
+          }
+          const data = await res.json()
+          if (data.success && data.address) {
+            setCurrentAddress(data.address)
+            setStatusMessage('Email verified! Opening workspace…')
+            window.history.replaceState(null, '', window.location.pathname)
+            const searchParams = new URLSearchParams(window.location.search)
+            const destination = searchParams.get('callbackUrl') || '/dashboard'
+            window.location.href = destination
+          }
+        } catch (err) {
+          console.error('[magiclink] Confirmation link error:', err)
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Failed to verify email confirmation link.'
+          )
+        } finally {
+          setBusy(false)
+        }
+      }
+      handleMagicLinkCallback(accessToken)
+      return
+    }
+
     const jwt = params.get('id_token')
     if (!jwt) return
 

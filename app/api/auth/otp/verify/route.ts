@@ -5,18 +5,7 @@ import { SupabaseDatabaseService, getSanitizedSupabaseUrl } from "@/lib/supabase
 
 export async function POST(req: Request) {
   try {
-    const { email, token, username, password } = await req.json();
-
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      return new Response("Valid email is required.", { status: 400 });
-    }
-    if (!token || typeof token !== "string" || token.trim().length < 6) {
-      return new Response("Please enter the 6-digit verification code.", { status: 400 });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanToken = token.trim();
-    const cleanUsername = username?.trim() || cleanEmail.split("@")[0];
+    const { email, token, username, password, access_token } = await req.json();
 
     const url = getSanitizedSupabaseUrl();
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -26,25 +15,52 @@ export async function POST(req: Request) {
       return new Response("Database configuration missing on server.", { status: 500 });
     }
 
-    // 1. Verify 6-digit OTP code against Supabase Auth
     const anonClient = createClient(url, anonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { data: authData, error: verifyError } = await anonClient.auth.verifyOtp({
-      email: cleanEmail,
-      token: cleanToken,
-      type: "email",
-    });
+    let user: any = null;
+    let cleanUsername = username?.trim() || "";
 
-    if (verifyError || !authData.user) {
-      console.error("[otp/verify] Verification failed:", verifyError?.message);
-      return new Response(verifyError?.message || "Invalid or expired verification code.", {
-        status: 401,
+    // Path A: Verification via Magic Link access_token from email link click
+    if (access_token && typeof access_token === "string") {
+      const { data: userData, error: userError } = await anonClient.auth.getUser(access_token);
+      if (userError || !userData?.user) {
+        return new Response(userError?.message || "Invalid or expired session token.", { status: 401 });
+      }
+      user = userData.user;
+      if (!cleanUsername) {
+        cleanUsername = user.user_metadata?.username || user.email?.split("@")[0] || "candidate";
+      }
+    } else {
+      // Path B: Verification via 6-digit OTP code entered by candidate
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return new Response("Valid email is required.", { status: 400 });
+      }
+      if (!token || typeof token !== "string" || token.trim().length < 6) {
+        return new Response("Please enter the 6-digit verification code.", { status: 400 });
+      }
+
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanToken = token.trim();
+      if (!cleanUsername) {
+        cleanUsername = cleanEmail.split("@")[0];
+      }
+
+      const { data: authData, error: verifyError } = await anonClient.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: "email",
       });
-    }
 
-    const user = authData.user;
+      if (verifyError || !authData.user) {
+        console.error("[otp/verify] Verification failed:", verifyError?.message);
+        return new Response(verifyError?.message || "Invalid or expired verification code.", {
+          status: 401,
+        });
+      }
+      user = authData.user;
+    }
 
     // 2. If user set a password or username during signup, persist it via Admin API
     if (serviceKey && (password || username)) {

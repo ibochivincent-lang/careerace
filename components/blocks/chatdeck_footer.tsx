@@ -17,7 +17,7 @@ export function ChatdeckFooter() {
         </p>
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <a href="#features" className="hover:text-foreground">Features</a>
-          <a href="#cv-upload" className="hover:text-foreground">CV Upload</a>
+          <a href="/dashboard#copilot" className="hover:text-foreground">AI Copilot & CV</a>
           <a href="#jobs" className="hover:text-foreground">Job Matcher</a>
           <a href="/privacy" className="hover:text-foreground">Privacy Policy</a>
           <a href="/terms" className="hover:text-foreground">Terms of Service</a>

@@ -1,22 +1,19 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import {
-  LayoutDashboard, BookOpen, Target, TrendingUp, Bell,
-  Settings, Brain, Sparkles, Database, Briefcase
-} from 'lucide-react'
+import { Settings, Database } from 'lucide-react'
 import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
 import { useState, useEffect } from 'react'
 
 const NAV_ITEMS = [
-  { label: 'Workspace',        href: '/dashboard',         icon: Briefcase },
-  { label: 'Applications',     href: '/application_board', icon: LayoutDashboard },
-  { label: 'Interview Room',   href: '/interview_room',    icon: Target },
-  { label: 'Career Vault',     href: '/memory',            icon: Database },
-  { label: 'Career Coach',     href: '/tutor',             icon: Sparkles },
-  { label: 'Accomplishments',  href: '/progress',          icon: TrendingUp },
-  { label: 'Notifications',    href: '/notifications',     icon: Bell },
+  { label: 'Workspace',        href: '/dashboard' },
+  { label: 'Applications',     href: '/application_board' },
+  { label: 'Interview Room',   href: '/interview_room' },
+  { label: 'Career Vault',     href: '/memory' },
+  { label: 'Career Coach',     href: '/tutor' },
+  { label: 'Accomplishments',  href: '/progress' },
+  { label: 'Notifications',    href: '/notifications' },
 ]
 
 function isActive(href: string, pathname: string): boolean {
@@ -42,25 +39,27 @@ export function Sidebar() {
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+      <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+        {NAV_ITEMS.map(({ label, href }) => {
           const active = isActive(href, pathname)
           return (
             <button
               key={label}
               onClick={() => router.push(href)}
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left',
+                'w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left relative',
                 active
-                  ? 'bg-sidebar-accent text-sidebar-primary'
+                  ? 'bg-sidebar-accent text-sidebar-primary font-semibold'
                   : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
               aria-current={active ? 'page' : undefined}
             >
-              <Icon className={cn('w-4 h-4 flex-shrink-0', active && 'stroke-[2.5]')} />
-              {label}
-              {label === 'Notifications' && (
-                <span className="ml-auto w-2 h-2 rounded-full bg-destructive" />
+              <span>{label}</span>
+              {active && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+              {label === 'Notifications' && !active && (
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
               )}
             </button>
           )

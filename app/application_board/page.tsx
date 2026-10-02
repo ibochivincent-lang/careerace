@@ -197,10 +197,10 @@ export default function ApplicationBoardPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => router.push('/')}
+                  onClick={() => router.push('/dashboard#jobs')}
                   className="text-xs gap-1.5"
                 >
-                  Go to Job Engine <ArrowRight className="w-3 h-3" />
+                  Go to Job Harvester <ArrowRight className="w-3 h-3" />
                 </Button>
               </div>
             ) : (

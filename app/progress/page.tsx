@@ -190,8 +190,8 @@ export default function ProgressPage() {
               <div className="p-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg space-y-2">
                 <p>No skills indexed yet.</p>
                 <p>Upload your CV on the Job Engine or record skills in the Career Vault to build your verified accomplishments.</p>
-                <Button size="sm" variant="outline" onClick={() => router.push('/')} className="text-xs mt-2">
-                  Upload CV
+                <Button size="sm" variant="outline" onClick={() => router.push('/dashboard')} className="text-xs mt-2">
+                  Upload CV in Workspace
                 </Button>
               </div>
             ) : (
