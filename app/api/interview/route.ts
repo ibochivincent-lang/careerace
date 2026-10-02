@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { parseCvText } from "@/lib/cv_parser";
 import { generatePostApplicationInterviewPrep, evaluateStarAnswer } from "@/lib/interview_coach";
 import { getOwnerAddress } from "@/lib/session";
-import { rememberFact } from "@/lib/memory_contract";
+import { rememberFact, recallFeedback } from "@/lib/memory_contract";
 
 export async function POST(req: Request) {
   try {
@@ -35,7 +35,20 @@ export async function POST(req: Request) {
       });
     }
 
-    // Default action: generate questions
+    // Default action: generate role-specific interview prep with Walrus Memory recall!
+    const address = await getOwnerAddress();
+    let recalledMemories: Array<{ text: string; distance: number }> = [];
+    if (address) {
+      try {
+        recalledMemories = await recallFeedback(
+          address,
+          "interview feedback, STAR+R score, coaching critique, weakness, area of improvement"
+        );
+      } catch (err) {
+        console.warn("[interview] Walrus Memory recall warning:", err);
+      }
+    }
+
     const cv = parseCvText(cv_text || "");
     const appData = application || {
       job_id: `job_${Date.now()}`,
@@ -48,11 +61,20 @@ export async function POST(req: Request) {
       processed_at: new Date().toISOString()
     };
 
-    const questions = generatePostApplicationInterviewPrep(appData, cv);
+    const questions = generatePostApplicationInterviewPrep(appData, cv, recalledMemories);
 
     return NextResponse.json({
       success: true,
-      questions
+      questions,
+      recalled_memories: recalledMemories.map(m => {
+        const parts = m.text.split('|').map(p => p.trim());
+        return {
+          date: parts[0] || '',
+          kind: parts[1] || 'interview_feedback',
+          insight: (parts[2] || m.text).split(' - SUPERSEDES:')[0].trim(),
+          distance: m.distance
+        };
+      })
     });
   } catch (error) {
     return NextResponse.json(

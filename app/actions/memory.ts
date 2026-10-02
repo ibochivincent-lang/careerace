@@ -19,7 +19,12 @@ async function requireAddress() {
 
 export async function saveFact(kind: FactKind, text: string, userTurn?: string) {
   const address = await requireAddress();
-  return rememberFact(address, kind, text, { userTurn });
+  const outcome = await rememberFact(address, kind, text, { userTurn });
+  revalidatePath("/memory");
+  revalidatePath("/application_board");
+  revalidatePath("/interview_room");
+  revalidatePath("/");
+  return outcome;
 }
 
 /** Everything currently stored in this candidate's career vault, conflicts already resolved. */
