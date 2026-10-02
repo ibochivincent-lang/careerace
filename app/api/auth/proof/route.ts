@@ -46,24 +46,22 @@ export async function POST(req: NextRequest) {
 
     let proverText = await proverRes.text();
 
-    // If primary prover rejects audience or returns 400 with "not supported", attempt the fallback prover
-    if (!proverRes.ok && (proverText.includes("not supported") || proverRes.status === 400 || proverRes.status === 502)) {
-      console.warn(`[zklogin] Primary prover (${PRIMARY_PROVER}) returned ${proverRes.status}: ${proverText}. Retrying with fallback: ${FALLBACK_PROVER}`);
+    // Retry primary prover once if it encounters a transient error (e.g. 502/503/504)
+    if (!proverRes.ok && (proverRes.status === 502 || proverRes.status === 503 || proverRes.status === 504)) {
+      console.warn(`[zklogin] Primary prover (${PRIMARY_PROVER}) returned ${proverRes.status}. Retrying after 1s...`);
+      await new Promise(r => setTimeout(r, 1000));
       try {
-        const fallbackRes = await fetch(FALLBACK_PROVER, {
+        const retryRes = await fetch(PRIMARY_PROVER, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        const fallbackText = await fallbackRes.text();
-        if (fallbackRes.ok) {
-          proverRes = fallbackRes;
-          proverText = fallbackText;
-        } else {
-          console.error(`[zklogin] Fallback prover (${FALLBACK_PROVER}) also failed:`, fallbackRes.status, fallbackText);
+        if (retryRes.ok) {
+          proverRes = retryRes;
+          proverText = await retryRes.text();
         }
-      } catch (fallbackErr) {
-        console.error("[zklogin] Fallback prover fetch error:", fallbackErr);
+      } catch (retryErr) {
+        console.error("[zklogin] Prover retry error:", retryErr);
       }
     }
 

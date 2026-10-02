@@ -11,27 +11,43 @@ import {
 } from "@mysten/sui/zklogin";
 
 const rawNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "").trim().toLowerCase();
-const NETWORK: "mainnet" | "testnet" = rawNetwork.startsWith("mainnet") ? "mainnet" : "testnet";
+const NETWORK: "mainnet" | "testnet" | "devnet" = rawNetwork.startsWith("mainnet") 
+  ? "mainnet" 
+  : rawNetwork.startsWith("devnet")
+  ? "devnet"
+  : "testnet";
 
 const GRAPHQL_URL = `https://graphql.${NETWORK}.sui.io/graphql`;
 const STORAGE_KEYS = {
-  EPHEMERAL_KEY: "ea_zk_ephemeral_key",
-  MAX_EPOCH: "ea_zk_max_epoch",
-  RANDOMNESS: "ea_zk_randomness",
-  AUTH_STATE: "ea_zk_auth_state",
+  EPHEMERAL_KEY: "careerace_zk_ephemeral_key",
+  MAX_EPOCH: "careerace_zk_max_epoch",
+  RANDOMNESS: "careerace_zk_randomness",
+  AUTH_STATE: "careerace_zk_auth_state",
+  CACHED_EPOCH: "careerace_cached_epoch",
+  CACHED_EPOCH_TS: "careerace_cached_epoch_ts",
 };
 
 /**
  * Fetches the current epoch, preferring the local server-side proxy route to avoid CORS,
- * falling back to direct GraphQL or a safe default epoch if the network is constrained.
+ * falling back to direct GraphQL, cached epoch, or public RPC.
  */
 export async function getCurrentEpoch(): Promise<number> {
+  const saveEpoch = (epoch: number) => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_KEYS.CACHED_EPOCH, epoch.toString());
+        localStorage.setItem(STORAGE_KEYS.CACHED_EPOCH_TS, Date.now().toString());
+      } catch {}
+    }
+  };
+
   // Tier 1: Try server-side proxy route
   try {
     const res = await fetch("/api/auth/epoch");
     if (res.ok) {
       const data = (await res.json()) as { epoch?: number };
-      if (typeof data.epoch === "number") {
+      if (typeof data.epoch === "number" && data.epoch > 0) {
+        saveEpoch(data.epoch);
         return data.epoch;
       }
     }
@@ -41,21 +57,38 @@ export async function getCurrentEpoch(): Promise<number> {
 
   // Tier 2: Try direct GraphQL query
   try {
-    const client = new SuiGraphQLClient({ url: GRAPHQL_URL, network: NETWORK });
+    const client = new SuiGraphQLClient({ url: GRAPHQL_URL, network: NETWORK as "mainnet" | "testnet" });
     const result = await client.query<{ epoch?: { epochId?: number } }>({
       query: "{ epoch { epochId } }",
       variables: {},
     });
     const epochId = result.data?.epoch?.epochId;
-    if (typeof epochId === "number") {
+    if (typeof epochId === "number" && epochId > 0) {
+      saveEpoch(epochId);
       return epochId;
     }
   } catch (err) {
-    console.warn("[zklogin] Direct GraphQL epoch query failed, using safe fallback:", err);
+    console.warn("[zklogin] Direct GraphQL epoch query failed:", err);
   }
 
-  // Tier 3: Safe baseline fallback so login initiation never fails
-  return 1240;
+  // Tier 3: Check cached epoch with time elapsed offset (1 epoch ~ 24 hours on Sui)
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(STORAGE_KEYS.CACHED_EPOCH);
+      const ts = localStorage.getItem(STORAGE_KEYS.CACHED_EPOCH_TS);
+      if (cached && ts) {
+        const cachedEpoch = parseInt(cached, 10);
+        const elapsedHours = (Date.now() - parseInt(ts, 10)) / (1000 * 60 * 60);
+        const estimatedEpoch = cachedEpoch + Math.floor(elapsedHours / 24);
+        if (estimatedEpoch > 0) {
+          return estimatedEpoch;
+        }
+      }
+    } catch {}
+  }
+
+  // Tier 4: Fallback baseline
+  return 1245;
 }
 
 /**
@@ -149,6 +182,27 @@ export async function completeGoogleZkLogin(jwt: string): Promise<{ address: str
 
   if (!proverRes.ok) {
     const errorBody = await proverRes.text();
+    console.warn("[zklogin] Mysten prover rejected or unavailable, falling back to direct Google verification:", errorBody);
+
+    try {
+      const fallbackRes = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jwt }),
+      });
+
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        sessionStorage.removeItem(STORAGE_KEYS.EPHEMERAL_KEY);
+        sessionStorage.removeItem(STORAGE_KEYS.MAX_EPOCH);
+        sessionStorage.removeItem(STORAGE_KEYS.RANDOMNESS);
+        sessionStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
+        return { address: fallbackData.address };
+      }
+    } catch (fallbackErr) {
+      console.error("[zklogin] Direct Google fallback failed:", fallbackErr);
+    }
+
     throw new Error(`ZK proof generation failed: ${errorBody}`);
   }
 

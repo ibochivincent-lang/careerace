@@ -1,4 +1,5 @@
 export interface RawJob {
+  job_id: string;
   title: string;
   company: string;
   location: string;
@@ -47,7 +48,11 @@ function parseRssXml(xml: string, sourceName: string): RawJob[] {
         company = parts.slice(1).join(" at ").trim();
       }
 
+      const hashKey = `${link}_${sourceName}`;
+      const job_id = `job_${Buffer.from(hashKey).toString("hex").slice(0, 14)}`;
+
       jobs.push({
+        job_id,
         title: title || rawTitle,
         company: company || "See listing",
         location: region,
@@ -86,19 +91,22 @@ export async function harvestJobsFromSources(query: string = "software engineer"
 
   const tasks: Promise<void>[] = [];
 
-  // Source 1: Remotive Public API
+  // Source 1: Remotive Public API (Search Query Aware)
   tasks.push(
     (async () => {
       try {
-        const res = await fetchWithTimeout(
-          "https://remotive.com/api/remote-jobs?category=software-dev&limit=40",
-          6000
-        );
+        const queryTerm = encodeURIComponent(query);
+        const remotiveUrl = queryTerm
+          ? `https://remotive.com/api/remote-jobs?search=${queryTerm}&limit=30`
+          : "https://remotive.com/api/remote-jobs?category=software-dev&limit=30";
+        const res = await fetchWithTimeout(remotiveUrl, 6000);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.jobs)) {
             for (const j of data.jobs) {
+              const job_id = `job_rem_${j.id || Buffer.from(j.url || j.title).toString("hex").slice(0, 12)}`;
               harvested.push({
+                job_id,
                 title: j.title || "Software Developer",
                 company: j.company_name || "Tech Company",
                 location: j.candidate_required_location || "Remote",
@@ -213,41 +221,47 @@ export async function harvestJobsFromSources(query: string = "software engineer"
     })()
   );
 
-  // Source 8: Google Jobs via SerpAPI
-  tasks.push(
-    (async () => {
-      try {
-        const serpUrl = `https://serpapi.com/search?engine=google_jobs&q=${encodeURIComponent(
-          query + " developer remote"
-        )}&location=United+States&api_key=c9c1189777ce4112b0562df075e3f5f878373298b04eb112251792224085c583&num=25`;
-        const res = await fetchWithTimeout(serpUrl, 6000);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.jobs_results)) {
-            for (const j of data.jobs_results) {
-              harvested.push({
-                title: j.title || "Software Engineer",
-                company: j.company_name || "Enterprise Employer",
-                location: j.location || "Remote, US",
-                description: (j.description || "").slice(0, 350),
-                apply_url:
+  // Source 8: Google Jobs via SerpAPI (Environment-authenticated)
+  const serpApiKey = process.env.SERPAPI_API_KEY;
+  if (serpApiKey) {
+    tasks.push(
+      (async () => {
+        try {
+          const serpUrl = `https://serpapi.com/search?engine=google_jobs&q=${encodeURIComponent(
+            query + " remote"
+          )}&api_key=${serpApiKey}&num=20`;
+          const res = await fetchWithTimeout(serpUrl, 6000);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.jobs_results)) {
+              for (const j of data.jobs_results) {
+                const apply_url =
                   j.apply_options?.[0]?.link ||
                   j.share_link ||
                   `https://www.google.com/search?q=${encodeURIComponent(
                     (j.title || "") + " " + (j.company_name || "")
-                  )}`,
-                source: "Google Jobs",
-                posted_date: new Date().toISOString(),
-                is_remote: true,
-                salary: j.detected_extensions?.salary || "",
-                job_type: "remote",
-              });
+                  )}`;
+                const job_id = `job_serp_${Buffer.from(apply_url).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title: j.title || "Software Engineer",
+                  company: j.company_name || "Enterprise Employer",
+                  location: j.location || "Remote",
+                  description: (j.description || "").slice(0, 350),
+                  apply_url,
+                  source: "Google Jobs",
+                  posted_date: new Date().toISOString(),
+                  is_remote: true,
+                  salary: j.detected_extensions?.salary || "",
+                  job_type: "remote",
+                });
+              }
             }
           }
-        }
-      } catch (_e) {}
-    })()
-  );
+        } catch (_e) {}
+      })()
+    );
+  }
 
   // Source 9: Jobberman Nigeria Remote Tech listings
   tasks.push(
@@ -272,7 +286,9 @@ export async function harvestJobsFromSources(query: string = "software engineer"
             const company = stripTags(companyMatch?.[1]) || "Nigerian Tech Employer";
 
             if (link) {
+              const job_id = `job_jbm_${Buffer.from(link).toString("hex").slice(0, 12)}`;
               harvested.push({
+                job_id,
                 title,
                 company,
                 location: "Nigeria / Remote",
@@ -291,36 +307,6 @@ export async function harvestJobsFromSources(query: string = "software engineer"
   );
 
   await Promise.allSettled(tasks);
-
-  // Fallback high-quality structured jobs (Zero mock data rule: real verified direct partner postings)
-  if (harvested.length === 0) {
-    harvested.push(
-      {
-        title: "Fullstack TypeScript Engineer",
-        company: "Vercel Partner Agency",
-        location: "Remote / Global",
-        description: "Looking for a mid-level Fullstack Developer proficient in Next.js, React, and Tailwind CSS to build scalable web applications.",
-        apply_url: "mailto:careers@vercelpartner.com?subject=Application%20Fullstack%20Engineer",
-        source: "Direct Partner API",
-        posted_date: new Date().toISOString(),
-        is_remote: true,
-        salary: "$80,000 - $110,000",
-        job_type: "remote",
-      },
-      {
-        title: "Backend Node.js & Python Developer",
-        company: "Stellar Infrastructure Labs",
-        location: "Lagos, Nigeria / Hybrid",
-        description: "Building resilient financial APIs using Node.js, Express, PostgreSQL, and Python FastAPI. Local and hybrid candidates preferred.",
-        apply_url: "https://careers.stellarlabs.com/jobs/backend-dev",
-        source: "Jobberman / Nigeria Portal",
-        posted_date: new Date().toISOString(),
-        is_remote: false,
-        salary: "NGN 1,200,000 / month",
-        job_type: "hybrid",
-      }
-    );
-  }
 
   return harvested;
 }

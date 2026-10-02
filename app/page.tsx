@@ -154,7 +154,7 @@ export default function CareerAceLandingPage() {
                     <Database className="w-3.5 h-3.5 mr-1" /> Walrus Memory Core
                   </Badge>
                   <Badge variant="secondary" className="text-xs">
-                    Sui zkLogin + SEAL Cryptography
+                    Sui zkLogin + AES-256-GCM Encryption
                   </Badge>
                 </div>
                 <h2 className="text-3xl font-extrabold tracking-tight">
@@ -208,13 +208,13 @@ export default function CareerAceLandingPage() {
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
                     <Lock className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-base mb-1.5">Threshold Privacy with SEAL</h3>
+                  <h3 className="font-bold text-base mb-1.5">Client-Side Vault Encryption</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Resumes contain private contact details, salaries, and sensitive achievements. Everything is client-side encrypted via Mysten SEAL threshold cryptography on Sui before upload. Nobody can view raw data without your key.
+                    Resumes contain private contact details, salaries, and sensitive achievements. Everything is encrypted using client-side AES-256-GCM keys tied to your authenticated Sui address before upload. Nobody can view raw data without your key.
                   </p>
                 </div>
                 <div className="mt-4 pt-3 border-t text-[11px] font-mono text-muted-foreground">
-                  Stack: @mysten/seal
+                  Stack: AES-256-GCM + @mysten/walrus
                 </div>
               </div>
 
@@ -260,7 +260,7 @@ export default function CareerAceLandingPage() {
                 <div>
                   <span className="text-xs font-bold text-foreground">Sovereign Candidate Network Status:</span>
                   <p className="text-xs text-muted-foreground">
-                    Connected to Walrus Mainnet Aggregator &amp; Mysten SEAL Decryption Committees on Sui.
+                    Connected to Walrus Testnet Aggregator &amp; Sui Testnet with zero-knowledge zkLogin isolation.
                   </p>
                 </div>
               </div>

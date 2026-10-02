@@ -77,7 +77,7 @@ export async function extractFacts(
   assistantAsked?: string,
 ): Promise<Array<{ kind: FactKind; text: string }>> {
   const prompt = assistantAsked?.trim()
-    ? `The assistant asked:\n"""\n${assistantAsked.trim()}\n"""\n\nThe student replied:\n"""\n${userTurn}\n"""`
+    ? `The assistant asked:\n"""\n${assistantAsked.trim()}\n"""\n\nThe candidate replied:\n"""\n${userTurn}\n"""`
     : userTurn;
 
   const run = async (model: Awaited<ReturnType<typeof extractModel>>) => {
@@ -107,7 +107,7 @@ export async function extractFacts(
      * known good: it just answered.
      */
     console.warn(
-      `[examace] extraction model ${described?.extract ?? "(unknown)"} failed ` +
+      `[careerace] extraction model ${described?.extract ?? "(unknown)"} failed ` +
         `(${error instanceof Error ? error.message : String(error)}) — ` +
         `retrying on the chat model ${described?.chat ?? ""}.`,
     );

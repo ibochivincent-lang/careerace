@@ -64,12 +64,14 @@ export default function ProgressPage() {
       // 3. Fallback extraction from local profile if guest
       let localSkills: string[] = []
       let localRoles: string[] = []
+      let localExpCount = 0
       const localCv = localStorage.getItem('careerace_parsed_profile')
       if (localCv) {
         try {
           const parsed = JSON.parse(localCv)
           if (Array.isArray(parsed.skills)) localSkills = parsed.skills
           if (Array.isArray(parsed.target_roles)) localRoles = parsed.target_roles
+          if (Array.isArray(parsed.work_experience)) localExpCount = parsed.work_experience.length
         } catch {}
       }
 
@@ -77,7 +79,7 @@ export default function ProgressPage() {
         address,
         skillsCount: localSkills.length,
         targetRolesCount: localRoles.length,
-        experienceCount: localCv ? 2 : 0,
+        experienceCount: localExpCount,
         applicationsCount: appsCount,
         interviewsCount: 0,
         skills: localSkills,

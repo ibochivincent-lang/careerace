@@ -9,7 +9,7 @@ export interface ProcessedApplication {
   apply_url: string;
   fit_score: number;
   track: "track_a_auto_apply" | "track_b_manual_queue";
-  status: "Applied" | "Manual Required" | "Pending Review";
+  status: "Auto-Apply Ready" | "Applied" | "Manual Required" | "Pending Review";
   flag_reason?: string;
   tailored_package?: TailoredPackage;
   processed_at: string;
@@ -32,7 +32,8 @@ export function routeApplication(
       apply_url: job.apply_url,
       fit_score: evaluation.fit_score,
       track: "track_a_auto_apply",
-      status: "Applied",
+      status: "Auto-Apply Ready",
+      flag_reason: "High fit score: Tailored CV and Cover Letter generated. Ready for one-click submission.",
       tailored_package: tailoredPackage,
       processed_at: new Date().toISOString()
     };

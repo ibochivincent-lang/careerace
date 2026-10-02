@@ -20,10 +20,12 @@ import {
  * lie. The event is the cheapest way for an unrelated component to reach this
  * one without dragging a provider around the whole app.
  */
-const OPEN_EVENT = 'examace:open-keys'
+const OPEN_EVENT = 'careerace:open-keys'
+const LEGACY_EVENT = 'examace:open-keys'
 
 export function openKeysPanel() {
   window.dispatchEvent(new CustomEvent(OPEN_EVENT))
+  window.dispatchEvent(new CustomEvent(LEGACY_EVENT))
 }
 
 export function ApiKeysMenu() {
@@ -38,7 +40,11 @@ export function ApiKeysMenu() {
   useEffect(() => {
     const onOpen = () => setOpen(true)
     window.addEventListener(OPEN_EVENT, onOpen)
-    return () => window.removeEventListener(OPEN_EVENT, onOpen)
+    window.addEventListener(LEGACY_EVENT, onOpen)
+    return () => {
+      window.removeEventListener(OPEN_EVENT, onOpen)
+      window.removeEventListener(LEGACY_EVENT, onOpen)
+    }
   }, [])
 
   const load = useCallback(() => {

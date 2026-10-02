@@ -238,53 +238,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function extractPdfTextInBrowser(file: File): Promise<string> {
-    if (typeof window === 'undefined') throw new Error('Client-side only')
-
-    if (!(window as any).pdfjsLib) {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script')
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
-        script.async = true
-        script.onload = () => resolve()
-        script.onerror = () => reject(new Error('Failed to load PDF script from CDN'))
-        document.head.appendChild(script)
-      })
-    }
-
-    const pdfjsLib = (window as any).pdfjsLib
-    if (!pdfjsLib) throw new Error('PDF.js not available')
-
-    if (!pdfjsLib.GlobalWorkerOptions?.workerSrc) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
-    }
-
-    const buffer = await file.arrayBuffer()
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) })
-    const pdfDoc = await loadingTask.promise
-    const pages: string[] = []
-
-    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-      const page = await pdfDoc.getPage(pageNum)
-      const content = await page.getTextContent()
-      const pageText = content.items
-        .map((item: any) => (item.str !== undefined ? item.str : ''))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-      if (pageText) {
-        pages.push(pageText)
-      }
-    }
-
-    const extracted = pages.join('\n\n').trim()
-    if (!extracted || extracted.length < 10) {
-      throw new Error('PDF contained insufficient readable text')
-    }
-    return extracted
-  }
-
   async function handleFileSelect(file: File | null) {
     setSelectedFile(file)
     if (!file) return
@@ -301,25 +254,10 @@ export default function DashboardPage() {
       }
     }
 
-    if (
-      lowerName.endsWith('.pdf') ||
-      file.type.includes('pdf') ||
-      file.type === 'application/pdf'
-    ) {
-      try {
-        toast.info('Extracting PDF text directly in browser...')
-        clientExtractedText = await extractPdfTextInBrowser(file)
-        if (clientExtractedText) {
-          setCvText(clientExtractedText)
-          toast.success('PDF text extracted into editor.')
-        }
-      } catch (pdfErr) {
-        console.warn('Browser PDF extraction notice, delegating to server:', pdfErr)
-      }
-    }
-
     setIsParsing(true)
     setParseError(null)
+    toast.info(`Extracting CV text from ${file.name}...`)
+
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -332,19 +270,6 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        if (clientExtractedText) {
-          const fallbackRes = await fetch('/api/cv_upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cv_text: clientExtractedText })
-          })
-          const fallbackData = await fallbackRes.json()
-          if (fallbackRes.ok && fallbackData.profile) {
-            setParsedProfile(fallbackData.profile)
-            toast.success(`CV parsed: ${fallbackData.profile.applicant_name}`)
-            return
-          }
-        }
         const errMsg = data.error || 'Failed to extract CV file'
         setParseError(errMsg)
         toast.error(errMsg)
@@ -360,7 +285,7 @@ export default function DashboardPage() {
         const eduCount = data.profile.academic_history?.length || 0
         const certCount = data.profile.certifications?.length || 0
         toast.success(
-          `CV uploaded: Text displayed in box. Found candidate ${data.profile.applicant_name}, ${eduCount} institution/degree, ${expCount} experience, ${certCount} certs.`
+          `CV uploaded: Found candidate ${data.profile.applicant_name}, ${eduCount} education, ${expCount} experience, ${certCount} certs.`
         )
       }
     } catch (e) {
@@ -431,7 +356,8 @@ export default function DashboardPage() {
   async function handleHarvest() {
     setIsHarvesting(true)
     try {
-      const res = await fetch('/api/harvest?query=software%20engineer')
+      const targetQuery = parsedProfile?.target_roles?.[0] || 'software engineer'
+      const res = await fetch(`/api/harvest?query=${encodeURIComponent(targetQuery)}`)
       const data = await res.json()
       if (data.jobs) {
         setHarvestedJobs(data.jobs)

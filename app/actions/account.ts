@@ -27,7 +27,7 @@ export async function registerThisApp(accountId: string, ownerPrivateKey: string
     registryId: registryId(),
     accountId,
     publicKey: delegate.publicKey,
-    label: "ExamAce",
+    label: "Career Ace",
     suiPrivateKey: ownerPrivateKey, // TODO(enoki): swap for an Enoki walletSigner + sponsored tx
   });
 

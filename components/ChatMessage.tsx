@@ -42,7 +42,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className={cn('flex flex-col max-w-[78%]', isUser ? 'items-end' : 'items-start')}>
         {/* Sender label */}
         <span className="text-[10px] font-medium text-muted-foreground mb-1 px-1">
-          {isUser ? 'You' : 'ExamAce AI'}
+          {isUser ? 'You' : 'Career Ace AI'}
         </span>
 
         {/* Bubble */}

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getOwnerAddress } from '@/lib/session.ts'
-import { recallProfile, recallFeedback, resolveConflicts } from '@/lib/memory_contract.ts'
+import { recallCareerProfile, recallCareerCoaching, resolveConflicts } from '@/lib/memory_contract.ts'
 import { AppShell } from '@/components/AppShell'
 import { MemoryHeader } from '@/components/MemoryHeader'
 import { MemoryChat } from '@/components/MemoryChat'
@@ -26,8 +26,8 @@ export default async function TutorPage() {
 
   // One recall per page load, both namespaces in parallel — never per component.
   const [profile, feedback] = await Promise.all([
-    recallProfile(address, 'exam target, misconceptions, weak topics and mastered topics').catch(() => []),
-    recallFeedback(address, 'recurring mistakes and study preferences').catch(() => []),
+    recallCareerProfile(address).catch(() => []),
+    recallCareerCoaching(address).catch(() => []),
   ])
 
   const p = resolveConflicts(profile)

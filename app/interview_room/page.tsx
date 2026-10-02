@@ -70,6 +70,22 @@ export default function InterviewRoomPage() {
         }
       })
       .catch(() => {})
+
+    let role = 'Software Engineer'
+    let comp = 'Target Company'
+    const storedTitle = localStorage.getItem('careerace_target_title')
+    const storedCv = localStorage.getItem('careerace_parsed_profile')
+    if (storedTitle && storedTitle.trim()) {
+      role = storedTitle.trim()
+    } else if (storedCv) {
+      try {
+        const parsed = JSON.parse(storedCv)
+        if (parsed.target_roles?.[0]) role = parsed.target_roles[0]
+      } catch {}
+    }
+    setTargetRole(role)
+    setCompany(comp)
+    loadQuestions(role, comp)
   }, [])
 
   async function loadQuestions(roleToUse = targetRole, companyToUse = company) {
@@ -85,7 +101,7 @@ export default function InterviewRoomPage() {
             job_id: `job_${Date.now()}`,
             title: roleToUse,
             company: companyToUse,
-            apply_url: 'https://example.com/apply',
+            apply_url: '',
             fit_score: 9,
             track: 'track_a_auto_apply',
             status: 'Applied',
@@ -106,10 +122,6 @@ export default function InterviewRoomPage() {
       setIsLoadingQuestions(false)
     }
   }
-
-  useEffect(() => {
-    loadQuestions()
-  }, [])
 
   async function handleEvaluateAnswer() {
     const currentQ = questions[selectedQuestionIndex]
