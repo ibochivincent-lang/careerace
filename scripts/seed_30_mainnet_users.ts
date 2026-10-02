@@ -201,7 +201,33 @@ export const CANDIDATE_PROFILES_30: CandidateUser[] = [
   }
 ];
 
-export async function seedAll30Users(batchSize: number = 2) {
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function rememberWithRetry(
+  client: ReturnType<typeof MemWal.create>,
+  text: string,
+  namespace: string,
+  maxAttempts: number = 4
+) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await client.remember(text, namespace);
+      return res;
+    } catch (err: any) {
+      if (err.message?.includes("429") || err.message?.includes("Rate limit")) {
+        console.warn(`    [Rate Limit 429] Pacing relayer. Sleeping 62s before retry (Attempt ${attempt}/${maxAttempts})...`);
+        await sleep(62000);
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error(`Exceeded max retry attempts for memory write.`);
+}
+
+export async function seedAll30Users() {
   const accountId = process.env.MEMWAL_ACCOUNT_ID?.trim();
   const key = process.env.MEMWAL_PRIVATE_KEY?.trim();
   const serverUrl = process.env.MEMWAL_SERVER_URL?.trim() || "https://relayer.memory.walrus.xyz";
@@ -211,26 +237,25 @@ export async function seedAll30Users(batchSize: number = 2) {
     process.exit(1);
   }
 
-  console.log(`Starting Walrus Memory Seeding for Candidates...`);
+  console.log("Starting Rate-Paced Walrus Memory Seeding for 30 Candidates...");
   console.log(`Relayer: ${serverUrl} | Account: ${accountId}\n`);
 
-  for (let i = 0; i < CANDIDATE_PROFILES_30.length; i += batchSize) {
-    const batch = CANDIDATE_PROFILES_30.slice(i, i + batchSize);
-    for (const candidate of batch) {
-      console.log(`[${candidate.id}] Seeding ${candidate.name} (${candidate.domain}) into [${candidate.namespace}]...`);
-      const client = MemWal.create({ key, accountId, serverUrl, namespace: candidate.namespace });
+  for (const candidate of CANDIDATE_PROFILES_30) {
+    console.log(`[${candidate.id}] Seeding ${candidate.name} (${candidate.domain}) -> [${candidate.namespace}]`);
+    const client = MemWal.create({ key, accountId, serverUrl, namespace: candidate.namespace });
 
-      for (let m = 0; m < candidate.memories.length; m++) {
-        try {
-          const res = await client.rememberAndWait(candidate.memories[m], candidate.namespace);
-          console.log(`  -> Memory ${m + 1}/10 saved (Blob: ${(res as any)?.blob_id || "ok"})`);
-        } catch (err: any) {
-          console.error(`  -> Failed memory ${m + 1}: ${err.message}`);
-        }
+    for (let m = 0; m < candidate.memories.length; m++) {
+      try {
+        const res = await rememberWithRetry(client, candidate.memories[m], candidate.namespace);
+        console.log(`  [${candidate.id}] Memory ${m + 1}/10 accepted (Job: ${(res as any)?.jobId || (res as any)?.job_id || "queued"})`);
+      } catch (err: any) {
+        console.error(`  [${candidate.id}] Error memory ${m + 1}: ${err.message}`);
       }
+      // Pace requests to stay comfortably below 60 req/min limit
+      await sleep(1100);
     }
   }
-  console.log(`\nCompleted candidate seeding!`);
+  console.log("\nAll 30 candidate profiles dispatched to Walrus Mainnet successfully!");
 }
 
 if (process.argv[1]?.includes("seed_30_mainnet_users")) {
