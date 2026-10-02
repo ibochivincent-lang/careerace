@@ -249,6 +249,27 @@ export async function completeGoogleZkLogin(jwt: string): Promise<{ address: str
 
   if (!verifyRes.ok) {
     const detail = await verifyRes.text();
+    console.warn("[zklogin] On-chain verification failed, falling back to direct Google token authentication:", detail);
+
+    try {
+      const fallbackRes = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jwt }),
+      });
+
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        sessionStorage.removeItem(STORAGE_KEYS.EPHEMERAL_KEY);
+        sessionStorage.removeItem(STORAGE_KEYS.MAX_EPOCH);
+        sessionStorage.removeItem(STORAGE_KEYS.RANDOMNESS);
+        sessionStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
+        return { address: fallbackData.address };
+      }
+    } catch (fallbackErr) {
+      console.error("[zklogin] Direct Google fallback failed after verify:", fallbackErr);
+    }
+
     throw new Error(`Verification rejected: ${detail}`);
   }
 

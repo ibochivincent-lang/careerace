@@ -33,43 +33,7 @@ export async function POST(req: Request) {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error("[careerace] zkLogin verification failed:", detail);
-
-    let extraDetail = "";
-    try {
-      const diag = await suiGraphql.query<{
-        verifyZkLoginSignature?: {
-          success?: boolean;
-          errors?: string[];
-        };
-      }>({
-        query: `
-          query verifyZkLoginSignature($bytes: Base64!, $signature: Base64!, $intentScope: ZkLoginIntentScope!, $author: SuiAddress!) {
-            verifyZkLoginSignature(bytes: $bytes, signature: $signature, intentScope: $intentScope, author: $author) {
-              success
-              errors
-            }
-          }
-        `,
-        variables: {
-          bytes: Buffer.from(bytes).toString("base64"),
-          signature,
-          intentScope: "PERSONAL_MESSAGE",
-          author: address,
-        },
-      });
-
-      console.error("[careerace] Full GraphQL diagnostic response:", JSON.stringify(diag, null, 2));
-
-      if (diag.errors && diag.errors.length > 0) {
-        extraDetail = `: ${diag.errors.map((e) => e.message).join(", ")}`;
-      } else if (diag.data?.verifyZkLoginSignature?.success === false) {
-        extraDetail = `: zkLogin on-chain returned success=false, errors=${JSON.stringify(diag.data.verifyZkLoginSignature.errors || [])}`;
-      }
-    } catch (diagErr) {
-      console.error("[careerace] GraphQL diagnostic failed:", diagErr);
-    }
-
-    return new Response(`Verification failed: ${detail}${extraDetail}`, { status: 401 });
+    return new Response(`Verification failed: ${detail}`, { status: 401 });
   }
 
   if (!publicKey.verifyAddress(address)) {
