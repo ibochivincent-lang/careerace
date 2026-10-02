@@ -126,17 +126,42 @@ export default function ApplicationBoardPage() {
     github: string
     skills: string[]
   }>({
-    name: 'Candidate',
-    email: 'candidate@example.com',
-    phone: '+1 (555) 000-0000',
-    role: 'Software Engineer',
-    linkedin: 'https://linkedin.com/in/candidate',
-    github: 'https://github.com/candidate',
-    skills: ['TypeScript', 'React', 'Node.js', 'Next.js'],
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
+    linkedin: '',
+    github: '',
+    skills: [],
   })
 
+  useEffect(() => {
+    // Sync candidate profile for ATS Quick-Fill
+    fetch('/api/candidate/me')
+      .then(res => res.json())
+      .then(data => {
+        const storedName = localStorage.getItem('careerace_candidate_name') || ''
+        const storedRole = localStorage.getItem('careerace_target_title') || ''
+        const storedEmail = localStorage.getItem('careerace_candidate_email') || ''
+        const storedPhone = localStorage.getItem('careerace_candidate_phone') || ''
+        const storedLinkedin = localStorage.getItem('careerace_candidate_linkedin') || ''
+        const storedGithub = localStorage.getItem('careerace_candidate_github') || ''
+
+        setAtsProfile({
+          name: data?.username || storedName || 'Candidate',
+          email: data?.email || storedEmail || '',
+          phone: data?.phone || storedPhone || '',
+          role: data?.primaryRole || storedRole || 'Software Engineer',
+          linkedin: storedLinkedin || '',
+          github: storedGithub || '',
+          skills: data?.skills || ['Full Stack Development', 'TypeScript', 'Next.js', 'Distributed Systems'],
+        })
+      })
+      .catch(() => {})
+  }, [])
+
   function openDispatchModal(app: ApplicationItem) {
-    const candidateName = localStorage.getItem('careerace_candidate_name') || 'Candidate'
+    const candidateName = atsProfile.name || localStorage.getItem('careerace_candidate_name') || 'Candidate'
     const cleanCompany = app.company.toLowerCase().replace(/[^a-z0-9]/g, '')
     setDispatchApp(app)
     setRecruiterEmail(`careers@${cleanCompany || 'company'}.com`)

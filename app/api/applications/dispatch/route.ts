@@ -27,9 +27,10 @@ export async function POST(req: Request) {
       cover_letter ||
       `Dear Hiring Team at ${targetCompany},\n\nI am writing to express my strong interest in the ${targetTitle} role. With proven experience in modern web architecture, distributed systems, and verified competencies evaluated through the Career Ace platform, I am confident in delivering high impact to your engineering organization.\n\nYou can review my cryptographically verified competencies, code repositories, and STAR+R assessment results on my Career Ace Passport: https://careerace.vercel.app/p/${encodeURIComponent(candidateName)}.\n\nBest regards,\n${candidateName}`;
 
-    // 1. If Zapier Webhook is provided, trigger real external dispatch (Gmail, Outlook, Sheets, Notion)
+    // 1. If Zapier Webhook is provided or set in environment, trigger real external dispatch (Gmail, Outlook, Sheets, Notion)
+    const targetWebhookUrl = zapier_webhook_url || process.env.ZAPIER_WEBHOOK_URL || process.env.NEXT_PUBLIC_ZAPIER_WEBHOOK_URL;
     let zapierResult = null;
-    if (zapier_webhook_url) {
+    if (targetWebhookUrl) {
       zapierResult = await triggerZapierWebhook(
         "application_dispatched",
         {
