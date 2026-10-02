@@ -65,14 +65,12 @@ NEVER write one-off moods, conversational pleasantries, or assistant suggestions
 Return an empty array when the turn contains none of the above.`;
 
 /**
- * `assistantAsked` is the tutor's previous turn.
+ * `assistantAsked` is the copilot's previous turn.
  *
- * Without it a short answer is unextractable. The tutor asks what they are
- * preparing for before it plans anything, so the most important turn in the
- * whole conversation is often a bare "JAMB, April" — which, read on its own,
- * asserts very little. The question is passed as context so the answer can be
- * resolved against it, and the prompt forbids treating anything in the
- * question itself as a fact.
+ * Without it a short answer is unextractable. The copilot asks what role or seniority
+ * they are targeting, so a concise reply like "Staff AI Engineer, Remote" can be
+ * resolved against the question. The question is passed as context so the answer
+ * is accurately classified without treating the question itself as a candidate fact.
  */
 export async function extractFacts(
   userTurn: string,
