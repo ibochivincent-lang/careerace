@@ -192,7 +192,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
         throw new Error('Please enter a valid email address.')
       if (!password || password.length < 8)
         throw new Error('Password must be at least 8 characters.')
-      setStatusMessage('Sending 8-digit verification code\u2026')
+      setStatusMessage('Sending verification code\u2026')
       const res = await fetch('/api/auth/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -214,8 +214,8 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
     setError(null)
     setBusy(true)
     try {
-      if (!otpCode || otpCode.trim().length < 8)
-        throw new Error('Please enter the 8-digit code from your email.')
+      if (!otpCode || otpCode.trim().length < 6)
+        throw new Error('Please enter the verification code from your email.')
       setStatusMessage('Verifying code & activating your account\u2026')
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
@@ -270,7 +270,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
     try {
       if (!loginIdentifier.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginIdentifier.trim()))
         throw new Error('Please enter a valid email address.')
-      setStatusMessage('Sending 8-digit sign-in code\u2026')
+      setStatusMessage('Sending sign-in code\u2026')
       const res = await fetch('/api/auth/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -292,8 +292,8 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
     setError(null)
     setBusy(true)
     try {
-      if (!otpCode || otpCode.trim().length < 8)
-        throw new Error('Please enter the 8-digit code from your email.')
+      if (!otpCode || otpCode.trim().length < 6)
+        throw new Error('Please enter the verification code from your email.')
       setStatusMessage('Verifying code\u2026')
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
@@ -482,15 +482,15 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
 
         <div className="relative my-4 flex items-center justify-center">
           <span className="w-full border-t border-border" />
-          <span className="bg-card px-3 text-[10px] uppercase font-mono text-muted-foreground whitespace-nowrap">Or enter 8-digit code</span>
+          <span className="bg-card px-3 text-[10px] uppercase font-mono text-muted-foreground whitespace-nowrap">Or enter verification code</span>
         </div>
         <form onSubmit={onVerify} className="flex flex-col gap-4">
           <input
-            type="text" maxLength={8} placeholder="12345678" value={otpCode}
+            type="text" maxLength={10} placeholder="••••••••" value={otpCode}
             onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} disabled={busy}
             className="h-14 w-full rounded-xl border-2 border-primary/50 bg-background/80 text-center font-mono text-2xl font-bold tracking-[0.25em] placeholder:tracking-normal placeholder:font-normal placeholder:text-muted-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all"
           />
-          <button type="submit" disabled={busy || otpCode.length < 8}
+          <button type="submit" disabled={busy || otpCode.length < 6}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
             {busy ? <Spinner text={statusMessage || 'Verifying…'} /> : <><CheckCircle2 className="size-4" /><span>Verify Code</span></>}
           </button>
@@ -624,7 +624,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Create Account</p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight">Create your sovereign vault.</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Enter your details to receive a 8-digit OTP verification code before activating your account.
+                Enter your details to receive a verification code before activating your account.
               </p>
               <form onSubmit={handleSendSignUpOtp} className="mt-6 flex flex-col gap-4">
                 <div>
@@ -659,7 +659,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
                   </div>
                 </div>
                 <button type="submit" disabled={busy || googleBusy} className={primaryBtn}>
-                  {busy ? <Spinner text={statusMessage || 'Sending code\u2026'} /> : <><span>Send 8-Digit Verification Code</span><ArrowRight className="size-4" /></>}
+                  {busy ? <Spinner text={statusMessage || 'Sending code\u2026'} /> : <><span>Verification Code</span><ArrowRight className="size-4" /></>}
                 </button>
               </form>
             </>
@@ -719,7 +719,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
         </>
       )}
 
-      {(mode === 'signin' || mode === 'signup') && (
+      {(mode === 'signin' || (mode === 'signup' && signupStep === 'form')) && (
         <>
           <div className="relative my-6 text-center">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/70" /></div>
