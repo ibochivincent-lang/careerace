@@ -4,7 +4,6 @@ import { getOwnerAddress } from '@/lib/session.ts'
 import { recallProfile, recallFeedback, resolveConflicts, claimsOfKind } from '@/lib/memory_contract.ts'
 import { rankCoaches } from '@/lib/coaches.ts'
 import { AppShell } from '@/components/AppShell'
-import { MemoryHeader } from '@/components/MemoryHeader'
 import { cn } from '@/components/ui/utils'
 
 export const dynamic = 'force-dynamic'
@@ -29,8 +28,6 @@ export default async function CoachesPage() {
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
-        <MemoryHeader address={address} active="/coaches" />
-
         <div className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-10">
           <h1 className="text-3xl font-bold tracking-tight">Executive &amp; Technical Coaches</h1>
           <p className="mt-2 max-w-[62ch] text-sm leading-relaxed text-muted-foreground">

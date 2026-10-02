@@ -45,7 +45,7 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
     >
       <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
         <Badge className="h-auto text-sm font-medium px-4 py-2" variant={'outline'}>
-          <Sparkles className="w-4 h-4 mr-2 text-primary" /> Autonomous AI Career Copilot by IboTV
+          <Sparkles className="w-4 h-4 mr-2 text-primary" /> Autonomous AI Career Copilot
         </Badge>
       </motion.div>
 

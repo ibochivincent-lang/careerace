@@ -97,55 +97,53 @@ export async function POST(req: Request) {
       // AI parsing failed silently; rule-based result is used
     }
 
-    // Walrus Sovereign Encrypted Resume Storage & Career Vault Memory Indexing
-    let walrusVaultResult = null;
-    try {
-      const address = await getOwnerAddress();
-      if (address) {
+    // Walrus Sovereign Encrypted Resume Storage & Career Vault Memory Indexing (non-blocking)
+    getOwnerAddress()
+      .then(async (address) => {
+        if (!address) return;
         const uploadBuffer = fileBuffer || Buffer.from(cvText, "utf-8");
         const docName = fileName || "Candidate_Resume.txt";
-        const walrusResult = await uploadEncryptedResumeToWalrus(
-          uploadBuffer,
-          address,
-          docName
-        );
+        try {
+          const walrusResult = await uploadEncryptedResumeToWalrus(
+            uploadBuffer,
+            address,
+            docName
+          );
 
-        await rememberFact(
-          address,
-          "tailored_cv",
-          `Walrus Encrypted Resume: ${docName} | blobId: ${walrusResult.blobId} | digest: ${walrusResult.sha256Digest.slice(0, 16)}`
-        ).catch(() => {});
+          await rememberFact(
+            address,
+            "tailored_cv",
+            `Walrus Encrypted Resume: ${docName} | blobId: ${walrusResult.blobId} | digest: ${walrusResult.sha256Digest.slice(0, 16)}`
+          ).catch(() => {});
 
-        // Index core skills into candidate's sovereign profile
-        if (finalProfile.skills && Array.isArray(finalProfile.skills)) {
-          for (const skill of finalProfile.skills.slice(0, 5)) {
-            await rememberFact(address, "skill", `Skill: ${skill}`).catch(() => {});
+          if (finalProfile.skills && Array.isArray(finalProfile.skills)) {
+            for (const skill of finalProfile.skills.slice(0, 5)) {
+              await rememberFact(address, "skill", `Skill: ${skill}`).catch(() => {});
+            }
           }
-        }
 
-        // Index target roles
-        if (finalProfile.target_roles && Array.isArray(finalProfile.target_roles)) {
-          for (const role of finalProfile.target_roles.slice(0, 2)) {
-            await rememberFact(address, "target_role", `Target role: ${role}`).catch(() => {});
+          if (finalProfile.target_roles && Array.isArray(finalProfile.target_roles)) {
+            for (const role of finalProfile.target_roles.slice(0, 2)) {
+              await rememberFact(address, "target_role", `Target role: ${role}`).catch(() => {});
+            }
           }
-        }
 
-        // Index primary work experience
-        if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
-          for (const exp of finalProfile.work_experience.slice(0, 2)) {
-            await rememberFact(
-              address,
-              "experience",
-              `${exp.role} at ${exp.company}${exp.duration ? ` (${exp.duration})` : ""}`
-            ).catch(() => {});
+          if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
+            for (const exp of finalProfile.work_experience.slice(0, 2)) {
+              await rememberFact(
+                address,
+                "experience",
+                `${exp.role} at ${exp.company}${exp.duration ? ` (${exp.duration})` : ""}`
+              ).catch(() => {});
+            }
           }
+        } catch (err) {
+          console.warn("[cv_upload] Background Walrus sync warning:", err);
         }
-
-        walrusVaultResult = walrusResult;
-      }
-    } catch (walrusErr) {
-      console.warn("[cv_upload] Walrus storage indexing skipped or failed:", walrusErr);
-    }
+      })
+      .catch((err) => {
+        console.warn("[cv_upload] Background address lookup skipped:", err);
+      });
 
     return NextResponse.json({
       success: true,
@@ -155,7 +153,7 @@ export async function POST(req: Request) {
       extracted_text_length: cvText.length,
       extracted_text: cvText,
       profile: finalProfile,
-      walrus_vault: walrusVaultResult,
+      walrus_vault: { status: 'syncing_in_background' },
     });
   } catch (error) {
     console.error("[cv_upload] Error:", error);

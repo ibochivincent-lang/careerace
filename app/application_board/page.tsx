@@ -97,6 +97,8 @@ export default function ApplicationBoardPage() {
     }
   }
 
+  const [trackFilter, setTrackFilter] = useState<'all' | 'track_a' | 'track_b'>('all')
+
   const trackAApps = applications.filter(a => a.status === 'Applied' || a.track === 'track_a_auto_apply')
   const trackBApps = applications.filter(a => a.status === 'Manual Required' || a.track === 'track_b_manual_queue')
 
@@ -139,6 +141,85 @@ export default function ApplicationBoardPage() {
           </div>
         </div>
 
+        {/* 4 Interactive Overview Stat Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card
+            onClick={() => setTrackFilter(trackFilter === 'track_a' ? 'all' : 'track_a')}
+            className={`p-4 cursor-pointer transition-all border-l-4 border-l-emerald-500 hover:shadow-md ${
+              trackFilter === 'track_a' ? 'ring-2 ring-emerald-500 bg-emerald-500/5' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Works Auto-Applied</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-emerald-500">{trackAApps.length}</div>
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+              <span>Track A Direct</span>
+              <span className="text-primary text-[10px] font-medium">{trackFilter === 'track_a' ? 'Showing' : 'Click to view'}</span>
+            </p>
+          </Card>
+
+          <Card
+            onClick={() => setTrackFilter(trackFilter === 'track_b' ? 'all' : 'track_b')}
+            className={`p-4 cursor-pointer transition-all border-l-4 border-l-amber-500 hover:shadow-md ${
+              trackFilter === 'track_b' ? 'ring-2 ring-amber-500 bg-amber-500/5' : ''
+            }`}
+          >
+            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Track Manual Review</span>
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-amber-500">{trackBApps.length}</div>
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+              <span>Track B Queue</span>
+              <span className="text-primary text-[10px] font-medium">{trackFilter === 'track_b' ? 'Showing' : 'Click to view'}</span>
+            </p>
+          </Card>
+
+          <Card
+            onClick={handleQuickEvaluateLiveFeed}
+            className="p-4 cursor-pointer transition-all border-l-4 border-l-primary hover:shadow-md hover:border-primary"
+          >
+            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Jobs Available</span>
+              <Briefcase className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground">Live Feeds</div>
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+              <span>{isHarvesting ? 'Harvesting...' : 'Remote tech roles'}</span>
+              <span className="text-primary text-[10px] font-medium">Evaluate &rarr;</span>
+            </p>
+          </Card>
+
+          <Card
+            onClick={() => router.push('/interview_room')}
+            className="p-4 cursor-pointer transition-all border-l-4 border-l-violet-500 hover:shadow-md hover:border-violet-500"
+          >
+            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Interview Room</span>
+              <Target className="w-4 h-4 text-violet-500" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground">STAR+R Prep</div>
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+              <span>Practice Ready</span>
+              <span className="text-primary text-[10px] font-medium">Enter room &rarr;</span>
+            </p>
+          </Card>
+        </div>
+
+        {/* Filter Reset pill if active */}
+        {trackFilter !== 'all' && (
+          <div className="flex items-center justify-between text-xs bg-muted/40 p-2.5 rounded-lg border">
+            <span className="text-muted-foreground">
+              Filtering by: <strong className="text-foreground">{trackFilter === 'track_a' ? 'Track A (Auto-Applied)' : 'Track B (Manual Review Queue)'}</strong>
+            </span>
+            <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setTrackFilter('all')}>
+              Show All Applications
+            </Button>
+          </div>
+        )}
+
         {/* Status Banner */}
         <div className="rounded-xl border bg-card/60 backdrop-blur p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-3">
@@ -170,18 +251,19 @@ export default function ApplicationBoardPage() {
         </div>
 
         {/* Dual-Track Columns */}
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className={`grid gap-8 ${trackFilter === 'all' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
           {/* Track A Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <h2 className="text-lg font-bold">Track A: Auto-Applied</h2>
+          {(trackFilter === 'all' || trackFilter === 'track_a') && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <h2 className="text-lg font-bold">Track A: Auto-Applied</h2>
+                </div>
+                <Badge variant="secondary" className="font-mono text-xs">
+                  {trackAApps.length}
+                </Badge>
               </div>
-              <Badge variant="secondary" className="font-mono text-xs">
-                {trackAApps.length}
-              </Badge>
-            </div>
 
             {isLoading ? (
               <div className="rounded-xl border border-dashed p-8 text-center text-xs text-muted-foreground">
@@ -245,86 +327,89 @@ export default function ApplicationBoardPage() {
               </div>
             )}
           </div>
+        )}
 
-          {/* Track B Column */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                <h2 className="text-lg font-bold">Track B: Manual Review Queue</h2>
+        {/* Track B Column */}
+          {(trackFilter === 'all' || trackFilter === 'track_b') && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-lg font-bold">Track B: Manual Review Queue</h2>
+                </div>
+                <Badge variant="secondary" className="font-mono text-xs">
+                  {trackBApps.length}
+                </Badge>
               </div>
-              <Badge variant="secondary" className="font-mono text-xs">
-                {trackBApps.length}
-              </Badge>
-            </div>
 
-            {isLoading ? (
-              <div className="rounded-xl border border-dashed p-8 text-center text-xs text-muted-foreground">
-                <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2" />
-                Querying Walrus decentralized storage...
-              </div>
-            ) : trackBApps.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-8 text-center space-y-3">
-                <p className="text-sm font-semibold">Queue Clean — 0 Pending Manual Reviews</p>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                  Roles that require complex ATS multi-step authentication (such as Workday or LinkedIn Easy Apply) or have lower candidate alignment are safely queued here for human sign-off.
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleQuickEvaluateLiveFeed}
-                  disabled={isHarvesting}
-                  className="text-xs gap-1.5"
-                >
-                  Harvest & Evaluate Live Jobs
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {trackBApps.map((app) => (
-                  <Card key={app.id} className="p-5 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-bold text-sm leading-snug">{app.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{app.company}</p>
+              {isLoading ? (
+                <div className="rounded-xl border border-dashed p-8 text-center text-xs text-muted-foreground">
+                  <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2" />
+                  Querying Walrus decentralized storage...
+                </div>
+              ) : trackBApps.length === 0 ? (
+                <div className="rounded-xl border border-dashed p-8 text-center space-y-3">
+                  <p className="text-sm font-semibold">Queue Clean — 0 Pending Manual Reviews</p>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                    Roles that require complex ATS multi-step authentication (such as Workday or LinkedIn Easy Apply) or have lower candidate alignment are safely queued here for human sign-off.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleQuickEvaluateLiveFeed}
+                    disabled={isHarvesting}
+                    className="text-xs gap-1.5"
+                  >
+                    Harvest & Evaluate Live Jobs
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {trackBApps.map((app) => (
+                    <Card key={app.id} className="p-5 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-bold text-sm leading-snug">{app.title}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">{app.company}</p>
+                        </div>
+                        <Badge variant="outline" className="font-mono text-xs text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10">
+                          Fit: {app.fit_score}/10
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="font-mono text-xs text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10">
-                        Fit: {app.fit_score}/10
-                      </Badge>
-                    </div>
 
-                    <p className="text-xs text-amber-600 dark:text-amber-400 my-2 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-                      Action Required: {app.flag_reason || 'Requires manual submission via employer ATS portal.'}
-                    </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 my-2 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                        Action Required: {app.flag_reason || 'Requires manual submission via employer ATS portal.'}
+                      </p>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
-                      <span className="font-mono text-[11px]">{app.processed_at}</span>
-                      <div className="flex items-center gap-2">
-                        {app.apply_url && (
-                          <a
-                            href={app.apply_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary flex items-center gap-1 hover:underline text-xs"
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
+                        <span className="font-mono text-[11px]">{app.processed_at}</span>
+                        <div className="flex items-center gap-2">
+                          {app.apply_url && (
+                            <a
+                              href={app.apply_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary flex items-center gap-1 hover:underline text-xs"
+                            >
+                              Open Portal <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => router.push(`/interview_room?role=${encodeURIComponent(app.title)}&company=${encodeURIComponent(app.company)}`)}
+                            className="h-7 text-xs px-2 text-primary hover:bg-primary/10 gap-1"
                           >
-                            Open Portal <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => router.push(`/interview_room?role=${encodeURIComponent(app.title)}&company=${encodeURIComponent(app.company)}`)}
-                          className="h-7 text-xs px-2 text-primary hover:bg-primary/10 gap-1"
-                        >
-                          Prep STAR+R <Target className="w-3 h-3" />
-                        </Button>
+                            Prep STAR+R <Target className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

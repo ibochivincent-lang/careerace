@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Career Ace — Autonomous AI Career Assistant',
   description:
-    'Autonomous AI job matching, resume tailoring, application automation, and STAR+R interview coach by IboTV.',
+    'Autonomous AI job matching, resume tailoring, application automation, and STAR+R interview coach.',
   keywords: ['Career Ace', 'AI Job Matcher', 'Resume Tailor', 'Application Automator', 'STAR Interview Coach'],
   icons: {
     icon: '/careerace_logo.png',
