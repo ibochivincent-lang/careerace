@@ -70,7 +70,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
         window.history.replaceState(null, '', window.location.pathname)
 
         const searchParams = new URLSearchParams(window.location.search)
-        const destination = searchParams.get('callbackUrl') || '/#copilot'
+        const destination = searchParams.get('callbackUrl') || '/dashboard'
         window.location.href = destination
       } catch (err) {
         console.error('[zklogin] Callback completion error:', err)
@@ -134,7 +134,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
 
         <div className="mt-6 flex flex-col gap-3">
           <a
-            href="/#copilot"
+            href="/dashboard"
             className="flex h-12 w-full items-center justify-center rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
           >
             Go to Career Ace Workspace

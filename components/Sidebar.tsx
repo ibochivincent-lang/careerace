@@ -10,7 +10,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { useState, useEffect } from 'react'
 
 const NAV_ITEMS = [
-  { label: 'Job Engine & CV',  href: '/',                  icon: Briefcase },
+  { label: 'Workspace',        href: '/dashboard',         icon: Briefcase },
   { label: 'Applications',     href: '/application_board', icon: LayoutDashboard },
   { label: 'Interview Room',   href: '/interview_room',    icon: Target },
   { label: 'Career Vault',     href: '/memory',            icon: Database },
@@ -20,7 +20,7 @@ const NAV_ITEMS = [
 ]
 
 function isActive(href: string, pathname: string): boolean {
-  if (href === '/') return pathname === '/'
+  if (href === '/dashboard') return pathname === '/dashboard'
   return pathname.startsWith(href.split('?')[0])
 }
 
