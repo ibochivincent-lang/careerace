@@ -69,7 +69,7 @@ export async function POST(req: Request) {
 
     return Response.json({
       success: true,
-      message: `A 6-digit verification code has been sent to ${cleanEmail}.`,
+      message: `An 8-digit verification code has been sent to ${cleanEmail}.`,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Failed to send verification code";
