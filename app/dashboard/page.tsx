@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -22,11 +22,13 @@ export default function DashboardPage() {
   const [isLoadingSession, setIsLoadingSession] = useState(true)
 
   // Candidate CV File Attachment state
-  const [cvText, setCvText] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isParsing, setIsParsing] = useState(false)
   const [parsedProfile, setParsedProfile] = useState<any>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+  const [cvText, setCvText] = useState('')
+  const [showHighlights, setShowHighlights] = useState(false)
 
   // Universal Job Harvester state
   const [isHarvesting, setIsHarvesting] = useState(false)
@@ -280,13 +282,22 @@ export default function DashboardPage() {
       }
       if (data.profile) {
         setParsedProfile(data.profile)
+        setShowHighlights(true)
         const skillCount = data.profile.skills?.length || 0
         const expCount = data.profile.work_experience?.length || 0
         const eduCount = data.profile.academic_history?.length || 0
         const certCount = data.profile.certifications?.length || 0
+        const applicant = data.profile.applicant_name || 'Candidate'
         toast.success(
-          `CV uploaded: Found candidate ${data.profile.applicant_name}, ${eduCount} education, ${expCount} experience, ${certCount} certs.`
+          `CV uploaded: Found candidate ${applicant}, ${eduCount} education, ${expCount} experience, ${certCount} certs.`
         )
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `I've attached and parsed **${file.name}**!\n\nCandidate: **${applicant}**\n- **Skills**: ${data.profile.skills?.slice(0, 8).join(', ') || 'Extracted'}${skillCount > 8 ? ` (+${skillCount - 8} more)` : ''}\n- **Work Milestones**: ${expCount} verified roles\n- **Education**: ${eduCount} institutions / degrees\n- **Target Roles**: ${data.profile.target_roles?.join(', ') || 'Software Engineering'}\n\nYour profile is now actively attached to our session. Ask me to score your match against live jobs, rewrite bullet points for high impact, or practice STAR+R interview questions.`
+          }
+        ])
       }
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : 'Upload extraction failed'
@@ -564,123 +575,123 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Quick Prompt Starters */}
-            <div className="flex flex-wrap gap-2 pt-3 border-t mt-3">
-              <button
-                type="button"
-                onClick={() => handleSendMessage("Analyze my uploaded CV and tell me my strongest roles")}
-                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
-              >
-                Analyze my top roles
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage("How can I tailor my CV bullets to get higher match scores?")}
-                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
-              >
-                Improve CV match score
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage("Give me a STAR+R interview question for fullstack engineering")}
-                className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
-              >
-                Mock interview question
-              </button>
+            {/* Quick Prompt Starters & Highlight Toggle */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t mt-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage("Analyze my uploaded CV and tell me my strongest roles")}
+                  className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+                >
+                  Analyze my top roles
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage("How can I tailor my CV bullets to get higher match scores?")}
+                  className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+                >
+                  Improve CV match score
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage("Give me a STAR+R interview question for fullstack engineering")}
+                  className="text-xs px-2.5 py-1 rounded-full border bg-background hover:bg-accent text-muted-foreground transition-colors"
+                >
+                  Mock interview question
+                </button>
+              </div>
+
+              {parsedProfile && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowHighlights(!showHighlights)}
+                  className="text-xs h-7 gap-1.5 border-primary/30 text-primary hover:bg-primary/10 ml-auto"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  {showHighlights ? 'Hide Candidate Profile' : 'View Extracted Highlights'} ({parsedProfile.skills?.length || 0} skills)
+                </Button>
+              )}
             </div>
 
-            {/* Chat Input Bar */}
-            <div className="flex items-center gap-2 mt-3 pt-2">
-              <input
-                type="text"
-                placeholder="Ask Career Ace anything about your job search, CV, or interview prep..."
-                className="flex-1 bg-background border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendMessage()
-                }}
-              />
-              <Button onClick={() => handleSendMessage()} disabled={isSending || !chatInput.trim()}>
-                <Send className="w-4 h-4 mr-1.5" /> Send
-              </Button>
+            {/* Chat Input Bar with Integrated CV Attachment */}
+            <div className="flex flex-col gap-2 mt-3 pt-2">
+              {selectedFile && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-xs">
+                  <Paperclip className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="font-medium text-foreground truncate max-w-[200px] sm:max-w-[320px]">
+                    {selectedFile.name}
+                  </span>
+                  {isParsing ? (
+                    <span className="text-muted-foreground animate-pulse text-[11px]">
+                      (Extracting text & skills...)
+                    </span>
+                  ) : parsedProfile ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
+                      (Attached: {parsedProfile.applicant_name || 'Candidate'}, {parsedProfile.skills?.length || 0} skills)
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null)
+                      setParsedProfile(null)
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="ml-auto text-muted-foreground hover:text-foreground p-0.5"
+                    title="Remove attached CV"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isParsing}
+                  className="shrink-0 text-muted-foreground hover:text-primary border-border"
+                  title="Attach candidate CV (.pdf, .docx, .txt)"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+
+                <input
+                  type="text"
+                  placeholder={
+                    selectedFile
+                      ? "Ask Career Ace about your attached CV, job matches, or interview coaching..."
+                      : "Attach your CV with the paperclip icon or ask Career Ace anything..."
+                  }
+                  className="flex-1 bg-background border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSendMessage()
+                  }}
+                />
+                <Button onClick={() => handleSendMessage()} disabled={isSending || !chatInput.trim()}>
+                  <Send className="w-4 h-4 mr-1.5" /> Send
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
 
-        {/* ── 2. CANDIDATE CV FILE ATTACHMENT & HIGHLIGHT SHOWCASE ── */}
-        <div id="cv-upload" className="scroll-mt-24">
-          <Card className="p-8 border-2 shadow-lg">
-            <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-              <Paperclip className="w-6 h-6 text-primary" /> Candidate CV File Attachment
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Attach your CV/Resume file (<code className="font-mono text-xs">.pdf</code>, <code className="font-mono text-xs">.docx</code>, <code className="font-mono text-xs">.txt</code>) or paste raw text below to ingest into your encrypted vault. Once uploaded, the extracted text will automatically display in the text box below.
-            </p>
-
-            {/* File Dropzone */}
-            <div className="border-2 border-dashed rounded-lg p-6 mb-6 text-center hover:bg-primary/5 transition-colors cursor-pointer relative">
-              <input
-                type="file"
-                accept=".pdf,.docx,.txt"
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
-              />
-              <Upload className="w-8 h-8 text-primary mx-auto mb-2" />
-              {selectedFile ? (
-                <div>
-                  <p className="text-sm font-medium text-primary">Attached File: {selectedFile.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">File uploaded and text extracted below.</p>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Drag & drop your resume file here (<span className="text-primary font-semibold">PDF, DOCX, TXT</span>), or <span className="text-primary font-medium underline">browse files</span>
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground font-medium">
-                CV / Resume Text (Extracted from file or pasted directly):
-              </span>
-              {cvText && (
-                <span className="text-xs text-muted-foreground font-mono">
-                  {cvText.length} characters loaded
-                </span>
-              )}
-            </div>
-            <textarea
-              className="w-full h-40 p-4 rounded-lg border bg-background font-mono text-xs focus:outline-none focus:ring-2 focus:ring-primary mb-4 leading-relaxed"
-              placeholder="Paste your CV text here or attach a file above to view extracted text..."
-              value={cvText}
-              onChange={(e) => setCvText(e.target.value)}
-            />
-
-            <div className="flex items-center justify-between">
-              <Button onClick={handleCvSubmit} disabled={isParsing || (!selectedFile && !cvText.trim())}>
-                {isParsing ? 'Extracting & Parsing Profile...' : 'Parse & Update Vault'}
-              </Button>
-              {parsedProfile && (
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
-                  <CheckCircle2 className="w-4 h-4" /> Profile Ingested & Highlights Ready
-                </div>
-              )}
-              {parseError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-medium">
-                  <AlertCircle className="w-4 h-4" /> {parseError}
-                </div>
-              )}
-            </div>
-            {isParsing && (
-              <div className="mt-3 text-xs text-muted-foreground animate-pulse">
-                Extracting CV content, reading text, detecting institution, degree, work experience, certifications, and skills...
-              </div>
-            )}
-          </Card>
-
-          {/* Interactive Candidate CV Showcase & Highlight Panel */}
-          {parsedProfile && (
-            <Card className="mt-8 p-8 border-2 border-primary/20 shadow-md bg-card/40">
+        {/* ── Interactive Candidate CV Showcase & Highlight Panel (Expandable) ── */}
+        {parsedProfile && showHighlights && (
+          <div id="cv-highlights" className="scroll-mt-24">
+            <Card className="p-8 border-2 border-primary/20 shadow-md bg-card/40">
               <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-6 mb-6 gap-4">
                 <div>
                   <div className="flex items-center gap-3">
@@ -1015,10 +1026,10 @@ export default function DashboardPage() {
                 </div>
               </div>
             </Card>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* ── 3. UNIVERSAL JOB HARVESTER & FIT SCORER BOX ── */}
+        {/* ── 2. UNIVERSAL JOB HARVESTER & FIT SCORER BOX ── */}
         <div id="jobs" className="scroll-mt-24">
           <div className="flex items-center justify-between mb-6">
             <div>

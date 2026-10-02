@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
-import { Database, Send, Settings2 } from 'lucide-react'
+import { Database, Send, Settings2, Paperclip, X, Loader2 } from 'lucide-react'
 import { openKeysPanel } from './ApiKeysMenu'
 import { NO_KEY_CODE } from '@/lib/providers'
 import { cn } from './ui/utils'
@@ -57,6 +57,37 @@ export function MemoryChat() {
   // Which message's provenance is expanded. Chips are a summary; the full
   // stored line, distance and all, is one click away.
   const [openOn, setOpenOn] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [attachedFile, setAttachedFile] = useState<string | null>(null)
+  const [uploadingFile, setUploadingFile] = useState(false)
+
+  async function handleChatFileSelect(file: File | null) {
+    if (!file) return
+    setUploadingFile(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/cv_upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setAttachedFile(file.name)
+        const applicant = data.profile?.applicant_name || 'Candidate'
+        const skills = data.profile?.skills?.slice(0, 10).join(', ') || 'Extracted'
+        append({
+          role: 'user',
+          content: `I have uploaded my CV (${file.name}). Candidate: ${applicant}. Skills: ${skills}. Please review my career profile and coach me for top engineering roles.`,
+        })
+      }
+    } catch (err) {
+      console.error('CV upload error in coach:', err)
+    } finally {
+      setUploadingFile(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col px-4">
@@ -242,18 +273,59 @@ export function MemoryChat() {
 
       <form onSubmit={handleSubmit} className="sticky bottom-0 bg-background pb-6 pt-3">
         <div className="rounded-xl border bg-card px-3 pb-3 pt-3">
+          {attachedFile && (
+            <div className="mb-2 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs text-foreground">
+              <Paperclip className="h-3.5 w-3.5 text-primary" />
+              <span className="truncate max-w-[240px] font-medium">{attachedFile}</span>
+              <button
+                type="button"
+                onClick={() => setAttachedFile(null)}
+                className="ml-auto text-muted-foreground hover:text-foreground"
+                title="Remove attachment"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
           <input
             value={input}
             onChange={handleInputChange}
             aria-label="Message"
-            placeholder="Tell it what you're sitting, or just answer its question…"
+            placeholder={attachedFile ? "Ask about your attached CV or interview strategy…" : "Attach your CV or tell Career Coach what you're targeting…"}
             className="w-full bg-transparent px-1 pb-3 text-sm outline-none placeholder:text-muted-foreground"
           />
+
           <div className="flex items-center justify-between gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] text-muted-foreground">
-              <span aria-hidden className="size-1.5 rounded-full bg-primary" />
-              Memory on
-            </span>
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt"
+                className="hidden"
+                onChange={(e) => handleChatFileSelect(e.target.files?.[0] || null)}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+                className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                title="Attach candidate CV"
+              >
+                {uploadingFile ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                ) : (
+                  <Paperclip className="w-3 h-3 text-primary" />
+                )}
+                <span>{uploadingFile ? 'Parsing...' : 'Attach CV'}</span>
+              </button>
+
+              <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] text-muted-foreground">
+                <span aria-hidden className="size-1.5 rounded-full bg-primary" />
+                Memory on
+              </span>
+            </div>
+
             <button
               type="submit"
               disabled={busy || !input.trim()}
