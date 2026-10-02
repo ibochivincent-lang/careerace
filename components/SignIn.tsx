@@ -11,12 +11,14 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 const CONFIGURED = Boolean(GOOGLE_CLIENT_ID)
 
 function redirectUrl() {
-  if (typeof window === 'undefined') {
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'https://careerace.vercel.app'
-    return `${origin}/signin`
+  if (typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost')) {
+    return `${window.location.origin}/signin`
   }
-  const origin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin
-  return `${origin}/signin`
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+  if (envUrl && !envUrl.includes('localhost')) {
+    return `${envUrl}/signin`
+  }
+  return 'https://careerace.vercel.app/signin'
 }
 
 function Spinner({ text }: { text?: string }) {

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getSanitizedSupabaseUrl } from "@/lib/supabase";
+import { getAuthRedirectOrigin } from "@/lib/auth-origin";
 
 export async function POST(req: Request) {
   try {
@@ -34,10 +35,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // Determine origin for redirect
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "careerace.vercel.app";
-    const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-    const origin = `${proto}://${host}`;
+    // Determine origin for redirect — always prefer production domain so links never land on localhost
+    const origin = getAuthRedirectOrigin(req);
 
     // Trigger Supabase Email OTP
     const anonClient = createClient(url, anonKey, {
