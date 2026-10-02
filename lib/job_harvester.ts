@@ -86,144 +86,226 @@ async function fetchWithTimeout(url: string, timeoutMs: number = 5000, options: 
   }
 }
 
-export async function harvestJobsFromSources(query: string = "software engineer"): Promise<RawJob[]> {
+export async function harvestJobsFromSources(
+  query: string = "software engineer",
+  sourceFilter: string = "all"
+): Promise<RawJob[]> {
   const harvested: RawJob[] = [];
+  const filter = sourceFilter.toLowerCase().trim();
+
+  const shouldRun = (sourceName: string) => {
+    if (filter === "all" || !filter) return true;
+    return filter.includes(sourceName.toLowerCase()) || sourceName.toLowerCase().includes(filter);
+  };
 
   const tasks: Promise<void>[] = [];
 
   // Source 1: Remotive Public API (Search Query Aware)
-  tasks.push(
-    (async () => {
-      try {
-        const queryTerm = encodeURIComponent(query);
-        const remotiveUrl = queryTerm
-          ? `https://remotive.com/api/remote-jobs?search=${queryTerm}&limit=30`
-          : "https://remotive.com/api/remote-jobs?category=software-dev&limit=30";
-        const res = await fetchWithTimeout(remotiveUrl, 6000);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.jobs)) {
-            for (const j of data.jobs) {
-              const job_id = `job_rem_${j.id || Buffer.from(j.url || j.title).toString("hex").slice(0, 12)}`;
-              harvested.push({
-                job_id,
-                title: j.title || "Software Developer",
-                company: j.company_name || "Tech Company",
-                location: j.candidate_required_location || "Remote",
-                description: (j.description || "").replace(/<[^>]+>/g, " ").slice(0, 350),
-                apply_url: j.url || "",
-                source: "Remotive",
-                posted_date: j.publication_date || new Date().toISOString(),
-                is_remote: true,
-                salary: j.salary || "",
-                job_type: "remote",
-              });
+  if (shouldRun("remotive")) {
+    tasks.push(
+      (async () => {
+        try {
+          const queryTerm = encodeURIComponent(query);
+          const remotiveUrl = queryTerm
+            ? `https://remotive.com/api/remote-jobs?search=${queryTerm}&limit=30`
+            : "https://remotive.com/api/remote-jobs?category=software-dev&limit=30";
+          const res = await fetchWithTimeout(remotiveUrl, 6000);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.jobs)) {
+              for (const j of data.jobs) {
+                const job_id = `job_rem_${j.id || Buffer.from(j.url || j.title).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title: j.title || "Software Developer",
+                  company: j.company_name || "Tech Company",
+                  location: j.candidate_required_location || "Remote",
+                  description: (j.description || "").replace(/<[^>]+>/g, " ").slice(0, 350),
+                  apply_url: j.url || "",
+                  source: "Remotive",
+                  posted_date: j.publication_date || new Date().toISOString(),
+                  is_remote: true,
+                  salary: j.salary || "",
+                  job_type: "remote",
+                });
+              }
             }
           }
-        }
-      } catch (_e) {}
-    })()
-  );
+        } catch (_e) {}
+      })()
+    );
+  }
 
-  // Source 2: WeWorkRemotely RSS
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://weworkremotely.com/categories/remote-programming-jobs.rss",
-          5000
-        );
-        if (res.ok) {
-          const xml = await res.text();
-          harvested.push(...parseRssXml(xml, "WeWorkRemotely"));
-        }
-      } catch (_e) {}
-    })()
-  );
+  // Source 2: Arbeitnow Public REST API (300+ Verified Global Tech Jobs)
+  if (shouldRun("arbeitnow")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout("https://www.arbeitnow.com/api/job-board-api", 6000);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.data)) {
+              const qLower = query.toLowerCase().trim();
+              const relevant = data.data.filter((j: any) => {
+                if (!qLower || qLower === "software engineer" || qLower === "developer" || qLower === "tech") {
+                  return true;
+                }
+                const titleMatch = (j.title || "").toLowerCase().includes(qLower);
+                const tagMatch = (j.tags || []).some((t: string) => t.toLowerCase().includes(qLower));
+                const descMatch = (j.description || "").toLowerCase().includes(qLower);
+                return titleMatch || tagMatch || descMatch;
+              });
 
-  // Source 3: Jobicy RSS (Wellfound proxy feed)
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://jobicy.com/?feed=job_feed&job_categories=dev-engineer&job_types=remote&search_region=USA",
-          5000
-        );
-        if (res.ok) {
-          const xml = await res.text();
-          harvested.push(...parseRssXml(xml, "Jobicy / Wellfound"));
-        }
-      } catch (_e) {}
-    })()
-  );
+              for (const j of relevant.slice(0, 35)) {
+                const job_id = `job_arb_${j.slug || Buffer.from(j.url || j.title).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title: j.title || "Software Engineer",
+                  company: j.company_name || "Tech Employer",
+                  location: j.location || (j.remote ? "Remote" : "Global"),
+                  description: (j.description || "").replace(/<[^>]+>/g, " ").slice(0, 350),
+                  apply_url: j.url || "",
+                  source: "Arbeitnow",
+                  posted_date: new Date(j.created_at * 1000).toISOString() || new Date().toISOString(),
+                  is_remote: Boolean(j.remote),
+                  salary: (j.tags && j.tags.length > 0) ? j.tags.slice(0, 3).join(", ") : "Competitive",
+                  job_type: j.remote ? "remote" : "hybrid",
+                });
+              }
+            }
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
 
-  // Source 4: RemoteOK RSS
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://remoteok.com/remote-dev-jobs.rss",
-          5000
-        );
-        if (res.ok) {
-          const xml = await res.text();
-          harvested.push(...parseRssXml(xml, "RemoteOK"));
-        }
-      } catch (_e) {}
-    })()
-  );
+  // Source 3: Jobicy v2 Remote Jobs REST API (Keyword & Tag Filtered)
+  if (shouldRun("jobicy")) {
+    tasks.push(
+      (async () => {
+        try {
+          const qParam = encodeURIComponent(query.trim());
+          const jobicyUrl = `https://jobicy.com/api/v2/remote-jobs?count=25&tag=${qParam}`;
+          const res = await fetchWithTimeout(jobicyUrl, 6000);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+              for (const j of data.jobs) {
+                const job_id = `job_jby_${j.id || Buffer.from(j.url || j.jobTitle).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title: j.jobTitle || "Software Engineer",
+                  company: j.companyName || "Tech Company",
+                  location: j.jobGeo || "Worldwide Remote",
+                  description: (j.jobExcerpt || j.jobDescription || "").replace(/<[^>]+>/g, " ").slice(0, 350),
+                  apply_url: j.url || "",
+                  source: "Jobicy",
+                  posted_date: j.pubDate || new Date().toISOString(),
+                  is_remote: true,
+                  salary: j.annualSalaryMin ? `$${j.annualSalaryMin} - $${j.annualSalaryMax || ''}` : (j.jobLevel || "Competitive"),
+                  job_type: "remote",
+                });
+              }
+            }
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
 
-  // Source 5: Himalayas Software Engineering RSS
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://himalayas.app/jobs/software-engineering/feed",
-          5000
-        );
-        if (res.ok) {
-          const xml = await res.text();
-          harvested.push(...parseRssXml(xml, "Himalayas"));
-        }
-      } catch (_e) {}
-    })()
-  );
+  // Source 4: WeWorkRemotely RSS
+  if (shouldRun("weworkremotely")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout(
+            "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+            5000
+          );
+          if (res.ok) {
+            const xml = await res.text();
+            harvested.push(...parseRssXml(xml, "WeWorkRemotely"));
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
 
-  // Source 6: Nodesk Engineering RSS
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://nodesk.co/remote-jobs/engineering/feed/",
-          5000
-        );
-        if (res.ok) {
-          const xml = await res.text();
-          harvested.push(...parseRssXml(xml, "Nodesk"));
-        }
-      } catch (_e) {}
-    })()
-  );
+  // Source 5: RemoteOK RSS
+  if (shouldRun("remoteok")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout(
+            "https://remoteok.com/remote-dev-jobs.rss",
+            5000
+          );
+          if (res.ok) {
+            const xml = await res.text();
+            harvested.push(...parseRssXml(xml, "RemoteOK"));
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
 
-  // Source 7: FreshRemote RSS
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://freshremote.work/feed/",
-          5000
-        );
-        if (res.ok) {
-          const xml = await res.text();
-          harvested.push(...parseRssXml(xml, "FreshRemote"));
-        }
-      } catch (_e) {}
-    })()
-  );
+  // Source 6: Himalayas Software Engineering RSS
+  if (shouldRun("himalayas")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout(
+            "https://himalayas.app/jobs/software-engineering/feed",
+            5000
+          );
+          if (res.ok) {
+            const xml = await res.text();
+            harvested.push(...parseRssXml(xml, "Himalayas"));
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
 
-  // Source 8: Google Jobs via SerpAPI (Environment-authenticated)
+  // Source 7: Nodesk Engineering RSS
+  if (shouldRun("nodesk")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout(
+            "https://nodesk.co/remote-jobs/engineering/feed/",
+            5000
+          );
+          if (res.ok) {
+            const xml = await res.text();
+            harvested.push(...parseRssXml(xml, "Nodesk"));
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
+
+  // Source 8: FreshRemote RSS
+  if (shouldRun("freshremote")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout(
+            "https://freshremote.work/feed/",
+            5000
+          );
+          if (res.ok) {
+            const xml = await res.text();
+            harvested.push(...parseRssXml(xml, "FreshRemote"));
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
+
+  // Source 9: Google Jobs via SerpAPI (Environment-authenticated)
   const serpApiKey = process.env.SERPAPI_API_KEY;
-  if (serpApiKey) {
+  if (serpApiKey && shouldRun("google")) {
     tasks.push(
       (async () => {
         try {
@@ -263,48 +345,50 @@ export async function harvestJobsFromSources(query: string = "software engineer"
     );
   }
 
-  // Source 9: Jobberman Nigeria Remote Tech listings
-  tasks.push(
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(
-          "https://www.jobberman.com/jobs/software-data/remote/full-time",
-          5000
-        );
-        if (res.ok) {
-          const html = await res.text();
-          const jobBlocks =
-            html.match(/<a[^>]+href="(\/listings\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g) || [];
-          for (const block of jobBlocks.slice(0, 10)) {
-            const linkMatch = block.match(/href="(\/listings\/[^"]+)"/);
-            const titleMatch = block.match(/<p[^>]*class="[^"]*text-lg[^"]*"[^>]*>([\s\S]*?)<\/p>/);
-            const companyMatch = block.match(/<p[^>]*class="[^"]*text-link[^"]*"[^>]*>([\s\S]*?)<\/p>/);
+  // Source 10: Jobberman Nigeria Remote Tech listings
+  if (shouldRun("jobberman")) {
+    tasks.push(
+      (async () => {
+        try {
+          const res = await fetchWithTimeout(
+            "https://www.jobberman.com/jobs/software-data/remote/full-time",
+            5000
+          );
+          if (res.ok) {
+            const html = await res.text();
+            const jobBlocks =
+              html.match(/<a[^>]+href="(\/listings\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g) || [];
+            for (const block of jobBlocks.slice(0, 10)) {
+              const linkMatch = block.match(/href="(\/listings\/[^"]+)"/);
+              const titleMatch = block.match(/<p[^>]*class="[^"]*text-lg[^"]*"[^>]*>([\s\S]*?)<\/p>/);
+              const companyMatch = block.match(/<p[^>]*class="[^"]*text-link[^"]*"[^>]*>([\s\S]*?)<\/p>/);
 
-            const stripTags = (s?: string) => (s || "").replace(/<[^>]+>/g, "").trim();
-            const link = linkMatch ? `https://www.jobberman.com${linkMatch[1]}` : "";
-            const title = stripTags(titleMatch?.[1]) || "Software Engineer";
-            const company = stripTags(companyMatch?.[1]) || "Nigerian Tech Employer";
+              const stripTags = (s?: string) => (s || "").replace(/<[^>]+>/g, "").trim();
+              const link = linkMatch ? `https://www.jobberman.com${linkMatch[1]}` : "";
+              const title = stripTags(titleMatch?.[1]) || "Software Engineer";
+              const company = stripTags(companyMatch?.[1]) || "Nigerian Tech Employer";
 
-            if (link) {
-              const job_id = `job_jbm_${Buffer.from(link).toString("hex").slice(0, 12)}`;
-              harvested.push({
-                job_id,
-                title,
-                company,
-                location: "Nigeria / Remote",
-                description: `Software opening on Jobberman Nigeria: ${title} at ${company}.`,
-                apply_url: link,
-                source: "Jobberman",
-                posted_date: new Date().toISOString(),
-                is_remote: true,
-                job_type: "remote",
-              });
+              if (link) {
+                const job_id = `job_jbm_${Buffer.from(link).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title,
+                  company,
+                  location: "Nigeria / Remote",
+                  description: `Software opening on Jobberman Nigeria: ${title} at ${company}.`,
+                  apply_url: link,
+                  source: "Jobberman",
+                  posted_date: new Date().toISOString(),
+                  is_remote: true,
+                  job_type: "remote",
+                });
+              }
             }
           }
-        }
-      } catch (_e) {}
-    })()
-  );
+        } catch (_e) {}
+      })()
+    );
+  }
 
   await Promise.allSettled(tasks);
 
