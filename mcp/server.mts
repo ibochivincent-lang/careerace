@@ -9,8 +9,6 @@
  *
  * All credentials and memories live on Walrus, owned by the candidate's own Sui address.
  *
- * Author: IboTV (ibochivincent-lang)
- *
  * Required environment variables:
  *   EA_OWNER_ADDRESS     whose career vault this server speaks for
  *   MEMWAL_PRIVATE_KEY   delegate key (server-side only)
