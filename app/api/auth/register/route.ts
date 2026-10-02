@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { issueSession, SESSION_COOKIE, deriveVaultAddressFromUserId } from "@/lib/auth";
-import { SupabaseDatabaseService } from "@/lib/supabase";
+import { SupabaseDatabaseService, getSanitizedSupabaseUrl } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const cleanEmail = email.trim().toLowerCase();
 
     // 2. Initialize Supabase Admin Client
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const url = getSanitizedSupabaseUrl();
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url || !serviceKey) {

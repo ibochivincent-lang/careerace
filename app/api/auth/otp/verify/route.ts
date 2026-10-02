@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { issueSession, SESSION_COOKIE, deriveVaultAddressFromUserId } from "@/lib/auth";
-import { SupabaseDatabaseService } from "@/lib/supabase";
+import { SupabaseDatabaseService, getSanitizedSupabaseUrl } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const cleanToken = token.trim();
     const cleanUsername = username?.trim() || cleanEmail.split("@")[0];
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    const url = getSanitizedSupabaseUrl();
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

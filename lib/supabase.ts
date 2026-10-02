@@ -12,10 +12,18 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 let cachedClient: SupabaseClient | null = null;
 
+export function getSanitizedSupabaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  let clean = raw.trim();
+  clean = clean.replace(/\/rest\/v1\/?$/, "");
+  clean = clean.replace(/\/+$/, "");
+  return clean;
+}
+
 export function getSupabaseClient(): SupabaseClient | null {
   if (cachedClient) return cachedClient;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const url = getSanitizedSupabaseUrl();
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !anonKey) {
