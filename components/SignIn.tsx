@@ -570,7 +570,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
               <label className="block text-xs font-medium text-foreground mb-1.5">New Password</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <input type={showNewPassword ? 'text' : 'password'} required placeholder="\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7"
+                <input type={showNewPassword ? 'text' : 'password'} required placeholder="••••••••"
                   value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={busy}
                   className="h-11 w-full rounded-xl border border-input bg-background/50 pl-10 pr-10 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors" />
                 <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
@@ -586,7 +586,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
               <label className="block text-xs font-medium text-foreground mb-1.5">Confirm Password</label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <input type={showNewPassword ? 'text' : 'password'} required placeholder="\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7"
+                <input type={showNewPassword ? 'text' : 'password'} required placeholder="••••••••"
                   value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={busy}
                   className="h-11 w-full rounded-xl border border-input bg-background/50 pl-10 pr-3.5 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors" />
               </div>
@@ -634,7 +634,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
                   <label className="block text-xs font-medium text-foreground mb-1.5">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <input type={showPassword ? 'text' : 'password'} required placeholder="\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7"
+                    <input type={showPassword ? 'text' : 'password'} required placeholder="••••••••"
                       value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy || googleBusy}
                       className="h-11 w-full rounded-xl border border-input bg-background/50 pl-10 pr-10 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -667,79 +667,40 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Access your CV attachments, Universal Job Harvester, and AI Copilot.
           </p>
-          <div className="mt-5 flex gap-2 p-1 rounded-xl bg-muted/60 border border-border/60">
-            {(['password', 'otp'] as const).map((m) => (
-              <button key={m} type="button"
-                onClick={() => { setSigninMethod(m); setSigninStep('form'); setError(null) }}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${signinMethod === m ? 'bg-background shadow-xs text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-                {m === 'password' ? 'Password' : 'Email OTP Code'}
-              </button>
-            ))}
-          </div>
-
-          {signinMethod === 'password' ? (
-            <form onSubmit={handlePasswordSignIn} className="mt-4 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">Username or Email</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input type="text" required placeholder="alex_dev or alex@gmail.com" value={loginIdentifier}
-                    onChange={(e) => setLoginIdentifier(e.target.value)} disabled={busy || googleBusy}
-                    className={inputCls} />
-                </div>
+          <form onSubmit={handlePasswordSignIn} className="mt-4 flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">Username or Email</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input type="text" required placeholder="alex_dev or alex@gmail.com" value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)} disabled={busy || googleBusy}
+                  className={inputCls} />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input type={showPassword ? 'text' : 'password'} required placeholder="\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7"
-                    value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy || googleBusy}
-                    className="h-11 w-full rounded-xl border border-input bg-background/50 pl-10 pr-10 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="text-right -mt-2">
-                <button type="button"
-                  onClick={() => { setMode('forgot'); setForgotEmail(loginIdentifier.includes('@') ? loginIdentifier : ''); setError(null) }}
-                  className="text-xs text-primary hover:underline underline-offset-2 transition-colors">
-                  Forgot password?
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <input type={showPassword ? 'text' : 'password'} required placeholder="••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy || googleBusy}
+                  className="h-11 w-full rounded-xl border border-input bg-background/50 pl-10 pr-10 text-sm placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
-              <button type="submit" disabled={busy || googleBusy} className={primaryBtn}>
-                {busy ? <Spinner text={statusMessage || 'Signing in\u2026'} /> : <><span>Sign In</span><ArrowRight className="size-4" /></>}
+            </div>
+            <div className="text-right -mt-2">
+              <button type="button"
+                onClick={() => { setMode('forgot'); setForgotEmail(loginIdentifier.includes('@') ? loginIdentifier : ''); setError(null) }}
+                className="text-xs text-primary hover:underline underline-offset-2 transition-colors">
+                Forgot password?
               </button>
-            </form>
-          ) : (
-            signinStep === 'form' ? (
-              <form onSubmit={handleSendSignInOtp} className="mt-4 flex flex-col gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-foreground mb-1.5">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <input type="email" required placeholder="alex@gmail.com" value={loginIdentifier}
-                      onChange={(e) => setLoginIdentifier(e.target.value)} disabled={busy || googleBusy}
-                      className={inputCls} />
-                  </div>
-                </div>
-                <button type="submit" disabled={busy || googleBusy} className={primaryBtn}>
-                  {busy ? <Spinner text={statusMessage || 'Sending code\u2026'} /> : <><span>Send Sign-In Code</span><ArrowRight className="size-4" /></>}
-                </button>
-              </form>
-            ) : (
-              <div className="mt-4">
-                <OtpVerifyBox
-                  emailDisplay={loginIdentifier}
-                  onVerify={handleVerifySignInOtp}
-                  onResend={() => handleResendOtp(loginIdentifier)}
-                  onBack={() => { setSigninStep('form'); setError(null) }}
-                  backLabel="Change email"
-                />
-              </div>
-            )
-          )}
+            </div>
+            <button type="submit" disabled={busy || googleBusy} className={primaryBtn}>
+              {busy ? <Spinner text={statusMessage || 'Signing in…'} /> : <><span>Sign In</span><ArrowRight className="size-4" /></>}
+            </button>
+          </form>
         </>
       )}
 
