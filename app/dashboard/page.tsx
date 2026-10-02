@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
-      content: 'Hello! I am Career Ace, your autonomous AI career copilot by IboTV. Upload your CV below or paste it into the vault to get instant role matching, tailored CV impact points, and mock interview prep.'
+      content: 'Hello! I am Career Ace, your autonomous AI career copilot. Upload your CV below or paste it into the vault to get instant role matching, tailored CV impact points, and mock interview prep.'
     }
   ])
 
@@ -455,71 +455,15 @@ export default function DashboardPage() {
         {/* ── Top Workspace Bar ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight">Career Ace Workspace</h1>
-              <Badge variant="outline" className="text-xs">by IboTV</Badge>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight">Career Ace Workspace</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Private candidate cockpit: AI Copilot, CV Attachment Vault, and Universal Job Harvester.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2.5">
             <AccountChip address={sessionAddress} />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/application_board')}
-              className="text-xs"
-            >
-              Applications
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/interview_room')}
-              className="text-xs"
-            >
-              Interview Room
-            </Button>
           </div>
-        </div>
-
-        {/* ── Sovereign Vault Identity Banner ── */}
-        <div className="p-4 rounded-xl border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold">Decentralized Sovereign Vault Active</h3>
-                <Badge variant="default" className="text-[10px]">Walrus + zkLogin</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                {sessionAddress.slice(0, 10)}...{sessionAddress.slice(-6)} (SEAL-Encrypted under your Google ID)
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/memory')}
-              className="text-xs flex items-center gap-1.5"
-            >
-              <Database className="w-3.5 h-3.5" /> Career Memory Blobs
-            </Button>
-          </div>
-        </div>
-
-        {/* Free Model Info Strip */}
-        <div className="flex items-center justify-between p-3.5 rounded-lg bg-primary/5 border border-primary/20">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
-            <Sparkles className="w-4 h-4 text-primary shrink-0" />
-            <span>Powered by Free & Open-Source LLMs (DeepSeek R1 / Qwen 2.5 / Ollama Local)</span>
-          </div>
-          <Badge variant="secondary" className="text-[10px] hidden sm:inline-flex">Zero Paid API Key Required</Badge>
         </div>
 
         {/* ── 1. ACTIVE AI CAREER COPILOT CHATBOT ── */}
@@ -527,8 +471,8 @@ export default function DashboardPage() {
           <Card className="p-6 border-2 shadow-lg bg-card flex flex-col h-[560px]">
             <div className="flex items-center justify-between border-b pb-4 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-                  <Bot className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center p-1.5">
+                  <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg leading-tight">Career Ace AI Copilot</h3>
@@ -1119,6 +1063,34 @@ export default function DashboardPage() {
               })}
             </div>
           )}
+        </div>
+
+        {/* ── Decentralized Sovereign Vault Banner (Positioned Under Workspace) ── */}
+        <div className="p-4 rounded-xl border bg-card/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold">Decentralized Sovereign Vault Active</h3>
+                <Badge variant="default" className="text-[10px]">Walrus + zkLogin</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                {sessionAddress ? `${sessionAddress.slice(0, 10)}...${sessionAddress.slice(-6)}` : 'Sovereign Account'} (SEAL-Encrypted on Walrus)
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => router.push('/memory')}
+              className="text-xs flex items-center gap-1.5"
+            >
+              <Database className="w-3.5 h-3.5" /> Career Memory Blobs
+            </Button>
+          </div>
         </div>
       </div>
     </AppShell>

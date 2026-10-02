@@ -3,7 +3,6 @@ import { AlertTriangle, RotateCcw, Trash2, CornerDownRight } from 'lucide-react'
 import { getOwnerAddress } from '@/lib/session.ts'
 import { listMemory } from '@/app/actions/memory'
 import { AppShell } from '@/components/AppShell'
-import { MemoryHeader } from '@/components/MemoryHeader'
 import { ForgetButton } from '@/components/ForgetButton'
 
 export const dynamic = 'force-dynamic'
@@ -54,8 +53,6 @@ export default async function MemoryPage() {
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
-        <MemoryHeader address={address} active="/memory" />
-
         <div className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-10">
           <div className="flex flex-wrap items-end justify-between gap-8">
             <div>

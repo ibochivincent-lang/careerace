@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const { messages, cv_profile } = await req.json();
     const latest = messages?.at(-1)?.content || "Hello, Career Ace";
 
-    const systemPrompt = `You are Career Ace AI Copilot, an autonomous career strategist, job matcher, and interview coach created by IboTV.
+    const systemPrompt = `You are Career Ace AI Copilot, an autonomous career strategist, job matcher, and interview coach.
 ${cv_profile ? `Candidate Profile Context:
 - Name: ${cv_profile.applicant_name}
 - Target Roles: ${cv_profile.target_roles?.join(", ") || "Software Engineer"}

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppShell } from '@/components/AppShell'
-import { MemoryHeader } from '@/components/MemoryHeader'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
@@ -19,7 +18,16 @@ import {
   Layers,
   Award,
   RefreshCw,
+  Building2,
+  Compass
 } from 'lucide-react'
+
+const CATEGORY_LABELS: Record<string, string> = {
+  technical: 'Technical Questions',
+  behavioral: 'Behavioral Questions',
+  architecture: 'Architectural Questions',
+  leadership: 'Leadership & Experiential Questions',
+}
 
 interface QuestionItem {
   question_id: string
@@ -165,10 +173,8 @@ export default function InterviewRoomPage() {
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
-        <MemoryHeader address={address || '0x0000...0000'} active="/interview_room" />
-
-        <div className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-10">
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-6">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => router.push('/application_board')}>
                 <ArrowLeft className="h-5 w-5" />
@@ -180,9 +186,9 @@ export default function InterviewRoomPage() {
                   </span>
                   <span className="font-mono text-xs text-muted-foreground">Walrus Memory Backed</span>
                 </div>
-                <h1 className="mt-1 text-3xl font-bold tracking-tight">Post-Application Interview Room</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Simulate high-stakes technical & behavioral interview rounds tailored to your submitted applications.
+                <h1 className="mt-1 text-2xl md:text-3xl font-bold tracking-tight">Interview Simulation Room</h1>
+                <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+                  Simulate high-stakes technical, behavioral, architectural, and leadership rounds.
                 </p>
               </div>
             </div>
@@ -193,14 +199,14 @@ export default function InterviewRoomPage() {
                 placeholder="Target Role"
                 value={targetRole}
                 onChange={(e) => setTargetRole(e.target.value)}
-                className="h-9 rounded-md border bg-background px-3 text-xs"
+                className="h-9 rounded-md border bg-background px-3 text-xs w-36 sm:w-44"
               />
               <input
                 type="text"
                 placeholder="Company"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="h-9 w-32 rounded-md border bg-background px-3 text-xs"
+                className="h-9 w-28 sm:w-32 rounded-md border bg-background px-3 text-xs"
               />
               <Button
                 variant="outline"
@@ -214,27 +220,48 @@ export default function InterviewRoomPage() {
             </div>
           </div>
 
-          {/* Question selection pills */}
+          {/* Prominently Written Target Role & Company */}
+          <div className="rounded-xl border border-primary/25 bg-card/60 backdrop-blur p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Interview Preparation Target</div>
+                <div className="text-base font-bold text-foreground">
+                  {targetRole} <span className="text-muted-foreground font-normal">at</span> <span className="text-primary">{company}</span>
+                </div>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-primary/30 text-primary w-fit text-xs px-2.5 py-0.5">
+              Role Simulation Active
+            </Badge>
+          </div>
+
+          {/* Question selection pills (Technical, Behavioral, Architectural, Leadership & Experiential) */}
           {questions.length > 0 && (
             <div className="mb-6 flex flex-wrap gap-2">
-              {questions.map((q, idx) => (
-                <button
-                  key={q.question_id || idx}
-                  type="button"
-                  onClick={() => {
-                    setSelectedQuestionIndex(idx)
-                    setEvaluation(null)
-                    setVaultSaved(false)
-                  }}
-                  className={`rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                    selectedQuestionIndex === idx
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-card text-muted-foreground hover:bg-muted/40'
-                  }`}
-                >
-                  Question {idx + 1}: {q.category.toUpperCase()}
-                </button>
-              ))}
+              {questions.map((q, idx) => {
+                const label = CATEGORY_LABELS[q.category?.toLowerCase()] || q.category
+                return (
+                  <button
+                    key={q.question_id || idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedQuestionIndex(idx)
+                      setEvaluation(null)
+                      setVaultSaved(false)
+                    }}
+                    className={`rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                      selectedQuestionIndex === idx
+                        ? 'border-primary bg-primary/15 text-primary shadow-xs'
+                        : 'border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
             </div>
           )}
 
@@ -242,7 +269,7 @@ export default function InterviewRoomPage() {
             <Card className="mb-6 border bg-card p-6">
               <div className="mb-3 flex items-center justify-between">
                 <Badge variant="secondary" className="capitalize">
-                  {activeQuestion.category} Simulation
+                  {CATEGORY_LABELS[activeQuestion.category?.toLowerCase()] || activeQuestion.category}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   Target: {targetRole} @ {company}

@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { getOwnerAddress } from '@/lib/session.ts'
 import { recallCareerProfile, recallCareerCoaching, resolveConflicts } from '@/lib/memory_contract.ts'
 import { AppShell } from '@/components/AppShell'
-import { MemoryHeader } from '@/components/MemoryHeader'
 import { MemoryChat } from '@/components/MemoryChat'
 import { MemoryRail, type RailFact } from '@/components/MemoryRail'
 
@@ -41,7 +40,6 @@ export default async function TutorPage() {
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
-        <MemoryHeader address={address} active="/tutor" />
         <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_320px]">
           <MemoryChat />
           <MemoryRail facts={facts} />

@@ -59,7 +59,6 @@ export default function CareerAceLandingPage() {
               <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain dark:invert" />
             </div>
             <span className="font-bold text-lg">Career Ace</span>
-            <Badge variant="outline" className="text-xs hidden sm:inline-flex">by IboTV</Badge>
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">

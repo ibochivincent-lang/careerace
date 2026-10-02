@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import { Database, Send, Settings2, Paperclip, X, Loader2 } from 'lucide-react'
 import { openKeysPanel } from './ApiKeysMenu'
+import { toast } from 'sonner'
 import { NO_KEY_CODE } from '@/lib/providers'
 import { cn } from './ui/utils'
 
@@ -64,6 +65,7 @@ export function MemoryChat() {
   async function handleChatFileSelect(file: File | null) {
     if (!file) return
     setUploadingFile(true)
+    const toastId = toast.loading(`Parsing resume: ${file.name}...`)
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -76,13 +78,17 @@ export function MemoryChat() {
         setAttachedFile(file.name)
         const applicant = data.profile?.applicant_name || 'Candidate'
         const skills = data.profile?.skills?.slice(0, 10).join(', ') || 'Extracted'
+        toast.success(`Successfully analyzed ${file.name}!`, { id: toastId })
         append({
           role: 'user',
           content: `I have uploaded my CV (${file.name}). Candidate: ${applicant}. Skills: ${skills}. Please review my career profile and coach me for top engineering roles.`,
         })
+      } else {
+        toast.error(data.error || 'Failed to parse CV', { id: toastId })
       }
     } catch (err) {
       console.error('CV upload error in coach:', err)
+      toast.error('Network error uploading CV', { id: toastId })
     } finally {
       setUploadingFile(false)
       if (fileInputRef.current) fileInputRef.current.value = ''

@@ -13,7 +13,7 @@ export function ChatdeckFooter() {
           <span className="font-bold text-foreground">Career Ace</span>
         </div>
         <p className="text-xs text-center md:text-left">
-          Created exclusively by IboTV (<code className="text-xs font-mono">ibochivincent-lang</code>). All rights reserved.
+          &copy; 2026 Career Ace. All rights reserved.
         </p>
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <a href="#features" className="hover:text-foreground">Features</a>
