@@ -1,18 +1,25 @@
 import { type NextRequest } from "next/server";
 
 const rawNetwork = (process.env.NEXT_PUBLIC_SUI_NETWORK ?? "").trim().toLowerCase();
-// Mysten Labs public prover for Testnet & Devnet is prover-dev.mystenlabs.com,
-// which accepts all registered OAuth Client IDs without requiring an Enoki enterprise whitelist.
+/*
+ * Mysten Labs ZK provers:
+ *   mainnet + testnet → https://prover.mystenlabs.com/v1
+ *   devnet only       → https://prover-dev.mystenlabs.com/v1
+ *
+ * prover-dev generates proofs with devnet-specific Groth16 proving keys.
+ * Verifying a devnet proof against testnet/mainnet JWKs always fails with
+ * "Groth16 proof verify failed" — they are cryptographically incompatible.
+ */
 const PRIMARY_PROVER =
   process.env.ZKLOGIN_PROVER_URL?.trim() ||
-  (rawNetwork.startsWith("mainnet")
-    ? "https://prover.mystenlabs.com/v1"
-    : "https://prover-dev.mystenlabs.com/v1");
+  (rawNetwork.startsWith("devnet")
+    ? "https://prover-dev.mystenlabs.com/v1"
+    : "https://prover.mystenlabs.com/v1");
 
 const FALLBACK_PROVER =
-  PRIMARY_PROVER === "https://prover-dev.mystenlabs.com/v1"
-    ? "https://prover.mystenlabs.com/v1"
-    : "https://prover-dev.mystenlabs.com/v1";
+  PRIMARY_PROVER === "https://prover.mystenlabs.com/v1"
+    ? "https://prover-dev.mystenlabs.com/v1"
+    : "https://prover.mystenlabs.com/v1";
 
 /**
  * Server-side proxy for the Mysten Labs zkLogin ZK prover.
