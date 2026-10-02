@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         return new Response("Valid email is required.", { status: 400 });
       }
       if (!token || typeof token !== "string" || token.trim().length < 6) {
-        return new Response("Please enter the 6-digit verification code.", { status: 400 });
+        return new Response("Please enter the verification code.", { status: 400 });
       }
 
       const cleanEmail = email.trim().toLowerCase();
