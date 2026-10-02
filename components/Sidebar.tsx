@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { label: 'Applications',     href: '/application_board', icon: Briefcase },
   { label: 'Interview Room',   href: '/interview_room',    icon: Target },
   { label: 'Career Vault',     href: '/memory',            icon: Database },
-  { label: 'Career Coach',     href: '/tutor',             icon: Sparkles },
+  { label: 'AI Profiler & Chat', href: '/tutor',             icon: Sparkles },
   { label: 'Accomplishments',  href: '/progress',          icon: Award },
   { label: 'Notifications',    href: '/notifications',     icon: Bell },
 ]

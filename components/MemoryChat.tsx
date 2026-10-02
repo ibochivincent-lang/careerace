@@ -10,9 +10,10 @@ import { NO_KEY_CODE } from '@/lib/providers'
 import { cn } from './ui/utils'
 
 const STARTERS = [
-  "I'm targeting Staff AI and Fullstack roles with Next.js and Sui Move",
-  "Help me refine a STAR+R response for distributed system incident response",
-  "Tailor my resume accomplishments for high-throughput cloud infrastructure",
+  "Hi Career Ace! Let's start my career profile and CV discovery.",
+  "I am looking for an Entry-level / Junior Software Engineer position.",
+  "I am targeting Senior Fullstack & Distributed Systems roles (Remote).",
+  "Help me index my education, skills, and target companies into Walrus Memory.",
 ]
 
 /** Shape of the provenance the route attaches to each assistant message. */
@@ -98,10 +99,16 @@ export function MemoryChat() {
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col px-4">
       {messages.length === 0 ? (
-        <div className="flex flex-1 flex-col justify-center py-16">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">What are we fixing today?</h1>
-          <p className="mt-3 max-w-[48ch] text-sm text-muted-foreground leading-relaxed">
-            I already know where you went wrong last time. Ask me anything, or let me ask you.
+        <div className="flex flex-1 flex-col justify-center py-14">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+              AI Career Profiler
+            </span>
+            <span className="font-mono text-xs text-muted-foreground">Walrus Memory Backed</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Let&apos;s build your sovereign career profile.</h1>
+          <p className="mt-3 max-w-[55ch] text-sm text-muted-foreground leading-relaxed">
+            I will ask you a few guided questions about your identity, education, skills, work experience, and target roles to construct your verified CV and save it directly to your decentralized Walrus Memory vault.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-2">
@@ -110,7 +117,7 @@ export function MemoryChat() {
                 key={s}
                 type="button"
                 onClick={() => append({ role: 'user', content: s })}
-                className="rounded-full border px-3.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                className="rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs text-foreground hover:border-primary/50 hover:bg-primary/15 transition-colors"
               >
                 {s}
               </button>

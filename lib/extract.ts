@@ -38,26 +38,23 @@ const FactSchema = z.object({
   ),
 });
 
-const EXTRACTION_PROMPT = `You extract durable career facts from one turn of a career coaching, STAR+R interview prep, or CV review conversation with a candidate.
+const EXTRACTION_PROMPT = `You extract durable career facts from one turn of a career profiling, CV-building, STAR+R interview prep, or career coaching conversation with a candidate.
 
 WRITE a fact only when the turn gives you one of these:
-- experience:         a specific work role, project, accomplishment, or metric the candidate
-                      describes ("led frontend migration to Next.js 16 reducing load times by 40%").
-- education:          degree, certification, bootcamp, or university credential
-                      ("B.S. in Computer Science from Stanford University").
-- skill:              a demonstrated or claimed technical, engineering, or leadership skill
-                      ("TypeScript, React, Sui Move, and distributed systems").
-- target_role:        the role title, seniority, industry, or compensation target they seek
-                      ("Senior Fullstack Engineer in Web3 or AI platforms").
+- experience:         a work role, internship, company, project, or key accomplishment
+                      ("Junior Developer at Tech Solutions for 1 year", "Built an e-commerce platform using Next.js and PostgreSQL").
+- education:          highest educational institution, university, college, degree, or certification
+                      ("B.S. in Computer Science from University of Lagos", "Self-taught developer from freeCodeCamp and Coursera").
+- skill:              a technical skill, programming language, framework, database, or tool
+                      ("Proficient in React, TypeScript, TailwindCSS, Node.js, and Sui Move").
+- target_role:        the specific role, seniority level (Entry-level / New Grad, Mid-level, Senior, Lead), or field they seek
+                      ("Seeking Entry-level Software Engineer roles", "Targeting Senior Fullstack Engineer positions").
+- preference:         where they want to work (Remote, Hybrid, On-site, target cities/countries), target companies, or culture
+                      ("Wants remote-first work in Europe/US timezones", "Prefers hybrid roles in London", "Targeting Stripe and Vercel").
 - tailored_cv:        a refined bullet point or tailored section approved by the candidate.
-- application:        a specific job application status or company applied to
-                      ("applied to Vercel for Senior Platform Engineer").
-- interview_feedback: a STAR+R interview prep assessment, identified gap, or demonstrated strength
-                      ("demonstrated strong Situation & Task in incident management; needs quantified Result metric").
-- preference:         a standing career preference regarding remote work, team culture, or tech stack
-                      ("prefers remote-first teams with asynchronous workflows").
-- clearance:          an explicit statement that they have no restrictions or no preferences
-                      ("open to worldwide remote roles", "no salary floor stated").
+- application:        a specific job application status or company applied to ("applied to Vercel for Senior Platform Engineer").
+- interview_feedback: a STAR+R interview prep assessment, identified gap, or demonstrated strength.
+- clearance:          an explicit statement that they have no restrictions or no preferences ("open to any global time zone", "no relocation constraints").
 - weakness:           a skill, interview question, or technical area they say they struggle with.
 - mastery:            a domain or topic they demonstrate complete mastery of.
 
