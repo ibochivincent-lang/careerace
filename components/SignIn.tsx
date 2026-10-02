@@ -592,28 +592,47 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
               </form>
             </>
           ) : (
-            /* ================= OTP VERIFICATION SCREEN ================= */
+            /* ================= OTP & MAGIC LINK VERIFICATION SCREEN ================= */
             <div className="rounded-2xl border border-border/80 bg-card/60 p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
                   <Mail className="size-5" />
                 </span>
                 <div>
-                  <h3 className="text-base font-semibold text-foreground">Verify Your Email</h3>
-                  <p className="text-xs text-muted-foreground">Code sent to <span className="font-semibold text-foreground">{email}</span></p>
+                  <h3 className="text-base font-semibold text-foreground">Check Your Email</h3>
+                  <p className="text-xs text-muted-foreground">Sign-in message sent to <span className="font-semibold text-foreground">{email}</span></p>
                 </div>
               </div>
 
-              <form onSubmit={handleVerifySignUpOtp} className="mt-6 flex flex-col gap-4">
+              {/* Direct Link Banner */}
+              <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+                <p className="text-xs font-medium text-foreground">
+                  Click the <strong className="text-primary">"Sign in"</strong> link in the email to open your workspace immediately.
+                </p>
+                <div className="mt-2.5 flex items-center justify-center gap-2 text-[11px] text-primary">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  <span>Waiting for email link click...</span>
+                </div>
+              </div>
+
+              <div className="relative my-4 flex items-center justify-center">
+                <span className="w-full border-t border-border" />
+                <span className="bg-card px-3 text-[10px] uppercase font-mono text-muted-foreground whitespace-nowrap">
+                  Or enter 6-digit code
+                </span>
+              </div>
+
+              <form onSubmit={handleVerifySignUpOtp} className="flex flex-col gap-4">
                 <div>
                   <label className="block text-xs font-medium text-foreground mb-1.5 text-center">
-                    Enter the 6-digit code from your email
+                    6-digit code (if displayed in email)
                   </label>
                   <input
                     type="text"
-                    required
                     maxLength={6}
-                    autoFocus
                     placeholder="123456"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
@@ -819,25 +838,43 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
                 </button>
               </form>
             ) : (
-              /* Verify OTP Sign In */
               <div className="mt-4 rounded-2xl border border-border/80 bg-card/60 p-6 shadow-sm">
                 <div className="flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
-                    <KeyRound className="size-5" />
+                    <Mail className="size-5" />
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold text-foreground">Sign In With Code</h3>
-                    <p className="text-xs text-muted-foreground">Code sent to <span className="font-semibold text-foreground">{loginIdentifier}</span></p>
+                    <h3 className="text-base font-semibold text-foreground">Check Your Email</h3>
+                    <p className="text-xs text-muted-foreground">Sign-in message sent to <span className="font-semibold text-foreground">{loginIdentifier}</span></p>
                   </div>
                 </div>
 
-                <form onSubmit={handleVerifySignInOtp} className="mt-6 flex flex-col gap-4">
+                {/* Direct Link Banner */}
+                <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+                  <p className="text-xs font-medium text-foreground">
+                    Click the <strong className="text-primary">"Sign in"</strong> link in the email to open your workspace immediately.
+                  </p>
+                  <div className="mt-2.5 flex items-center justify-center gap-2 text-[11px] text-primary">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </span>
+                    <span>Waiting for email link click...</span>
+                  </div>
+                </div>
+
+                <div className="relative my-4 flex items-center justify-center">
+                  <span className="w-full border-t border-border" />
+                  <span className="bg-card px-3 text-[10px] uppercase font-mono text-muted-foreground whitespace-nowrap">
+                    Or enter 6-digit code
+                  </span>
+                </div>
+
+                <form onSubmit={handleVerifySignInOtp} className="flex flex-col gap-4">
                   <div>
                     <input
                       type="text"
-                      required
                       maxLength={6}
-                      autoFocus
                       placeholder="123456"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}

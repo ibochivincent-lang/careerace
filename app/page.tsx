@@ -20,6 +20,15 @@ export default function CareerAceLandingPage() {
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash
+      const search = window.location.search
+      if (hash.includes('access_token=') || hash.includes('id_token=') || search.includes('code=')) {
+        router.push(`/signin${search}${hash}`)
+        return
+      }
+    }
+
     fetch('/api/auth/session')
       .then((r) => r.json())
       .then((data) => {
@@ -30,7 +39,7 @@ export default function CareerAceLandingPage() {
       .catch((err) => {
         console.warn('Session verification notice:', err)
       })
-  }, [])
+  }, [router])
 
   function handleOpenWorkspace() {
     if (sessionAddress) {
