@@ -24,7 +24,13 @@ import {
   FileText,
   Sparkles,
   X,
-  Download
+  Download,
+  Search,
+  Globe,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  Filter,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -135,6 +141,26 @@ export default function ApplicationBoardPage() {
     skills: [],
   })
 
+  // Live Multi-Feed Job Search State
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedFeed, setSelectedFeed] = useState('all')
+  const [isSearchingJobs, setIsSearchingJobs] = useState(false)
+  const [searchResults, setSearchResults] = useState<Array<{
+    job_id: string
+    title: string
+    company: string
+    location: string
+    description: string
+    apply_url: string
+    source: string
+    posted_date: string
+    is_remote: boolean
+    salary?: string
+    job_type: 'remote' | 'onsite' | 'hybrid'
+  }>>([])
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [evaluatingJobId, setEvaluatingJobId] = useState<string | null>(null)
+
   useEffect(() => {
     // Sync candidate profile for ATS Quick-Fill
     fetch('/api/candidate/me')
@@ -147,11 +173,14 @@ export default function ApplicationBoardPage() {
         const storedLinkedin = localStorage.getItem('careerace_candidate_linkedin') || ''
         const storedGithub = localStorage.getItem('careerace_candidate_github') || ''
 
+        const initialRole = data?.primaryRole || storedRole || 'Software Engineer'
+        setSearchQuery(initialRole)
+
         setAtsProfile({
           name: data?.username || storedName || 'Candidate',
           email: data?.email || storedEmail || '',
           phone: data?.phone || storedPhone || '',
-          role: data?.primaryRole || storedRole || 'Software Engineer',
+          role: initialRole,
           linkedin: storedLinkedin || '',
           github: storedGithub || '',
           skills: data?.skills || ['Full Stack Development', 'TypeScript', 'Next.js', 'Distributed Systems'],
@@ -159,6 +188,80 @@ export default function ApplicationBoardPage() {
       })
       .catch(() => {})
   }, [])
+
+  async function handleSearchJobs(customQuery?: string, customFeed?: string) {
+    const q = (customQuery !== undefined ? customQuery : searchQuery).trim() || 'Software Engineer'
+    const feed = customFeed !== undefined ? customFeed : selectedFeed
+    setIsSearchingJobs(true)
+    setIsSearchExpanded(true)
+    const toastId = toast.loading(`Harvesting live jobs for "${q}" across ${feed === 'all' ? 'all live feeds' : feed}...`)
+    try {
+      const res = await fetch(`/api/harvest?query=${encodeURIComponent(q)}&source=${encodeURIComponent(feed)}&max_age=45`)
+      const data = await res.json()
+      if (data.jobs && Array.isArray(data.jobs)) {
+        setSearchResults(data.jobs)
+        toast.success(`Found ${data.jobs.length} live jobs across verified feeds!`, { id: toastId })
+      } else {
+        toast.error('No jobs found matching your query.', { id: toastId })
+      }
+    } catch {
+      toast.error('Failed to harvest jobs from remote feeds.', { id: toastId })
+    } finally {
+      setIsSearchingJobs(false)
+    }
+  }
+
+  async function handleEvaluateJob(job: {
+    job_id: string
+    title: string
+    company: string
+    location: string
+    description: string
+    apply_url: string
+    source: string
+    posted_date?: string
+    is_remote?: boolean
+    salary?: string
+    job_type?: 'remote' | 'onsite' | 'hybrid'
+  }) {
+    setEvaluatingJobId(job.job_id)
+    const toastId = toast.loading(`Evaluating "${job.title}" at ${job.company} against your CV...`)
+    try {
+      const storedCv = localStorage.getItem('careerace_parsed_profile')
+      let cv_text = 'Experienced Fullstack Engineer proficient in TypeScript, React, Next.js, distributed systems and high-throughput APIs.'
+      if (storedCv) {
+        try {
+          const parsed = JSON.parse(storedCv)
+          if (parsed.summary || parsed.skills) {
+            cv_text = `${parsed.summary || ''} Core Skills: ${(parsed.skills || []).join(', ')}. Target: ${parsed.targetRole || atsProfile.role || 'Software Engineer'}`
+          }
+        } catch {}
+      }
+
+      const evalRes = await fetch('/api/evaluation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job,
+          cv_text
+        })
+      })
+      const evalData = await evalRes.json()
+
+      if (evalData.application) {
+        const fitScore = evalData.application.fit_score || 8
+        const trackName = evalData.application.track === 'track_a_auto_apply' ? 'Track A (Auto-Apply)' : 'Track B (Manual Review)'
+        toast.success(`Evaluation complete! Fit: ${fitScore}/10 → Routed to ${trackName}`, { id: toastId })
+        await loadApplications()
+      } else {
+        toast.error(evalData.error || 'Evaluation could not be completed.', { id: toastId })
+      }
+    } catch {
+      toast.error('Network error running AI evaluation.', { id: toastId })
+    } finally {
+      setEvaluatingJobId(null)
+    }
+  }
 
   function openDispatchModal(app: ApplicationItem) {
     const candidateName = atsProfile.name || localStorage.getItem('careerace_candidate_name') || 'Candidate'
@@ -210,7 +313,7 @@ export default function ApplicationBoardPage() {
   }
 
   function openAtsKitModal(app: ApplicationItem) {
-    const storedName = localStorage.getItem('careerace_candidate_name') || 'Candidate'
+    const storedName = localStorage.getItem('careerace_candidate_name') || ''
     const storedCv = localStorage.getItem('careerace_parsed_profile')
     let skills = ['TypeScript', 'React', 'Node.js', 'Next.js']
     if (storedCv) {
@@ -220,15 +323,15 @@ export default function ApplicationBoardPage() {
       } catch {}
     }
 
-    setAtsProfile({
-      name: storedName,
-      email: 'candidate@example.com',
-      phone: '+1 (555) 000-0000',
+    setAtsProfile(prev => ({
+      name: storedName || prev.name || 'Candidate',
+      email: prev.email || localStorage.getItem('careerace_candidate_email') || '',
+      phone: prev.phone || localStorage.getItem('careerace_candidate_phone') || '',
       role: app.title,
-      linkedin: 'https://linkedin.com/in/candidate',
-      github: 'https://github.com/candidate',
-      skills,
-    })
+      linkedin: prev.linkedin || localStorage.getItem('careerace_candidate_linkedin') || '',
+      github: prev.github || localStorage.getItem('careerace_candidate_github') || '',
+      skills: skills.length > 0 ? skills : prev.skills,
+    }))
     setAtsApp(app)
   }
 
@@ -389,6 +492,182 @@ export default function ApplicationBoardPage() {
             {isHarvesting ? 'Evaluating...' : 'Evaluate Live Job Feed'}
           </Button>
         </div>
+
+        {/* Live Multi-Feed Job Search Engine */}
+        <Card className="p-6 rounded-2xl border bg-card/70 backdrop-blur-md shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                <h2 className="text-base font-bold tracking-tight">Live Multi-Feed Job Discovery</h2>
+                <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/10 border-emerald-500/20 font-mono">
+                  ● 4 Live Feeds Active
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Real-time job harvesting across <strong>Arbeitnow (300+ Tech)</strong>, <strong>Jobicy v2</strong>, <strong>Remotive</strong>, and <strong>WeWorkRemotely</strong>.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                className="text-xs h-7 gap-1 text-muted-foreground"
+              >
+                {isSearchExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                {isSearchExpanded ? 'Collapse' : 'Expand Search'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Search Inputs */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <div className="sm:col-span-6 relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search role or skill (e.g. React, Full Stack, Rust, Python, DevOps)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchJobs()}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                />
+              </div>
+
+              <div className="sm:col-span-4">
+                <select
+                  value={selectedFeed}
+                  onChange={(e) => setSelectedFeed(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                >
+                  <option value="all">🌐 All Feeds Aggregated (Highest Yield)</option>
+                  <option value="arbeitnow">💼 Arbeitnow (300+ Verified Global Tech)</option>
+                  <option value="jobicy">🚀 Jobicy v2 (Tech &amp; Engineering)</option>
+                  <option value="remotive">⚡ Remotive (Global Remote)</option>
+                  <option value="weworkremotely">🌍 WeWorkRemotely</option>
+                  <option value="himalayas">🏔️ Himalayas</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <Button
+                  onClick={() => handleSearchJobs()}
+                  disabled={isSearchingJobs}
+                  className="w-full text-xs gap-1.5 h-9 bg-primary hover:bg-primary/90 font-semibold"
+                >
+                  <Search className={`w-3.5 h-3.5 ${isSearchingJobs ? 'animate-spin' : ''}`} />
+                  {isSearchingJobs ? 'Harvesting...' : 'Search Feeds'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Keyword Filter Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1 mr-1">
+                <Filter className="w-3 h-3" /> Quick Search:
+              </span>
+              {['Full Stack', 'React', 'TypeScript', 'Next.js', 'Python', 'Rust', 'DevOps', 'AI Engineer'].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(tag)
+                    handleSearchJobs(tag, selectedFeed)
+                  }}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors border ${
+                    searchQuery.toLowerCase() === tag.toLowerCase()
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-transparent'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Results Display */}
+          {isSearchExpanded && searchResults.length > 0 && (
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Live Harvested Jobs ({searchResults.length})
+                </span>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  Filtered by: {selectedFeed === 'all' ? 'All Feeds' : selectedFeed}
+                </span>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 max-h-[460px] overflow-y-auto pr-1">
+                {searchResults.map((job) => (
+                  <div
+                    key={job.job_id}
+                    className="p-4 rounded-xl border bg-card/50 hover:bg-muted/30 transition-all space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-bold text-xs leading-snug line-clamp-1">{job.title}</h4>
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Building2 className="w-3 h-3 text-muted-foreground/70" /> {job.company}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0 font-mono bg-primary/5 text-primary border-primary/20">
+                          {job.source}
+                        </Badge>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground/90 line-clamp-2 leading-relaxed">
+                        {job.description}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
+                          📍 {job.location || 'Remote'}
+                        </span>
+                        {job.salary && (
+                          <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">
+                            💰 {job.salary}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t text-xs">
+                      {job.apply_url && (
+                        <a
+                          href={job.apply_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-primary hover:underline flex items-center gap-1 font-medium"
+                        >
+                          View Job <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEvaluateJob(job)}
+                          disabled={evaluatingJobId === job.job_id}
+                          className="h-7 text-[11px] gap-1 px-2.5 border-primary/30 text-primary hover:bg-primary/10"
+                        >
+                          <Sparkles className={`w-3 h-3 ${evaluatingJobId === job.job_id ? 'animate-spin' : ''}`} />
+                          {evaluatingJobId === job.job_id ? 'Evaluating...' : 'Evaluate Fit with AI'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
 
         {/* Dual-Track Columns */}
         <div className={`grid gap-8 ${trackFilter === 'all' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
