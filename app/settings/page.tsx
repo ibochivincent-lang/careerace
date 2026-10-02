@@ -29,13 +29,17 @@ export default function SettingsPage() {
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
   const [isLoadingSession, setIsLoadingSession] = useState(true)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [zapierUrl, setZapierUrl] = useState('')
+  const [isTestingZapier, setIsTestingZapier] = useState(false)
 
   useEffect(() => {
     // Load local profile settings
     const storedName = localStorage.getItem('careerace_candidate_name') || ''
     const storedTitle = localStorage.getItem('careerace_target_title') || ''
+    const storedZapier = localStorage.getItem('careerace_zapier_webhook') || ''
     setCandidateName(storedName)
     setTargetTitle(storedTitle)
+    setZapierUrl(storedZapier)
 
     // Load zkLogin session
     fetch('/api/auth/session')
@@ -53,6 +57,57 @@ export default function SettingsPage() {
     localStorage.setItem('careerace_candidate_name', candidateName.trim())
     localStorage.setItem('careerace_target_title', targetTitle.trim())
     toast.success('Candidate profile preferences saved.')
+  }
+
+  function handleSaveZapierUrl() {
+    if (!zapierUrl.trim()) {
+      localStorage.removeItem('careerace_zapier_webhook')
+      toast.info('Cleared Zapier webhook URL.')
+      return
+    }
+    if (!zapierUrl.startsWith('http')) {
+      toast.error('Please enter a valid HTTP/HTTPS webhook URL.')
+      return
+    }
+    localStorage.setItem('careerace_zapier_webhook', zapierUrl.trim())
+    toast.success('Zapier Webhook URL saved successfully.')
+  }
+
+  async function handleTestZapierPing() {
+    if (!zapierUrl.trim()) {
+      toast.error('Please enter a Zapier Webhook URL first.')
+      return
+    }
+    setIsTestingZapier(true)
+    const toastId = toast.loading('Sending test payload to Zapier...')
+    try {
+      const res = await fetch('/api/zapier/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'test_ping',
+          webhook_url: zapierUrl.trim(),
+          candidate: {
+            username: candidateName || 'Candidate',
+            target_role: targetTitle || 'Software Engineer',
+          },
+          data: {
+            message: 'Hello from Career Ace Autonomous Copilot! This confirms end-to-end connectivity.',
+            test_id: `test_${Date.now()}`,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Zapier received test event successfully!', { id: toastId })
+      } else {
+        toast.error(data.message || 'Zapier webhook returned an error.', { id: toastId })
+      }
+    } catch (err) {
+      toast.error('Network error testing Zapier webhook.', { id: toastId })
+    } finally {
+      setIsTestingZapier(false)
+    }
   }
 
   function handleExportVault() {
@@ -198,6 +253,73 @@ export default function SettingsPage() {
             <Button size="sm" onClick={handleSaveProfile} className="text-xs">
               Save Preferences
             </Button>
+          </div>
+        </Card>
+
+        {/* Zapier Automation Hub (6,000+ Connected Apps) */}
+        <Card className="p-6 space-y-4 border-l-4 border-l-orange-500 shadow-xs">
+          <div className="flex items-center justify-between border-b pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-600 font-bold text-xs">
+                Z
+              </div>
+              <div>
+                <h2 className="font-bold text-base">Zapier Automation Engine</h2>
+                <p className="text-xs text-muted-foreground">
+                  Connect Career Ace to 6,000+ apps for autonomous email dispatch, SMS alerts, and job tracking.
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className={`font-mono text-xs ${zapierUrl ? 'border-orange-500/30 text-orange-600 bg-orange-500/10' : ''}`}>
+              {zapierUrl ? 'Webhook Linked' : 'Not Connected'}
+            </Badge>
+          </div>
+
+          <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
+            <p>
+              By connecting your personal <strong>Zapier Webhook</strong>, Career Ace can automatically send your tailored job applications via your own <strong>Gmail or Outlook</strong>, alert you via <strong>SMS or WhatsApp</strong> when high-match jobs are found, and record interview evaluations to <strong>Notion or Google Sheets</strong>.
+            </p>
+
+            <div className="space-y-1.5">
+              <label htmlFor="zapier-url" className="text-xs font-semibold text-foreground block">
+                Zapier Catch Hook URL
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="zapier-url"
+                  type="url"
+                  placeholder="https://hooks.zapier.com/hooks/catch/123456/abcdef/"
+                  value={zapierUrl}
+                  onChange={(e) => setZapierUrl(e.target.value)}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
+                />
+                <Button size="sm" onClick={handleSaveZapierUrl} className="text-xs whitespace-nowrap">
+                  Save Webhook
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleTestZapierPing}
+                  disabled={isTestingZapier || !zapierUrl}
+                  className="text-xs whitespace-nowrap gap-1.5 border-orange-500/30 text-orange-600 hover:bg-orange-500/10"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTestingZapier ? 'animate-spin' : ''}`} />
+                  {isTestingZapier ? 'Sending...' : 'Test Connection'}
+                </Button>
+              </div>
+            </div>
+
+            {/* How It Works Guide */}
+            <div className="rounded-lg border bg-muted/30 p-3.5 space-y-2 mt-2">
+              <span className="font-semibold text-foreground text-xs block">How to set up in 2 minutes:</span>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] text-muted-foreground">
+                <li>Go to <a href="https://zapier.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">zapier.com</a> and click <strong>Create Zap</strong>.</li>
+                <li>Choose <strong>Webhooks by Zapier</strong> as Trigger and select <strong>Catch Hook</strong>.</li>
+                <li>Copy your unique Webhook URL and paste it into the field above.</li>
+                <li>Click <strong>Test Connection</strong> above so Zapier receives a live sample payload.</li>
+                <li>In Zapier, add an Action: <em>Gmail &rarr; Send Email</em> or <em>Twilio &rarr; Send SMS</em> or <em>Notion &rarr; Create Database Item</em>!</li>
+              </ol>
+            </div>
           </div>
         </Card>
 

@@ -1,7 +1,6 @@
 -- ==============================================================================
 -- Career Ace — Sovereign Database Schema & Row Level Security (Supabase / Postgres)
 -- Guarantees Zero Cross-Tenant Interference & Strictly Partitioned Candidate Access
--- Author: IboTV (ibochivincent-lang)
 -- ==============================================================================
 
 -- 1. Candidate Profiles Table

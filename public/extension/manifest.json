@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Career Ace — ATS Autofill Copilot",
+  "version": "1.0.0",
+  "description": "Autofill job application forms on Greenhouse, Lever, Workday, and Ashby with your sovereign Career Ace profile.",
+  "icons": {
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Career Ace Autofill"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.greenhouse.io/*",
+        "*://*.lever.co/*",
+        "*://*.myworkdayjobs.com/*",
+        "*://*.ashbyhq.com/*",
+        "*://*.bamboohr.com/*",
+        "*://*.smartrecruiters.com/*",
+        "*://*.linkedin.com/jobs/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

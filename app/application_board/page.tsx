@@ -15,7 +15,16 @@ import {
   Target,
   ShieldCheck,
   ArrowRight,
-  Database
+  Database,
+  Send,
+  Wand2,
+  Copy,
+  Check,
+  Bookmark,
+  FileText,
+  Sparkles,
+  X,
+  Download
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -98,6 +107,112 @@ export default function ApplicationBoardPage() {
   }
 
   const [trackFilter, setTrackFilter] = useState<'all' | 'track_a' | 'track_b'>('all')
+
+  // Dispatch Modal State (Track A)
+  const [dispatchApp, setDispatchApp] = useState<ApplicationItem | null>(null)
+  const [recruiterEmail, setRecruiterEmail] = useState('')
+  const [coverLetter, setCoverLetter] = useState('')
+  const [isDispatching, setIsDispatching] = useState(false)
+
+  // ATS Quick-Fill Kit Modal State (Track B)
+  const [atsApp, setAtsApp] = useState<ApplicationItem | null>(null)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [atsProfile, setAtsProfile] = useState<{
+    name: string
+    email: string
+    phone: string
+    role: string
+    linkedin: string
+    github: string
+    skills: string[]
+  }>({
+    name: 'Candidate',
+    email: 'candidate@example.com',
+    phone: '+1 (555) 000-0000',
+    role: 'Software Engineer',
+    linkedin: 'https://linkedin.com/in/candidate',
+    github: 'https://github.com/candidate',
+    skills: ['TypeScript', 'React', 'Node.js', 'Next.js'],
+  })
+
+  function openDispatchModal(app: ApplicationItem) {
+    const candidateName = localStorage.getItem('careerace_candidate_name') || 'Candidate'
+    const cleanCompany = app.company.toLowerCase().replace(/[^a-z0-9]/g, '')
+    setDispatchApp(app)
+    setRecruiterEmail(`careers@${cleanCompany || 'company'}.com`)
+    setCoverLetter(
+      `Dear Hiring Team at ${app.company},\n\nI am writing to express my strong interest in the ${app.title} position. With verified competencies evaluated through Career Ace, I am excited to apply my background in modern web engineering and high-throughput systems to your team.\n\nYou can review my cryptographically verified profile, code repositories, and STAR+R interview results on my Career Ace Passport: https://careerace.vercel.app/p/${encodeURIComponent(candidateName)}\n\nBest regards,\n${candidateName}`
+    )
+  }
+
+  async function handleSendDispatch() {
+    if (!dispatchApp) return
+    setIsDispatching(true)
+    const toastId = toast.loading(`Dispatching application to ${dispatchApp.company}...`)
+    try {
+      const zapierWebhook = localStorage.getItem('careerace_zapier_webhook') || undefined
+      const candidateName = localStorage.getItem('careerace_candidate_name') || 'Candidate'
+
+      const res = await fetch('/api/applications/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          application_id: dispatchApp.id,
+          title: dispatchApp.title,
+          company: dispatchApp.company,
+          apply_url: dispatchApp.apply_url,
+          fit_score: dispatchApp.fit_score,
+          recruiter_email: recruiterEmail,
+          cover_letter: coverLetter,
+          candidate_name: candidateName,
+          zapier_webhook_url: zapierWebhook,
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success(data.message || `Dispatched to ${dispatchApp.company}!`, { id: toastId })
+        setDispatchApp(null)
+        await loadApplications()
+      } else {
+        toast.error(data.error || 'Dispatch encountered an issue.', { id: toastId })
+      }
+    } catch {
+      toast.error('Network error dispatching application.', { id: toastId })
+    } finally {
+      setIsDispatching(false)
+    }
+  }
+
+  function openAtsKitModal(app: ApplicationItem) {
+    const storedName = localStorage.getItem('careerace_candidate_name') || 'Candidate'
+    const storedCv = localStorage.getItem('careerace_parsed_profile')
+    let skills = ['TypeScript', 'React', 'Node.js', 'Next.js']
+    if (storedCv) {
+      try {
+        const parsed = JSON.parse(storedCv)
+        if (Array.isArray(parsed.skills)) skills = parsed.skills
+      } catch {}
+    }
+
+    setAtsProfile({
+      name: storedName,
+      email: 'candidate@example.com',
+      phone: '+1 (555) 000-0000',
+      role: app.title,
+      linkedin: 'https://linkedin.com/in/candidate',
+      github: 'https://github.com/candidate',
+      skills,
+    })
+    setAtsApp(app)
+  }
+
+  function copyField(fieldName: string, text: string) {
+    navigator.clipboard.writeText(text)
+    setCopiedField(fieldName)
+    toast.success(`Copied ${fieldName} to clipboard!`)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
 
   const trackAApps = applications.filter(a => a.status === 'Applied' || a.track === 'track_a_auto_apply')
   const trackBApps = applications.filter(a => a.status === 'Manual Required' || a.track === 'track_b_manual_queue')
@@ -299,7 +414,7 @@ export default function ApplicationBoardPage() {
                       </Badge>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t mt-4">
+                    <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground pt-3 border-t mt-4 gap-2">
                       <span className="font-mono text-[11px]">Submitted {app.processed_at}</span>
                       <div className="flex items-center gap-2">
                         {app.apply_url && (
@@ -314,11 +429,18 @@ export default function ApplicationBoardPage() {
                         )}
                         <Button
                           size="sm"
+                          onClick={() => openDispatchModal(app)}
+                          className="h-7 text-xs px-2.5 gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                        >
+                          <Send className="w-3 h-3" /> Auto-Dispatch
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="ghost"
                           onClick={() => router.push(`/interview_room?role=${encodeURIComponent(app.title)}&company=${encodeURIComponent(app.company)}`)}
                           className="h-7 text-xs px-2 text-primary hover:bg-primary/10 gap-1"
                         >
-                          Practice STAR+R <Target className="w-3 h-3" />
+                          Prep STAR+R <Target className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
@@ -381,7 +503,7 @@ export default function ApplicationBoardPage() {
                         Action Required: {app.flag_reason || 'Requires manual submission via employer ATS portal.'}
                       </p>
 
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
+                      <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground pt-3 border-t gap-2">
                         <span className="font-mono text-[11px]">{app.processed_at}</span>
                         <div className="flex items-center gap-2">
                           {app.apply_url && (
@@ -394,6 +516,14 @@ export default function ApplicationBoardPage() {
                               Open Portal <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => openAtsKitModal(app)}
+                            className="h-7 text-xs px-2.5 gap-1.5 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                          >
+                            <Wand2 className="w-3 h-3 text-amber-500" /> ATS Quick-Fill
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -411,6 +541,193 @@ export default function ApplicationBoardPage() {
             </div>
           )}
         </div>
+
+        {/* Auto-Dispatch Modal (Track A) */}
+        {dispatchApp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="bg-card border rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b pb-3">
+                <div>
+                  <h3 className="font-bold text-base flex items-center gap-2">
+                    <Send className="w-4 h-4 text-emerald-500" /> Autonomous Application Dispatch
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {dispatchApp.title} &bull; <strong className="text-foreground">{dispatchApp.company}</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDispatchApp(null)}
+                  className="text-muted-foreground hover:text-foreground text-lg leading-none"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="font-semibold text-foreground block mb-1">Recruiter / Intake Email</label>
+                  <input
+                    type="email"
+                    value={recruiterEmail}
+                    onChange={(e) => setRecruiterEmail(e.target.value)}
+                    placeholder="careers@company.com"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-foreground block mb-1">Tailored Cover Letter &amp; Verified Passport Link</label>
+                  <textarea
+                    rows={6}
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-xs leading-relaxed"
+                  />
+                </div>
+
+                <div className="p-3 rounded-lg border bg-muted/30 flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">
+                    Zapier Action: <strong>{typeof window !== 'undefined' && localStorage.getItem('careerace_zapier_webhook') ? 'Linked via Webhook (Auto-Mail / Notion)' : 'Sovereign Career Vault Recording'}</strong>
+                  </span>
+                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 text-[10px]">
+                    Ready
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button variant="ghost" size="sm" onClick={() => setDispatchApp(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSendDispatch}
+                  disabled={isDispatching}
+                  className="gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                >
+                  <Send className={`w-3.5 h-3.5 ${isDispatching ? 'animate-spin' : ''}`} />
+                  {isDispatching ? 'Dispatching...' : 'Dispatch Application'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ATS Quick-Fill Kit Modal (Track B) */}
+        {atsApp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="bg-card border rounded-2xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
+              <div className="flex justify-between items-center border-b pb-3">
+                <div>
+                  <h3 className="font-bold text-base flex items-center gap-2">
+                    <Wand2 className="w-4 h-4 text-amber-500" /> ATS Quick-Fill Copilot Kit
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    1-Click copy &amp; browser autofill for Greenhouse, Lever &amp; Workday portals.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAtsApp(null)}
+                  className="text-muted-foreground hover:text-foreground text-lg leading-none"
+                >
+                  &times;
+                </button>
+              </div>
+
+              {/* 1-Click Browser Bookmarklet & Extension Card */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-primary flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Instant Browser Autofill Bookmarklet
+                  </span>
+                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">No install required</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Drag the button below to your Bookmarks Bar. When you are on any Greenhouse, Lever, or Workday application page, click it to auto-fill all form inputs automatically!
+                </p>
+                <div className="pt-1 flex flex-wrap gap-2 items-center">
+                  <a
+                    href={`javascript:(function(){var p={name:"${atsProfile.name}",first_name:"${atsProfile.name.split(' ')[0]}",last_name:"${atsProfile.name.split(' ').slice(1).join(' ') || 'Candidate'}",email:"${atsProfile.email}",phone:"${atsProfile.phone}",linkedin:"${atsProfile.linkedin}",github:"${atsProfile.github}",portfolio:"https://careerace.vercel.app/p/${encodeURIComponent(atsProfile.name)}"};document.querySelectorAll('input,textarea').forEach(function(i){var n=((i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')).toLowerCase();function s(v){if(v&&!i.value){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}}if(n.includes('first'))s(p.first_name);else if(n.includes('last'))s(p.last_name);else if(n.includes('name'))s(p.name);else if(n.includes('email')||i.type==='email')s(p.email);else if(n.includes('phone')||n.includes('tel'))s(p.phone);else if(n.includes('linkedin'))s(p.linkedin);else if(n.includes('github')||n.includes('git'))s(p.github);else if(n.includes('website')||n.includes('portfolio')||n.includes('url'))s(p.portfolio);});alert('Career Ace ATS Copilot: Form fields filled successfully!');})();`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground font-semibold text-xs shadow-xs hover:bg-primary/90 cursor-grab"
+                    title="Drag me to your Bookmarks Bar!"
+                  >
+                    <Bookmark className="w-3.5 h-3.5" /> Drag: Fill with Career Ace
+                  </a>
+                  <a
+                    href="/extension/manifest.json"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground underline ml-2"
+                  >
+                    View Chrome Extension files <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Individual 1-Click Copy Fields */}
+              <div className="space-y-2 text-xs">
+                <span className="font-semibold text-foreground text-xs block">Or Click Any Field to Copy Directly:</span>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {[
+                    { label: 'Full Name', value: atsProfile.name },
+                    { label: 'Email Address', value: atsProfile.email },
+                    { label: 'Phone Number', value: atsProfile.phone },
+                    { label: 'LinkedIn Profile', value: atsProfile.linkedin },
+                    { label: 'GitHub Profile', value: atsProfile.github },
+                    { label: 'Verified Passport URL', value: `https://careerace.vercel.app/p/${encodeURIComponent(atsProfile.name)}` },
+                  ].map((f) => (
+                    <div
+                      key={f.label}
+                      onClick={() => copyField(f.label, f.value)}
+                      className="p-2.5 rounded-lg border bg-card/60 hover:bg-muted/40 cursor-pointer flex items-center justify-between transition-colors"
+                    >
+                      <div className="overflow-hidden mr-2">
+                        <span className="text-[10px] text-muted-foreground block">{f.label}</span>
+                        <span className="font-mono text-xs font-semibold truncate block">{f.value}</span>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0">
+                        {copiedField === f.label ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[11px] font-semibold text-foreground">Matched Skills (Keywords Comma-Separated)</span>
+                    <button
+                      type="button"
+                      onClick={() => copyField('Keywords', atsProfile.skills.join(', '))}
+                      className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" /> Copy Keywords
+                    </button>
+                  </div>
+                  <div className="p-2.5 rounded-md border bg-muted/20 font-mono text-[11px] text-muted-foreground">
+                    {atsProfile.skills.join(', ')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                {atsApp.apply_url && (
+                  <a
+                    href={atsApp.apply_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium"
+                  >
+                    Open Employer ATS Portal <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => setAtsApp(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
   )
