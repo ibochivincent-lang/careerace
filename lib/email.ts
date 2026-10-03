@@ -27,7 +27,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     options.from ||
     process.env.RESEND_FROM_EMAIL ||
     process.env.EMAIL_FROM ||
-    "Career Ace <onboarding@resend.dev>"; // Default fallback until custom domain is verified
+    "Career Ace <notifications@careerace.online>"; // Verified custom domain on Resend
 
   if (!apiKey) {
     console.warn("[email] RESEND_API_KEY is not configured in environment. Running in safe mock fallback mode.");
