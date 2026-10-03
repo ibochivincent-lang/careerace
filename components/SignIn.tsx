@@ -18,7 +18,7 @@ function redirectUrl() {
   if (envUrl && !envUrl.includes('localhost')) {
     return `${envUrl}/signin`
   }
-  return 'https://careerace.vercel.app/signin'
+  return 'https://careerace.online/signin'
 }
 
 function Spinner({ text }: { text?: string }) {
