@@ -14,12 +14,37 @@ export const maxDuration = 60;
 
 /**
  * Intelligent extraction of career facts from candidate answers.
- * Extracts target role, level (entry, mid, senior), education, skills, location preferences, and experience.
+ * Extracts candidate identity/name, target role, level (entry, mid, senior), education, skills, location preferences, and experience.
  */
 function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: FactKind; text: string }> {
   const facts: Array<{ kind: FactKind; text: string }> = [];
-  const lower = text.toLowerCase();
-  const lowerAsked = asked.toLowerCase();
+  const lower = text.toLowerCase().trim();
+  const lowerAsked = asked.toLowerCase().trim();
+
+  // 0. Candidate Name & Identity
+  const nameIntroMatch = text.match(/(?:my name is|i am|i'm|call me|name:)\s+([A-Za-z\s'-]{2,40})/i);
+  let detectedName = "";
+  if (nameIntroMatch && nameIntroMatch[1]) {
+    const rawName = nameIntroMatch[1].trim();
+    const blacklist = ["looking", "a developer", "an engineer", "ready", "interested", "trying", "applying", "here", "available", "seeking", "experienced", "fine", "good"];
+    if (!blacklist.includes(rawName.toLowerCase()) && rawName.split(" ").length <= 4) {
+      detectedName = rawName;
+    }
+  } else if (
+    (lowerAsked.includes("what is your name") || lowerAsked.includes("what's your name") || lowerAsked.includes("your full name")) &&
+    text.split(" ").length <= 5 &&
+    !lower.includes("software") &&
+    !lower.includes("engineer")
+  ) {
+    detectedName = text.trim();
+  }
+
+  if (detectedName) {
+    facts.push({
+      kind: "candidate_identity",
+      text: `Candidate Name: ${detectedName}`,
+    });
+  }
 
   // 1. Target Role & Seniority Level
   if (
@@ -166,6 +191,7 @@ export async function POST(req: Request) {
     const activeCoaching = resolveConflicts(coachingFacts).active;
 
     const storedSummary = {
+      names: claimsOfKind(activeProfile, "candidate_identity"),
       targetRoles: claimsOfKind(activeProfile, "target_role"),
       skills: claimsOfKind(activeProfile, "skill"),
       education: claimsOfKind(activeProfile, "education"),
@@ -188,6 +214,12 @@ export async function POST(req: Request) {
       }
     }
 
+    const currentName =
+      extracted.find((f) => f.kind === "candidate_identity")?.text.replace("Candidate Name: ", "").trim() ||
+      storedSummary.names[0]?.replace(/^candidate name:\s*/i, "").trim() ||
+      cv_profile?.applicant_name ||
+      "";
+
     // 4. Build sovereign context for the AI Copilot
     const memoryFactsList = [...activeProfile, ...activeCoaching].map((f) => `- ${f.text}`).join("\n");
 
@@ -195,6 +227,10 @@ export async function POST(req: Request) {
 
 YOUR PRIMARY MISSION:
 You conduct an interactive, step-by-step CV discovery conversation to build the candidate's complete, verified career profile directly into Walrus Memory.
+
+CANDIDATE KNOWN DETAILS:
+${currentName ? `Candidate Name: ${currentName}` : "Candidate Name: Unknown yet"}
+${cv_profile ? `Attached CV profile: Name=${cv_profile.applicant_name}, Skills=${cv_profile.skills?.slice(0, 8).join(", ")}, TargetRoles=${cv_profile.target_roles?.join(", ")}` : ""}
 
 EXPLAIN THE REASON TRANSPARENTLY:
 In your opening or when introducing questions, explain clearly to the candidate:
@@ -211,9 +247,8 @@ INTERACTIVE CV INTERVIEW FLOW (Ask 1 or 2 connected questions at a time, like fi
 CHECK WHAT IS ALREADY KNOWN (DO NOT RE-ASK):
 The following facts are already safely stored in the candidate's Walrus Memory vault:
 ${memoryFactsList || "No facts stored yet."}
-${cv_profile ? `Attached CV profile: Name=${cv_profile.applicant_name}, Skills=${cv_profile.skills?.slice(0, 8).join(", ")}, TargetRoles=${cv_profile.target_roles?.join(", ")}` : ""}
 
-If a detail is already known, do not ask for it again! Instead, acknowledge it warmly and ask for the next missing piece.
+If a detail is already known, do not ask for it again! Instead, acknowledge it warmly and ask for the next missing piece. If the user asks "What is my name?" or "What are my skills?", answer directly and accurately from their Walrus Memory.
 
 CONFIRM SAVES:
 Whenever the candidate shares an answer, acknowledge in passing that it is being cryptographically sealed and saved to their sovereign Walrus Memory vault.
@@ -231,6 +266,14 @@ Keep responses friendly, encouraging, and under 130 words per turn.`;
       role: "assistant",
       content: reply,
       stored: newlyStored,
+      candidate_name: currentName || undefined,
+      extracted_profile: {
+        name: currentName || undefined,
+        target_roles: storedSummary.targetRoles,
+        skills: storedSummary.skills,
+        education: storedSummary.education,
+        experience: storedSummary.experience,
+      },
     });
   } catch (error) {
     return NextResponse.json(

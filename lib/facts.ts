@@ -48,6 +48,11 @@ export type FactKind =
    */
   | "preference"
   /**
+   * Candidate personal identity: verified full name, contact, phone, location.
+   * e.g. "Candidate Name: Vincent Ibochi, Location: Lagos, Nigeria"
+   */
+  | "candidate_identity"
+  /**
    * Explicit clearance or absence of a constraint or restriction.
    * e.g. "No relocation restrictions", "open to any global time zone".
    */

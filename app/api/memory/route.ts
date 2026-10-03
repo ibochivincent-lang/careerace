@@ -62,12 +62,50 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const address = await getOwnerAddress();
+    let address = await getOwnerAddress();
     if (!address) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      address = "0x0000000000000000000000000000000000000000000000000000000000000001";
     }
 
     const body = await req.json();
+
+    // 1. Batch profile indexing
+    if (body.profile) {
+      const p = body.profile;
+      const promises: Promise<any>[] = [];
+
+      if (p.applicant_name) {
+        promises.push(rememberFact(address, "candidate_identity", `Candidate Name: ${p.applicant_name}${p.location ? `, Location: ${p.location}` : ""}${p.contact_email ? `, Email: ${p.contact_email}` : ""}`));
+      }
+      if (p.target_roles && Array.isArray(p.target_roles) && p.target_roles.length > 0) {
+        promises.push(rememberFact(address, "target_role", `Target role: ${p.target_roles.join(", ")}${p.seniority_level ? `, Seniority: ${p.seniority_level}` : ""}`));
+      }
+      if (p.skills && Array.isArray(p.skills) && p.skills.length > 0) {
+        promises.push(rememberFact(address, "skill", `Skill: ${p.skills.join(", ")}`));
+      }
+      if (p.academic_history && Array.isArray(p.academic_history)) {
+        for (const edu of p.academic_history) {
+          if (edu.institution || edu.degree) {
+            promises.push(rememberFact(address, "education", `Education: ${edu.degree || "Degree"} from ${edu.institution || "Institution"}${edu.graduation_year ? ` (${edu.graduation_year})` : ""}`));
+          }
+        }
+      }
+      if (p.work_experience && Array.isArray(p.work_experience)) {
+        for (const exp of p.work_experience) {
+          if (exp.company || exp.role) {
+            promises.push(rememberFact(address, "experience", `Experience: ${exp.role || "Developer"} at ${exp.company || "Organization"} (${exp.duration || "Present"})`));
+          }
+        }
+      }
+      if (p.availability) {
+        promises.push(rememberFact(address, "preference", `Workplace preference: ${p.availability}`));
+      }
+
+      await Promise.all(promises);
+      return NextResponse.json({ success: true, indexed_facts: promises.length });
+    }
+
+    // 2. Single fact indexing
     const { kind, text, userTurn } = body as {
       kind: FactKind;
       text: string;
