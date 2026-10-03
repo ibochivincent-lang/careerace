@@ -97,7 +97,7 @@ export function Sidebar() {
           {!collapsed && (
             <div>
               <span className="font-bold text-sm leading-none block text-sidebar-foreground">Career Ace</span>
-              <span className="text-[10px] text-muted-foreground leading-none">AI Copilot</span>
+              <span className="text-xs text-muted-foreground leading-none">AI Copilot</span>
             </div>
           )}
         </button>
@@ -150,7 +150,7 @@ export function Sidebar() {
         {/* Profiles Section (GitHub / LinkedIn) */}
         <div className="space-y-1 pt-2 border-t border-sidebar-border/60">
           {!collapsed && (
-            <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+            <div className="px-3 pb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
               Profiles
             </div>
           )}
@@ -182,7 +182,7 @@ export function Sidebar() {
         {/* Tools & Career Lineage */}
         <div className="space-y-1 pt-2 border-t border-sidebar-border/60">
           {!collapsed && (
-            <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+            <div className="px-3 pb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
               Lineage &amp; Vault
             </div>
           )}
@@ -207,16 +207,13 @@ export function Sidebar() {
               {!collapsed && active && (
                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
               )}
-              {!collapsed && label === 'Notifications' && !active && (
-                <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
-              )}
             </button>
           ))}
         </div>
       </nav>
 
-      {/* Bottom section */}
-      <div className="flex-shrink-0 border-t border-sidebar-border p-2.5 space-y-2">
+      {/* Footer / Account / Theme */}
+      <div className="p-3 border-t border-sidebar-border flex-shrink-0 space-y-2">
         {/* Vault Status (only when expanded) */}
         {!collapsed && (
           <div className="px-3 py-2 rounded-lg border bg-card/60 text-xs">
@@ -224,7 +221,7 @@ export function Sidebar() {
               <Database className="w-3.5 h-3.5" />
               <span>Walrus Vault</span>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Sui zkLogin &amp; AES-256-GCM</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Sui zkLogin &amp; AES-256-GCM</p>
           </div>
         )}
 

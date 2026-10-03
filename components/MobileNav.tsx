@@ -34,7 +34,7 @@ export function MobileNav() {
               key={label}
               onClick={() => router.push(href)}
               className={cn(
-                'relative flex items-center justify-center text-[11px] font-medium transition-colors px-1 text-center',
+                'relative flex items-center justify-center text-xs font-medium transition-colors px-1 text-center',
                 active
                   ? 'text-primary font-bold'
                   : 'text-muted-foreground hover:text-foreground'

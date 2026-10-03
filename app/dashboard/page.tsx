@@ -9,6 +9,7 @@ import { AppShell } from '@/components/AppShell'
 import { AccountChip } from '@/components/AccountChip'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, ChevronLeft, Paperclip, Sparkles, MessageSquare,
@@ -17,6 +18,8 @@ import {
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
   Copy, Trash2, ArrowUpRight
 } from 'lucide-react'
+import { AnimatedScoreGauge } from '@/components/AnimatedScoreGauge'
+import { AnimatedProgressBar } from '@/components/AnimatedProgressBar'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
@@ -44,7 +47,7 @@ const INITIAL_SOVEREIGN_PROFILE = {
     {
       company: 'Tech Solutions Inc.',
       role: 'Fullstack Engineer',
-      duration: '2023 - Present',
+      duration: '2023 · Present',
       highlights: [
         'Engineered scalable microservices and built responsive web applications, reducing API response times by 35%.',
         'Architected real-time streaming pipeline processing 1M+ daily events with 99.9% uptime.'
@@ -86,12 +89,11 @@ function DashboardContent() {
   // Universal Job Harvester state
   const [isHarvesting, setIsHarvesting] = useState(false)
   const [harvestedJobs, setHarvestedJobs] = useState<any[]>([])
-  const [evaluatingJobId, setEvaluatingJobId] = useState<string | null>(null)
-  const [evaluationResults, setEvaluationResults] = useState<Record<string, any>>({})
 
   // Career Ace AI Copilot Chatbot state
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null)
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     {
       role: 'assistant',
@@ -99,18 +101,6 @@ function DashboardContent() {
         "Hello Ibochi! I am Career Ace, your autonomous AI career copilot with Walrus Sovereign Memory. I remember your full background, work milestones, and verified skills across every session.\n\nYour resume currently scores 94/100 for ATS readiness. What would you like to tackle today? We can tailor your resume for a specific role, audit ATS keywords, or draft a targeted cover letter."
     }
   ])
-
-  // Custom highlights editing state
-  const [newSkillInput, setNewSkillInput] = useState('')
-  const [newAchievementInput, setNewAchievementInput] = useState('')
-  const [newRoleInput, setNewRoleInput] = useState('')
-  const [newInstInput, setNewInstInput] = useState('')
-  const [newDegreeInput, setNewDegreeInput] = useState('')
-  const [newEduYearInput, setNewEduYearInput] = useState('')
-  const [newExpCompany, setNewExpCompany] = useState('')
-  const [newExpRole, setNewExpRole] = useState('')
-  const [newExpDuration, setNewExpDuration] = useState('')
-  const [newCertInput, setNewCertInput] = useState('')
 
   // Tailoring state
   const [tailorCompany, setTailorCompany] = useState('Mysten Labs')
@@ -131,6 +121,11 @@ function DashboardContent() {
   const [resumeViewMode, setResumeViewMode] = useState<'editor' | 'upload'>('editor')
   const [acceptedEdits, setAcceptedEdits] = useState<Record<string, 'accepted' | 'rejected' | null>>({})
 
+  // Auto-scroll chat on message change
+  useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, isSending])
+
   function handleAcceptEdit(id: string) {
     setAcceptedEdits(prev => ({ ...prev, [id]: 'accepted' }))
     toast.success('High-impact quantified edit accepted into your verified CV!')
@@ -138,12 +133,13 @@ function DashboardContent() {
 
   function handleRejectEdit(id: string) {
     setAcceptedEdits(prev => ({ ...prev, [id]: 'rejected' }))
-    toast.info('Edit dismissed — reverted to original wording.')
+    toast.info('Edit dismissed and reverted to original wording.')
   }
 
   function handleDiscussEdit(topic: string) {
-    setChatInput(`Why should I change: "${topic}"? How does this increase my ATS score?`)
-    toast.info('Discuss prompt added to AI Copilot.')
+    const prompt = `Why should I change: "${topic}"? How does this increase my ATS score?`
+    setChatInput(prompt)
+    toast.info('Discuss prompt loaded into AI Copilot.')
   }
 
   function handleChipClick(chip: string) {
@@ -155,10 +151,10 @@ function DashboardContent() {
         content: `I've analyzed your profile for "${chip}". I've tailored your resume bullets with verified production metrics and data volume specifications, boosting your ATS readiness score to 96/100.`
       }
     ])
-    toast.success(`Applied: ${chip}`)
+    toast.success(`Applied suggestion: ${chip}`)
   }
 
-  async function handleSendChatMessage() {
+  async function handleSendMessage() {
     if (!chatInput.trim() || isSending) return
     const text = chatInput.trim()
     setChatInput('')
@@ -259,26 +255,6 @@ function DashboardContent() {
     }
   }, [parsedProfile, tailorRole])
 
-  // Profile editing functions
-  function handleAddSkill() {
-    if (!newSkillInput.trim() || !parsedProfile) return
-    const updated = {
-      ...parsedProfile,
-      skills: [...(parsedProfile.skills || []), newSkillInput.trim()]
-    }
-    setParsedProfile(updated)
-    setNewSkillInput('')
-  }
-
-  function handleRemoveSkill(skillToRemove: string) {
-    if (!parsedProfile) return
-    const updated = {
-      ...parsedProfile,
-      skills: (parsedProfile.skills || []).filter((s: string) => s !== skillToRemove)
-    }
-    setParsedProfile(updated)
-  }
-
   async function handleSaveAndSyncProfile() {
     if (!parsedProfile) return
     setIsSavingMemory(true)
@@ -364,40 +340,6 @@ function DashboardContent() {
     }
   }
 
-  function handleGenerateTailoredResume() {
-    const role = tailorRole || parsedProfile?.target_roles?.[0] || 'Software Engineer'
-    const company = tailorCompany || 'Target Employer'
-    const name = parsedProfile?.applicant_name || 'Candidate'
-    const skills = (parsedProfile?.skills || []).slice(0, 8).join(', ') || 'TypeScript, React, Node.js'
-    const edu = parsedProfile?.academic_history?.[0]?.degree || 'Computer Science'
-    const inst = parsedProfile?.academic_history?.[0]?.institution || 'University'
-
-    const rawAchievements = parsedProfile?.custom_achievements?.length
-      ? parsedProfile.custom_achievements
-      : ['Delivered high-throughput systems reducing operational latency by 40%.', 'Architected robust modular microservices with 99.9% uptime.']
-    const xyzAchievements = rawAchievements.map((a: string) => enforceGoogleXyzFormula(a, parsedProfile?.skills?.[0]))
-
-    const tailored =
-      `TARGET ROLE: ${role.toUpperCase()} — TARGET EMPLOYER: ${company.toUpperCase()}\n\n` +
-      `EXECUTIVE SUMMARY:\n` +
-      `Results-driven ${parsedProfile?.seniority_level || 'Mid-Level'} professional with verified competencies in ${skills}. Dedicated to architecting scalable solutions, driving measurable business impact, and collaborating across high-performing cross-functional teams.\n\n` +
-      `CORE COMPETENCIES & ATS KEYWORDS:\n` +
-      `• ${(parsedProfile?.skills || ['Leadership', 'System Architecture', 'Delivery']).join(' • ')}\n\n` +
-      `GOOGLE XYZ QUANTIFIED ACHIEVEMENTS:\n` +
-      `${xyzAchievements.map((a: string) => `• ${a}`).join('\n')}\n\n` +
-      `PROFESSIONAL EXPERIENCE:\n` +
-      (parsedProfile?.work_experience || []).map((exp: any) =>
-        `• ${exp.role} at ${exp.company} (${exp.duration || 'Present'}):\n` +
-        (exp.highlights || []).map((h: string) => `  - ${enforceGoogleXyzFormula(h)}`).join('\n')
-      ).join('\n\n') +
-      `\n\nEDUCATION & CREDENTIALS:\n` +
-      `• ${edu}, ${inst}\n` +
-      `• Sovereign Career Verification: https://careerace.online/p/${encodeURIComponent(name)}`
-
-    setTailoredResumeText(tailored)
-    toast.success(`Tailored resume compiled for ${company}!`)
-  }
-
   function handleGenerateCoverLetter() {
     const role = tailorRole || 'Software Engineer'
     const company = tailorCompany || 'Target Company'
@@ -418,7 +360,7 @@ function DashboardContent() {
         `Throughout my career, I have partnered closely with product managers and designers to take features from whiteboard concepts to production deployments in tight sprint cycles. I would welcome the opportunity to accelerate ${company}'s product roadmap.`
     } else {
       narrative =
-        `I am reaching out regarding the ${role} role at ${company}. As an engineer who thrives in high-autonomy environments, I take pride in end-to-end execution — from architecting backend microservices to designing responsive frontends and automating CI/CD deployments.\n\n` +
+        `I am reaching out regarding the ${role} role at ${company}. As an engineer who thrives in high-autonomy environments, I take pride in end-to-end execution, from architecting backend microservices to designing responsive frontends and automating CI/CD deployments.\n\n` +
         `I am deeply inspired by ${company}'s mission and would be thrilled to bring my proactive problem-solving to your core initiatives.`
     }
 
@@ -465,7 +407,7 @@ function DashboardContent() {
           ...prev,
           {
             role: 'assistant',
-            content: `I've attached and parsed **${file.name}**!\n\nCandidate: **${data.profile.applicant_name}**\n- Skills: ${data.profile.skills?.slice(0, 8).join(', ')}\n- Target: ${data.profile.target_roles?.join(', ')}\n\nYour profile is now actively indexed. You can download an audited .docx resume, inspect ATS compliance in the X-Ray, or tailor applications.`
+            content: `I've attached and parsed **${file.name}**!\n\nCandidate: **${data.profile.applicant_name}**\n• Skills: ${data.profile.skills?.slice(0, 8).join(', ')}\n• Target: ${data.profile.target_roles?.join(', ')}\n\nYour profile is now actively indexed. You can download an audited .docx resume, inspect ATS compliance in the X-Ray, or tailor applications.`
           }
         ])
       }
@@ -477,35 +419,8 @@ function DashboardContent() {
     }
   }
 
-  async function handleSendMessage() {
-    if (!chatInput.trim() || isSending) return
-    const userText = chatInput.trim()
-    setChatInput('')
-    setIsSending(true)
-
-    setChatMessages((prev) => [...prev, { role: 'user', content: userText }])
-
-    try {
-      const res = await fetch('/api/copilot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userText,
-          profile: parsedProfile
-        })
-      })
-      const data = await res.json()
-      if (data.reply) {
-        setChatMessages((prev) => [...prev, { role: 'assistant', content: data.reply }])
-      } else {
-        setChatMessages((prev) => [...prev, { role: 'assistant', content: "I've processed your update and updated your sovereign candidate memory." }])
-      }
-    } catch {
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: "I'm temporarily operating offline, but your notes are saved in your local vault." }])
-    } finally {
-      setIsSending(false)
-    }
-  }
+  // Count active applied edits in diff studio
+  const appliedCount = Object.values(acceptedEdits).filter(v => v === 'accepted').length
 
   return (
     <AppShell>
@@ -526,13 +441,18 @@ function DashboardContent() {
           onChange={handleImportJsonResumeFile}
         />
 
-        {/* ── TAB 1: OVERVIEW (The clean Polish/Career Ace style dashboard) ── */}
+        {/* ── TAB 1: OVERVIEW ── */}
         {activeTab === 'overview' && (
-          <div className="space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-8"
+          >
             {/* Header Greeting */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                   {getGreeting()}, {parsedProfile?.applicant_name?.split(' ')[0] || 'Ibochi'}.
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -545,7 +465,7 @@ function DashboardContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-xs gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                  className="text-xs font-semibold gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-9"
                 >
                   <Upload className="w-3.5 h-3.5" /> Upload CV (.pdf, .docx)
                 </Button>
@@ -553,7 +473,7 @@ function DashboardContent() {
                   size="sm"
                   onClick={handleSaveAndSyncProfile}
                   disabled={isSavingMemory}
-                  className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+                  className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm h-9"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" /> Save &amp; Sync Walrus Memory
                 </Button>
@@ -565,7 +485,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between pb-4 border-b border-border/60">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-base text-foreground">Roles worth a closer look</h3>
-                  <Badge variant="secondary" className="text-[10px] font-mono text-emerald-600 bg-emerald-500/10">
+                  <Badge variant="secondary" className="text-xs font-mono text-emerald-600 bg-emerald-500/10">
                     Live Harvest
                   </Badge>
                 </div>
@@ -622,72 +542,56 @@ function DashboardContent() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     RESUME SCORE
                   </h3>
-                  <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                  <Badge variant="outline" className="text-xs font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
                     Grade {atsScorecard?.ats_grade || 'A+'}
                   </Badge>
                 </div>
 
                 <div className="flex items-center gap-6">
-                  {/* Big Circular Score Display */}
-                  <div className="relative w-24 h-24 rounded-full border-4 border-emerald-500/20 flex flex-col items-center justify-center shrink-0 bg-emerald-500/5 shadow-inner">
-                    <span className="text-3xl font-extrabold text-foreground">
-                      {atsScorecard?.overall_score || 94}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">/ 100</span>
-                  </div>
+                  {/* Dynamic Animated Circular Score Gauge */}
+                  <AnimatedScoreGauge
+                    score={atsScorecard?.overall_score || 94}
+                    size={96}
+                    strokeWidth={8}
+                  />
 
                   <div className="space-y-1">
                     <p className="font-bold text-sm text-foreground">Top 12% of resumes</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Strong fit. A few gaps show where targeted edits and Google XYZ metrics can help.
+                      Strong fit. A few targeted improvements and Google XYZ metrics will elevate your candidate ranking.
                     </p>
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
                       +12 points potential gain
                     </p>
                   </div>
                 </div>
 
-                {/* Horizontal ATS Breakdown Bars */}
-                <div className="space-y-3 pt-2 border-t border-border/60">
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>Role Match</span>
-                      <span className="text-emerald-500 font-mono">86%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '86%' }} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>Quantified Impact</span>
-                      <span className="text-amber-500 font-mono">78%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full" style={{ width: '78%' }} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>Production &amp; Systems</span>
-                      <span className="text-amber-500 font-mono">75%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-amber-500 rounded-full" style={{ width: '75%' }} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>Tech Skills</span>
-                      <span className="text-emerald-500 font-mono">92%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '92%' }} />
-                    </div>
-                  </div>
+                {/* Animated Horizontal ATS Breakdown Bars */}
+                <div className="space-y-3.5 pt-2 border-t border-border/60">
+                  <AnimatedProgressBar
+                    label="Role Match"
+                    value={86}
+                    colorClass="bg-emerald-500"
+                    delay={0.1}
+                  />
+                  <AnimatedProgressBar
+                    label="Quantified Impact"
+                    value={78}
+                    colorClass="bg-amber-500"
+                    delay={0.2}
+                  />
+                  <AnimatedProgressBar
+                    label="Production & Systems"
+                    value={75}
+                    colorClass="bg-amber-500"
+                    delay={0.3}
+                  />
+                  <AnimatedProgressBar
+                    label="Tech Skills"
+                    value={92}
+                    colorClass="bg-emerald-500"
+                    delay={0.4}
+                  />
                 </div>
 
                 {/* Direct Action Buttons */}
@@ -696,7 +600,7 @@ function DashboardContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsXRayOpen(true)}
-                    className="w-full text-xs font-semibold gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                    className="w-full text-xs font-semibold gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-9"
                   >
                     <Eye className="w-3.5 h-3.5" /> Launch ATS Robot X-Ray
                   </Button>
@@ -704,7 +608,7 @@ function DashboardContent() {
                     size="sm"
                     onClick={handleDownloadDocxResume}
                     disabled={isDownloadingDocx}
-                    className="w-full text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                    className="w-full text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-9"
                   >
                     <Download className="w-3.5 h-3.5" /> Download ATS Word (.docx)
                   </Button>
@@ -722,11 +626,11 @@ function DashboardContent() {
                       </div>
                       <div>
                         <h3 className="font-bold text-sm text-foreground">Career Ace AI Copilot</h3>
-                        <p className="text-[10px] text-muted-foreground">Autonomous agent powered by Walrus Sovereign Memory</p>
+                        <p className="text-xs text-muted-foreground">Autonomous agent powered by Walrus Sovereign Memory</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                      <ShieldCheck className="w-3 h-3 mr-1" /> zkLogin Isolated
+                    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1" /> zkLogin Isolated
                     </Badge>
                   </div>
 
@@ -744,6 +648,18 @@ function DashboardContent() {
                         {msg.content}
                       </div>
                     ))}
+                    {isSending && (
+                      <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-foreground flex items-center gap-2">
+                        <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                        <span className="text-xs text-muted-foreground">Career Ace is analyzing your query...</span>
+                        <span className="flex items-center gap-1 ml-auto">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
+                        </span>
+                      </div>
+                    )}
+                    <div ref={chatMessagesEndRef} />
                   </div>
 
                   {/* Quick Prompt Suggestions */}
@@ -751,7 +667,7 @@ function DashboardContent() {
                     {[
                       'Polish my bullet points with XYZ metrics',
                       'Check missing ATS keywords for Stripe',
-                      'Draft a cover letter for My personal wins',
+                      'Draft a cover letter for my personal wins',
                     ].map((prompt) => (
                       <button
                         key={prompt}
@@ -759,7 +675,7 @@ function DashboardContent() {
                         onClick={() => {
                           setChatInput(prompt)
                         }}
-                        className="text-[11px] px-2.5 py-1 rounded-full border border-border/80 bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        className="text-xs px-2.5 py-1 rounded-full border border-border/80 bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {prompt}
                       </button>
@@ -805,7 +721,7 @@ function DashboardContent() {
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                         <span className="font-medium text-foreground">Upload base CV and extract skills</span>
                       </div>
-                      <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">Verified</Badge>
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">Verified</Badge>
                     </div>
 
                     <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
@@ -813,7 +729,7 @@ function DashboardContent() {
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                         <span className="font-medium text-foreground">Walrus Sovereign Memory Vault Sealed (AES-256-GCM)</span>
                       </div>
-                      <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">Active</Badge>
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">Active</Badge>
                     </div>
 
                     <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
@@ -821,7 +737,7 @@ function DashboardContent() {
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                         <span className="font-medium text-foreground">Run ATS Robot X-Ray Diagnostics</span>
                       </div>
-                      <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">Grade A+</Badge>
+                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">Grade A+</Badge>
                     </div>
 
                     <div
@@ -830,7 +746,7 @@ function DashboardContent() {
                     >
                       <div className="flex items-center gap-2.5">
                         <span className="w-4 h-4 rounded-full border-2 border-muted-foreground/40 inline-block" />
-                        <span className="font-medium text-muted-foreground">Connect GitHub &amp; LinkedIn verified profiles</span>
+                        <span className="font-medium text-muted-foreground">Connect GitHub and LinkedIn verified profiles</span>
                       </div>
                       <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
@@ -849,508 +765,527 @@ function DashboardContent() {
                 </Card>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ── TAB 2: RESUMES (Dual-Mode: Upload & Fit Resume vs Document Diff Studio) ── */}
         {activeTab === 'resumes' && (
           <div className="space-y-6">
-            {/* VIEW MODE 1: UPLOAD & FIT RESUME (matching frame 15) */}
-            {resumeViewMode === 'upload' ? (
-              <div className="space-y-8">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Upload your resume</h1>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setResumeViewMode('editor')}
-                      className="text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      View current draft <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Drop your file, choose an ATS-optimized template, and we'll fit your content into a clean editable resume.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                  {/* Left Column: Drag & Drop Zone */}
-                  <div className="lg:col-span-7 space-y-4">
-                    <Card
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-12 border-2 border-dashed border-border/80 hover:border-emerald-500/60 rounded-3xl bg-card hover:bg-muted/10 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[300px]"
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-muted-foreground group-hover:text-emerald-500">
-                        <Upload className="w-7 h-7" />
-                      </div>
-                      <p className="text-base font-bold text-foreground mb-1">
-                        {selectedFile ? selectedFile.name : 'Drag your resume here'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        or <span className="text-emerald-600 dark:text-emerald-400 font-semibold underline underline-offset-2">browse files</span>
-                      </p>
-                      <span className="text-[11px] font-mono text-muted-foreground/70 tracking-wider uppercase">
-                        PDF · DOC · DOCX · Max 10 MB
-                      </span>
-                    </Card>
-
-                    <div className="flex items-center gap-3">
+            <AnimatePresence mode="wait">
+              {/* VIEW MODE 1: UPLOAD & FIT RESUME */}
+              {resumeViewMode === 'upload' ? (
+                <motion.div
+                  key="upload"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-8"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Upload your resume</h1>
                       <Button
-                        size="lg"
-                        onClick={() => {
-                          if (selectedFile) {
-                            handleFileSelect(selectedFile)
-                          }
-                          setResumeViewMode('editor')
-                          toast.success('Resume fitted into clean ATS-ready draft!')
-                        }}
-                        className="flex-1 font-semibold text-xs gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-11"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setResumeViewMode('editor')}
+                        className="text-xs text-muted-foreground hover:text-foreground"
                       >
-                        <FileText className="w-4 h-4" /> Fit resume
+                        View current draft <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Drop your file, choose an ATS-optimized template, and we'll fit your content into a clean editable resume.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Left Column: Drag & Drop Zone */}
+                    <div className="lg:col-span-7 space-y-4">
+                      <Card
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-12 border-2 border-dashed border-border/80 hover:border-emerald-500/60 rounded-3xl bg-card hover:bg-muted/10 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[300px]"
+                      >
+                        <div className="w-16 h-16 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-muted-foreground group-hover:text-emerald-500">
+                          <Upload className="w-7 h-7" />
+                        </div>
+                        <p className="text-base font-bold text-foreground mb-1">
+                          {selectedFile ? selectedFile.name : 'Drag your resume here'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          or <span className="text-emerald-600 dark:text-emerald-400 font-semibold underline underline-offset-2">browse files</span>
+                        </p>
+                        <span className="text-xs font-mono text-muted-foreground/70 tracking-wider uppercase">
+                          PDF · DOC · DOCX · Max 10 MB
+                        </span>
+                      </Card>
+
+                      <div className="flex items-center gap-3">
+                        <Button
+                          size="lg"
+                          onClick={() => {
+                            if (selectedFile) {
+                              handleFileSelect(selectedFile)
+                            }
+                            setResumeViewMode('editor')
+                            toast.success('Resume fitted into clean ATS-ready draft!')
+                          }}
+                          className="flex-1 font-semibold text-xs gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-11"
+                        >
+                          <FileText className="w-4 h-4" /> Fit resume
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => setResumeViewMode('editor')}
+                          className="text-xs font-semibold rounded-xl h-11 px-5"
+                        >
+                          Skip to editor
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Right Column: WHAT HAPPENS NEXT Guide Card */}
+                    <Card className="lg:col-span-5 p-7 border border-border/80 rounded-3xl bg-card space-y-6 shadow-sm">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        WHAT HAPPENS NEXT
+                      </h3>
+
+                      <div className="space-y-5 text-xs">
+                        <div className="flex items-start gap-3.5">
+                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
+                            1
+                          </span>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-xs">Pick a template</span>
+                              <span className="text-xs text-muted-foreground font-mono">you choose</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                              ATS-optimized layouts built for scanners.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3.5">
+                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
+                            2
+                          </span>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-xs">We fit your resume to it</span>
+                              <span className="text-xs text-muted-foreground font-mono">~5 sec</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                              Your content reformatted, clean and structured.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3.5">
+                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
+                            3
+                          </span>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-xs">Review the draft</span>
+                              <span className="text-xs text-muted-foreground font-mono">you review</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                              Check the parsed sections and diffs before scanning.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3.5">
+                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
+                            4
+                          </span>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-xs">Run ATS scan</span>
+                              <span className="text-xs text-muted-foreground font-mono">on click</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                              Trigger score, breakdown, and AI rewrites.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-foreground text-background dark:bg-muted dark:text-foreground flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <p className="text-xs font-semibold leading-snug">
+                          Your ATS-friendly draft is ready first. Scan it when you're ready.
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground text-center">
+                        Never shared, sold, or used to train models. Sovereign Walrus encryption.
+                      </p>
+                    </Card>
+                  </div>
+                </motion.div>
+              ) : (
+                /* VIEW MODE 2: DOCUMENT DIFF STUDIO & AI COPILOT */
+                <motion.div
+                  key="editor"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-4"
+                >
+                  {/* Top Action Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setResumeViewMode('upload')}
+                        className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-8 px-2"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" /> Switch resume
+                      </Button>
+                      <Badge variant="outline" className="text-xs font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                        ATS Ready · 94/100
+                      </Badge>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsXRayOpen(true)}
+                        className="text-xs gap-1.5 h-8 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> ATS X-Ray
                       </Button>
                       <Button
                         variant="outline"
-                        size="lg"
-                        onClick={() => setResumeViewMode('editor')}
-                        className="text-xs font-semibold rounded-xl h-11 px-5"
+                        size="sm"
+                        onClick={handleExportJsonResume}
+                        className="text-xs gap-1.5 h-8"
                       >
-                        Skip to editor
+                        <FileCode className="w-3.5 h-3.5" /> JSON Resume
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadDocxResume}
+                        disabled={isDownloadingDocx}
+                        className="text-xs gap-1.5 h-8"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download .docx
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleDownloadDocxResume}
+                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Export PDF
                       </Button>
                     </div>
                   </div>
 
-                  {/* Right Column: WHAT HAPPENS NEXT Guide Card */}
-                  <Card className="lg:col-span-5 p-7 border border-border/80 rounded-3xl bg-card space-y-6 shadow-sm">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      WHAT HAPPENS NEXT
-                    </h3>
-
-                    <div className="space-y-5 text-xs">
-                      <div className="flex items-start gap-3.5">
-                        <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-[11px] text-muted-foreground">
-                          1
-                        </span>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">Pick a template</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">you choose</span>
-                          </div>
-                          <p className="text-muted-foreground text-[11px] leading-relaxed">
-                            ATS-optimized layouts built for scanners.
-                          </p>
+                  {/* 2-Column Canvas: Document on Left (8 cols), AI Copilot on Right (4 cols) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Left Column: Clean Resume Paper Canvas */}
+                    <Card className="lg:col-span-8 p-8 md:p-10 border border-border/80 shadow-md rounded-2xl bg-card space-y-6 font-sans">
+                      {/* Header */}
+                      <div className="border-b pb-5 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
+                            {parsedProfile?.applicant_name || 'Ryan Park'}
+                          </h2>
+                          <button
+                            onClick={() => {
+                              const newName = prompt('Enter candidate name:', parsedProfile?.applicant_name || 'Ryan Park')
+                              if (newName) setParsedProfile({ ...parsedProfile, applicant_name: newName })
+                            }}
+                            className="text-xs text-muted-foreground hover:text-emerald-500 font-medium"
+                          >
+                            Edit
+                          </button>
                         </div>
-                      </div>
-
-                      <div className="flex items-start gap-3.5">
-                        <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-[11px] text-muted-foreground">
-                          2
-                        </span>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">We fit your resume to it</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">~5 sec</span>
-                          </div>
-                          <p className="text-muted-foreground text-[11px] leading-relaxed">
-                            Your content reformatted, clean and structured.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3.5">
-                        <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-[11px] text-muted-foreground">
-                          3
-                        </span>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">Review the draft</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">you review</span>
-                          </div>
-                          <p className="text-muted-foreground text-[11px] leading-relaxed">
-                            Check the parsed sections and diffs before scanning.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3.5">
-                        <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-[11px] text-muted-foreground">
-                          4
-                        </span>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground">Run ATS scan</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">on click</span>
-                          </div>
-                          <p className="text-muted-foreground text-[11px] leading-relaxed">
-                            Trigger score, breakdown, and AI rewrites.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-foreground text-background dark:bg-muted dark:text-foreground flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <p className="text-xs font-semibold leading-snug">
-                        Your ATS-friendly draft is ready first. Scan it when you're ready.
-                      </p>
-                    </div>
-
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      Never shared, sold, or used to train models. Sovereign Walrus encryption.
-                    </p>
-                  </Card>
-                </div>
-              </div>
-            ) : (
-              /* VIEW MODE 2: DOCUMENT DIFF STUDIO & AI COPILOT (matching frame 6) */
-              <div className="space-y-4">
-                {/* Top Action Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setResumeViewMode('upload')}
-                      className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-8 px-2"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" /> Switch resume
-                    </Button>
-                    <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                      ATS Ready · 94/100
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsXRayOpen(true)}
-                      className="text-xs gap-1.5 h-8 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> ATS X-Ray
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleExportJsonResume}
-                      className="text-xs gap-1.5 h-8"
-                    >
-                      <FileCode className="w-3.5 h-3.5" /> JSON Resume
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownloadDocxResume}
-                      disabled={isDownloadingDocx}
-                      className="text-xs gap-1.5 h-8"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Download .docx
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleDownloadDocxResume}
-                      className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Export PDF
-                    </Button>
-                  </div>
-                </div>
-
-                {/* 2-Column Canvas: Document on Left (8 cols), AI Copilot on Right (4 cols) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* Left Column: Clean Resume Paper Canvas */}
-                  <Card className="lg:col-span-8 p-8 md:p-10 border border-border/80 shadow-md rounded-2xl bg-card space-y-6 font-sans">
-                    {/* Header */}
-                    <div className="border-b pb-5 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
-                          {parsedProfile?.applicant_name || 'Ryan Park'}
-                        </h2>
-                        <button
-                          onClick={() => {
-                            const newName = prompt('Enter candidate name:', parsedProfile?.applicant_name || 'Ryan Park')
-                            if (newName) setParsedProfile({ ...parsedProfile, applicant_name: newName })
-                          }}
-                          className="text-xs text-muted-foreground hover:text-emerald-500 font-medium"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {parsedProfile?.contact_email || 'ryan@ryanpark.dev'} · {parsedProfile?.contact_phone || '+1 (415) 482-3910'} · Austin, TX · <span className="text-emerald-600 dark:text-emerald-400 font-medium">GitHub</span> · <span className="text-emerald-600 dark:text-emerald-400 font-medium">LinkedIn</span>
-                      </p>
-                    </div>
-
-                    {/* Section: EXPERIENCE */}
-                    <div className="space-y-5">
-                      <div className="flex items-center gap-2 border-b pb-1">
-                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">EXPERIENCE</h3>
-                        <span className="text-[10px] text-muted-foreground font-mono">5</span>
-                      </div>
-
-                      {/* Role 1 */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-baseline text-xs">
-                          <span className="font-bold text-foreground">Content Creator · ryanpark.dev</span>
-                          <span className="text-muted-foreground font-mono text-[11px]">Sept 2024 – Present</span>
-                        </div>
-
-                        {acceptedEdits['c1'] === 'accepted' ? (
-                          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-                            Scaled technical brand to 200K+ followers by architecting automated content distribution pipelines and data-driven engagement strategies, leveraging full-stack design and video production expertise.
-                          </div>
-                        ) : acceptedEdits['c1'] === 'rejected' ? (
-                          <p className="text-xs text-muted-foreground">
-                            Grew to 200K+ followers across platforms in under a year — scaled entirely organically and led all content strategy, production, and distribution solo, leveraging 6+ years of self-taught video editing and design experience.
-                          </p>
-                        ) : (
-                          <div className="space-y-1.5">
-                            <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
-                              - Grew to 200K+ followers across platforms in under a year — scaled entirely organically and led all content strategy, production, and distribution solo, leveraging 6+ years of self-taught video editing and design experience.
-                            </p>
-                            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                              <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium">
-                                + Scaled technical brand to 200K+ followers by architecting automated content distribution pipelines and data-driven engagement strategies, leveraging full-stack design and video production expertise.
-                              </p>
-                              <div className="flex items-center gap-2 pt-1">
-                                <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Content Creator audience scale')} className="h-6 text-[10px] gap-1 px-2">
-                                  <MessageSquare className="w-3 h-3" /> Discuss
-                                </Button>
-                                <Button size="sm" onClick={() => handleAcceptEdit('c1')} className="h-6 text-[10px] gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2">
-                                  <Check className="w-3 h-3" /> Accept
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c1')} className="h-6 text-[10px] text-red-500 hover:bg-red-500/10 px-2">
-                                  <X className="w-3 h-3" /> Reject
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Role 2 */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-baseline text-xs">
-                          <span className="font-bold text-foreground">Software Engineer II · Stripe</span>
-                          <span className="text-muted-foreground font-mono text-[11px]">Jan 2025 – Present</span>
-                        </div>
-
-                        {acceptedEdits['c2'] === 'accepted' ? (
-                          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-                            Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers and enabling real-time analytics.
-                          </div>
-                        ) : acceptedEdits['c2'] === 'rejected' ? (
-                          <p className="text-xs text-muted-foreground">
-                            Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median build times by ~40% across 10,000+ daily active engineers.
-                          </p>
-                        ) : (
-                          <div className="space-y-1.5 relative">
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-foreground text-background dark:bg-muted text-[10px] font-semibold mb-1 shadow-sm">
-                              <Sparkles className="w-2.5 h-2.5 text-emerald-400" /> Adds metric, scope, and technical ownership.
-                            </div>
-                            <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
-                              - Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median build times by ~40% across 10,000+ daily active engineers.
-                            </p>
-                            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                              <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium">
-                                + Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers and enabling real-time analytics.
-                              </p>
-                              <div className="flex items-center gap-2 pt-1">
-                                <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Stripe batch processing and latency')} className="h-6 text-[10px] gap-1 px-2">
-                                  <MessageSquare className="w-3 h-3" /> Discuss
-                                </Button>
-                                <Button size="sm" onClick={() => handleAcceptEdit('c2')} className="h-6 text-[10px] gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2">
-                                  <Check className="w-3 h-3" /> Accept
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c2')} className="h-6 text-[10px] text-red-500 hover:bg-red-500/10 px-2">
-                                  <X className="w-3 h-3" /> Reject
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Role 3 */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-baseline text-xs">
-                          <span className="font-bold text-foreground">Software Engineering Intern · Figma</span>
-                          <span className="text-muted-foreground font-mono text-[11px]">June 2024 – Sept 2024</span>
-                        </div>
-
-                        {acceptedEdits['c3'] === 'accepted' ? (
-                          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-                            Built a TypeScript-based internal tooling layer for automated data pipeline provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team, exposed via REST APIs.
-                          </div>
-                        ) : (
-                          <div className="space-y-1.5">
-                            <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
-                              - Built a TypeScript-based internal tooling layer for automated workspace provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team.
-                            </p>
-                            <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                              <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium">
-                                + Built a TypeScript-based internal tooling layer for automated data pipeline provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team, exposed via REST APIs.
-                              </p>
-                              <div className="flex items-center gap-2 pt-1">
-                                <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Figma pipeline orchestration')} className="h-6 text-[10px] gap-1 px-2">
-                                  <MessageSquare className="w-3 h-3" /> Discuss
-                                </Button>
-                                <Button size="sm" onClick={() => handleAcceptEdit('c3')} className="h-6 text-[10px] gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2">
-                                  <Check className="w-3 h-3" /> Accept
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c3')} className="h-6 text-[10px] text-red-500 hover:bg-red-500/10 px-2">
-                                  <X className="w-3 h-3" /> Reject
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Section: PROJECTS */}
-                    <div className="space-y-3 pt-3 border-t">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">PROJECTS</h3>
-                        <span className="text-[10px] text-muted-foreground font-mono">1</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-baseline text-xs">
-                          <span className="font-bold text-foreground">Payments Reliability Dashboard</span>
-                          <span className="text-muted-foreground font-mono text-[11px]">2024</span>
-                        </div>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-foreground text-background dark:bg-muted text-[10px] font-semibold shadow-sm">
-                          <Sparkles className="w-2.5 h-2.5 text-emerald-400" /> Connects technical work to product value.
-                        </div>
-                        <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
-                          - Created a dashboard for reliability metrics.
-                        </p>
-                        <p className="text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 font-medium">
-                          + Created a real-time reliability dashboard that surfaced payment failures 35% faster for on-call teams.
+                        <p className="text-xs text-muted-foreground">
+                          {parsedProfile?.contact_email || 'ryan@ryanpark.dev'} · {parsedProfile?.contact_phone || '+1 (415) 482-3910'} · Austin, TX · <span className="text-emerald-600 dark:text-emerald-400 font-medium">GitHub</span> · <span className="text-emerald-600 dark:text-emerald-400 font-medium">LinkedIn</span>
                         </p>
                       </div>
-                    </div>
 
-                    {/* Section: SKILLS */}
-                    <div className="space-y-3 pt-3 border-t">
-                      <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">SKILLS</h3>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-foreground text-background dark:bg-muted text-[10px] font-semibold shadow-sm">
-                        <Sparkles className="w-2.5 h-2.5 text-emerald-400" /> Groups skills around the target role.
+                      {/* Section: EXPERIENCE */}
+                      <div className="space-y-5">
+                        <div className="flex items-center gap-2 border-b pb-1">
+                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">EXPERIENCE</h3>
+                          <span className="text-xs text-muted-foreground font-mono">5</span>
+                        </div>
+
+                        {/* Role 1 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline text-xs">
+                            <span className="font-bold text-sm text-foreground">Content Creator · ryanpark.dev</span>
+                            <span className="text-muted-foreground font-mono text-xs">Sept 2024 · Present</span>
+                          </div>
+
+                          {acceptedEdits['c1'] === 'accepted' ? (
+                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
+                              Scaled technical brand to 200K+ followers by architecting automated content distribution pipelines and data-driven engagement strategies, leveraging full-stack design and video production expertise.
+                            </div>
+                          ) : acceptedEdits['c1'] === 'rejected' ? (
+                            <p className="text-xs text-muted-foreground">
+                              Grew to 200K+ followers across platforms in under a year, scaling entirely organically and leading all content strategy, production, and distribution solo, leveraging 6+ years of video editing and design experience.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
+                                Grew to 200K+ followers across platforms in under a year, scaling entirely organically and leading all content strategy, production, and distribution solo, leveraging 6+ years of video editing and design experience.
+                              </p>
+                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                                <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
+                                  Scaled technical brand to 200K+ followers by architecting automated content distribution pipelines and data-driven engagement strategies, leveraging full-stack design and video production expertise.
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Content Creator audience scale')} className="h-7 text-xs font-semibold gap-1 px-2.5">
+                                    <MessageSquare className="w-3.5 h-3.5" /> Discuss
+                                  </Button>
+                                  <Button size="sm" onClick={() => handleAcceptEdit('c1')} className="h-7 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5">
+                                    <Check className="w-3.5 h-3.5" /> Accept
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c1')} className="h-7 text-xs font-semibold text-red-500 hover:bg-red-500/10 px-2.5">
+                                    <X className="w-3.5 h-3.5" /> Reject
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Role 2 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline text-xs">
+                            <span className="font-bold text-sm text-foreground">Software Engineer II · Stripe</span>
+                            <span className="text-muted-foreground font-mono text-xs">Jan 2025 · Present</span>
+                          </div>
+
+                          {acceptedEdits['c2'] === 'accepted' ? (
+                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
+                              Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers and enabling real-time analytics.
+                            </div>
+                          ) : acceptedEdits['c2'] === 'rejected' ? (
+                            <p className="text-xs text-muted-foreground">
+                              Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median build times by ~40% across 10,000+ daily active engineers.
+                            </p>
+                          ) : (
+                            <div className="space-y-2 relative">
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-foreground text-background dark:bg-muted text-xs font-semibold mb-1 shadow-sm">
+                                <Sparkles className="w-3 h-3 text-emerald-400" /> Adds metric, scope, and technical ownership.
+                              </div>
+                              <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
+                                Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median build times by ~40% across 10,000+ daily active engineers.
+                              </p>
+                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                                <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
+                                  Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers and enabling real-time analytics.
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Stripe batch processing and latency')} className="h-7 text-xs font-semibold gap-1 px-2.5">
+                                    <MessageSquare className="w-3.5 h-3.5" /> Discuss
+                                  </Button>
+                                  <Button size="sm" onClick={() => handleAcceptEdit('c2')} className="h-7 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5">
+                                    <Check className="w-3.5 h-3.5" /> Accept
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c2')} className="h-7 text-xs font-semibold text-red-500 hover:bg-red-500/10 px-2.5">
+                                    <X className="w-3.5 h-3.5" /> Reject
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Role 3 */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline text-xs">
+                            <span className="font-bold text-sm text-foreground">Software Engineering Intern · Figma</span>
+                            <span className="text-muted-foreground font-mono text-xs">June 2024 · Sept 2024</span>
+                          </div>
+
+                          {acceptedEdits['c3'] === 'accepted' ? (
+                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
+                              Built a TypeScript-based internal tooling layer for automated data pipeline provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team, exposed via REST APIs.
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
+                                Built a TypeScript-based internal tooling layer for automated workspace provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team.
+                              </p>
+                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                                <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
+                                  Built a TypeScript-based internal tooling layer for automated data pipeline provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team, exposed via REST APIs.
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Figma pipeline orchestration')} className="h-7 text-xs font-semibold gap-1 px-2.5">
+                                    <MessageSquare className="w-3.5 h-3.5" /> Discuss
+                                  </Button>
+                                  <Button size="sm" onClick={() => handleAcceptEdit('c3')} className="h-7 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5">
+                                    <Check className="w-3.5 h-3.5" /> Accept
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c3')} className="h-7 text-xs font-semibold text-red-500 hover:bg-red-500/10 px-2.5">
+                                    <X className="w-3.5 h-3.5" /> Reject
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2 rounded-lg border border-red-500/10">
-                        - JavaScript, Python, SQL, AWS, Docker, React, Redis
-                      </p>
-                      <p className="text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 font-medium">
-                        + Backend: Go, Python, TypeScript | Infra: Kubernetes, AWS | Data: PostgreSQL, Redis, gRPC
-                      </p>
-                    </div>
-                  </Card>
 
-                  {/* Right Column: Career Ace AI Copilot Panel */}
-                  <div className="lg:col-span-4 space-y-4">
-                    <Card className="p-5 border border-border/80 rounded-2xl bg-card space-y-4 shadow-sm">
-                      <div className="flex items-center justify-between pb-3 border-b">
+                      {/* Section: PROJECTS */}
+                      <div className="space-y-3 pt-3 border-t">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-                            <Bot className="w-4 h-4" />
+                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">PROJECTS</h3>
+                          <span className="text-xs text-muted-foreground font-mono">1</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-baseline text-xs">
+                            <span className="font-bold text-sm text-foreground">Payments Reliability Dashboard</span>
+                            <span className="text-muted-foreground font-mono text-xs">2024</span>
                           </div>
-                          <div>
-                            <h3 className="font-bold text-xs text-foreground">Career Ace AI</h3>
-                            <p className="text-[10px] text-muted-foreground">Sovereign resume editor</p>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-foreground text-background dark:bg-muted text-xs font-semibold shadow-sm">
+                            <Sparkles className="w-3 h-3 text-emerald-400" /> Connects technical work to product value.
                           </div>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
-                          Live
-                        </Badge>
-                      </div>
-
-                      {/* Chat Messages Stream */}
-                      <div className="space-y-3 text-xs">
-                        <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-2">
-                          <p className="font-medium text-foreground">
-                            Hi {parsedProfile?.applicant_name?.split(' ')[0] || 'Ryan'} 👋
+                          <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
+                            Created a dashboard for reliability metrics.
                           </p>
-                          <p className="text-muted-foreground leading-relaxed text-[11px]">
-                            I'm Career Ace, your resume editor. Your resume scored <strong className="text-foreground">76/100</strong> for ATS — a solid base with clear wins ahead.
+                          <p className="text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 font-medium leading-relaxed">
+                            Created a real-time reliability dashboard that surfaced payment failures 35% faster for on-call teams.
                           </p>
-                          <p className="text-muted-foreground leading-relaxed text-[11px]">
-                            I found 4 high-impact fixes, focused on measurable impact and experience impact.
-                          </p>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                            ↑ 4 edits added
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
-                          <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5" /> Pasted job description: Software Engineer
-                          </p>
-                          <p className="text-muted-foreground leading-relaxed text-[11px]">
-                            I've added data pipeline and real-time streaming language to your Stripe and Figma bullets, boosting ATS readiness to 94%.
-                          </p>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                            ↑ 5 edits added
-                          </span>
                         </div>
                       </div>
 
-                      {/* Suggestion Chips */}
-                      <div className="space-y-1.5 pt-2 border-t">
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Suggestions</p>
-                        <div className="space-y-1">
-                          {[
-                            'Add data volume metrics',
-                            'Mention unit testing',
-                            'Include data quality validation'
-                          ].map((chip) => (
-                            <button
-                              key={chip}
-                              onClick={() => handleChipClick(chip)}
-                              className="w-full text-left text-xs p-2 rounded-lg border border-border/70 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between group"
-                            >
-                              <span>{chip}</span>
-                              <ArrowRight className="w-3 h-3 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
-                            </button>
-                          ))}
+                      {/* Section: SKILLS */}
+                      <div className="space-y-3 pt-3 border-t">
+                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">SKILLS</h3>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-foreground text-background dark:bg-muted text-xs font-semibold shadow-sm">
+                          <Sparkles className="w-3 h-3 text-emerald-400" /> Groups skills around the target role.
                         </div>
-                      </div>
-
-                      {/* Chat Input */}
-                      <div className="pt-2 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && chatInput.trim()) {
-                              handleSendChatMessage()
-                            }
-                          }}
-                          placeholder="Ask Career Ace for an edit..."
-                          className="flex-1 h-9 px-3 rounded-xl border bg-background text-xs"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={handleSendChatMessage}
-                          disabled={!chatInput.trim()}
-                          className="h-9 w-9 p-0 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                        </Button>
+                        <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
+                          JavaScript, Python, SQL, AWS, Docker, React, Redis
+                        </p>
+                        <p className="text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 font-medium leading-relaxed">
+                          Backend: Go, Python, TypeScript | Infra: Kubernetes, AWS | Data: PostgreSQL, Redis, gRPC
+                        </p>
                       </div>
                     </Card>
+
+                    {/* Right Column: Career Ace AI Copilot Panel */}
+                    <div className="lg:col-span-4 space-y-4">
+                      <Card className="p-5 border border-border/80 rounded-2xl bg-card space-y-4 shadow-sm">
+                        <div className="flex items-center justify-between pb-3 border-b">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+                              <Bot className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-xs text-foreground">Career Ace AI</h3>
+                              <p className="text-xs text-muted-foreground">Sovereign resume editor</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1" />
+                            Live
+                          </Badge>
+                        </div>
+
+                        {/* Chat Messages Stream */}
+                        <div className="space-y-3 text-xs">
+                          <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-2">
+                            <p className="font-medium text-foreground">
+                              Hi {parsedProfile?.applicant_name?.split(' ')[0] || 'Ryan'} 👋
+                            </p>
+                            <p className="text-muted-foreground leading-relaxed text-xs">
+                              I'm Career Ace, your resume editor. Your resume scored <strong className="text-foreground">{atsScorecard?.overall_score || 94}/100</strong> for ATS readiness.
+                            </p>
+                            <p className="text-muted-foreground leading-relaxed text-xs">
+                              I found 4 high-impact fixes focused on measurable metrics and quantified delivery.
+                            </p>
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
+                              ↑ {appliedCount} of 4 edits applied
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5" /> Pasted job description: Software Engineer
+                            </p>
+                            <p className="text-muted-foreground leading-relaxed text-xs">
+                              I've added data pipeline and real-time streaming language to your Stripe and Figma bullets, boosting ATS readiness to 94%.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Suggestion Chips */}
+                        <div className="space-y-1.5 pt-2 border-t">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Suggestions</p>
+                          <div className="space-y-1">
+                            {[
+                              'Add data volume metrics',
+                              'Mention unit testing',
+                              'Include data quality validation'
+                            ].map((chip) => (
+                              <button
+                                key={chip}
+                                onClick={() => handleChipClick(chip)}
+                                className="w-full text-left text-xs p-2 rounded-lg border border-border/70 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between group"
+                              >
+                                <span>{chip}</span>
+                                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Chat Input */}
+                        <div className="pt-2 flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && chatInput.trim()) {
+                                handleSendMessage()
+                              }
+                            }}
+                            placeholder="Ask Career Ace for an edit..."
+                            className="flex-1 h-9 px-3 rounded-xl border bg-background text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSendMessage}
+                            disabled={!chatInput.trim() || isSending}
+                            className="h-9 w-9 p-0 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
-        {/* ── TAB 3: COVER LETTERS (Automated Cover Letter Studio) ── */}
+        {/* ── TAB 3: COVER LETTERS ── */}
         {(activeTab === 'cover_letters' || activeTab === 'tailored') && (
-          <div className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
             <div className="pb-4 border-b">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
               <p className="text-xs text-muted-foreground mt-1">
@@ -1365,7 +1300,7 @@ function DashboardContent() {
 
                 <div className="space-y-4 text-xs">
                   <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Target Company</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">Target Company</label>
                     <input
                       type="text"
                       value={tailorCompany}
@@ -1376,7 +1311,7 @@ function DashboardContent() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">Target Role</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">Target Role</label>
                     <input
                       type="text"
                       value={tailorRole}
@@ -1387,7 +1322,7 @@ function DashboardContent() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-2">Problem-Solving Angle</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-2">Problem-Solving Angle</label>
                     <div className="space-y-2">
                       {[
                         { id: 'systems', title: 'Technical Scaling & Systems Architecture', desc: 'Focuses on 2M+ RPS throughput, latency reduction, and reliability.' },
@@ -1404,7 +1339,7 @@ function DashboardContent() {
                           }`}
                         >
                           <span className="font-semibold block text-xs">{angle.title}</span>
-                          <span className="text-[11px]">{angle.desc}</span>
+                          <span className="text-xs text-muted-foreground">{angle.desc}</span>
                         </div>
                       ))}
                     </div>
@@ -1427,7 +1362,7 @@ function DashboardContent() {
                     <Mail className="w-4 h-4 text-emerald-500" />
                     <h3 className="font-bold text-sm text-foreground">Generated Cover Letter</h3>
                   </div>
-                  <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">
+                  <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
                     Dated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </Badge>
                 </div>
@@ -1436,7 +1371,7 @@ function DashboardContent() {
                   {tailoredCoverLetterText || (
                     <div className="text-center py-16 space-y-2 text-muted-foreground">
                       <Mail className="w-8 h-8 text-emerald-500 mx-auto" />
-                      <p className="font-semibold text-foreground">No cover letter drafted yet</p>
+                      <p className="font-semibold text-foreground text-sm">No cover letter drafted yet</p>
                       <p className="text-xs">
                         Configure the parameters on the left and click Generate to produce a role-tailored letter.
                       </p>
@@ -1479,12 +1414,17 @@ function DashboardContent() {
                 )}
               </Card>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ── TAB 4: PROFILES (GitHub & LinkedIn) ── */}
         {(activeTab === 'github' || activeTab === 'linkedin') && (
-          <div className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
             <div className="pb-4 border-b">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Verified Candidate Profiles</h1>
               <p className="text-xs text-muted-foreground mt-1">
@@ -1509,7 +1449,7 @@ function DashboardContent() {
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">GitHub Username</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">GitHub Username</label>
                     <input
                       type="text"
                       value={githubUsername}
@@ -1521,9 +1461,9 @@ function DashboardContent() {
                   <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-1.5">
                     <div className="flex justify-between font-semibold text-emerald-600 dark:text-emerald-400">
                       <span>Status: Connected</span>
-                      <span className="font-mono text-[10px]">14 Public Repos</span>
+                      <span className="font-mono text-xs">14 Public Repos</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Top Languages: TypeScript (54%), Python (26%), Go (12%), Rust (8%)
                     </p>
                   </div>
@@ -1554,7 +1494,7 @@ function DashboardContent() {
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="text-[11px] font-semibold text-muted-foreground block mb-1">LinkedIn Profile URL</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">LinkedIn Profile URL</label>
                     <input
                       type="text"
                       value={linkedinUrl}
@@ -1566,9 +1506,9 @@ function DashboardContent() {
                   <div className="p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-1.5">
                     <div className="flex justify-between font-semibold text-blue-600 dark:text-blue-400">
                       <span>Status: Synced</span>
-                      <span className="font-mono text-[10px]">3 Verified Endorsements</span>
+                      <span className="font-mono text-xs">3 Verified Endorsements</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Career Passport deep-link enabled for recruiter one-click verification.
                     </p>
                   </div>
@@ -1584,7 +1524,7 @@ function DashboardContent() {
                 </div>
               </Card>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ATS X-Ray Modal Component */}

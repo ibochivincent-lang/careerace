@@ -112,7 +112,7 @@ export function ChatdeckFeatures() {
                   </span>
                 </div>
 
-                <Badge variant="secondary" className="text-[10px] uppercase font-bold text-emerald-600 bg-emerald-500/10">
+                <Badge variant="secondary" className="text-xs uppercase font-bold text-emerald-600 bg-emerald-500/10">
                   {step.badge}
                 </Badge>
 
@@ -192,17 +192,17 @@ export function ChatdeckFeatures() {
             {/* Letter Preview Mockup */}
             <div className="p-5 rounded-xl border border-border/80 bg-background shadow-inner space-y-4 text-xs relative">
               <div className="flex flex-wrap items-center gap-2 pb-3 border-b">
-                <Badge variant="secondary" className="text-[10px]">Google</Badge>
-                <Badge variant="secondary" className="text-[10px]">Staff Engineer, Infrastructure</Badge>
-                <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">Alex_Chen_Resume.pdf</Badge>
+                <Badge variant="secondary" className="text-xs">Google</Badge>
+                <Badge variant="secondary" className="text-xs">Staff Engineer, Infrastructure</Badge>
+                <Badge variant="outline" className="text-xs text-muted-foreground font-mono">Alex_Chen_Resume.pdf</Badge>
               </div>
 
               {/* Floating Metric Callout */}
-              <div className="inline-block p-2 rounded-lg bg-emerald-600 text-white text-[11px] font-medium shadow-md shadow-emerald-600/30">
+              <div className="inline-block p-2 rounded-lg bg-emerald-600 text-white text-xs font-medium shadow-md shadow-emerald-600/30">
                 Pulls the 2M+ RPS metric from your resume.
               </div>
 
-              <div className="space-y-2 text-muted-foreground text-[11px] leading-relaxed">
+              <div className="space-y-2 text-muted-foreground text-xs leading-relaxed">
                 <p className="font-semibold text-foreground">Dear Google Infrastructure Hiring Team,</p>
                 <p>
                   I build the high-throughput systems this role owns. At Stripe, I designed distributed backend services that handle <strong>2M+ requests per second</strong>, and led the team that cut payment p99 latency by 45ms for enterprise tier accounts.
