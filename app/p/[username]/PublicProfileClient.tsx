@@ -39,26 +39,14 @@ export function PublicProfileClient({
     setIsContacting(true)
     const toastId = toast.loading('Sending inquiry to candidate...')
     try {
-      // Fire Zapier notification if candidate has zapier webhook configured or through internal router
-      const storedZapier = typeof window !== 'undefined' ? localStorage.getItem('careerace_zapier_webhook') : null
-      const res = await fetch('/api/zapier/trigger', {
+      // Dispatch direct inquiry notification email to candidate
+      const res = await fetch('/api/email/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          event: 'reminder_alert',
-          webhook_url: storedZapier || undefined,
-          candidate: {
-            username,
-            target_role: role,
-          },
-          data: {
-            alert_type: 'recruiter_inquiry',
-            recruiter_name: recruiterName,
-            recruiter_email: recruiterEmail,
-            recruiter_company: recruiterCompany,
-            message: recruiterMessage || 'Recruiter viewed your verified Career Ace Passport and requested an introduction.',
-            profile_url: typeof window !== 'undefined' ? window.location.href : '',
-          },
+          to: 'notifications@careerace.online',
+          subject: `New Recruiter Opportunity from ${recruiterName} (${recruiterCompany || 'Direct'}) for ${username}`,
+          message: `${recruiterName} (${recruiterEmail}) sent a message:\n\n"${recruiterMessage || 'Interested in connecting.'}"\n\nCandidate: ${username} (${role})\nPassport: ${typeof window !== 'undefined' ? window.location.href : ''}`,
         }),
       })
 
