@@ -34,12 +34,19 @@ interface WorkExperienceItem {
   duration?: string
 }
 
+interface VideoDemoItem {
+  title: string
+  url: string
+  platform: 'loom' | 'youtube' | 'vimeo' | 'other'
+}
+
 interface AccomplishmentsData {
   address: string | null
   skills: string[]
   targetRoles: string[]
   experience: WorkExperienceItem[]
   certifications: string[]
+  videos: VideoDemoItem[]
   applicationsCount: number
   isLoading: boolean
 }
@@ -52,6 +59,10 @@ export default function ProgressPage() {
     targetRoles: [],
     experience: [],
     certifications: [],
+    videos: [
+      { title: 'Fullstack Microservices Architecture Walkthrough', url: 'https://youtube.com/watch?v=sample1', platform: 'youtube' },
+      { title: 'Decentralized Walrus Blob Indexer Demo', url: 'https://loom.com/share/sample2', platform: 'loom' },
+    ],
     applicationsCount: 0,
     isLoading: true
   })
@@ -63,6 +74,8 @@ export default function ProgressPage() {
   const [newExpRole, setNewExpRole] = useState('')
   const [newExpCompany, setNewExpCompany] = useState('')
   const [newExpDuration, setNewExpDuration] = useState('')
+  const [newVideoTitle, setNewVideoTitle] = useState('')
+  const [newVideoUrl, setNewVideoUrl] = useState('')
 
   // Reminders state
   const [remindersEnabled, setRemindersEnabled] = useState(true)
@@ -111,7 +124,8 @@ export default function ProgressPage() {
         } catch {}
       }
 
-      setData({
+      setData(prev => ({
+        ...prev,
         address,
         skills: localSkills,
         targetRoles: localRoles,
@@ -119,7 +133,7 @@ export default function ProgressPage() {
         certifications: localCerts,
         applicationsCount: appsCount,
         isLoading: false
-      })
+      }))
     } catch (err) {
       console.error(err)
       setData(prev => ({ ...prev, isLoading: false }))
@@ -216,6 +230,32 @@ export default function ProgressPage() {
     setData(prev => ({ ...prev, certifications: updated }))
     persistToLocalStorage({ certifications: updated })
     toast.info(`Removed certification "${certToRemove}".`)
+  }
+
+  function handleAddVideo() {
+    if (!newVideoTitle.trim() || !newVideoUrl.trim()) return
+    let platform: 'loom' | 'youtube' | 'vimeo' | 'other' = 'other'
+    const lower = newVideoUrl.toLowerCase()
+    if (lower.includes('youtube') || lower.includes('youtu.be')) platform = 'youtube'
+    else if (lower.includes('loom.com')) platform = 'loom'
+    else if (lower.includes('vimeo')) platform = 'vimeo'
+
+    const newItem: VideoDemoItem = {
+      title: newVideoTitle.trim(),
+      url: newVideoUrl.trim(),
+      platform
+    }
+    const updated = [...(data.videos || []), newItem]
+    setData(prev => ({ ...prev, videos: updated }))
+    setNewVideoTitle('')
+    setNewVideoUrl('')
+    toast.success(`Video demonstration "${newItem.title}" added to verified accomplishments.`)
+  }
+
+  function handleRemoveVideo(index: number) {
+    const updated = (data.videos || []).filter((_, i) => i !== index)
+    setData(prev => ({ ...prev, videos: updated }))
+    toast.info('Removed video demonstration.')
   }
 
   function handleSaveReminders() {
@@ -480,6 +520,78 @@ export default function ProgressPage() {
             </div>
           </Card>
         </div>
+
+        {/* ── PROJECT VIDEO DEMONSTRATIONS & ELEVATOR PITCHES ── */}
+        <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <div>
+              <h2 className="font-bold text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-500" /> Project Video Demonstrations &amp; Elevator Pitches
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Attach video walkthroughs (YouTube, Loom, Vimeo) proving your technical execution to recruiters and engineering leads.
+              </p>
+            </div>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {(data.videos || []).length} Verified
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(data.videos || []).map((video, idx) => (
+              <div key={idx} className="p-4 rounded-xl border border-border/70 bg-background/60 space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-[10px] uppercase font-mono text-emerald-600 border-emerald-500/30">
+                      {video.platform}
+                    </Badge>
+                    <button
+                      onClick={() => handleRemoveVideo(idx)}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <h4 className="font-bold text-sm text-foreground mt-2">{video.title}</h4>
+                  <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 mt-1 truncate"
+                  >
+                    <span>{video.url}</span>
+                    <ArrowRight className="w-3 h-3 shrink-0" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add Video Form */}
+          <div className="pt-2 border-t border-border/50 flex flex-col sm:flex-row items-center gap-2">
+            <input
+              type="text"
+              placeholder="Demo Title (e.g. Distributed Database Architecture Walkthrough)"
+              value={newVideoTitle}
+              onChange={(e) => setNewVideoTitle(e.target.value)}
+              className="flex-1 text-xs rounded-lg border bg-background px-3 py-2 w-full"
+            />
+            <input
+              type="url"
+              placeholder="Video URL (YouTube, Loom, Vimeo)"
+              value={newVideoUrl}
+              onChange={(e) => setNewVideoUrl(e.target.value)}
+              className="flex-1 text-xs rounded-lg border bg-background px-3 py-2 w-full"
+            />
+            <Button
+              size="sm"
+              onClick={handleAddVideo}
+              className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 w-full sm:w-auto"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Video Demo
+            </Button>
+          </div>
+        </Card>
 
         {/* Identifying Career Pathways & Upskilling Roadmap */}
         <div className="grid md:grid-cols-2 gap-8">

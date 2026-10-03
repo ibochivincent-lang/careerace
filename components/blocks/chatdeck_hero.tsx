@@ -1,24 +1,38 @@
 "use client"
 
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { HeroVideoDialog } from "@/components/ui/hero_video_dialog"
-import { ShimmerButton } from "@/components/ui/shimmer_button"
 import { motion, type Variants } from "motion/react"
-import { Sparkles, ArrowRight } from 'lucide-react'
+import {
+  Sparkles,
+  ArrowRight,
+  Check,
+  X,
+  MessageSquare,
+  FileText,
+  Briefcase,
+  Layers,
+  Database,
+  ShieldCheck,
+  Zap,
+  Play
+} from 'lucide-react'
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.1,
+      staggerChildren: 0.12,
+      delayChildren: 0.08,
     },
   },
 }
 
 const fadeUpVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
@@ -26,70 +40,291 @@ const fadeUpVariants: Variants = {
   },
 }
 
-const scaleInVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.5, ease: "easeOut" },
-  },
-}
-
 export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
+  const [acceptedEdits, setAcceptedEdits] = useState<Record<number, boolean>>({ 1: true, 2: true })
+
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="py-12"
+      className="py-12 md:py-16 space-y-12"
     >
+      {/* ── Top Pill Badge ── */}
       <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
-        <Badge className="h-auto text-sm font-medium px-4 py-2" variant={'outline'}>
-          <Sparkles className="w-4 h-4 mr-2 text-primary" /> Autonomous AI Career Copilot
-        </Badge>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-semibold shadow-sm backdrop-blur">
+          <Sparkles className="w-4 h-4 text-emerald-500" />
+          <span>Autonomous AI Career Agent · Powered by Walrus Sovereign Memory</span>
+        </div>
       </motion.div>
 
-      <div className="text-center mt-8">
+      {/* ── Hero Headline & Value Prop ── */}
+      <div className="text-center max-w-4xl mx-auto space-y-6">
         <motion.h1
-          className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-6xl"
+          className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.08]"
           variants={fadeUpVariants}
         >
-          AI Job Agent for Your Career.
+          for your career.
         </motion.h1>
+
         <motion.p
-          className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-400 max-w-3xl mx-auto"
+          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
           variants={fadeUpVariants}
         >
-          Universal job search across Remote, Onsite, and Hybrid postings. Evaluates match fit scores (1–10), formats CV bullets, auto-applies with custom cover letters, and persists your history in Walrus Memory.
+          Upload your resume, sharpen it for ATS with Google XYZ formula, remember your entire journey across sessions with Walrus Memory, and explore fresh jobs curated to you.
         </motion.p>
+
+        {/* ── Action Buttons ── */}
+        <motion.div
+          className="pt-2 flex flex-wrap items-center justify-center gap-4"
+          variants={fadeUpVariants}
+        >
+          <Button
+            size="lg"
+            onClick={onStart}
+            className="h-12 px-8 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 transition-all text-sm sm:text-base gap-2"
+          >
+            Get Started Free <ArrowRight className="w-4 h-4" />
+          </Button>
+
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => {
+              const el = document.getElementById('how-it-works')
+              el?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="h-12 px-6 rounded-xl font-semibold border-emerald-500/30 hover:bg-emerald-500/10 text-foreground text-sm sm:text-base"
+          >
+            How it works
+          </Button>
+        </motion.div>
       </div>
 
-      <motion.div
-        className="my-8 flex items-center justify-center gap-x-4"
-        variants={fadeUpVariants}
-      >
-        <ShimmerButton onClick={onStart}>
-          <span className="flex items-center gap-2">
-            Upload CV & Harvest Jobs <ArrowRight className="w-4 h-4" />
-          </span>
-        </ShimmerButton>
+      {/* ── Spot for the Video Demo ── */}
+      <motion.div className="relative max-w-4xl mx-auto pt-4" variants={fadeUpVariants}>
+        <div className="p-2 sm:p-3 rounded-2xl border-2 border-emerald-500/20 bg-card/60 backdrop-blur shadow-2xl shadow-emerald-500/5">
+          <HeroVideoDialog
+            className="block dark:hidden"
+            animationStyle="top-in-bottom-out"
+            videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
+            thumbnailSrc="https://startup-template-sage.vercel.app/hero-light.png"
+            thumbnailAlt="Career Ace Interactive Demo Video"
+          />
+          <HeroVideoDialog
+            className="hidden dark:block"
+            animationStyle="top-in-bottom-out"
+            videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
+            thumbnailSrc="https://startup-template-sage.vercel.app/hero-dark.png"
+            thumbnailAlt="Career Ace Interactive Demo Video"
+          />
+        </div>
       </motion.div>
 
-      <motion.div className="relative max-w-4xl mx-auto" variants={scaleInVariants}>
-        <HeroVideoDialog
-          className="block dark:hidden"
-          animationStyle="top-in-bottom-out"
-          videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
-          thumbnailSrc="https://startup-template-sage.vercel.app/hero-light.png"
-          thumbnailAlt="Career Ace Interactive Demo Video"
-        />
-        <HeroVideoDialog
-          className="hidden dark:block"
-          animationStyle="top-in-bottom-out"
-          videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
-          thumbnailSrc="https://startup-template-sage.vercel.app/hero-dark.png"
-          thumbnailAlt="Career Ace Interactive Demo Video"
-        />
+      {/* ── Clean Interactive Mockup: Resume Diff + Copilot Chat ── */}
+      <motion.div className="max-w-6xl mx-auto pt-6" variants={fadeUpVariants}>
+        <div className="rounded-2xl border border-emerald-500/25 bg-card shadow-2xl overflow-hidden">
+          {/* Mockup Window Header */}
+          <div className="px-4 py-3 border-b border-border/80 bg-muted/40 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+              <span className="ml-3 text-xs font-mono text-muted-foreground">careerace.online/dashboard</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+                <ShieldCheck className="w-3 h-3 mr-1" /> Sovereign Vault Sealed
+              </Badge>
+            </div>
+          </div>
+
+          {/* 3-Column Cockpit Mockup */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[520px]">
+            {/* Left Mini Sidebar */}
+            <div className="hidden md:flex lg:col-span-3 flex-col border-r border-border/70 p-3 bg-muted/20 space-y-4">
+              <div className="flex items-center gap-2 px-2 py-1">
+                <div className="w-7 h-7 rounded-md bg-emerald-600/10 border border-emerald-500/30 flex items-center justify-center p-1">
+                  <img src="/careerace_logo.png" alt="Career Ace" className="w-full h-full object-contain dark:invert" />
+                </div>
+                <span className="font-bold text-sm">Career Ace</span>
+                <Badge variant="secondary" className="ml-auto text-[9px] text-emerald-600 bg-emerald-500/10">PREMIUM</Badge>
+              </div>
+
+              <div className="space-y-1 text-xs">
+                <div className="px-2.5 py-1.5 rounded-lg text-muted-foreground flex items-center gap-2 hover:bg-muted/60">
+                  <Layers className="w-3.5 h-3.5" /> Overview
+                </div>
+                <div className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-2">
+                  <FileText className="w-3.5 h-3.5" /> Resumes
+                </div>
+                <div className="px-2.5 py-1.5 rounded-lg text-muted-foreground flex items-center gap-2 hover:bg-muted/60">
+                  <Sparkles className="w-3.5 h-3.5" /> Tailor
+                </div>
+                <div className="px-2.5 py-1.5 rounded-lg text-muted-foreground flex items-center gap-2 hover:bg-muted/60">
+                  <Briefcase className="w-3.5 h-3.5" /> Job Board
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/50 text-[11px] space-y-1">
+                <span className="px-2 text-[10px] uppercase font-bold text-muted-foreground">PROFILES</span>
+                <div className="px-2 py-1 rounded text-muted-foreground flex items-center justify-between">
+                  <span>GitHub</span>
+                  <span className="text-[10px] text-emerald-500 font-mono">Connected</span>
+                </div>
+                <div className="px-2 py-1 rounded text-muted-foreground flex items-center justify-between">
+                  <span>LinkedIn</span>
+                  <span className="text-[10px] text-emerald-500 font-mono">Synced</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Middle Resume Diff Canvas */}
+            <div className="lg:col-span-6 p-4 sm:p-6 bg-card flex flex-col justify-between overflow-y-auto">
+              <div className="space-y-4">
+                <div className="border-b pb-3">
+                  <h3 className="text-xl font-bold">Ryan Park</h3>
+                  <p className="text-xs text-muted-foreground">
+                    ryan@park.dev · +1 (415) 482-3910 · Austin, TX · GitHub · LinkedIn
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span>EXPERIENCE</span>
+                    <span className="text-[10px] text-emerald-500 font-mono">ATS Grade A+ (94%)</span>
+                  </div>
+
+                  {/* Experience Block */}
+                  <div className="p-3.5 rounded-xl border border-border/70 bg-background/50 space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between font-semibold">
+                      <span>Software Engineer II · Stripe</span>
+                      <span className="text-muted-foreground font-mono text-[11px]">Jan 2024 – Present</span>
+                    </div>
+
+                    {/* Diff Item 1 */}
+                    <div className="space-y-1.5 pt-1">
+                      <div className="p-2 rounded bg-red-500/10 text-red-700 dark:text-red-400 line-through text-[11px] leading-relaxed">
+                        - Designed and shipped distributed infrastructure improvements to Stripe's internal developer platform, reducing build times.
+                      </div>
+                      <div className="p-2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] leading-relaxed border border-emerald-500/20">
+                        + Designed and shipped distributed data pipeline infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers.
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setAcceptedEdits(prev => ({ ...prev, 1: true }))}
+                          className="h-6 px-2 text-[10px] text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20"
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setAcceptedEdits(prev => ({ ...prev, 1: false }))}
+                          className="h-6 px-2 text-[10px] text-red-600 hover:bg-red-500/10"
+                        >
+                          <X className="w-3 h-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Diff Item 2 */}
+                    <div className="space-y-1.5 pt-2 border-t border-border/50">
+                      <div className="p-2 rounded bg-red-500/10 text-red-700 dark:text-red-400 line-through text-[11px] leading-relaxed">
+                        - Led a cross-functional initiative to migrate a legacy monorepo CI pipeline to a parallelized architecture.
+                      </div>
+                      <div className="p-2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] leading-relaxed border border-emerald-500/20">
+                        + Led a cross-functional initiative to migrate a legacy monorepo CI pipeline to a parallelized, cache-aware orchestration architecture — cutting p99 data pipeline latency from 18 min to under 7 min.
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setAcceptedEdits(prev => ({ ...prev, 2: true }))}
+                          className="h-6 px-2 text-[10px] text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20"
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setAcceptedEdits(prev => ({ ...prev, 2: false }))}
+                          className="h-6 px-2 text-[10px] text-red-600 hover:bg-red-500/10"
+                        >
+                          <X className="w-3 h-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating Bottom Toolbar */}
+              <div className="mt-4 p-2 rounded-xl bg-muted/70 border flex items-center justify-between text-xs">
+                <span className="font-mono text-muted-foreground text-[11px]">2 of 4 revisions active</span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" className="h-7 text-xs">Undo all</Button>
+                  <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white">Keep all edits</Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Career Ace AI Agent Chat */}
+            <div className="lg:col-span-3 border-t lg:border-t-0 lg:border-l border-border/70 p-4 bg-muted/10 flex flex-col justify-between space-y-3">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs block">Career Ace AI</span>
+                    <span className="text-[10px] text-muted-foreground">Walrus Memory Active</span>
+                  </div>
+                </div>
+
+                {/* Assistant Chat Bubble */}
+                <div className="p-3 rounded-xl bg-background border border-border/80 text-xs space-y-2 shadow-sm">
+                  <p className="font-semibold text-emerald-600 dark:text-emerald-400">Hi Ryan 👋</p>
+                  <p className="text-muted-foreground leading-relaxed text-[11px]">
+                    I'm Career Ace, your autonomous career agent. Your resume scored <strong className="text-foreground">85/100</strong> for ATS — a solid base with high-impact wins ahead.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed text-[11px]">
+                    I found 4 high-impact fixes focused on measurable metrics and Google XYZ formula for your target role.
+                  </p>
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">
+                    ↑ 4 quantified edits applied
+                  </div>
+                </div>
+
+                {/* Target Job Pill */}
+                <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-[11px] text-muted-foreground">
+                  <span className="font-semibold text-foreground block">Tailoring for:</span>
+                  <span>Senior Infrastructure Engineer · Stripe</span>
+                </div>
+              </div>
+
+              {/* Quick Prompt Suggestion Chips */}
+              <div className="space-y-1.5 pt-2">
+                <button
+                  type="button"
+                  className="w-full text-left p-2 rounded-lg border bg-background/60 hover:bg-muted text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between"
+                >
+                  <span>Add data volume metrics</span>
+                  <ArrowRight className="w-3 h-3 text-emerald-500" />
+                </button>
+                <button
+                  type="button"
+                  className="w-full text-left p-2 rounded-lg border bg-background/60 hover:bg-muted text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between"
+                >
+                  <span>Highlight distributed systems</span>
+                  <ArrowRight className="w-3 h-3 text-emerald-500" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   )
