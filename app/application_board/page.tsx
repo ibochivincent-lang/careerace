@@ -427,6 +427,9 @@ export default function ApplicationBoardPage() {
   const trackAApps = applications.filter(a => a.status === 'Applied' || a.track === 'track_a_auto_apply')
   const trackBApps = applications.filter(a => a.status === 'Manual Required' || a.track === 'track_b_manual_queue')
 
+  const [showExplainer, setShowExplainer] = useState(true)
+  const [activeExplainerTab, setActiveExplainerTab] = useState<'track_a' | 'track_b' | 'feeds' | 'target'>('track_a')
+
   return (
     <AppShell>
       <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
@@ -434,17 +437,26 @@ export default function ApplicationBoardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">Application Tracker Board</h1>
-              <Badge variant="outline" className="font-mono text-[10px]">
-                Dual-Track Engine
+              <h1 className="text-2xl font-bold tracking-tight">Application Tracker &amp; Job Board</h1>
+              <Badge variant="outline" className="font-mono text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                Universal Engine
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Autonomous dual-track routing: Track A direct auto-submission vs Track B manual review queue.
+              Autonomous dual-track routing: Track A direct auto-submission, Track B manual review queue, live feeds &amp; target companies.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowExplainer(!showExplainer)}
+              className="gap-2 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              {showExplainer ? 'Hide Explainer' : 'Show Engine Explainer'}
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -458,13 +470,98 @@ export default function ApplicationBoardPage() {
             <Button
               size="sm"
               onClick={() => router.push('/interview_room')}
-              className="gap-2 text-xs"
+              className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
             >
               <Target className="w-3.5 h-3.5" />
               Interview Room
             </Button>
           </div>
         </div>
+
+        {/* ── JOB BOARD ENGINE EXPLAINER ── */}
+        {showExplainer && (
+          <Card className="p-6 border border-emerald-500/25 bg-card/60 backdrop-blur rounded-2xl shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-500" />
+                <h3 className="font-bold text-sm text-foreground">How the Career Ace Job Board Works</h3>
+              </div>
+              <button
+                onClick={() => setShowExplainer(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Dismiss
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: 'track_a', label: '1. Auto-Applied (Track A)' },
+                { id: 'track_b', label: '2. Manual Review Queue (Track B)' },
+                { id: 'feeds', label: '3. Multi-Feed Job Discovery' },
+                { id: 'target', label: '4. Target Company Watchlist' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveExplainerTab(tab.id as any)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                    activeExplainerTab === tab.id
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl border border-border/80 bg-background/80 text-xs leading-relaxed text-muted-foreground">
+              {activeExplainerTab === 'track_a' && (
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Track A: Autonomous Direct Application
+                  </h4>
+                  <p>
+                    When a harvested engineering role scores <strong>6/10 or higher</strong> and provides a direct email or verified API dispatch endpoint, Career Ace formats your tailored CV bullets and custom cover letter, and submits the application automatically. Every dispatch is recorded permanently to your Walrus decentralized memory.
+                  </p>
+                </div>
+              )}
+
+              {activeExplainerTab === 'track_b' && (
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" /> Track B: Manual Review Queue &amp; ATS Quick-Fill
+                  </h4>
+                  <p>
+                    Roles hosted on complex ATS portals (such as <strong>Workday, Taleo, Greenhouse, or LinkedIn Easy Apply</strong>) or jobs requiring human sign-off are safely queued here. Click <strong>Quick-Fill Kit</strong> on any queued role to copy 100% ATS-aligned fields or download tailored Word (.docx) resumes in one click.
+                  </p>
+                </div>
+              )}
+
+              {activeExplainerTab === 'feeds' && (
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-emerald-500" /> Live Multi-Feed Job Discovery
+                  </h4>
+                  <p>
+                    Career Ace continuously aggregates verified tech postings from <strong>Arbeitnow, Jobicy v2, Remotive, and WeWorkRemotely</strong>. Stale listings older than 30 days are automatically pruned, and every posting is checked against your sovereign skills for instant 1-to-10 compatibility.
+                  </p>
+                </div>
+              )}
+
+              {activeExplainerTab === 'target' && (
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-violet-500" /> Target Company (Dream Employers)
+                  </h4>
+                  <p>
+                    Add your dream companies (e.g. <strong>Mysten Labs, Google, Stripe, Affirm, Anthropic</strong>) to your high-priority watchlist. Career Ace monitors their careers pages and auto-generates custom cover letters and ATS resumes the moment a relevant opening goes live.
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* 4 Interactive Overview Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

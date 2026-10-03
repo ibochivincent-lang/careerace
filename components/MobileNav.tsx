@@ -4,11 +4,11 @@ import { useRouter, usePathname } from 'next/navigation'
 import { cn } from './ui/utils'
 
 const navItems = [
-  { label: 'Workspace',    href: '/dashboard' },
-  { label: 'Applications', href: '/application_board' },
-  { label: 'Interview',    href: '/interview_room' },
+  { label: 'Overview',     href: '/dashboard?tab=overview' },
+  { label: 'Resumes',      href: '/dashboard?tab=resumes' },
+  { label: 'Job Board',    href: '/application_board' },
   { label: 'Vault',        href: '/memory' },
-  { label: 'Coach',        href: '/tutor' },
+  { label: 'Interview',    href: '/interview_room' },
 ]
 
 function isActive(href: string, pathname: string): boolean {
