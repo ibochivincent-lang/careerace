@@ -1173,7 +1173,7 @@ export default function ApplicationBoardPage() {
                 </p>
                 <div className="pt-1 flex flex-wrap gap-2 items-center">
                   <a
-                    href={`javascript:(function(){var p={name:"${atsProfile.name}",first_name:"${atsProfile.name.split(' ')[0]}",last_name:"${atsProfile.name.split(' ').slice(1).join(' ') || 'Candidate'}",email:"${atsProfile.email}",phone:"${atsProfile.phone}",linkedin:"${atsProfile.linkedin}",github:"${atsProfile.github}",portfolio:"https://careerace.vercel.app/p/${encodeURIComponent(atsProfile.name)}"};document.querySelectorAll('input,textarea').forEach(function(i){var n=((i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')).toLowerCase();function s(v){if(v&&!i.value){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}}if(n.includes('first'))s(p.first_name);else if(n.includes('last'))s(p.last_name);else if(n.includes('name'))s(p.name);else if(n.includes('email')||i.type==='email')s(p.email);else if(n.includes('phone')||n.includes('tel'))s(p.phone);else if(n.includes('linkedin'))s(p.linkedin);else if(n.includes('github')||n.includes('git'))s(p.github);else if(n.includes('website')||n.includes('portfolio')||n.includes('url'))s(p.portfolio);});alert('Career Ace ATS Copilot: Form fields filled successfully!');})();`}
+                    href={`javascript:(function(){var p={name:"${atsProfile.name}",first_name:"${atsProfile.name.split(' ')[0]}",last_name:"${atsProfile.name.split(' ').slice(1).join(' ') || 'Candidate'}",email:"${atsProfile.email}",phone:"${atsProfile.phone}",linkedin:"${atsProfile.linkedin}",github:"${atsProfile.github}",portfolio:"https://careerace.online/p/${encodeURIComponent(atsProfile.name)}"};document.querySelectorAll('input,textarea').forEach(function(i){var n=((i.name||'')+' '+(i.id||'')+' '+(i.placeholder||'')).toLowerCase();function s(v){if(v&&!i.value){i.value=v;i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));}}if(n.includes('first'))s(p.first_name);else if(n.includes('last'))s(p.last_name);else if(n.includes('name'))s(p.name);else if(n.includes('email')||i.type==='email')s(p.email);else if(n.includes('phone')||n.includes('tel'))s(p.phone);else if(n.includes('linkedin'))s(p.linkedin);else if(n.includes('github')||n.includes('git'))s(p.github);else if(n.includes('website')||n.includes('portfolio')||n.includes('url'))s(p.portfolio);});alert('Career Ace ATS Copilot: Form fields filled successfully!');})();`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground font-semibold text-xs shadow-xs hover:bg-primary/90 cursor-grab"
                     title="Drag me to your Bookmarks Bar!"
                   >
@@ -1199,7 +1199,7 @@ export default function ApplicationBoardPage() {
                     { label: 'Phone Number', value: atsProfile.phone },
                     { label: 'LinkedIn Profile', value: atsProfile.linkedin },
                     { label: 'GitHub Profile', value: atsProfile.github },
-                    { label: 'Verified Passport URL', value: `https://careerace.vercel.app/p/${encodeURIComponent(atsProfile.name)}` },
+                    { label: 'Verified Passport URL', value: `https://careerace.online/p/${encodeURIComponent(atsProfile.name)}` },
                   ].map((f) => (
                     <div
                       key={f.label}

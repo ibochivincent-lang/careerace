@@ -21,6 +21,6 @@ export function getAuthRedirectOrigin(req?: Request): string {
     }
   }
 
-  // 3. Fallback to production Vercel app
-  return "https://careerace.vercel.app";
+  // 3. Fallback to production app
+  return "https://careerace.online";
 }
