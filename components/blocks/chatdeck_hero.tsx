@@ -54,73 +54,75 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
     >
       {/* ── Polish-Inspired Emerald Crystal Background ── */}
       <div
-        className="absolute inset-0 -top-24 pointer-events-none -z-10 overflow-hidden"
+        className="absolute inset-0 -top-20 pointer-events-none z-0 overflow-hidden"
         aria-hidden="true"
       >
         <div
-          className="absolute inset-0 bg-cover bg-top bg-no-repeat opacity-85 dark:opacity-35 transition-opacity duration-700"
+          className="absolute inset-0 bg-cover bg-top bg-no-repeat opacity-95 dark:opacity-45 transition-opacity duration-700"
           style={{
             backgroundImage: "url('/hero-bg-green.webp')",
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0) 98%)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0) 98%)"
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 70%, rgba(0,0,0,0) 98%)",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 70%, rgba(0,0,0,0) 98%)"
           }}
         />
-        {/* Subtle center ambient radial glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[550px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
+        {/* Luminous emerald glow radial gradient */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.18),rgba(5,150,105,0.06),transparent_70%)] blur-[100px] pointer-events-none" />
       </div>
 
-      {/* ── Top Pill Badge ── */}
-      <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-semibold shadow-sm backdrop-blur">
-          <Sparkles className="w-4 h-4 text-emerald-500" />
-          <span>Autonomous AI Career Agent · Powered by Walrus Sovereign Memory</span>
-        </div>
-      </motion.div>
-
-      {/* ── Hero Headline & Value Prop ── */}
-      <div className="text-center max-w-4xl mx-auto space-y-6">
-        <motion.h1
-          className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.08]"
-          variants={fadeUpVariants}
-        >
-          The Autonomous AI Agent <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent">
-            for your career.
-          </span>
-        </motion.h1>
-
-        <motion.p
-          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
-          variants={fadeUpVariants}
-        >
-          Upload your resume, sharpen it for ATS with Google XYZ formula, remember your entire journey across sessions with Walrus Memory, and explore fresh jobs curated to you.
-        </motion.p>
-
-        {/* ── Action Buttons ── */}
-        <motion.div
-          className="pt-2 flex flex-wrap items-center justify-center gap-4"
-          variants={fadeUpVariants}
-        >
-          <Button
-            size="lg"
-            onClick={onStart}
-            className="h-12 px-8 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 transition-all text-sm sm:text-base gap-2"
-          >
-            Get Started Free <ArrowRight className="w-4 h-4" />
-          </Button>
-
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => {
-              const el = document.getElementById('how-it-works')
-              el?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="h-12 px-6 rounded-xl font-semibold border-emerald-500/30 hover:bg-emerald-500/10 text-foreground text-sm sm:text-base"
-          >
-            How it works
-          </Button>
+      <div className="relative z-10 space-y-8">
+        {/* ── Top Pill Badge ── */}
+        <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-xs backdrop-blur">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Autonomous AI Career Agent · Powered by Walrus Sovereign Memory</span>
+          </div>
         </motion.div>
+
+        {/* ── Hero Headline & Value Prop ── */}
+        <div className="text-center max-w-3xl mx-auto space-y-3.5">
+          <motion.h1
+            className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]"
+            variants={fadeUpVariants}
+          >
+            The Autonomous AI Agent <br className="hidden sm:inline" />
+            <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent">
+              for your career.
+            </span>
+          </motion.h1>
+
+          <motion.p
+            className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed"
+            variants={fadeUpVariants}
+          >
+            Upload your resume, sharpen it for ATS with Google XYZ formula, remember your entire journey across sessions with Walrus Memory, and explore fresh jobs curated to you.
+          </motion.p>
+
+          {/* ── Action Buttons ── */}
+          <motion.div
+            className="pt-2 flex flex-wrap items-center justify-center gap-3"
+            variants={fadeUpVariants}
+          >
+            <Button
+              size="default"
+              onClick={onStart}
+              className="h-10 px-6 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/25 transition-all text-xs sm:text-sm gap-2"
+            >
+              Get Started Free <ArrowRight className="w-4 h-4" />
+            </Button>
+
+            <Button
+              size="default"
+              variant="outline"
+              onClick={() => {
+                const el = document.getElementById('how-it-works')
+                el?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="h-10 px-5 rounded-xl font-semibold border-emerald-500/30 hover:bg-emerald-500/10 text-foreground text-xs sm:text-sm"
+            >
+              How it works
+            </Button>
+          </motion.div>
+        </div>
       </div>
 
       {/* ── Spot for the Video Demo ── */}
@@ -324,7 +326,7 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
 
                 {/* Assistant Chat Bubble */}
                 <div className="p-3.5 rounded-xl bg-background border border-border/80 text-xs space-y-2 shadow-sm">
-                  <p className="font-semibold text-emerald-600 dark:text-emerald-400">Hi Ryan 👋</p>
+                  <p className="font-semibold text-emerald-600 dark:text-emerald-400">Hi Candidate</p>
                   <p className="text-muted-foreground leading-relaxed text-xs">
                     I'm Career Ace, your autonomous career agent. Your resume scored <strong className="text-foreground">85/100</strong> for ATS with high-impact wins ahead.
                   </p>

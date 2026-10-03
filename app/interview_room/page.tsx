@@ -28,7 +28,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   behavioral: 'Behavioral Questions',
   architecture: 'Architectural Questions',
   leadership: 'Leadership & Experiential Questions',
-  walrus_recall: '🧠 Walrus Memory Recall',
+  walrus_recall: 'Walrus Memory Recall',
 }
 
 interface QuestionItem {

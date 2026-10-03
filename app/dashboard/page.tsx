@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppShell } from '@/components/AppShell'
-import { AccountChip } from '@/components/AccountChip'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -16,50 +14,12 @@ import {
   Send, Bot, X,
   ShieldCheck, Mail, ExternalLink,
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
-  Copy
+  Copy, Trash2, Paperclip, AlertCircle
 } from 'lucide-react'
-import { AnimatedScoreGauge } from '@/components/AnimatedScoreGauge'
-import { AnimatedProgressBar } from '@/components/AnimatedProgressBar'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
-import { enforceGoogleXyzFormula } from '@/lib/resume_tailor'
 import { analyzeAtsMatch, type AtsScorecard } from '@/lib/ats_engine'
-
-const INITIAL_SOVEREIGN_PROFILE = {
-  applicant_name: 'Ibochi Vincent',
-  contact_email: 'ibochivincent@gmail.com',
-  contact_phone: '+1 (555) 019-2834',
-  location: 'San Francisco, CA (Open to Remote)',
-  availability: 'Remote-First (Full-time)',
-  seniority_level: 'Mid-Level',
-  target_roles: ['Software Engineer', 'Fullstack Engineer'],
-  skills: ['TypeScript', 'Next.js', 'React', 'Node.js', 'PostgreSQL', 'Go', 'Distributed Systems'],
-  years_of_experience: '3',
-  academic_history: [
-    {
-      institution: 'University of Lagos / Tech Institute',
-      degree: 'B.Sc. in Computer Science',
-      graduation_year: '2023',
-    },
-  ],
-  work_experience: [
-    {
-      company: 'Tech Solutions Inc.',
-      role: 'Fullstack Engineer',
-      duration: '2023 · Present',
-      highlights: [
-        'Engineered scalable microservices and built responsive web applications, reducing API response times by 35%.',
-        'Architected real-time streaming pipeline processing 1M+ daily events with 99.9% uptime.'
-      ],
-    },
-  ],
-  certifications: ['AWS Certified Developer', 'Sui Move Developer Certification'],
-  custom_achievements: [
-    'Won 1st place in regional Web3 hackathon for decentralized storage application',
-    'Scaled backend services to handle 2M+ requests per minute with sub-50ms latency'
-  ],
-}
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -68,37 +28,38 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
+const FRESH_WELCOME_MESSAGE = {
+  role: 'assistant' as const,
+  content:
+    "Welcome to Career Ace! I am your autonomous AI career copilot powered by Walrus Sovereign Memory. I securely store your verified experience, technical skills, and target roles across every session.\n\nAttach your CV (.pdf or .docx) to index your profile, or ask me anything to get started. How can I assist your career today?"
+}
+
 function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams.get('tab') || 'overview'
 
-  // Candidate CV File Attachment state
+  // Candidate CV File Attachment state - Starts clean with NO mock data
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const chatFileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isParsing, setIsParsing] = useState(false)
-  const [parsedProfile, setParsedProfile] = useState<any>(INITIAL_SOVEREIGN_PROFILE)
+  const [parsedProfile, setParsedProfile] = useState<any>(null)
   const [isSavingMemory, setIsSavingMemory] = useState(false)
-  const [parseError, setParseError] = useState<string | null>(null)
-
-  // Job Listings state
-  const [harvestedJobs, setHarvestedJobs] = useState<any[]>([])
+  const [isClearingMemory, setIsClearingMemory] = useState(false)
 
   // Career Ace AI Copilot Chatbot state
   const [chatInput, setChatInput] = useState('')
   const [isSending, setIsSending] = useState(false)
   const chatMessagesEndRef = useRef<HTMLDivElement>(null)
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
-    {
-      role: 'assistant',
-      content:
-        "Hello Ibochi! I am Career Ace, your autonomous AI career copilot with Walrus Sovereign Memory. I remember your full background, work milestones, and verified skills across every session.\n\nYour resume currently scores 94/100 for ATS readiness. What would you like to tackle today? We can tailor your resume for a specific role, audit ATS keywords, or draft a targeted cover letter."
-    }
+    FRESH_WELCOME_MESSAGE
   ])
 
-  // Tailoring state
-  const [tailorCompany, setTailorCompany] = useState('Mysten Labs')
-  const [tailorRole, setTailorRole] = useState('Senior Fullstack Engineer')
+  // Tailoring & Cover Letter state - No mock company or role defaults
+  const [tailorCompany, setTailorCompany] = useState('')
+  const [tailorRole, setTailorRole] = useState('')
+  const [keyProblemsSolved, setKeyProblemsSolved] = useState('')
   const [coverLetterAngle, setCoverLetterAngle] = useState<'systems' | 'product' | 'startup'>('systems')
   const [tailoredResumeText, setTailoredResumeText] = useState('')
   const [tailoredCoverLetterText, setTailoredCoverLetterText] = useState('')
@@ -107,46 +68,66 @@ function DashboardContent() {
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
   const jsonResumeFileInputRef = useRef<HTMLInputElement>(null)
 
-  // Profiles State (GitHub & LinkedIn)
-  const [githubUsername, setGithubUsername] = useState('ibochivincent-lang')
-  const [linkedinUrl, setLinkedinUrl] = useState('https://linkedin.com/in/ibochi-vincent')
+  // Profiles State
+  const [githubUsername, setGithubUsername] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
 
-  // Resume Document Diff & Upload State
-  const [resumeViewMode, setResumeViewMode] = useState<'editor' | 'upload'>('editor')
-  const [acceptedEdits, setAcceptedEdits] = useState<Record<string, 'accepted' | 'rejected' | null>>({})
+  // Resume Document View Mode: default to upload when no profile exists
+  const [resumeViewMode, setResumeViewMode] = useState<'editor' | 'upload'>('upload')
 
   // Auto-scroll chat on message change
   useEffect(() => {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, isSending])
 
-  function handleAcceptEdit(id: string) {
-    setAcceptedEdits(prev => ({ ...prev, [id]: 'accepted' }))
-    toast.success('High-impact quantified edit accepted into your verified CV!')
-  }
-
-  function handleRejectEdit(id: string) {
-    setAcceptedEdits(prev => ({ ...prev, [id]: 'rejected' }))
-    toast.info('Edit dismissed and reverted to original wording.')
-  }
-
-  function handleDiscussEdit(topic: string) {
-    const prompt = `Why should I change: "${topic}"? How does this increase my ATS score?`
-    setChatInput(prompt)
-    toast.info('Discuss prompt loaded into AI Copilot.')
-  }
-
-  function handleChipClick(chip: string) {
-    setChatMessages(prev => [
-      ...prev,
-      { role: 'user', content: chip },
-      {
-        role: 'assistant',
-        content: `I've analyzed your profile for "${chip}". I've tailored your resume bullets with verified production metrics and data volume specifications, boosting your ATS readiness score to 96/100.`
+  // Load stored profile strictly if valid (and clean out any legacy mock profiles)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+      if (stored) {
+        const loaded = JSON.parse(stored)
+        // Purge legacy mock profile if present
+        if (loaded?.applicant_name === 'Ibochi Vincent' && loaded?.contact_email === 'ibochivincent@gmail.com') {
+          localStorage.removeItem('careerace_sovereign_profile')
+          localStorage.removeItem('careerace_parsed_profile')
+          setParsedProfile(null)
+          setResumeViewMode('upload')
+        } else if (loaded && (loaded.applicant_name || loaded.skills?.length)) {
+          setParsedProfile(loaded)
+          if (loaded.target_roles?.[0]) setTailorRole(loaded.target_roles[0])
+          setResumeViewMode('editor')
+        }
       }
-    ])
-    toast.success(`Applied suggestion: ${chip}`)
-  }
+    } catch {}
+  }, [])
+
+  // Calculate dynamic ATS match scorecard only when a real profile exists
+  useEffect(() => {
+    if (parsedProfile && parsedProfile.skills && parsedProfile.skills.length > 0) {
+      const expText = (parsedProfile.work_experience || [])
+        .map((w: any) => `${w.role} at ${w.company}: ${(w.highlights || []).join(' ')}`)
+        .join(' ')
+      const eduText = (parsedProfile.academic_history || [])
+        .map((a: any) => `${a.degree} at ${a.institution}`)
+        .join(' ')
+      const targetRoleName = tailorRole || parsedProfile.target_roles?.[0] || 'Software Engineer'
+      const score = analyzeAtsMatch({
+        jobTitle: targetRoleName,
+        jobDescription: `Looking for an experienced professional skilled in ${(parsedProfile.skills || []).slice(0, 6).join(', ')} with strong architecture and production delivery.`,
+        applicantSkills: parsedProfile.skills || [],
+        applicantExperienceText: expText,
+        applicantAcademicText: eduText,
+        applicantContactInfo: {
+          email: parsedProfile.contact_email || parsedProfile.email,
+          phone: parsedProfile.contact_phone || parsedProfile.phone,
+          location: parsedProfile.location
+        }
+      })
+      setAtsScorecard(score)
+    } else {
+      setAtsScorecard(null)
+    }
+  }, [parsedProfile, tailorRole])
 
   async function handleSendMessage() {
     if (!chatInput.trim() || isSending) return
@@ -172,7 +153,11 @@ function DashboardContent() {
           ...prev,
           {
             role: 'assistant',
-            content: `I've analyzed your request: "${text}". I have refreshed your candidate bullet points with verified production metrics to align with your target ATS score of 94/100.`
+            content: `I've analyzed your question: "${text}". ${
+              parsedProfile 
+                ? `I am leveraging your verified profile for ${parsedProfile.applicant_name || 'your candidate profile'} and cross-referencing industry standards.` 
+                : 'Upload or attach your CV to unlock personalized answers tailored to your exact work history and skills.'
+            }`
           }
         ])
       }
@@ -181,7 +166,7 @@ function DashboardContent() {
         ...prev,
         {
           role: 'assistant',
-          content: `I've incorporated your feedback into your resume metrics. Your quantified impact score has been refreshed.`
+          content: 'I have logged your request into your session. Attach your CV or ask another question to proceed.'
         }
       ])
     } finally {
@@ -189,54 +174,11 @@ function DashboardContent() {
     }
   }
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
-      if (stored) {
-        const loaded = JSON.parse(stored)
-        setParsedProfile({ ...INITIAL_SOVEREIGN_PROFILE, ...loaded })
-        if (loaded.target_roles?.[0]) setTailorRole(loaded.target_roles[0])
-      }
-    } catch {}
-
-    // Load initial curated roles
-    fetch('/api/harvest?query=software%20engineer')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.jobs && data.jobs.length > 0) {
-          setHarvestedJobs(data.jobs)
-        }
-      })
-      .catch(() => {})
-  }, [])
-
-  // Calculate dynamic ATS match scorecard
-  useEffect(() => {
-    if (parsedProfile) {
-      const expText = (parsedProfile.work_experience || [])
-        .map((w: any) => `${w.role} at ${w.company}: ${(w.highlights || []).join(' ')}`)
-        .join(' ')
-      const eduText = (parsedProfile.academic_history || [])
-        .map((a: any) => `${a.degree} at ${a.institution}`)
-        .join(' ')
-      const score = analyzeAtsMatch({
-        jobTitle: tailorRole || parsedProfile.target_roles?.[0] || 'Software Engineer',
-        jobDescription: `Looking for an experienced engineer skilled in ${(parsedProfile.skills || []).slice(0, 6).join(', ')} with strong architecture and production delivery.`,
-        applicantSkills: parsedProfile.skills || [],
-        applicantExperienceText: expText,
-        applicantAcademicText: eduText,
-        applicantContactInfo: {
-          email: parsedProfile.contact_email || parsedProfile.email,
-          phone: parsedProfile.contact_phone || parsedProfile.phone,
-          location: parsedProfile.location
-        }
-      })
-      setAtsScorecard(score)
-    }
-  }, [parsedProfile, tailorRole])
-
   async function handleSaveAndSyncProfile() {
-    if (!parsedProfile) return
+    if (!parsedProfile) {
+      toast.error('No CV uploaded yet. Please attach your CV first.')
+      return
+    }
     setIsSavingMemory(true)
     const toastId = toast.loading('Sealing profile and syncing to Walrus Memory...')
     try {
@@ -264,10 +206,46 @@ function DashboardContent() {
     }
   }
 
+  async function handleClearMemory() {
+    if (!confirm('Are you sure you want to clear your Walrus Memory vault and reset all profile data? This will clear all stored candidate details for a completely fresh start.')) {
+      return
+    }
+    setIsClearingMemory(true)
+    const toastId = toast.loading('Clearing memory vault and wiping cache...')
+    try {
+      localStorage.removeItem('careerace_sovereign_profile')
+      localStorage.removeItem('careerace_parsed_profile')
+      localStorage.removeItem('careerace_target_title')
+      localStorage.removeItem('careerace_chat_history')
+
+      await fetch('/api/memory', { method: 'DELETE' }).catch(() => {})
+
+      setParsedProfile(null)
+      setSelectedFile(null)
+      setTailorCompany('')
+      setTailorRole('')
+      setKeyProblemsSolved('')
+      setTailoredResumeText('')
+      setTailoredCoverLetterText('')
+      setAtsScorecard(null)
+      setChatMessages([FRESH_WELCOME_MESSAGE])
+      setResumeViewMode('upload')
+
+      toast.success('Memory vault cleared. Fresh session initialized.', { id: toastId })
+    } catch {
+      toast.error('Failed to clear memory.', { id: toastId })
+    } finally {
+      setIsClearingMemory(false)
+    }
+  }
+
   async function handleDownloadDocxResume() {
-    if (!parsedProfile) return
+    if (!parsedProfile) {
+      toast.error('Please upload a resume first.')
+      return
+    }
     setIsDownloadingDocx(true)
-    const toastId = toast.loading('Compiling 100% ATS-compliant .docx resume...')
+    const toastId = toast.loading('Compiling ATS-compliant .docx resume...')
     try {
       const blob = await generateDocxBlob(parsedProfile, tailoredResumeText || undefined)
       const url = URL.createObjectURL(blob)
@@ -278,7 +256,7 @@ function DashboardContent() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      toast.success('Native ATS-compliant .docx resume downloaded!', { id: toastId })
+      toast.success('ATS-compliant .docx resume downloaded!', { id: toastId })
     } catch {
       toast.error('Failed to generate .docx resume.', { id: toastId })
     } finally {
@@ -287,7 +265,10 @@ function DashboardContent() {
   }
 
   function handleExportJsonResume() {
-    if (!parsedProfile) return
+    if (!parsedProfile) {
+      toast.error('Please upload a resume first.')
+      return
+    }
     try {
       const jsonResume = exportToJsonResume(parsedProfile, tailoredResumeText || undefined)
       const blob = new Blob([JSON.stringify(jsonResume, null, 2)], { type: 'application/json' })
@@ -299,7 +280,7 @@ function DashboardContent() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      toast.success('JSON Resume Standard v1.0.0 file exported!')
+      toast.success('JSON Resume Standard file exported!')
     } catch {
       toast.error('Failed to export JSON Resume.')
     }
@@ -313,48 +294,72 @@ function DashboardContent() {
       const parsed = JSON.parse(text)
       const imported = importFromJsonResume(parsed)
       setParsedProfile(imported)
+      setResumeViewMode('editor')
       localStorage.setItem('careerace_sovereign_profile', JSON.stringify(imported))
-      toast.success(`Successfully imported JSON Resume for ${imported.applicant_name}!`)
+      toast.success(`Successfully imported JSON Resume for ${imported.applicant_name || 'Candidate'}!`)
     } catch {
-      toast.error('Failed to parse JSON Resume file. Please ensure it follows Schema v1.0.0.')
+      toast.error('Failed to parse JSON Resume file.')
     }
   }
 
   function handleGenerateCoverLetter() {
-    const role = tailorRole || 'Software Engineer'
-    const company = tailorCompany || 'Target Company'
-    const name = parsedProfile?.applicant_name || 'Ibochi Vincent'
-    const email = parsedProfile?.contact_email || 'candidate@careerace.online'
-    const phone = parsedProfile?.contact_phone || '+1 (555) 019-2834'
+    const role = tailorRole.trim() || 'the position'
+    const company = tailorCompany.trim() || 'your organization'
+    const name = parsedProfile?.applicant_name || 'Candidate'
+    const email = parsedProfile?.contact_email || ''
+    const phone = parsedProfile?.contact_phone || ''
+    const location = parsedProfile?.location || ''
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    const topSkill = parsedProfile?.skills?.[0] || 'distributed systems'
+    const topSkills = (parsedProfile?.skills || []).slice(0, 5).join(', ')
+    const recentExp = parsedProfile?.work_experience?.[0]
+
+    let problemSolvingBlock = ''
+    if (keyProblemsSolved.trim()) {
+      problemSolvingBlock = `Specifically, I specialize in addressing and resolving the following key challenges:\n${keyProblemsSolved.trim()}\n\n`
+    }
 
     let narrative = ''
     if (coverLetterAngle === 'systems') {
       narrative =
-        `I am writing to express my strong enthusiasm for the ${role} position at ${company}. Having specialized in ${topSkill} and production microservice architectures, I have spent the last three years building high-throughput systems that handle over 2M+ requests per second while reducing p99 latency by 35%.\n\n` +
-        `At ${company}, scaling infrastructure reliably while keeping iteration cycles rapid is essential. In my current role at ${parsedProfile?.work_experience?.[0]?.company || 'Tech Solutions Inc.'}, I led the migration of our core pipeline to a parallelized, cache-aware architecture, directly saving hundreds of engineering hours each month. I am eager to bring this rigor and ownership to your team.`
+        `I am writing to express my enthusiastic interest in the ${role} opening at ${company}. ` +
+        (topSkills ? `With core expertise in ${topSkills}, ` : '') +
+        `I have dedicated my career to designing dependable, resilient systems with measurable delivery impact.\n\n` +
+        problemSolvingBlock +
+        (recentExp
+          ? `In my work at ${recentExp.company || 'my previous organization'} as ${recentExp.role || 'an engineer'}, I took ownership of complex operational workflows and collaborated cross-functionally to achieve measurable results.\n\n`
+          : '') +
+        `I am eager to bring this same engineering discipline, accountability, and problem-solving focus to ${company}.`
     } else if (coverLetterAngle === 'product') {
       narrative =
-        `I am excited to apply for the ${role} opening at ${company}. As a developer focused on product velocity and high-converting user interfaces, I blend strong technical foundations in ${(parsedProfile?.skills || []).slice(0, 3).join(', ')} with an obsession for end-user delight.\n\n` +
-        `Throughout my career, I have partnered closely with product managers and designers to take features from whiteboard concepts to production deployments in tight sprint cycles. I would welcome the opportunity to accelerate ${company}'s product roadmap.`
+        `I am excited to submit my application for the ${role} role at ${company}. ` +
+        (topSkills ? `Leveraging hands-on mastery in ${topSkills}, ` : '') +
+        `I blend technical rigor with a deep commitment to user velocity, interface responsiveness, and business impact.\n\n` +
+        problemSolvingBlock +
+        (recentExp
+          ? `Throughout my tenure at ${recentExp.company || 'my previous organization'}, I worked directly alongside product stakeholders to turn strategic roadmaps into resilient, production-ready deliverables.\n\n`
+          : '') +
+        `I welcome the chance to partner with ${company} to accelerate feature delivery and enhance customer satisfaction.`
     } else {
       narrative =
-        `I am reaching out regarding the ${role} role at ${company}. As an engineer who thrives in high-autonomy environments, I take pride in end-to-end execution, from architecting backend microservices to designing responsive frontends and automating CI/CD deployments.\n\n` +
-        `I am deeply inspired by ${company}'s mission and would be thrilled to bring my proactive problem-solving to your core initiatives.`
+        `I am reaching out regarding the ${role} opportunity at ${company}. As a proactive builder who thrives with high autonomy and end-to-end ownership, I excel at taking ambiguous objectives and converting them into reliable, clean solutions.\n\n` +
+        problemSolvingBlock +
+        (recentExp
+          ? `At ${recentExp.company || 'my prior role'}, I repeatedly stepped up to solve unblocking challenges and streamline technical execution across the entire stack.\n\n`
+          : '') +
+        `I am genuinely inspired by ${company}'s work and would be thrilled to contribute to your core initiatives.`
     }
 
+    const contactLine = [email, phone, location].filter(Boolean).join(' · ')
     const letter =
       `${name}\n` +
-      `${email} · ${phone} · San Francisco, CA\n\n` +
+      `${contactLine ? `${contactLine}\n\n` : '\n'}` +
       `${today}\n\n` +
       `Hiring Team · ${company}\n\n` +
       `Dear ${company} Hiring Team,\n\n` +
       `${narrative}\n\n` +
-      `Thank you for your time and consideration. I welcome the opportunity to discuss how my verified background aligns with ${company}'s goals.\n\n` +
+      `Thank you for your time and consideration. I would welcome the opportunity to discuss how my background and verified experience align with your team's objectives.\n\n` +
       `Sincerely,\n` +
-      `${name}\n` +
-      `Verified Career Passport: https://careerace.online/p/${encodeURIComponent(name)}`
+      `${name}`
 
     setTailoredCoverLetterText(letter)
     toast.success(`Custom cover letter generated for ${company}!`)
@@ -365,8 +370,7 @@ function DashboardContent() {
     if (!file) return
 
     setIsParsing(true)
-    setParseError(null)
-    toast.info(`Extracting CV text from ${file.name}...`)
+    const toastId = toast.loading(`Parsing CV from ${file.name}...`)
 
     try {
       const formData = new FormData()
@@ -381,32 +385,47 @@ function DashboardContent() {
       }
       if (data.profile) {
         setParsedProfile(data.profile)
-        toast.success(`CV uploaded and parsed successfully for ${data.profile.applicant_name || 'Candidate'}!`)
+        setResumeViewMode('editor')
+        localStorage.setItem('careerace_sovereign_profile', JSON.stringify(data.profile))
+        localStorage.setItem('careerace_parsed_profile', JSON.stringify(data.profile))
+
+        // Also sync facts to Walrus Memory automatically
+        fetch('/api/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile: data.profile })
+        }).catch(() => {})
+
+        toast.success(`CV parsed and indexed into Sovereign Memory for ${data.profile.applicant_name || 'Candidate'}!`, { id: toastId })
+        
         setChatMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: `I've attached and parsed **${file.name}**!\n\nCandidate: **${data.profile.applicant_name}**\n• Skills: ${data.profile.skills?.slice(0, 8).join(', ')}\n• Target: ${data.profile.target_roles?.join(', ')}\n\nYour profile is now actively indexed. You can download an audited .docx resume, inspect ATS compliance in the X-Ray, or tailor applications.`
+            content: `I have successfully parsed and attached **${file.name}**!\n\n**Candidate:** ${data.profile.applicant_name || 'Verified Candidate'}\n• **Skills Detected:** ${(data.profile.skills || []).slice(0, 8).join(', ') || 'General competencies'}\n• **Target Roles:** ${(data.profile.target_roles || []).join(', ') || 'Engineering & Technology'}\n• **Experience Count:** ${data.profile.work_experience?.length || 0} position(s)\n\nYour profile has been indexed into your Walrus Sovereign Memory vault. You can now audit ATS compliance, generate tailored cover letters, or ask me to polish your bullets.`
           }
         ])
       }
     } catch (e: any) {
-      setParseError(e.message)
-      toast.error(e.message)
+      toast.error(e.message || 'Failed to parse CV', { id: toastId })
     } finally {
       setIsParsing(false)
     }
   }
 
-  // Count active applied edits in diff studio
-  const appliedCount = Object.values(acceptedEdits).filter(v => v === 'accepted').length
-
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* Hidden inputs */}
+        {/* Hidden File Inputs */}
         <input
           ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,.txt"
+          className="hidden"
+          onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+        />
+        <input
+          ref={chatFileInputRef}
           type="file"
           accept=".pdf,.docx,.txt"
           className="hidden"
@@ -420,500 +439,263 @@ function DashboardContent() {
           onChange={handleImportJsonResumeFile}
         />
 
-        {/* ── TAB 1: OVERVIEW ── */}
+        {/* ── TAB 1: OVERVIEW = CENTRALIZED AI CAREER COPILOT CHATBOT ── */}
         {activeTab === 'overview' && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-8"
+            className="space-y-6"
           >
-            {/* Header Greeting */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Top Workspace Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                  {getGreeting()}, {parsedProfile?.applicant_name?.split(' ')[0] || 'Ibochi'}.
+                <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+                  {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Here's where your career profile stands today.
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your autonomous AI career copilot with Walrus Sovereign Memory.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={isParsing}
                   className="text-xs font-semibold gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-9"
                 >
-                  <Upload className="w-3.5 h-3.5" /> Upload CV (.pdf, .docx)
+                  <Upload className="w-3.5 h-3.5" />
+                  {isParsing ? 'Parsing CV...' : parsedProfile ? 'Replace CV' : 'Attach CV (.pdf, .docx)'}
                 </Button>
+
                 <Button
+                  variant="outline"
                   size="sm"
-                  onClick={handleSaveAndSyncProfile}
-                  disabled={isSavingMemory}
-                  className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm h-9"
+                  onClick={handleClearMemory}
+                  disabled={isClearingMemory}
+                  className="text-xs font-semibold gap-1.5 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 h-9"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5" /> Save &amp; Sync Walrus Memory
+                  <Trash2 className="w-3.5 h-3.5" /> Reset Vault
                 </Button>
+
+                {parsedProfile && (
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAndSyncProfile}
+                    disabled={isSavingMemory}
+                    className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm h-9"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" /> Sync Walrus Memory
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* ── ROLES WORTH A CLOSER LOOK CARD ── */}
-            <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card">
-              <div className="flex items-center justify-between pb-4 border-b border-border/60">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-base text-foreground">Roles worth a closer look</h3>
-                  <Badge variant="secondary" className="text-xs font-mono text-emerald-600 bg-emerald-500/10">
-                    Live Harvest
-                  </Badge>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => router.push('/application_board')}
-                  className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-8 px-3"
-                >
-                  Browse all jobs <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-
-              <div className="divide-y divide-border/50">
-                {(harvestedJobs.length > 0 ? harvestedJobs.slice(0, 5) : [
-                  { title: 'Environmental Test Engineering Intern (Summer 2027)', company: 'Muon Space', location: 'United States · Internship' },
-                  { title: 'Software Engineer (Machine Learning) Intern (Summer 2027)', company: 'Affirm', location: 'United States · Internship' },
-                  { title: 'Transducer Manufacturing Engineering Co-Op', company: 'Wabtec', location: 'Waltham, MA, United States' },
-                  { title: 'Hardware Field Quality Engineer Intern (Summer 2027)', company: 'Lyft', location: 'Canada · Internship' },
-                  { title: 'Spring 2027 Software Engineering Internship/Co-op', company: 'xAI', location: 'United States · Internship' },
-                ]).map((job: any, idx: number) => (
-                  <div
-                    key={job.title + idx}
-                    onClick={() => router.push('/application_board')}
-                    className="py-3.5 flex items-center justify-between gap-4 hover:bg-muted/40 px-2 rounded-xl transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-muted/80 border border-border/70 flex items-center justify-center font-bold text-sm shrink-0">
-                        {job.company.slice(0, 1)}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-semibold text-sm text-foreground block truncate group-hover:text-emerald-500 transition-colors">
-                          {job.title}
-                        </span>
-                        <span className="text-xs text-muted-foreground truncate">
-                          {job.company} · {job.location || 'Remote'}
-                        </span>
-                      </div>
+            {/* Central Autonomous Copilot Workspace */}
+            <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col min-h-[620px]">
+              {/* Agent Status Bar */}
+              <div className="p-4 border-b border-border/80 bg-muted/30 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                      <Bot className="w-5 h-5" />
                     </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-muted-foreground font-mono">Today</span>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
-                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-background rounded-full" />
                   </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* ── 3 CORE METRIC BOXES: RESUME SCORE + COPILOT CHAT + CHECKLIST ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Box 1: Resume Score & ATS Breakdown (5 cols) */}
-              <Card className="lg:col-span-5 p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    RESUME SCORE
-                  </h3>
-                  <Badge variant="outline" className="text-xs font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                    Grade {atsScorecard?.ats_grade || 'A+'}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-6">
-                  {/* Dynamic Animated Circular Score Gauge */}
-                  <AnimatedScoreGauge
-                    score={atsScorecard?.overall_score || 94}
-                    size={96}
-                    strokeWidth={8}
-                  />
-
-                  <div className="space-y-1">
-                    <p className="font-bold text-sm text-foreground">Top 12% of resumes</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Strong fit. A few targeted improvements and Google XYZ metrics will elevate your candidate ranking.
-                    </p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
-                      +12 points potential gain
-                    </p>
-                  </div>
-                </div>
-
-                {/* Animated Horizontal ATS Breakdown Bars */}
-                <div className="space-y-3.5 pt-2 border-t border-border/60">
-                  <AnimatedProgressBar
-                    label="Role Match"
-                    value={86}
-                    colorClass="bg-emerald-500"
-                    delay={0.1}
-                  />
-                  <AnimatedProgressBar
-                    label="Quantified Impact"
-                    value={78}
-                    colorClass="bg-amber-500"
-                    delay={0.2}
-                  />
-                  <AnimatedProgressBar
-                    label="Production & Systems"
-                    value={75}
-                    colorClass="bg-amber-500"
-                    delay={0.3}
-                  />
-                  <AnimatedProgressBar
-                    label="Tech Skills"
-                    value={92}
-                    colorClass="bg-emerald-500"
-                    delay={0.4}
-                  />
-                </div>
-
-                {/* Direct Action Buttons */}
-                <div className="pt-2 flex flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsXRayOpen(true)}
-                    className="w-full text-xs font-semibold gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-9"
-                  >
-                    <Eye className="w-3.5 h-3.5" /> Launch ATS Robot X-Ray
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleDownloadDocxResume}
-                    disabled={isDownloadingDocx}
-                    className="w-full text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-9"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download ATS Word (.docx)
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Box 2 & 3: Chatbot Session & Setup Checklist (7 cols) */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* Career Ace AI Copilot Chatbot */}
-                <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b">
+                  <div>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                      <h3 className="font-bold text-sm text-foreground">Career Ace Autonomous Copilot</h3>
+                      <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono">
+                        MemWal v1.0
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {parsedProfile 
+                        ? `Loaded verified profile: ${parsedProfile.applicant_name || 'Candidate'} (${parsedProfile.skills?.length || 0} skills indexed)`
+                        : 'Fresh session. Upload your CV to index your sovereign credentials.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs text-muted-foreground border-border/80">
+                    <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin Isolated
+                  </Badge>
+                  {parsedProfile?.applicant_name && (
+                    <Badge variant="secondary" className="text-xs font-semibold text-emerald-600 bg-emerald-500/10">
+                      CV Attached
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Chat Messages Stream */}
+              <div className="flex-1 p-5 overflow-y-auto space-y-4 max-h-[500px]">
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 text-xs leading-relaxed ${
+                      msg.role === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
                         <Bot className="w-4 h-4" />
                       </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-foreground">Career Ace AI Copilot</h3>
-                        <p className="text-xs text-muted-foreground">Autonomous agent powered by Walrus Sovereign Memory</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1" /> zkLogin Isolated
-                    </Badge>
-                  </div>
+                    )}
 
-                  {/* Messages Scroll Area */}
-                  <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1 text-xs">
-                    {chatMessages.map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`p-3.5 rounded-xl leading-relaxed whitespace-pre-wrap ${
-                          msg.role === 'assistant'
-                            ? 'bg-muted/40 border border-border/70 text-foreground'
-                            : 'bg-emerald-600 text-white ml-8 font-medium'
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                    ))}
-                    {isSending && (
-                      <div className="p-3.5 rounded-xl bg-muted/40 border border-border/70 text-foreground flex items-center gap-2">
-                        <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-                        <span className="text-xs text-muted-foreground">Career Ace is analyzing your query...</span>
-                        <span className="flex items-center gap-1 ml-auto">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
-                        </span>
+                    <div
+                      className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl whitespace-pre-wrap ${
+                        msg.role === 'assistant'
+                          ? 'bg-muted/40 border border-border/80 text-foreground'
+                          : 'bg-emerald-600 text-white font-medium shadow-sm'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+
+                    {msg.role === 'user' && (
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
+                        U
                       </div>
                     )}
-                    <div ref={chatMessagesEndRef} />
                   </div>
+                ))}
 
-                  {/* Quick Prompt Suggestions */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {[
-                      'Polish my bullet points with XYZ metrics',
-                      'Check missing ATS keywords for Stripe',
-                      'Draft a cover letter for my personal wins',
-                    ].map((prompt) => (
-                      <button
-                        key={prompt}
-                        type="button"
-                        onClick={() => {
-                          setChatInput(prompt)
-                        }}
-                        className="text-xs px-2.5 py-1 rounded-full border border-border/80 bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
+                {isSending && (
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60 max-w-[320px]">
+                    <Bot className="w-4 h-4 text-emerald-500 animate-pulse" />
+                    <span>Career Ace is reasoning over your profile...</span>
+                    <span className="flex items-center gap-1 ml-auto">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
+                    </span>
                   </div>
-
-                  {/* Chat Input Bar */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Ask Career Ace to polish your CV, audit ATS keywords, or recall memories..."
-                      className="flex-1 h-10 px-3.5 rounded-xl border border-border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleSendMessage}
-                      disabled={isSending || !chatInput.trim()}
-                      className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </Card>
-
-                {/* Setup Checklist Box */}
-                <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-bold text-sm text-foreground">Setup Checklist</h3>
-                      <p className="text-xs text-muted-foreground">Complete these steps for maximum application yield</p>
-                    </div>
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      4 of 5 Complete
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-2.5 text-xs">
-                    <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span className="font-medium text-foreground">Upload base CV and extract skills</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">Verified</Badge>
-                    </div>
-
-                    <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span className="font-medium text-foreground">Walrus Sovereign Memory Vault Sealed (AES-256-GCM)</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">Active</Badge>
-                    </div>
-
-                    <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span className="font-medium text-foreground">Run ATS Robot X-Ray Diagnostics</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30">Grade A+</Badge>
-                    </div>
-
-                    <div
-                      onClick={() => router.push('/dashboard?tab=github')}
-                      className="p-2.5 rounded-xl border border-border/80 hover:bg-muted/40 cursor-pointer flex items-center justify-between transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-4 h-4 rounded-full border-2 border-muted-foreground/40 inline-block" />
-                        <span className="font-medium text-muted-foreground">Connect GitHub and LinkedIn verified profiles</span>
-                      </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-
-                    <div
-                      onClick={() => router.push('/dashboard?tab=cover_letters')}
-                      className="p-2.5 rounded-xl border border-border/80 hover:bg-muted/40 cursor-pointer flex items-center justify-between transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-4 h-4 rounded-full border-2 border-muted-foreground/40 inline-block" />
-                        <span className="font-medium text-muted-foreground">Automate targeted Cover Letter for dream employer</span>
-                      </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                  </div>
-                </Card>
+                )}
+                <div ref={chatMessagesEndRef} />
               </div>
-            </div>
+
+              {/* Prompt Suggestion Chips */}
+              <div className="px-5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap items-center gap-2">
+                {[
+                  'Audit my CV for missing technical skills',
+                  'What roles best match my experience?',
+                  'Help me formulate high-impact Google XYZ bullet points',
+                  'Draft a strategic outreach message to a hiring manager'
+                ].map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => setChatInput(prompt)}
+                    className="text-xs px-3 py-1 rounded-full border border-border/80 bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+
+              {/* Chat Input Bar */}
+              <div className="p-4 border-t border-border/80 bg-card flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => chatFileInputRef.current?.click()}
+                  title="Attach CV File"
+                  className="h-10 w-10 p-0 rounded-xl border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder={
+                    parsedProfile 
+                      ? "Ask Career Ace to polish your CV, analyze roles, or audit ATS compliance..." 
+                      : "Type your query or attach your CV to begin..."
+                  }
+                  className="flex-1 h-10 px-4 rounded-xl border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+
+                <Button
+                  size="sm"
+                  onClick={handleSendMessage}
+                  disabled={isSending || !chatInput.trim()}
+                  className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs"
+                >
+                  <Send className="w-3.5 h-3.5 mr-1" /> Send
+                </Button>
+              </div>
+            </Card>
           </motion.div>
         )}
 
-        {/* ── TAB 2: RESUMES (Dual-Mode: Upload & Fit Resume vs Document Diff Studio) ── */}
+        {/* ── TAB 2: RESUMES ── */}
         {activeTab === 'resumes' && (
           <div className="space-y-6">
             <AnimatePresence mode="wait">
-              {/* VIEW MODE 1: UPLOAD & FIT RESUME */}
-              {resumeViewMode === 'upload' ? (
+              {resumeViewMode === 'upload' || !parsedProfile ? (
+                /* VIEW MODE 1: UPLOAD RESUME */
                 <motion.div
                   key="upload"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -16 }}
                   transition={{ duration: 0.25 }}
-                  className="space-y-8"
+                  className="space-y-6"
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
                       <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Upload your resume</h1>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload your PDF or DOCX file. Career Ace extracts your real experience, skills, and metrics into clean ATS format.
+                      </p>
+                    </div>
+
+                    {parsedProfile && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setResumeViewMode('editor')}
-                        className="text-xs text-muted-foreground hover:text-foreground"
+                        className="text-xs text-muted-foreground hover:text-foreground self-start"
                       >
-                        View current draft <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                        View parsed resume <ChevronRight className="w-3.5 h-3.5 ml-1" />
                       </Button>
+                    )}
+                  </div>
+
+                  <Card
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-12 border-2 border-dashed border-border/80 hover:border-emerald-500/60 rounded-3xl bg-card hover:bg-muted/10 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[320px]"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-muted-foreground group-hover:text-emerald-500">
+                      <Upload className="w-7 h-7" />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Drop your file, choose an ATS-optimized template, and we'll fit your content into a clean editable resume.
+                    <p className="text-base font-bold text-foreground mb-1">
+                      {selectedFile ? selectedFile.name : 'Click to select or drag your resume here'}
                     </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Left Column: Drag & Drop Zone */}
-                    <div className="lg:col-span-7 space-y-4">
-                      <Card
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-12 border-2 border-dashed border-border/80 hover:border-emerald-500/60 rounded-3xl bg-card hover:bg-muted/10 transition-all cursor-pointer flex flex-col items-center justify-center text-center group min-h-[300px]"
-                      >
-                        <div className="w-16 h-16 rounded-2xl bg-muted/60 border border-border/80 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform text-muted-foreground group-hover:text-emerald-500">
-                          <Upload className="w-7 h-7" />
-                        </div>
-                        <p className="text-base font-bold text-foreground mb-1">
-                          {selectedFile ? selectedFile.name : 'Drag your resume here'}
-                        </p>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          or <span className="text-emerald-600 dark:text-emerald-400 font-semibold underline underline-offset-2">browse files</span>
-                        </p>
-                        <span className="text-xs font-mono text-muted-foreground/70 tracking-wider uppercase">
-                          PDF · DOC · DOCX · Max 10 MB
-                        </span>
-                      </Card>
-
-                      <div className="flex items-center gap-3">
-                        <Button
-                          size="lg"
-                          onClick={() => {
-                            if (selectedFile) {
-                              handleFileSelect(selectedFile)
-                            }
-                            setResumeViewMode('editor')
-                            toast.success('Resume fitted into clean ATS-ready draft!')
-                          }}
-                          className="flex-1 font-semibold text-xs gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-11"
-                        >
-                          <FileText className="w-4 h-4" /> Fit resume
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          onClick={() => setResumeViewMode('editor')}
-                          className="text-xs font-semibold rounded-xl h-11 px-5"
-                        >
-                          Skip to editor
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Right Column: WHAT HAPPENS NEXT Guide Card */}
-                    <Card className="lg:col-span-5 p-7 border border-border/80 rounded-3xl bg-card space-y-6 shadow-sm">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        WHAT HAPPENS NEXT
-                      </h3>
-
-                      <div className="space-y-5 text-xs">
-                        <div className="flex items-start gap-3.5">
-                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
-                            1
-                          </span>
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground text-xs">Pick a template</span>
-                              <span className="text-xs text-muted-foreground font-mono">you choose</span>
-                            </div>
-                            <p className="text-muted-foreground text-xs leading-relaxed">
-                              ATS-optimized layouts built for scanners.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3.5">
-                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
-                            2
-                          </span>
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground text-xs">We fit your resume to it</span>
-                              <span className="text-xs text-muted-foreground font-mono">~5 sec</span>
-                            </div>
-                            <p className="text-muted-foreground text-xs leading-relaxed">
-                              Your content reformatted, clean and structured.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3.5">
-                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
-                            3
-                          </span>
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground text-xs">Review the draft</span>
-                              <span className="text-xs text-muted-foreground font-mono">you review</span>
-                            </div>
-                            <p className="text-muted-foreground text-xs leading-relaxed">
-                              Check the parsed sections and diffs before scanning.
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3.5">
-                          <span className="w-6 h-6 rounded-full border border-border flex items-center justify-center shrink-0 font-bold text-xs text-muted-foreground">
-                            4
-                          </span>
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground text-xs">Run ATS scan</span>
-                              <span className="text-xs text-muted-foreground font-mono">on click</span>
-                            </div>
-                            <p className="text-muted-foreground text-xs leading-relaxed">
-                              Trigger score, breakdown, and AI rewrites.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-foreground text-background dark:bg-muted dark:text-foreground flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                        <p className="text-xs font-semibold leading-snug">
-                          Your ATS-friendly draft is ready first. Scan it when you're ready.
-                        </p>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground text-center">
-                        Never shared, sold, or used to train models. Sovereign Walrus encryption.
-                      </p>
-                    </Card>
-                  </div>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Supported formats: <span className="font-semibold text-foreground">PDF, DOC, DOCX</span> (Max 10 MB)
+                    </p>
+                    <Badge variant="outline" className="text-xs font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                      Client-Side Parsed &amp; Encrypted
+                    </Badge>
+                  </Card>
                 </motion.div>
               ) : (
-                /* VIEW MODE 2: DOCUMENT DIFF STUDIO & AI COPILOT */
+                /* VIEW MODE 2: PARSED RESUME VIEW & ATS ACTIONS */
                 <motion.div
                   key="editor"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -16 }}
                   transition={{ duration: 0.25 }}
-                  className="space-y-4"
+                  className="space-y-6"
                 >
                   {/* Top Action Bar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b">
@@ -924,11 +706,13 @@ function DashboardContent() {
                         onClick={() => setResumeViewMode('upload')}
                         className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-8 px-2"
                       >
-                        <ChevronLeft className="w-3.5 h-3.5" /> Switch resume
+                        <ChevronLeft className="w-3.5 h-3.5" /> Re-upload file
                       </Button>
-                      <Badge variant="outline" className="text-xs font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                        ATS Ready · 94/100
-                      </Badge>
+                      {atsScorecard && (
+                        <Badge variant="outline" className="text-xs font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                          ATS Grade: {atsScorecard.ats_grade} ({atsScorecard.overall_score}/100)
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -949,308 +733,113 @@ function DashboardContent() {
                         <FileCode className="w-3.5 h-3.5" /> JSON Resume
                       </Button>
                       <Button
-                        variant="outline"
                         size="sm"
                         onClick={handleDownloadDocxResume}
                         disabled={isDownloadingDocx}
-                        className="text-xs gap-1.5 h-8"
+                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8"
                       >
                         <Download className="w-3.5 h-3.5" /> Download .docx
                       </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleDownloadDocxResume}
-                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Export PDF
-                      </Button>
                     </div>
                   </div>
 
-                  {/* 2-Column Canvas: Document on Left (8 cols), AI Copilot on Right (4 cols) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* Left Column: Clean Resume Paper Canvas */}
-                    <Card className="lg:col-span-8 p-8 md:p-10 border border-border/80 shadow-md rounded-2xl bg-card space-y-6 font-sans">
-                      {/* Header */}
-                      <div className="border-b pb-5 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
-                            {parsedProfile?.applicant_name || 'Ryan Park'}
-                          </h2>
-                          <button
-                            onClick={() => {
-                              const newName = prompt('Enter candidate name:', parsedProfile?.applicant_name || 'Ryan Park')
-                              if (newName) setParsedProfile({ ...parsedProfile, applicant_name: newName })
-                            }}
-                            className="text-xs text-muted-foreground hover:text-emerald-500 font-medium"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {parsedProfile?.contact_email || 'ryan@ryanpark.dev'} · {parsedProfile?.contact_phone || '+1 (415) 482-3910'} · Austin, TX · <span className="text-emerald-600 dark:text-emerald-400 font-medium">GitHub</span> · <span className="text-emerald-600 dark:text-emerald-400 font-medium">LinkedIn</span>
-                        </p>
+                  {/* Clean Resume Paper View */}
+                  <Card className="p-8 md:p-10 border border-border/80 shadow-md rounded-2xl bg-card space-y-6 font-sans">
+                    {/* Header */}
+                    <div className="border-b pb-5 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
+                          {parsedProfile.applicant_name || 'Candidate Name'}
+                        </h2>
+                        <button
+                          onClick={() => {
+                            const newName = prompt('Enter candidate name:', parsedProfile.applicant_name || '')
+                            if (newName) setParsedProfile({ ...parsedProfile, applicant_name: newName })
+                          }}
+                          className="text-xs text-muted-foreground hover:text-emerald-500 font-medium"
+                        >
+                          Edit Name
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {[
+                          parsedProfile.contact_email,
+                          parsedProfile.contact_phone,
+                          parsedProfile.location
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+
+                    {/* Section: WORK EXPERIENCE */}
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-2 border-b pb-1">
+                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">
+                          WORK EXPERIENCE
+                        </h3>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {parsedProfile.work_experience?.length || 0}
+                        </span>
                       </div>
 
-                      {/* Section: EXPERIENCE */}
-                      <div className="space-y-5">
-                        <div className="flex items-center gap-2 border-b pb-1">
-                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">EXPERIENCE</h3>
-                          <span className="text-xs text-muted-foreground font-mono">5</span>
-                        </div>
-
-                        {/* Role 1 */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline text-xs">
-                            <span className="font-bold text-sm text-foreground">Content Creator · ryanpark.dev</span>
-                            <span className="text-muted-foreground font-mono text-xs">Sept 2024 · Present</span>
-                          </div>
-
-                          {acceptedEdits['c1'] === 'accepted' ? (
-                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-                              Scaled technical brand to 200K+ followers by architecting automated content distribution pipelines and data-driven engagement strategies, leveraging full-stack design and video production expertise.
-                            </div>
-                          ) : acceptedEdits['c1'] === 'rejected' ? (
-                            <p className="text-xs text-muted-foreground">
-                              Grew to 200K+ followers across platforms in under a year, scaling entirely organically and leading all content strategy, production, and distribution solo, leveraging 6+ years of video editing and design experience.
-                            </p>
-                          ) : (
-                            <div className="space-y-2">
-                              <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
-                                Grew to 200K+ followers across platforms in under a year, scaling entirely organically and leading all content strategy, production, and distribution solo, leveraging 6+ years of video editing and design experience.
-                              </p>
-                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                                <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
-                                  Scaled technical brand to 200K+ followers by architecting automated content distribution pipelines and data-driven engagement strategies, leveraging full-stack design and video production expertise.
-                                </p>
-                                <div className="flex items-center gap-2 pt-1">
-                                  <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Content Creator audience scale')} className="h-7 text-xs font-semibold gap-1 px-2.5">
-                                    <MessageSquare className="w-3.5 h-3.5" /> Discuss
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleAcceptEdit('c1')} className="h-7 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5">
-                                    <Check className="w-3.5 h-3.5" /> Accept
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c1')} className="h-7 text-xs font-semibold text-red-500 hover:bg-red-500/10 px-2.5">
-                                    <X className="w-3.5 h-3.5" /> Reject
-                                  </Button>
-                                </div>
+                      {parsedProfile.work_experience && parsedProfile.work_experience.length > 0 ? (
+                        <div className="space-y-6">
+                          {parsedProfile.work_experience.map((exp: any, idx: number) => (
+                            <div key={idx} className="space-y-2">
+                              <div className="flex justify-between items-baseline text-xs">
+                                <span className="font-bold text-sm text-foreground">
+                                  {exp.role || 'Position'} · {exp.company || 'Company'}
+                                </span>
+                                <span className="text-muted-foreground font-mono text-xs">
+                                  {exp.duration || 'Past'}
+                                </span>
                               </div>
+
+                              {exp.highlights && exp.highlights.length > 0 ? (
+                                <ul className="list-disc pl-4 space-y-1.5 text-xs text-muted-foreground">
+                                  {exp.highlights.map((h: string, hIdx: number) => (
+                                    <li key={hIdx} className="leading-relaxed">
+                                      {h}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
                             </div>
-                          )}
+                          ))}
                         </div>
-
-                        {/* Role 2 */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline text-xs">
-                            <span className="font-bold text-sm text-foreground">Software Engineer II · Stripe</span>
-                            <span className="text-muted-foreground font-mono text-xs">Jan 2025 · Present</span>
-                          </div>
-
-                          {acceptedEdits['c2'] === 'accepted' ? (
-                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-                              Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers and enabling real-time analytics.
-                            </div>
-                          ) : acceptedEdits['c2'] === 'rejected' ? (
-                            <p className="text-xs text-muted-foreground">
-                              Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median build times by ~40% across 10,000+ daily active engineers.
-                            </p>
-                          ) : (
-                            <div className="space-y-2 relative">
-                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-foreground text-background dark:bg-muted text-xs font-semibold mb-1 shadow-sm">
-                                <Sparkles className="w-3 h-3 text-emerald-400" /> Adds metric, scope, and technical ownership.
-                              </div>
-                              <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
-                                Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median build times by ~40% across 10,000+ daily active engineers.
-                              </p>
-                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                                <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
-                                  Designed and shipped distributed infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers and enabling real-time analytics.
-                                </p>
-                                <div className="flex items-center gap-2 pt-1">
-                                  <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Stripe batch processing and latency')} className="h-7 text-xs font-semibold gap-1 px-2.5">
-                                    <MessageSquare className="w-3.5 h-3.5" /> Discuss
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleAcceptEdit('c2')} className="h-7 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5">
-                                    <Check className="w-3.5 h-3.5" /> Accept
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c2')} className="h-7 text-xs font-semibold text-red-500 hover:bg-red-500/10 px-2.5">
-                                    <X className="w-3.5 h-3.5" /> Reject
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                      ) : (
+                        <div className="p-4 rounded-xl border border-dashed text-center text-xs text-muted-foreground">
+                          No work experience entries parsed from file.
                         </div>
+                      )}
+                    </div>
 
-                        {/* Role 3 */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline text-xs">
-                            <span className="font-bold text-sm text-foreground">Software Engineering Intern · Figma</span>
-                            <span className="text-muted-foreground font-mono text-xs">June 2024 · Sept 2024</span>
-                          </div>
-
-                          {acceptedEdits['c3'] === 'accepted' ? (
-                            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
-                              Built a TypeScript-based internal tooling layer for automated data pipeline provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team, exposed via REST APIs.
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
-                                Built a TypeScript-based internal tooling layer for automated workspace provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team.
-                              </p>
-                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                                <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
-                                  Built a TypeScript-based internal tooling layer for automated data pipeline provisioning and test orchestration, reducing QA cycle time by 35% for the developer infrastructure team, exposed via REST APIs.
-                                </p>
-                                <div className="flex items-center gap-2 pt-1">
-                                  <Button size="sm" variant="ghost" onClick={() => handleDiscussEdit('Figma pipeline orchestration')} className="h-7 text-xs font-semibold gap-1 px-2.5">
-                                    <MessageSquare className="w-3.5 h-3.5" /> Discuss
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleAcceptEdit('c3')} className="h-7 text-xs font-semibold gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-2.5">
-                                    <Check className="w-3.5 h-3.5" /> Accept
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={() => handleRejectEdit('c3')} className="h-7 text-xs font-semibold text-red-500 hover:bg-red-500/10 px-2.5">
-                                    <X className="w-3.5 h-3.5" /> Reject
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Section: PROJECTS */}
-                      <div className="space-y-3 pt-3 border-t">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">PROJECTS</h3>
-                          <span className="text-xs text-muted-foreground font-mono">1</span>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-baseline text-xs">
-                            <span className="font-bold text-sm text-foreground">Payments Reliability Dashboard</span>
-                            <span className="text-muted-foreground font-mono text-xs">2024</span>
-                          </div>
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-foreground text-background dark:bg-muted text-xs font-semibold shadow-sm">
-                            <Sparkles className="w-3 h-3 text-emerald-400" /> Connects technical work to product value.
-                          </div>
-                          <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
-                            Created a dashboard for reliability metrics.
-                          </p>
-                          <p className="text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 font-medium leading-relaxed">
-                            Created a real-time reliability dashboard that surfaced payment failures 35% faster for on-call teams.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Section: SKILLS */}
-                      <div className="space-y-3 pt-3 border-t">
-                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">SKILLS</h3>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-foreground text-background dark:bg-muted text-xs font-semibold shadow-sm">
-                          <Sparkles className="w-3 h-3 text-emerald-400" /> Groups skills around the target role.
-                        </div>
-                        <p className="text-xs line-through text-red-600/80 dark:text-red-400/80 bg-red-500/5 p-2.5 rounded-lg border border-red-500/10 leading-relaxed">
-                          JavaScript, Python, SQL, AWS, Docker, React, Redis
-                        </p>
-                        <p className="text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20 font-medium leading-relaxed">
-                          Backend: Go, Python, TypeScript | Infra: Kubernetes, AWS | Data: PostgreSQL, Redis, gRPC
-                        </p>
-                      </div>
-                    </Card>
-
-                    {/* Right Column: Career Ace AI Copilot Panel */}
-                    <div className="lg:col-span-4 space-y-4">
-                      <Card className="p-5 border border-border/80 rounded-2xl bg-card space-y-4 shadow-sm">
-                        <div className="flex items-center justify-between pb-3 border-b">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-                              <Bot className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-xs text-foreground">Career Ace AI</h3>
-                              <p className="text-xs text-muted-foreground">Sovereign resume editor</p>
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30 font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1" />
-                            Live
+                    {/* Section: SKILLS */}
+                    <div className="space-y-3 pt-3 border-t">
+                      <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">SKILLS</h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(parsedProfile.skills || []).map((skill: string, sIdx: number) => (
+                          <Badge key={sIdx} variant="secondary" className="text-xs">
+                            {skill}
                           </Badge>
-                        </div>
-
-                        {/* Chat Messages Stream */}
-                        <div className="space-y-3 text-xs">
-                          <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-2">
-                            <p className="font-medium text-foreground">
-                              Hi {parsedProfile?.applicant_name?.split(' ')[0] || 'Ryan'} 👋
-                            </p>
-                            <p className="text-muted-foreground leading-relaxed text-xs">
-                              I'm Career Ace, your resume editor. Your resume scored <strong className="text-foreground">{atsScorecard?.overall_score || 94}/100</strong> for ATS readiness.
-                            </p>
-                            <p className="text-muted-foreground leading-relaxed text-xs">
-                              I found 4 high-impact fixes focused on measurable metrics and quantified delivery.
-                            </p>
-                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
-                              ↑ {appliedCount} of 4 edits applied
-                            </span>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
-                            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                              <FileText className="w-3.5 h-3.5" /> Pasted job description: Software Engineer
-                            </p>
-                            <p className="text-muted-foreground leading-relaxed text-xs">
-                              I've added data pipeline and real-time streaming language to your Stripe and Figma bullets, boosting ATS readiness to 94%.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Suggestion Chips */}
-                        <div className="space-y-1.5 pt-2 border-t">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Suggestions</p>
-                          <div className="space-y-1">
-                            {[
-                              'Add data volume metrics',
-                              'Mention unit testing',
-                              'Include data quality validation'
-                            ].map((chip) => (
-                              <button
-                                key={chip}
-                                onClick={() => handleChipClick(chip)}
-                                className="w-full text-left text-xs p-2 rounded-lg border border-border/70 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between group"
-                              >
-                                <span>{chip}</span>
-                                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Chat Input */}
-                        <div className="pt-2 flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && chatInput.trim()) {
-                                handleSendMessage()
-                              }
-                            }}
-                            placeholder="Ask Career Ace for an edit..."
-                            className="flex-1 h-9 px-3 rounded-xl border bg-background text-xs"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={handleSendMessage}
-                            disabled={!chatInput.trim() || isSending}
-                            className="h-9 w-9 p-0 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </Card>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Section: EDUCATION */}
+                    {parsedProfile.academic_history && parsedProfile.academic_history.length > 0 && (
+                      <div className="space-y-3 pt-3 border-t">
+                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-foreground">EDUCATION</h3>
+                        <div className="space-y-2 text-xs">
+                          {parsedProfile.academic_history.map((edu: any, eIdx: number) => (
+                            <div key={eIdx} className="flex justify-between text-muted-foreground">
+                              <span className="font-semibold text-foreground">{edu.degree} · {edu.institution}</span>
+                              <span className="font-mono">{edu.graduation_year || ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1268,45 +857,65 @@ function DashboardContent() {
             <div className="pb-4 border-b">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
               <p className="text-xs text-muted-foreground mt-1">
-                Automate cover letters tailored to your target company, dated to today, and grounded in your verified achievements.
+                Generate tailored cover letters grounded strictly in your real skills and the specific problems you can solve.
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Configuration Panel */}
+              {/* Parameters Panel */}
               <Card className="lg:col-span-5 p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-5">
                 <h3 className="font-bold text-sm text-foreground">Cover Letter Parameters</h3>
 
                 <div className="space-y-4 text-xs">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1">Target Company</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                      Target Company
+                    </label>
                     <input
                       type="text"
                       value={tailorCompany}
                       onChange={(e) => setTailorCompany(e.target.value)}
-                      placeholder="e.g. Google, Anthropic, Stripe"
-                      className="w-full h-9 px-3 rounded-lg border bg-background text-xs"
+                      placeholder="e.g. Acme Corp, Anthropic, Vercel"
+                      className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-1">Target Role</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                      Target Role
+                    </label>
                     <input
                       type="text"
                       value={tailorRole}
                       onChange={(e) => setTailorRole(e.target.value)}
-                      placeholder="e.g. Senior Infrastructure Engineer"
-                      className="w-full h-9 px-3 rounded-lg border bg-background text-xs"
+                      placeholder="e.g. Full Stack Engineer, Senior Infrastructure Engineer"
+                      className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  {/* USER REQUESTED FIELD: KEY PROBLEMS YOU CAN SOLVE */}
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                      Key Problems You Can Solve
+                    </label>
+                    <textarea
+                      value={keyProblemsSolved}
+                      onChange={(e) => setKeyProblemsSolved(e.target.value)}
+                      rows={3}
+                      placeholder="Describe the technical or business problems you excel at solving (e.g. reducing API latency, scaling microservices, building responsive React web apps)..."
+                      className="w-full p-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 leading-relaxed resize-none"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-2">Problem-Solving Angle</label>
+                    <label className="text-xs font-semibold text-muted-foreground block mb-2">
+                      Problem-Solving Angle
+                    </label>
                     <div className="space-y-2">
                       {[
-                        { id: 'systems', title: 'Technical Scaling & Systems Architecture', desc: 'Focuses on 2M+ RPS throughput, latency reduction, and reliability.' },
-                        { id: 'product', title: 'Product Velocity & Delivery Leader', desc: 'Focuses on rapid feature rollout, design collaboration, and customer wins.' },
-                        { id: 'startup', title: '0-to-1 High-Autonomy Execution', desc: 'Focuses on wearing multiple hats, fullstack ownership, and scrappiness.' }
+                        { id: 'systems', title: 'Technical Scaling & Architecture', desc: 'Emphasizes reliability, throughput, and robust systems design.' },
+                        { id: 'product', title: 'Product Velocity & UI Delivery', desc: 'Emphasizes rapid delivery, customer feedback, and clean interfaces.' },
+                        { id: 'startup', title: 'High-Autonomy & Ownership', desc: 'Emphasizes wearing multiple hats, proactive unblocking, and speed.' }
                       ].map((angle) => (
                         <div
                           key={angle.id}
@@ -1318,7 +927,7 @@ function DashboardContent() {
                           }`}
                         >
                           <span className="font-semibold block text-xs">{angle.title}</span>
-                          <span className="text-xs text-muted-foreground">{angle.desc}</span>
+                          <span className="text-[11px] text-muted-foreground">{angle.desc}</span>
                         </div>
                       ))}
                     </div>
@@ -1346,13 +955,13 @@ function DashboardContent() {
                   </Badge>
                 </div>
 
-                <div className="p-5 rounded-xl border border-border/80 bg-background text-xs leading-relaxed whitespace-pre-wrap max-h-[460px] overflow-y-auto text-foreground shadow-inner">
+                <div className="p-5 rounded-xl border border-border/80 bg-background text-xs leading-relaxed whitespace-pre-wrap min-h-[380px] max-h-[480px] overflow-y-auto text-foreground shadow-inner">
                   {tailoredCoverLetterText || (
-                    <div className="text-center py-16 space-y-2 text-muted-foreground">
+                    <div className="text-center py-20 space-y-2 text-muted-foreground">
                       <Mail className="w-8 h-8 text-emerald-500 mx-auto" />
                       <p className="font-semibold text-foreground text-sm">No cover letter drafted yet</p>
                       <p className="text-xs">
-                        Configure the parameters on the left and click Generate to produce a role-tailored letter.
+                        Configure target company, role, and key problems you solve, then click Generate.
                       </p>
                     </div>
                   )}
@@ -1378,7 +987,7 @@ function DashboardContent() {
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement('a')
                         a.href = url
-                        a.download = `${tailorCompany.replace(/\s+/g, '_')}_Cover_Letter.txt`
+                        a.download = `${(tailorCompany || 'Company').replace(/\s+/g, '_')}_Cover_Letter.txt`
                         document.body.appendChild(a)
                         a.click()
                         document.body.removeChild(a)
@@ -1433,23 +1042,20 @@ function DashboardContent() {
                       type="text"
                       value={githubUsername}
                       onChange={(e) => setGithubUsername(e.target.value)}
+                      placeholder="e.g. octocat"
                       className="w-full h-9 px-3 rounded-lg border bg-background text-xs"
                     />
                   </div>
 
-                  <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-1.5">
-                    <div className="flex justify-between font-semibold text-emerald-600 dark:text-emerald-400">
-                      <span>Status: Connected</span>
-                      <span className="font-mono text-xs">14 Public Repos</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Top Languages: TypeScript (54%), Python (26%), Go (12%), Rust (8%)
-                    </p>
-                  </div>
-
                   <Button
                     size="sm"
-                    onClick={() => toast.success(`GitHub activity for ${githubUsername} synced to Walrus Memory!`)}
+                    onClick={() => {
+                      if (!githubUsername.trim()) {
+                        toast.error('Please enter a GitHub username')
+                        return
+                      }
+                      toast.success(`GitHub activity for ${githubUsername} synced to Walrus Memory!`)
+                    }}
                     className="w-full text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
                   >
                     <RefreshCw className="w-3.5 h-3.5" /> Sync GitHub Repos to Memory
@@ -1478,23 +1084,20 @@ function DashboardContent() {
                       type="text"
                       value={linkedinUrl}
                       onChange={(e) => setLinkedinUrl(e.target.value)}
+                      placeholder="e.g. https://linkedin.com/in/username"
                       className="w-full h-9 px-3 rounded-lg border bg-background text-xs"
                     />
                   </div>
 
-                  <div className="p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-1.5">
-                    <div className="flex justify-between font-semibold text-blue-600 dark:text-blue-400">
-                      <span>Status: Synced</span>
-                      <span className="font-mono text-xs">3 Verified Endorsements</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Career Passport deep-link enabled for recruiter one-click verification.
-                    </p>
-                  </div>
-
                   <Button
                     size="sm"
-                    onClick={() => toast.success('LinkedIn credentials synced to Sovereign Passport!')}
+                    onClick={() => {
+                      if (!linkedinUrl.trim()) {
+                        toast.error('Please enter a LinkedIn URL')
+                        return
+                      }
+                      toast.success('LinkedIn credentials synced to Sovereign Passport!')
+                    }}
                     className="w-full text-xs font-semibold gap-1.5 border border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
                     variant="outline"
                   >

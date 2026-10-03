@@ -106,12 +106,10 @@ export default function ProgressPage() {
       const appsData = await appsRes.json()
       const appsCount = Array.isArray(appsData.applications) ? appsData.applications.length : 0
 
-      let localSkills: string[] = ['TypeScript', 'React', 'Next.js', 'TailwindCSS', 'Node.js', 'REST APIs']
-      let localRoles: string[] = ['Fullstack Engineer', 'Frontend Engineer']
-      let localExp: WorkExperienceItem[] = [
-        { role: 'Fullstack Developer', company: 'Digital Innovations', duration: '2023 - Present' }
-      ]
-      let localCerts: string[] = ['AWS Certified Cloud Practitioner', 'Professional Web Developer']
+      let localSkills: string[] = []
+      let localRoles: string[] = []
+      let localExp: WorkExperienceItem[] = []
+      let localCerts: string[] = []
 
       const localCv = localStorage.getItem('careerace_parsed_profile')
       if (localCv) {

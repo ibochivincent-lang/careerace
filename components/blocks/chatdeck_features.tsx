@@ -272,14 +272,14 @@ export function ChatdeckFeatures() {
     <div className="space-y-24 py-12">
       {/* ── HOW IT WORKS SECTION ── */}
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 scroll-mt-24">
-        <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
+        <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
           <Badge variant="outline" className="px-3.5 py-1 text-xs font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
             Streamlined 3-Step Flow
           </Badge>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             How it works.
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
             Upload, polish, and export a role-ready resume and tailored application in 15 seconds.
           </p>
         </div>
@@ -333,10 +333,10 @@ export function ChatdeckFeatures() {
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-xs">
                 Real-Time Opportunities
               </Badge>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Jobs are curated to you, tailored to job description.
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Career Ace evaluates active job feeds across the web and computes your exact ATS fit score before you even apply.
               </p>
             </div>
@@ -372,10 +372,10 @@ export function ChatdeckFeatures() {
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-xs">
                 Instant Cover Letter Studio
               </Badge>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Cover letters written from your resume and the job post.
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Your real wins, in the company's own language. Edit it, regenerate with a different problem-solving angle, and export.
               </p>
             </div>
@@ -390,13 +390,13 @@ export function ChatdeckFeatures() {
 
               {/* Floating Metric Callout */}
               <div className="inline-block p-2 rounded-lg bg-emerald-600 text-white text-xs font-medium shadow-md shadow-emerald-600/30">
-                Pulls the 2M+ RPS metric from your resume.
+                Pulls real metrics directly from your resume.
               </div>
 
               <div className="space-y-2 text-muted-foreground text-xs leading-relaxed">
                 <p className="font-semibold text-foreground">Dear Google Infrastructure Hiring Team,</p>
                 <p>
-                  I build the high-throughput systems this role owns. At Stripe, I designed distributed backend services that handle <strong>2M+ requests per second</strong>, and led the team that cut payment p99 latency by 45ms for enterprise tier accounts.
+                  I build the high-throughput systems this role owns. At Stripe, I designed distributed backend services that handle high-volume event streams, and led the team that cut payment p99 latency by 45ms for enterprise tier accounts.
                 </p>
                 <p>
                   Your posting asks for production-grade Go, distributed consensus, and Kubernetes at planetary scale. That has been my day job for four years…
@@ -409,11 +409,11 @@ export function ChatdeckFeatures() {
 
       {/* ── FAQ ACCORDION SECTION ── */}
       <section className="max-w-4xl mx-auto px-4">
-        <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
+        <div className="text-center max-w-2xl mx-auto mb-10 space-y-3">
           <Badge variant="outline" className="px-3.5 py-1 text-xs font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
             Frequently Asked Questions
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
             Everything you need to know.
           </h2>
         </div>

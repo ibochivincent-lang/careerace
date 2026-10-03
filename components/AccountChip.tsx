@@ -47,7 +47,7 @@ export function AccountChip({ address }: { address: string }) {
         className="flex items-center gap-2 rounded-full border border-border/80 bg-card/80 py-1.5 pl-2 pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-sm"
       >
         <span aria-hidden className="size-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
-          {username ? username[0].toUpperCase() : '✦'}
+          {username ? username[0].toUpperCase() : address.slice(2, 3).toUpperCase() || 'U'}
         </span>
         <div className="flex items-center gap-1.5 text-xs">
           {username && (

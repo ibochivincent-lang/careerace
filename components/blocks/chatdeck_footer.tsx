@@ -31,7 +31,7 @@ export function ChatdeckFooter() {
             <ul className="space-y-2">
               <li><a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Features</a></li>
               <li><a href="#how-it-works" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">How it works</a></li>
-              <li><a href="#pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Pricing</a></li>
+              <li><a href="/pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Pricing</a></li>
               <li><button type="button" onClick={() => router.push('/dashboard?tab=resumes')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Resume Editor</button></li>
               <li><button type="button" onClick={() => router.push('/memory')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Walrus Vault</button></li>
             </ul>

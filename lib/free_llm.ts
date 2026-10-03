@@ -161,7 +161,7 @@ function generateIntelligentFallback(prompt: string, systemPrompt: string): stri
     const extractedName = introMatch[1].trim();
     // Ignore common non-name words
     if (!["looking", "a developer", "an engineer", "ready", "interested", "trying", "applying"].includes(extractedName.toLowerCase())) {
-      return `Nice to meet you, **${extractedName}**! 👋\n\nI have securely sealed your name into your sovereign Walrus Memory vault. To help build your verified CV and match you with live engineering roles, what kind of work or role are you looking for, and what seniority level (e.g. Entry-level, Mid-level, or Senior)?`;
+      return `Nice to meet you, **${extractedName}**!\n\nI have securely sealed your name into your sovereign Walrus Memory vault. To help build your verified CV and match you with live engineering roles, what kind of work or role are you looking for, and what seniority level (e.g. Entry-level, Mid-level, or Senior)?`;
     }
   }
 

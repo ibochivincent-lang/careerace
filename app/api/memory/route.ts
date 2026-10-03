@@ -128,3 +128,62 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    let address = await getOwnerAddress();
+    if (!address) {
+      address = "0x0000000000000000000000000000000000000000000000000000000000000001";
+    }
+
+    const { forgetFact } = await import("@/lib/memory_contract");
+
+    // Optional query param or body for a single fact
+    let singleClaim = "";
+    try {
+      const { searchParams } = new URL(req.url);
+      singleClaim = searchParams.get("claim") || "";
+      if (!singleClaim) {
+        const body = await req.json().catch(() => ({}));
+        singleClaim = body.claim || "";
+      }
+    } catch {}
+
+    if (singleClaim) {
+      const outcome = await forgetFact(address, singleClaim);
+      return NextResponse.json({ success: true, outcome });
+    }
+
+    // Otherwise, clear all active profile & feedback facts
+    const [profile, feedback] = await Promise.all([
+      recallProfile(address, "target role, skills, experience, interview feedback, identity, education"),
+      recallFeedback(address, "target role, skills, experience, interview feedback, identity, education"),
+    ]);
+
+    const merged = unionFacts(profile, feedback);
+    const resolved = resolveConflicts(merged);
+
+    const cleared: any[] = [];
+    for (const fact of resolved.active) {
+      const [_, __, body] = fact.text.split("|").map((p) => p.trim());
+      const claim = (body ?? fact.text).split(" - SUPERSEDES:")[0].trim();
+      if (claim) {
+        const outcome = await forgetFact(address, claim).catch(() => null);
+        cleared.push({ claim, outcome });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Memory vault cleared successfully",
+      retracted_count: cleared.length,
+      details: cleared,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error?.message || "Failed to reset Walrus Memory" },
+      { status: 500 }
+    );
+  }
+}
+

@@ -100,7 +100,7 @@ export default function ApplicationBoardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job: sampleJob,
-          cv_text: 'Experienced Fullstack TypeScript & Rust engineer proficient in Next.js, Sui Move, distributed systems, and Walrus storage integration.'
+          cv_text: localStorage.getItem('careerace_parsed_profile') || 'General candidate profile'
         })
       })
       const evalData = await evalRes.json()
@@ -190,7 +190,7 @@ export default function ApplicationBoardPage() {
           role: initialRole,
           linkedin: storedLinkedin || '',
           github: storedGithub || '',
-          skills: data?.skills || ['Full Stack Development', 'TypeScript', 'Next.js', 'Distributed Systems'],
+          skills: data?.skills || [],
         })
       })
       .catch(() => {})
@@ -234,8 +234,8 @@ export default function ApplicationBoardPage() {
     setEvaluatingJobId(job.job_id)
     const toastId = toast.loading(`Evaluating "${job.title}" at ${job.company} against your CV...`)
     try {
-      const storedCv = localStorage.getItem('careerace_parsed_profile')
-      let cv_text = 'Experienced Fullstack Engineer proficient in TypeScript, React, Next.js, distributed systems and high-throughput APIs.'
+      const storedCv = localStorage.getItem('careerace_parsed_profile') || localStorage.getItem('careerace_sovereign_profile')
+      let cv_text = 'Candidate profile and verified career achievements.'
       if (storedCv) {
         try {
           const parsed = JSON.parse(storedCv)
@@ -321,8 +321,8 @@ export default function ApplicationBoardPage() {
 
   function openAtsKitModal(app: ApplicationItem) {
     const storedName = localStorage.getItem('careerace_candidate_name') || ''
-    const storedCv = localStorage.getItem('careerace_parsed_profile')
-    let skills = ['TypeScript', 'React', 'Node.js', 'Next.js']
+    const storedCv = localStorage.getItem('careerace_parsed_profile') || localStorage.getItem('careerace_sovereign_profile')
+    let skills: string[] = []
     if (storedCv) {
       try {
         const parsed = JSON.parse(storedCv)
@@ -728,12 +728,12 @@ export default function ApplicationBoardPage() {
                   onChange={(e) => setSelectedFeed(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-input bg-background text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
                 >
-                  <option value="all">🌐 All Feeds Aggregated (Highest Yield)</option>
-                  <option value="arbeitnow">💼 Arbeitnow (300+ Verified Global Tech)</option>
-                  <option value="jobicy">🚀 Jobicy v2 (Tech &amp; Engineering)</option>
-                  <option value="remotive">⚡ Remotive (Global Remote)</option>
-                  <option value="weworkremotely">🌍 WeWorkRemotely</option>
-                  <option value="himalayas">🏔️ Himalayas</option>
+                  <option value="all">All Feeds Aggregated (Highest Yield)</option>
+                  <option value="arbeitnow">Arbeitnow (300+ Verified Global Tech)</option>
+                  <option value="jobicy">Jobicy v2 (Tech &amp; Engineering)</option>
+                  <option value="remotive">Remotive (Global Remote)</option>
+                  <option value="weworkremotely">WeWorkRemotely</option>
+                  <option value="himalayas">Himalayas</option>
                 </select>
               </div>
 
@@ -812,11 +812,11 @@ export default function ApplicationBoardPage() {
 
                       <div className="flex flex-wrap items-center gap-1.5 pt-1">
                         <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
-                          📍 {job.location || 'Remote'}
+                          {job.location || 'Remote'}
                         </span>
                         {job.salary && (
                           <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">
-                            💰 {job.salary}
+                            {job.salary}
                           </span>
                         )}
                       </div>
