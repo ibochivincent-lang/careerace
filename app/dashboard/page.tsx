@@ -11,12 +11,12 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'motion/react'
 import {
-  Briefcase, Search, Upload, FileText, CheckCircle2,
-  ChevronRight, ChevronLeft, Paperclip, Sparkles, MessageSquare,
-  Award, User, GraduationCap, Send, Bot, Plus, X, AlertCircle,
-  Building, ShieldCheck, Phone, Mail, Database, ExternalLink, Lock,
+  Upload, FileText, CheckCircle2,
+  ChevronRight, ChevronLeft, Sparkles, MessageSquare,
+  Send, Bot, X,
+  ShieldCheck, Mail, ExternalLink,
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
-  Copy, Trash2, ArrowUpRight
+  Copy
 } from 'lucide-react'
 import { AnimatedScoreGauge } from '@/components/AnimatedScoreGauge'
 import { AnimatedProgressBar } from '@/components/AnimatedProgressBar'
@@ -73,9 +73,6 @@ function DashboardContent() {
   const searchParams = useSearchParams()
   const activeTab = searchParams.get('tab') || 'overview'
 
-  const [sessionAddress, setSessionAddress] = useState<string | null>(null)
-  const [isLoadingSession, setIsLoadingSession] = useState(true)
-
   // Candidate CV File Attachment state
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -83,11 +80,8 @@ function DashboardContent() {
   const [parsedProfile, setParsedProfile] = useState<any>(INITIAL_SOVEREIGN_PROFILE)
   const [isSavingMemory, setIsSavingMemory] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
-  const [cvText, setCvText] = useState('')
-  const [showHighlights, setShowHighlights] = useState(true)
 
-  // Universal Job Harvester state
-  const [isHarvesting, setIsHarvesting] = useState(false)
+  // Job Listings state
   const [harvestedJobs, setHarvestedJobs] = useState<any[]>([])
 
   // Career Ace AI Copilot Chatbot state
@@ -204,20 +198,6 @@ function DashboardContent() {
         if (loaded.target_roles?.[0]) setTailorRole(loaded.target_roles[0])
       }
     } catch {}
-
-    fetch('/api/auth/session')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.authenticated && data.address) {
-          setSessionAddress(data.address)
-        }
-      })
-      .catch((err) => {
-        console.warn('Session verification notice:', err)
-      })
-      .finally(() => {
-        setIsLoadingSession(false)
-      })
 
     // Load initial curated roles
     fetch('/api/harvest?query=software%20engineer')
@@ -401,7 +381,6 @@ function DashboardContent() {
       }
       if (data.profile) {
         setParsedProfile(data.profile)
-        setShowHighlights(true)
         toast.success(`CV uploaded and parsed successfully for ${data.profile.applicant_name || 'Candidate'}!`)
         setChatMessages((prev) => [
           ...prev,

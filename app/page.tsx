@@ -12,7 +12,7 @@ import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import {
   Sparkles, Database, Lock, Fingerprint, Cpu, Globe, ExternalLink,
-  ShieldCheck, ArrowRight, Bot, Paperclip, Search
+  ShieldCheck, ArrowRight
 } from 'lucide-react'
 
 export default function CareerAceLandingPage() {

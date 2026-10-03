@@ -13,10 +13,8 @@ import {
   Sparkles,
   Award,
   Bell,
-  CheckCircle2,
   FileText,
   Mail,
-  ExternalLink,
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
