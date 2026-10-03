@@ -693,7 +693,15 @@ export function parseCvText(rawText: string): ParsedCv {
  * AI-assisted CV parser: Calls free OpenRouter/Ollama LLM to parse raw CV text into accurate JSON,
  * falling back gracefully to the rule-based extractor.
  */
-export async function parseCvWithAi(rawText: string): Promise<ParsedCv> {
+export async function parseCvWithAi(
+  rawText: string,
+  custom_keys?: {
+    google?: string;
+    groq?: string;
+    openrouter?: string;
+    openai?: string;
+  }
+): Promise<ParsedCv> {
   const fallback = parseCvText(rawText);
 
   try {
@@ -730,7 +738,8 @@ Extract ONLY factual data present in the text. Do not invent fake companies or s
 
     const aiParsed = await callFreeLlmJson<ParsedCv>(
       rawText.slice(0, 4000),
-      systemPrompt
+      systemPrompt,
+      custom_keys
     );
     if (
       aiParsed &&

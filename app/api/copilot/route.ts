@@ -296,6 +296,7 @@ RULES:
         prompt: latest,
         system_prompt: systemPrompt,
         max_tokens: 350,
+        custom_keys: body.custom_keys,
       });
     }
 

@@ -2,91 +2,140 @@ export interface FreeLlmOptions {
   prompt: string;
   system_prompt?: string;
   max_tokens?: number;
+  custom_keys?: {
+    google?: string;
+    groq?: string;
+    openrouter?: string;
+    openai?: string;
+  };
 }
 
 export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
-  const openRouterKey = process.env.OPENROUTER_API_KEY || "";
-  const groqKey = process.env.GROQ_API_KEY || "";
-  const openaiKey = process.env.OPENAI_API_KEY || "";
-
-  // 1. Try Groq if configured (ultra-fast, free tier available)
-  if (groqKey) {
-    try {
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${groqKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-            { role: "user", content: options.prompt }
-          ],
-          max_tokens: options.max_tokens || 800
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
-      }
-    } catch (_e) {}
+  let cookieKeys: Record<string, string> = {};
+  try {
+    const { readKeyBag } = await import("./keys.ts");
+    const bag = await readKeyBag();
+    cookieKeys = bag.keys || {};
+  } catch (_e) {
+    // Outside request context or running in non-cookie context
   }
 
-  // 2. Try OpenRouter (DeepSeek R1 / Qwen 2.5 / Meta Llama free tier)
-  if (openRouterKey) {
-    try {
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openRouterKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://github.com/ibochivincent-lang/careerace",
-          "X-Title": "Career Ace"
-        },
-        body: JSON.stringify({
-          model: "deepseek/deepseek-r1:free",
-          messages: [
-            ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-            { role: "user", content: options.prompt }
-          ],
-          max_tokens: options.max_tokens || 800
-        })
-      });
+  const geminiKey =
+    options.custom_keys?.google ||
+    cookieKeys.google ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    "";
 
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
-      }
-    } catch (_e) {}
-  }
+  const groqKey =
+    options.custom_keys?.groq ||
+    cookieKeys.groq ||
+    process.env.GROQ_API_KEY ||
+    "";
 
-  // 3. Try Google Gemini API if GEMINI_API_KEY or GOOGLE_API_KEY is present
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+  const openRouterKey =
+    options.custom_keys?.openrouter ||
+    cookieKeys.openrouter ||
+    process.env.OPENROUTER_API_KEY ||
+    "";
+
+  const openaiKey =
+    options.custom_keys?.openai ||
+    cookieKeys.openai ||
+    process.env.OPENAI_API_KEY ||
+    "";
+
+  // 1. Try Google Gemini API (gemini-2.0-flash / gemini-1.5-flash with free tier)
   if (geminiKey) {
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            ...(options.system_prompt ? [{ role: "user", parts: [{ text: `SYSTEM INSTRUCTIONS:\n${options.system_prompt}` }] }, { role: "model", parts: [{ text: "Understood. I will act as the Career Ace AI Copilot according to these guidelines." }] }] : []),
-            { role: "user", parts: [{ text: options.prompt }] }
-          ],
+    for (const modelName of ["gemini-2.0-flash", "gemini-1.5-flash"]) {
+      try {
+        const payload: Record<string, unknown> = {
+          contents: [{ role: "user", parts: [{ text: options.prompt }] }],
           generationConfig: {
             maxOutputTokens: options.max_tokens || 800,
+          },
+        };
+        if (options.system_prompt) {
+          payload.system_instruction = {
+            parts: [{ text: options.system_prompt }],
+          };
+        }
+
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
           }
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return text;
-      }
-    } catch (_e) {}
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        }
+      } catch (_e) {}
+    }
+  }
+
+  // 2. Try Groq Cloud if configured (ultra-fast, free tier available)
+  if (groqKey) {
+    for (const model of ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+              { role: "user", content: options.prompt }
+            ],
+            max_tokens: options.max_tokens || 800
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        }
+      } catch (_e) {}
+    }
+  }
+
+  // 3. Try OpenRouter (DeepSeek R1 / Qwen 2.5 / Meta Llama free tier)
+  if (openRouterKey) {
+    for (const model of ["deepseek/deepseek-r1:free", "meta-llama/llama-3.3-70b-instruct:free", "qwen/qwen-2.5-coder-32b-instruct:free"]) {
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openRouterKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/ibochivincent-lang/careerace",
+            "X-Title": "Career Ace"
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+              { role: "user", content: options.prompt }
+            ],
+            max_tokens: options.max_tokens || 800
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        }
+      } catch (_e) {}
+    }
   }
 
   // 4. Try OpenAI API if present
@@ -203,11 +252,16 @@ function generateIntelligentFallback(prompt: string, systemPrompt: string): stri
   return `${greeting}I am Career Ace, your autonomous career copilot. Every detail you share is sealed into your decentralized Walrus Memory vault.\n\nWhat would you like to update or explore today? You can share your full name, target role, technical skills, or practice STAR+R interview questions!`;
 }
 
-export async function callFreeLlmJson<T>(prompt: string, system_prompt: string): Promise<T | null> {
+export async function callFreeLlmJson<T>(
+  prompt: string,
+  system_prompt: string,
+  custom_keys?: FreeLlmOptions["custom_keys"]
+): Promise<T | null> {
   const raw = await callFreeLlm({
     prompt,
     system_prompt: `${system_prompt}\nReturn ONLY a valid, raw JSON object without markdown formatting or backticks.`,
     max_tokens: 1500,
+    custom_keys,
   });
 
   try {

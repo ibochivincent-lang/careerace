@@ -13,10 +13,23 @@ export async function POST(req: Request) {
     let extractionMethod = "text";
     let fileBuffer: Buffer | null = null;
 
+    let customKeys: { google?: string; groq?: string; openrouter?: string; openai?: string } | undefined;
+
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       const clientExtractedText = formData.get("cv_text") as string | null;
+
+      const gKey = (formData.get("gemini_key") || formData.get("google_key")) as string | null;
+      const grKey = formData.get("groq_key") as string | null;
+      const orKey = formData.get("openrouter_key") as string | null;
+      if (gKey || grKey || orKey) {
+        customKeys = {
+          google: gKey || undefined,
+          groq: grKey || undefined,
+          openrouter: orKey || undefined,
+        };
+      }
 
       // If client-side PDF.js already extracted the text in browser, prioritize it
       if (clientExtractedText && clientExtractedText.trim().length > 10) {
@@ -61,6 +74,9 @@ export async function POST(req: Request) {
       const body = await req.json();
       cvText = body.cv_text || body.text || "";
       extractionMethod = "pasted_text";
+      if (body.custom_keys) {
+        customKeys = body.custom_keys;
+      }
     }
 
     // Clean up extracted text
@@ -81,10 +97,10 @@ export async function POST(req: Request) {
     // Always run the reliable rule-based parser
     const ruleBasedProfile = parseCvText(cvText);
 
-    // Attempt AI-enhanced parsing (only if OpenRouter key is set)
+    // Attempt AI-enhanced parsing (uses Gemini / Groq / OpenRouter)
     let finalProfile = ruleBasedProfile;
     try {
-      const aiProfile = await parseCvWithAi(cvText);
+      const aiProfile = await parseCvWithAi(cvText, customKeys);
       if (
         aiProfile &&
         aiProfile.skills &&

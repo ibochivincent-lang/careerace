@@ -20,9 +20,11 @@ import {
   RefreshCw,
   LogOut,
   Copy,
-  Check
+  Check,
+  Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { saveProviderKey } from '@/app/actions/keys'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -31,6 +33,10 @@ export default function SettingsPage() {
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
   const [isLoadingSession, setIsLoadingSession] = useState(true)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [geminiKey, setGeminiKey] = useState('')
+  const [groqKey, setGroqKey] = useState('')
+  const [openRouterKey, setOpenRouterKey] = useState('')
+  const [isSavingAiKeys, setIsSavingAiKeys] = useState(false)
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
 
   useEffect(() => {
@@ -62,6 +68,14 @@ export default function SettingsPage() {
     setCandidateName(cleanName)
     setTargetTitle(cleanTitle)
 
+    // Load stored AI keys
+    const storedGemini = localStorage.getItem('careerace_gemini_key') || ''
+    const storedGroq = localStorage.getItem('careerace_groq_key') || ''
+    const storedOpenRouter = localStorage.getItem('careerace_openrouter_key') || ''
+    setGeminiKey(storedGemini)
+    setGroqKey(storedGroq)
+    setOpenRouterKey(storedOpenRouter)
+
     // Load zkLogin session
     fetch('/api/auth/session')
       .then(res => res.json())
@@ -78,6 +92,26 @@ export default function SettingsPage() {
     localStorage.setItem('careerace_candidate_name', candidateName.trim())
     localStorage.setItem('careerace_target_title', targetTitle.trim())
     toast.success('Candidate profile preferences saved.')
+  }
+
+  async function handleSaveAiKeys() {
+    setIsSavingAiKeys(true)
+    try {
+      localStorage.setItem('careerace_gemini_key', geminiKey.trim())
+      localStorage.setItem('careerace_groq_key', groqKey.trim())
+      localStorage.setItem('careerace_openrouter_key', openRouterKey.trim())
+
+      if (sessionAddress) {
+        if (geminiKey.trim()) await saveProviderKey('google', geminiKey.trim()).catch(() => {})
+        if (groqKey.trim()) await saveProviderKey('groq', groqKey.trim()).catch(() => {})
+        if (openRouterKey.trim()) await saveProviderKey('openrouter', openRouterKey.trim()).catch(() => {})
+      }
+      toast.success('Free AI model API keys saved securely.')
+    } catch {
+      toast.error('Failed to save API keys.')
+    } finally {
+      setIsSavingAiKeys(false)
+    }
   }
 
   function handleExportVault() {
@@ -249,7 +283,130 @@ export default function SettingsPage() {
           </div>
         </Card>
 
+        {/* Free AI Models & API Keys Configuration */}
+        <Card className="p-6 space-y-6 border-l-4 border-l-purple-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-500" />
+              <h2 className="font-bold text-base">Free AI Models & API Keys</h2>
+            </div>
+            <Badge variant="outline" className="font-mono text-[11px] w-fit border-purple-500/40 text-purple-600 dark:text-purple-400">
+              Zero-Cost Intelligence Engine
+            </Badge>
+          </div>
 
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Power your autonomous Career Ace Copilot, CV ATS parsing, Cover Letter tailoring, and STAR+R interview coach
+            with 100% free-tier AI models. Keys are sealed client-side with AES-256-GCM and never logged in cleartext.
+          </p>
+
+          <div className="space-y-4">
+            {/* Google Gemini */}
+            <div className="rounded-lg border p-4 bg-card/40 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-xs text-foreground">Google Gemini 2.0 Flash / 1.5 Flash</span>
+                  <Badge variant="secondary" className="text-[10px] font-mono py-0">15 RPM · 1M TPM · Free</Badge>
+                </div>
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary flex items-center gap-1 hover:underline"
+                >
+                  Get Free Gemini Key <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <input
+                id="gemini-key"
+                type="password"
+                value={geminiKey}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeminiKey(e.target.value)}
+                placeholder="AIzaSy... (Paste Google AI Studio Key)"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Fastest response speed and largest context window. Ideal for full CV analysis and real-time chat.
+              </p>
+            </div>
+
+            {/* Groq Cloud */}
+            <div className="rounded-lg border p-4 bg-card/40 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-xs text-foreground">Groq Cloud (Llama 3.3 70B Versatile)</span>
+                  <Badge variant="secondary" className="text-[10px] font-mono py-0">30 RPM · ~300 T/s · Free</Badge>
+                </div>
+                <a
+                  href="https://console.groq.com/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary flex items-center gap-1 hover:underline"
+                >
+                  Get Free Groq Key <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <input
+                id="groq-key"
+                type="password"
+                value={groqKey}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGroqKey(e.target.value)}
+                placeholder="gsk_... (Paste Groq Cloud Key)"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Near-instantaneous token generation. Ideal for quick interview coaching turns and rapid bullet polishing.
+              </p>
+            </div>
+
+            {/* OpenRouter */}
+            <div className="rounded-lg border p-4 bg-card/40 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-xs text-foreground">OpenRouter (DeepSeek R1 & Qwen 2.5)</span>
+                  <Badge variant="secondary" className="text-[10px] font-mono py-0">:free Open Models</Badge>
+                </div>
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary flex items-center gap-1 hover:underline"
+                >
+                  Get Free OpenRouter Key <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <input
+                id="openrouter-key"
+                type="password"
+                value={openRouterKey}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOpenRouterKey(e.target.value)}
+                placeholder="sk-or-v1-... (Paste OpenRouter Key)"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Access free reasoning models such as DeepSeek R1 free tier and Qwen 2.5 Coder.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Keys remain private to your browser session and are never shared.</span>
+            </div>
+            <Button size="sm" onClick={handleSaveAiKeys} disabled={isSavingAiKeys} className="text-xs gap-1.5 shrink-0">
+              {isSavingAiKeys ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" /> Save AI Model Keys
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
 
         {/* Walrus Decentralized Storage Configuration */}
         <Card className="p-6 space-y-4">
