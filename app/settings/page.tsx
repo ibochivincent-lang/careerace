@@ -18,7 +18,9 @@ import {
   ExternalLink,
   CheckCircle2,
   RefreshCw,
-  LogOut
+  LogOut,
+  Copy,
+  Check
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -29,13 +31,36 @@ export default function SettingsPage() {
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
   const [isLoadingSession, setIsLoadingSession] = useState(true)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
 
   useEffect(() => {
     // Load local profile settings
     const storedName = localStorage.getItem('careerace_candidate_name') || ''
     const storedTitle = localStorage.getItem('careerace_target_title') || ''
-    setCandidateName(storedName)
-    setTargetTitle(storedTitle)
+    const storedProfile = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+
+    let cleanName = storedName
+    let cleanTitle = storedTitle
+
+    if (storedProfile) {
+      try {
+        const parsed = JSON.parse(storedProfile)
+        if (parsed.name && !parsed.name.startsWith('0x') && parsed.name.toLowerCase() !== 'candidate') {
+          cleanName = parsed.name
+        }
+        if (parsed.targetRole && !cleanTitle) {
+          cleanTitle = parsed.targetRole
+        }
+      } catch {}
+    }
+
+    // Never let candidateName be a raw 0x... address
+    if (cleanName.startsWith('0x')) {
+      cleanName = ''
+    }
+
+    setCandidateName(cleanName)
+    setTargetTitle(cleanTitle)
 
     // Load zkLogin session
     fetch('/api/auth/session')
@@ -127,19 +152,42 @@ export default function SettingsPage() {
 
           {sessionAddress ? (
             <div className="space-y-3 pt-2">
-              <div className="rounded-lg border bg-muted/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-[11px] font-mono uppercase text-muted-foreground block">Sui Address</span>
-                  <span className="font-mono text-xs font-semibold select-all break-all">{sessionAddress}</span>
+              <div className="rounded-lg border bg-muted/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[11px] font-mono uppercase text-muted-foreground block mb-0.5">Sui zkLogin Address</span>
+                  <span className="font-mono text-xs font-semibold select-all break-all text-foreground">{sessionAddress}</span>
                 </div>
-                <a
-                  href={`https://suiscan.xyz/testnet/account/${sessionAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary flex items-center gap-1 hover:underline whitespace-nowrap"
-                >
-                  Suiscan <ExternalLink className="w-3 h-3" />
-                </a>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(sessionAddress)
+                      setHasCopiedAddress(true)
+                      toast.success('Sui address copied to clipboard')
+                      setTimeout(() => setHasCopiedAddress(false), 2000)
+                    }}
+                    className="h-7 text-xs gap-1 px-2.5"
+                  >
+                    {hasCopiedAddress ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" /> Copy
+                      </>
+                    )}
+                  </Button>
+                  <a
+                    href={`https://suiscan.xyz/testnet/account/${sessionAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary flex items-center gap-1 hover:underline whitespace-nowrap px-2"
+                  >
+                    Suiscan <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
 
               <div className="flex justify-end pt-1">
