@@ -42,7 +42,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using Career Ace (available at <code>https://careerace.vercel.app</code>), you agree to be
+              By accessing or using Career Ace (available at <code>https://careerace.online</code>), you agree to be
               bound by these Terms of Service. If you do not agree to these terms, do not access or use the application.
             </p>
           </section>
@@ -117,7 +117,7 @@ export default function TermsOfServicePage() {
             <div className="p-4 rounded-lg border bg-card text-foreground font-mono text-xs">
               <p>Creator: IboTV (ibochivincent-lang)</p>
               <p>Contact: ibochivincent@gmail.com</p>
-              <p>Domain: https://careerace.vercel.app</p>
+              <p>Domain: https://careerace.online</p>
             </div>
           </section>
         </div>

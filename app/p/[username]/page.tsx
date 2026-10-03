@@ -37,11 +37,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${decoded} — Verified Candidate Passport`,
       description: `View ${decoded}'s verified skills, work accomplishments, and mock interview performance records.`,
-      url: `https://careerace.vercel.app/p/${username}`,
+      url: `https://careerace.online/p/${username}`,
       siteName: 'Career Ace',
       images: [
         {
-          url: 'https://careerace.vercel.app/careerace_logo.png',
+          url: 'https://careerace.online/careerace_logo.png',
           width: 512,
           height: 512,
           alt: `${decoded} Career Ace Passport`,
@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary',
       title: `${decoded} — Verified Candidate Passport`,
       description: `Verified technical proficiencies and STAR+R interview assessments.`,
-      images: ['https://careerace.vercel.app/careerace_logo.png'],
+      images: ['https://careerace.online/careerace_logo.png'],
     },
   }
 }

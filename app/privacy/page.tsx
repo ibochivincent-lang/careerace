@@ -130,7 +130,7 @@ export default function PrivacyPolicyPage() {
             <div className="p-4 rounded-lg border bg-card text-foreground font-mono text-xs">
               <p>Developer: IboTV (ibochivincent-lang)</p>
               <p>Support Email: ibochivincent@gmail.com</p>
-              <p>Platform: https://careerace.vercel.app</p>
+              <p>Platform: https://careerace.online</p>
             </div>
           </section>
         </div>
