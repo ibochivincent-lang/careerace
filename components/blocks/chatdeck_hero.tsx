@@ -43,13 +43,18 @@ const fadeUpVariants: Variants = {
 export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
   const [acceptedEdits, setAcceptedEdits] = useState<Record<number, boolean>>({ 1: true, 2: true })
 
+  const activeRevisionsCount = Object.values(acceptedEdits).filter(Boolean).length
+
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="py-12 md:py-16 space-y-12"
+      className="py-12 md:py-16 space-y-12 relative"
     >
+      {/* ── Background Subtle Glow Orbs ── */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
       {/* ── Top Pill Badge ── */}
       <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-semibold shadow-sm backdrop-blur">
@@ -64,7 +69,10 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
           className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[1.08]"
           variants={fadeUpVariants}
         >
-          for your career.
+          The Autonomous AI Agent <br className="hidden sm:inline" />
+          <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent">
+            for your career.
+          </span>
         </motion.h1>
 
         <motion.p
@@ -133,8 +141,8 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
               <span className="ml-3 text-xs font-mono text-muted-foreground">careerace.online/dashboard</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-                <ShieldCheck className="w-3 h-3 mr-1" /> Sovereign Vault Sealed
+              <Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 text-xs">
+                <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Sovereign Vault Sealed
               </Badge>
             </div>
           </div>
@@ -148,33 +156,33 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
                   <img src="/careerace_logo.png" alt="Career Ace" className="w-full h-full object-contain dark:invert" />
                 </div>
                 <span className="font-bold text-sm">Career Ace</span>
-                <Badge variant="secondary" className="ml-auto text-[9px] text-emerald-600 bg-emerald-500/10">PREMIUM</Badge>
+                <Badge variant="secondary" className="ml-auto text-xs text-emerald-600 bg-emerald-500/10">PREMIUM</Badge>
               </div>
 
               <div className="space-y-1 text-xs">
                 <div className="px-2.5 py-1.5 rounded-lg text-muted-foreground flex items-center gap-2 hover:bg-muted/60">
-                  <Layers className="w-3.5 h-3.5" /> Overview
+                  <Layers className="w-4 h-4" /> Overview
                 </div>
                 <div className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5" /> Resumes
+                  <FileText className="w-4 h-4" /> Resumes
                 </div>
                 <div className="px-2.5 py-1.5 rounded-lg text-muted-foreground flex items-center gap-2 hover:bg-muted/60">
-                  <Sparkles className="w-3.5 h-3.5" /> Tailor
+                  <Sparkles className="w-4 h-4" /> Tailor
                 </div>
                 <div className="px-2.5 py-1.5 rounded-lg text-muted-foreground flex items-center gap-2 hover:bg-muted/60">
-                  <Briefcase className="w-3.5 h-3.5" /> Job Board
+                  <Briefcase className="w-4 h-4" /> Job Board
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-border/50 text-[11px] space-y-1">
-                <span className="px-2 text-[10px] uppercase font-bold text-muted-foreground">PROFILES</span>
+              <div className="pt-2 border-t border-border/50 text-xs space-y-1">
+                <span className="px-2 uppercase font-bold text-muted-foreground text-xs">PROFILES</span>
                 <div className="px-2 py-1 rounded text-muted-foreground flex items-center justify-between">
                   <span>GitHub</span>
-                  <span className="text-[10px] text-emerald-500 font-mono">Connected</span>
+                  <span className="text-xs text-emerald-500 font-mono">Connected</span>
                 </div>
                 <div className="px-2 py-1 rounded text-muted-foreground flex items-center justify-between">
                   <span>LinkedIn</span>
-                  <span className="text-[10px] text-emerald-500 font-mono">Synced</span>
+                  <span className="text-xs text-emerald-500 font-mono">Synced</span>
                 </div>
               </div>
             </div>
@@ -183,7 +191,7 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
             <div className="lg:col-span-6 p-4 sm:p-6 bg-card flex flex-col justify-between overflow-y-auto">
               <div className="space-y-4">
                 <div className="border-b pb-3">
-                  <h3 className="text-xl font-bold">Ryan Park</h3>
+                  <h3 className="text-xl font-bold text-foreground">Ryan Park</h3>
                   <p className="text-xs text-muted-foreground">
                     ryan@park.dev · +1 (415) 482-3910 · Austin, TX · GitHub · LinkedIn
                   </p>
@@ -192,68 +200,68 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     <span>EXPERIENCE</span>
-                    <span className="text-[10px] text-emerald-500 font-mono">ATS Grade A+ (94%)</span>
+                    <span className="text-xs text-emerald-500 font-mono font-semibold">ATS Grade A+ (94%)</span>
                   </div>
 
                   {/* Experience Block */}
-                  <div className="p-3.5 rounded-xl border border-border/70 bg-background/50 space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between font-semibold">
-                      <span>Software Engineer II · Stripe</span>
-                      <span className="text-muted-foreground font-mono text-[11px]">Jan 2024 – Present</span>
+                  <div className="p-4 rounded-xl border border-border/70 bg-background/50 space-y-3 text-xs">
+                    <div className="flex items-center justify-between font-semibold text-sm">
+                      <span className="text-foreground">Software Engineer II · Stripe</span>
+                      <span className="text-muted-foreground font-mono text-xs">Jan 2024 · Present</span>
                     </div>
 
                     {/* Diff Item 1 */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="p-2 rounded bg-red-500/10 text-red-700 dark:text-red-400 line-through text-[11px] leading-relaxed">
-                        - Designed and shipped distributed infrastructure improvements to Stripe's internal developer platform, reducing build times.
+                    <div className="space-y-2 pt-1">
+                      <div className="p-2.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 line-through text-xs leading-relaxed border border-red-500/10">
+                        Designed and shipped distributed infrastructure improvements to Stripe's internal developer platform, reducing build times.
                       </div>
-                      <div className="p-2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] leading-relaxed border border-emerald-500/20">
-                        + Designed and shipped distributed data pipeline infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers.
+                      <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs leading-relaxed border border-emerald-500/20 font-medium">
+                        Designed and shipped distributed data pipeline infrastructure improvements to Stripe's internal developer tooling platform, reducing median batch processing times by ~40% across 10,000+ daily active engineers.
                       </div>
-                      <div className="flex items-center gap-1.5 pt-0.5">
+                      <div className="flex items-center gap-2 pt-0.5">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setAcceptedEdits(prev => ({ ...prev, 1: true }))}
-                          className="h-6 px-2 text-[10px] text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20"
+                          className="h-7 px-2.5 text-xs font-semibold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20"
                         >
-                          <Check className="w-3 h-3 mr-1" /> Accept
+                          <Check className="w-3.5 h-3.5 mr-1" /> Accept
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setAcceptedEdits(prev => ({ ...prev, 1: false }))}
-                          className="h-6 px-2 text-[10px] text-red-600 hover:bg-red-500/10"
+                          className="h-7 px-2.5 text-xs text-red-600 hover:bg-red-500/10"
                         >
-                          <X className="w-3 h-3 mr-1" /> Reject
+                          <X className="w-3.5 h-3.5 mr-1" /> Reject
                         </Button>
                       </div>
                     </div>
 
                     {/* Diff Item 2 */}
-                    <div className="space-y-1.5 pt-2 border-t border-border/50">
-                      <div className="p-2 rounded bg-red-500/10 text-red-700 dark:text-red-400 line-through text-[11px] leading-relaxed">
-                        - Led a cross-functional initiative to migrate a legacy monorepo CI pipeline to a parallelized architecture.
+                    <div className="space-y-2 pt-2 border-t border-border/50">
+                      <div className="p-2.5 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 line-through text-xs leading-relaxed border border-red-500/10">
+                        Led a cross-functional initiative to migrate a legacy monorepo CI pipeline to a parallelized architecture.
                       </div>
-                      <div className="p-2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] leading-relaxed border border-emerald-500/20">
-                        + Led a cross-functional initiative to migrate a legacy monorepo CI pipeline to a parallelized, cache-aware orchestration architecture — cutting p99 data pipeline latency from 18 min to under 7 min.
+                      <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-xs leading-relaxed border border-emerald-500/20 font-medium">
+                        Led a cross-functional initiative to migrate a legacy monorepo CI pipeline to a parallelized, cache-aware orchestration architecture, cutting p99 data pipeline latency from 18 min to under 7 min.
                       </div>
-                      <div className="flex items-center gap-1.5 pt-0.5">
+                      <div className="flex items-center gap-2 pt-0.5">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setAcceptedEdits(prev => ({ ...prev, 2: true }))}
-                          className="h-6 px-2 text-[10px] text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20"
+                          className="h-7 px-2.5 text-xs font-semibold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20"
                         >
-                          <Check className="w-3 h-3 mr-1" /> Accept
+                          <Check className="w-3.5 h-3.5 mr-1" /> Accept
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setAcceptedEdits(prev => ({ ...prev, 2: false }))}
-                          className="h-6 px-2 text-[10px] text-red-600 hover:bg-red-500/10"
+                          className="h-7 px-2.5 text-xs text-red-600 hover:bg-red-500/10"
                         >
-                          <X className="w-3 h-3 mr-1" /> Reject
+                          <X className="w-3.5 h-3.5 mr-1" /> Reject
                         </Button>
                       </div>
                     </div>
@@ -262,11 +270,24 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
               </div>
 
               {/* Floating Bottom Toolbar */}
-              <div className="mt-4 p-2 rounded-xl bg-muted/70 border flex items-center justify-between text-xs">
-                <span className="font-mono text-muted-foreground text-[11px]">2 of 4 revisions active</span>
+              <div className="mt-4 p-2.5 rounded-xl bg-muted/70 border border-border/70 flex items-center justify-between text-xs">
+                <span className="font-mono text-muted-foreground text-xs">{activeRevisionsCount} of 2 revisions active</span>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" className="h-7 text-xs">Undo all</Button>
-                  <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white">Keep all edits</Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setAcceptedEdits({ 1: false, 2: false })}
+                    className="h-7 text-xs"
+                  >
+                    Undo all
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setAcceptedEdits({ 1: true, 2: true })}
+                    className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                  >
+                    Keep all edits
+                  </Button>
                 </div>
               </div>
             </div>
@@ -279,27 +300,30 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="font-bold text-xs block">Career Ace AI</span>
-                    <span className="text-[10px] text-muted-foreground">Walrus Memory Active</span>
+                    <span className="font-bold text-xs block text-foreground">Career Ace AI</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Walrus Memory Active
+                    </span>
                   </div>
                 </div>
 
                 {/* Assistant Chat Bubble */}
-                <div className="p-3 rounded-xl bg-background border border-border/80 text-xs space-y-2 shadow-sm">
+                <div className="p-3.5 rounded-xl bg-background border border-border/80 text-xs space-y-2 shadow-sm">
                   <p className="font-semibold text-emerald-600 dark:text-emerald-400">Hi Ryan 👋</p>
-                  <p className="text-muted-foreground leading-relaxed text-[11px]">
-                    I'm Career Ace, your autonomous career agent. Your resume scored <strong className="text-foreground">85/100</strong> for ATS — a solid base with high-impact wins ahead.
+                  <p className="text-muted-foreground leading-relaxed text-xs">
+                    I'm Career Ace, your autonomous career agent. Your resume scored <strong className="text-foreground">85/100</strong> for ATS with high-impact wins ahead.
                   </p>
-                  <p className="text-muted-foreground leading-relaxed text-[11px]">
+                  <p className="text-muted-foreground leading-relaxed text-xs">
                     I found 4 high-impact fixes focused on measurable metrics and Google XYZ formula for your target role.
                   </p>
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">
+                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
                     ↑ 4 quantified edits applied
                   </div>
                 </div>
 
                 {/* Target Job Pill */}
-                <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-[11px] text-muted-foreground">
+                <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground block">Tailoring for:</span>
                   <span>Senior Infrastructure Engineer · Stripe</span>
                 </div>
@@ -309,17 +333,17 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
               <div className="space-y-1.5 pt-2">
                 <button
                   type="button"
-                  className="w-full text-left p-2 rounded-lg border bg-background/60 hover:bg-muted text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between"
+                  className="w-full text-left p-2 rounded-lg border bg-background/60 hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between"
                 >
                   <span>Add data volume metrics</span>
-                  <ArrowRight className="w-3 h-3 text-emerald-500" />
+                  <ArrowRight className="w-3.5 h-3.5 text-emerald-500" />
                 </button>
                 <button
                   type="button"
-                  className="w-full text-left p-2 rounded-lg border bg-background/60 hover:bg-muted text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between"
+                  className="w-full text-left p-2 rounded-lg border bg-background/60 hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between"
                 >
                   <span>Highlight distributed systems</span>
-                  <ArrowRight className="w-3 h-3 text-emerald-500" />
+                  <ArrowRight className="w-3.5 h-3.5 text-emerald-500" />
                 </button>
               </div>
             </div>
