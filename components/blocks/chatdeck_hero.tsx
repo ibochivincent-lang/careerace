@@ -52,8 +52,22 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
       animate="visible"
       className="py-12 md:py-16 space-y-12 relative"
     >
-      {/* ── Background Subtle Glow Orbs ── */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      {/* ── Polish-Inspired Emerald Crystal Background ── */}
+      <div
+        className="absolute inset-0 -top-24 pointer-events-none -z-10 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute inset-0 bg-cover bg-top bg-no-repeat opacity-85 dark:opacity-35 transition-opacity duration-700"
+          style={{
+            backgroundImage: "url('/hero-bg-green.webp')",
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0) 98%)",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0) 98%)"
+          }}
+        />
+        {/* Subtle center ambient radial glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[550px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
+      </div>
 
       {/* ── Top Pill Badge ── */}
       <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
