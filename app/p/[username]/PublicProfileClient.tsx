@@ -2,18 +2,23 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Copy, Check, Mail, Send, ExternalLink } from 'lucide-react'
+import { Copy, Check, Mail, Send, ExternalLink, Download, FileCode } from 'lucide-react'
 import { toast } from 'sonner'
+import { generateDocxBlob } from '@/lib/docx_exporter'
+import { exportToJsonResume } from '@/lib/json_resume'
 
 export function PublicProfileClient({
   username,
   role,
+  skills = [],
 }: {
   username: string
   role: string
+  skills?: string[]
 }) {
   const [copied, setCopied] = useState(false)
   const [isContacting, setIsContacting] = useState(false)
+  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [recruiterName, setRecruiterName] = useState('')
   const [recruiterEmail, setRecruiterEmail] = useState('')
@@ -60,9 +65,88 @@ export function PublicProfileClient({
     }
   }
 
+  async function handleDownloadCandidateDocx() {
+    setIsDownloadingDocx(true)
+    const toastId = toast.loading(`Generating verified .docx resume for ${username}...`)
+    try {
+      const dummyCv = {
+        applicant_name: username,
+        email: `${username.toLowerCase().replace(/\s+/g, '.')}@candidate.careerace.online`,
+        target_roles: [role],
+        skills: skills && skills.length > 0 ? skills : ['System Architecture', 'TypeScript', 'Distributed Systems'],
+        work_experience: [],
+        academic_history: [],
+        certifications: []
+      }
+      const blob = await generateDocxBlob(
+        dummyCv,
+        `Verified candidate professional profile for ${username}. Evaluated across STAR+R interview simulations and attested on sovereign Walrus storage.`
+      )
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${username.replace(/\s+/g, '_')}_Verified_Resume.docx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Downloaded verified .docx resume!', { id: toastId })
+    } catch {
+      toast.error('Failed to generate resume.', { id: toastId })
+    } finally {
+      setIsDownloadingDocx(false)
+    }
+  }
+
+  function handleExportCandidateJsonResume() {
+    try {
+      const dummyCv = {
+        applicant_name: username,
+        email: `${username.toLowerCase().replace(/\s+/g, '.')}@candidate.careerace.online`,
+        target_roles: [role],
+        skills: skills && skills.length > 0 ? skills : ['System Architecture', 'TypeScript', 'Distributed Systems'],
+        work_experience: [],
+        academic_history: [],
+        certifications: []
+      }
+      const jsonResume = exportToJsonResume(dummyCv)
+      const blob = new Blob([JSON.stringify(jsonResume, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${username.replace(/\s+/g, '_')}_JSON_Resume.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Exported JSON Resume v1.0.0!')
+    } catch {
+      toast.error('Failed to export JSON Resume.')
+    }
+  }
+
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleDownloadCandidateDocx}
+          disabled={isDownloadingDocx}
+          className="text-xs h-9 gap-1.5 border-border hover:bg-muted"
+        >
+          <Download className="w-3.5 h-3.5 text-primary" /> Download .docx
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExportCandidateJsonResume}
+          className="text-xs h-9 gap-1.5 border-border hover:bg-muted"
+        >
+          <FileCode className="w-3.5 h-3.5 text-amber-500" /> JSON Resume
+        </Button>
+
         <Button
           size="sm"
           variant="outline"

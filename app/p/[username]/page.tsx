@@ -163,7 +163,7 @@ export default async function PublicProfilePage({ params }: Props) {
               </div>
             </div>
 
-            <PublicProfileClient username={profileName} role={targetRole} />
+            <PublicProfileClient username={profileName} role={targetRole} skills={displaySkills} />
           </div>
         </Card>
 
