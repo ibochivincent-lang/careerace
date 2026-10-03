@@ -31,8 +31,13 @@ import {
   ChevronDown,
   ChevronUp,
   Filter,
+  FileCode,
+  Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { AtsXRayDialog } from '@/components/AtsXRayDialog'
+import { generateDocxBlob } from '@/lib/docx_exporter'
+import { exportToJsonResume } from '@/lib/json_resume'
 
 interface ApplicationItem {
   id: string
@@ -140,6 +145,8 @@ export default function ApplicationBoardPage() {
     github: '',
     skills: [],
   })
+  const [isXRayOpen, setIsXRayOpen] = useState(false)
+  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
 
   // Live Multi-Feed Job Search State
   const [searchQuery, setSearchQuery] = useState('')
@@ -340,6 +347,81 @@ export default function ApplicationBoardPage() {
     setCopiedField(fieldName)
     toast.success(`Copied ${fieldName} to clipboard!`)
     setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  async function handleDownloadAtsDocx(targetCompany?: string, targetTitle?: string) {
+    setIsDownloadingDocx(true)
+    const toastId = toast.loading('Compiling tailored ATS .docx resume...')
+    try {
+      const storedCv = localStorage.getItem('careerace_parsed_profile') || localStorage.getItem('careerace_sovereign_profile')
+      let cvData: any = {
+        applicant_name: atsProfile.name || 'Candidate',
+        email: atsProfile.email,
+        phone: atsProfile.phone,
+        github_url: atsProfile.github,
+        linkedin_url: atsProfile.linkedin,
+        skills: atsProfile.skills,
+        work_experience: [],
+        academic_history: [],
+        certifications: []
+      }
+      if (storedCv) {
+        try {
+          cvData = { ...cvData, ...JSON.parse(storedCv) }
+        } catch {}
+      }
+      const summary = `Results-driven software professional aligned for ${targetTitle || 'Software Engineer'} at ${targetCompany || 'Target Employer'}. Demonstrates verified proficiencies in ${(cvData.skills || []).slice(0, 5).join(', ')}.`
+      const blob = await generateDocxBlob(cvData, summary)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const compSlug = (targetCompany || 'tailored').toLowerCase().replace(/[^a-z0-9]/g, '_')
+      a.download = `${(atsProfile.name || 'candidate').replace(/\s+/g, '_')}_${compSlug}_ATS_Resume.docx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success(`Tailored ATS .docx resume for ${targetCompany || 'employer'} downloaded!`, { id: toastId })
+    } catch {
+      toast.error('Failed to generate .docx resume.', { id: toastId })
+    } finally {
+      setIsDownloadingDocx(false)
+    }
+  }
+
+  function handleExportAtsJsonResume() {
+    try {
+      const storedCv = localStorage.getItem('careerace_parsed_profile') || localStorage.getItem('careerace_sovereign_profile')
+      let cvData: any = {
+        applicant_name: atsProfile.name || 'Candidate',
+        email: atsProfile.email,
+        phone: atsProfile.phone,
+        github_url: atsProfile.github,
+        linkedin_url: atsProfile.linkedin,
+        skills: atsProfile.skills,
+        work_experience: [],
+        academic_history: [],
+        certifications: []
+      }
+      if (storedCv) {
+        try {
+          cvData = { ...cvData, ...JSON.parse(storedCv) }
+        } catch {}
+      }
+      const jsonResume = exportToJsonResume(cvData)
+      const blob = new Blob([JSON.stringify(jsonResume, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(atsProfile.name || 'candidate').replace(/\s+/g, '_')}_JSON_Resume.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Exported JSON Resume v1.0.0!')
+    } catch {
+      toast.error('Failed to export JSON Resume.')
+    }
   }
 
   const trackAApps = applications.filter(a => a.status === 'Applied' || a.track === 'track_a_auto_apply')
@@ -946,6 +1028,41 @@ export default function ApplicationBoardPage() {
                 </button>
               </div>
 
+              {/* ATS Document Actions Bar (DOCX, JSON Resume, ATS X-Ray) */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-primary/20 bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">ATS Document Exporters</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDownloadAtsDocx(atsApp?.company, atsApp?.title)}
+                    disabled={isDownloadingDocx}
+                    className="text-xs h-7 gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                  >
+                    <Download className="w-3 h-3" /> Tailored .docx
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleExportAtsJsonResume}
+                    className="text-xs h-7 gap-1 border-border text-amber-500 hover:bg-muted"
+                  >
+                    <FileCode className="w-3 h-3" /> JSON Resume
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsXRayOpen(true)}
+                    className="text-xs h-7 gap-1 border-border text-blue-500 hover:bg-muted"
+                  >
+                    <Eye className="w-3 h-3" /> ATS X-Ray
+                  </Button>
+                </div>
+              </div>
+
               {/* 1-Click Browser Bookmarklet & Extension Card */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
@@ -1038,6 +1155,13 @@ export default function ApplicationBoardPage() {
             </div>
           </div>
         )}
+
+        {/* ── ATS "X-Ray" Diagnostic Inspector (Open-Resume Inspired) ── */}
+        <AtsXRayDialog
+          open={isXRayOpen}
+          onOpenChange={setIsXRayOpen}
+          profile={atsProfile}
+        />
       </div>
     </AppShell>
   )

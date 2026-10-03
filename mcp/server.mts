@@ -41,6 +41,9 @@ import { generateTailoredCvAndCoverLetter } from "../lib/resume_tailor.ts";
 import { routeApplication } from "../lib/application_router.ts";
 import { syncApplicationToNotion } from "../lib/notion_sync.ts";
 import { uploadEncryptedResumeToWalrus } from "../lib/walrus_storage.ts";
+import { exportToJsonResume } from "../lib/json_resume.ts";
+import { buildDocxResume } from "../lib/docx_exporter.ts";
+import { Packer } from "docx";
 
 const OWNER = process.env.EA_OWNER_ADDRESS;
 if (!OWNER) {
@@ -445,9 +448,70 @@ server.registerTool(
       const routed = routeApplication(job, result, tailored);
       await syncApplicationToNotion(routed).catch(() => {});
 
-      return text(`Fit Score: ${result.fit_score}/10\nRecommendation: ${result.recommendation}\nStatus: ${routed.status}\nReason: ${result.match_reason}`);
+      const scorecard = result.ats_scorecard;
+      const atsDetails = scorecard
+        ? `\n\n--- ATS REVERSE-ENGINEERING DIAGNOSTIC ---\nATS Grade: ${scorecard.ats_grade} (${scorecard.overall_score}%)\nKeyword Coverage: ${scorecard.keyword_coverage_pct}%\nEssential Hard Skills: ${scorecard.essential_skills_coverage_pct}%\nMatched Keywords: ${scorecard.matched_skills.join(", ") || "None"}\nMissing Critical Skills: ${scorecard.missing_critical_skills.join(", ") || "None"}\nActionable Advice:\n${scorecard.actionable_recommendations.map(r => `• ${r}`).join("\n")}`
+        : "";
+
+      return text(`Fit Score: ${result.fit_score}/10\nRecommendation: ${result.recommendation}\nStatus: ${routed.status}\nReason: ${result.match_reason}${atsDetails}`);
     } catch (e) {
       return fail(`Evaluation failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  },
+);
+
+/**
+ * Tool: export_json_resume_tool
+ */
+server.registerTool(
+  "export_json_resume_tool",
+  {
+    title: "Export JSON Resume (Schema v1.0.0)",
+    description: "Converts candidate profile into the global standard JSON Resume format (jsonresume.org).",
+    inputSchema: {
+      cv_text: z.string().describe("Candidate CV text or resume profile to export"),
+      custom_summary: z.string().optional().describe("Optional targeted professional summary"),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  async ({ cv_text, custom_summary }) => {
+    try {
+      const parsedCv = parseCvText(cv_text);
+      const jsonResume = exportToJsonResume(parsedCv, custom_summary);
+      return text(JSON.stringify(jsonResume, null, 2));
+    } catch (e) {
+      return fail(`JSON Resume export failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  },
+);
+
+/**
+ * Tool: export_docx_resume_tool
+ */
+server.registerTool(
+  "export_docx_resume_tool",
+  {
+    title: "Export Native ATS Word Document (.docx)",
+    description: "Compiles candidate profile into a 100% ATS-compliant Microsoft Word (.docx) document (base64 encoded).",
+    inputSchema: {
+      cv_text: z.string().describe("Candidate CV text or resume profile to export"),
+      custom_summary: z.string().optional().describe("Optional targeted professional summary"),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  async ({ cv_text, custom_summary }) => {
+    try {
+      const parsedCv = parseCvText(cv_text);
+      const doc = buildDocxResume(parsedCv, custom_summary);
+      const buffer = await Packer.toBuffer(doc);
+      return text(JSON.stringify({
+        filename: `${(parsedCv.applicant_name || 'Candidate').replace(/\s+/g, '_')}_ATS_Resume.docx`,
+        format: "docx",
+        mime_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        base64: buffer.toString("base64")
+      }, null, 2));
+    } catch (e) {
+      return fail(`DOCX compilation failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   },
 );
