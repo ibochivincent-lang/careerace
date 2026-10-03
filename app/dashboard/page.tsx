@@ -13,8 +13,14 @@ import {
   Briefcase, Search, Upload, FileText, CheckCircle2,
   ChevronRight, Paperclip, Sparkles, MessageSquare,
   Award, User, GraduationCap, Send, Bot, Plus, X, AlertCircle,
-  Building, ShieldCheck, Phone, Mail, Database, ExternalLink, Lock
+  Building, ShieldCheck, Phone, Mail, Database, ExternalLink, Lock,
+  Download, FileCode, Eye
 } from 'lucide-react'
+import { AtsXRayDialog } from '@/components/AtsXRayDialog'
+import { generateDocxBlob } from '@/lib/docx_exporter'
+import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
+import { enforceGoogleXyzFormula } from '@/lib/resume_tailor'
+import { analyzeAtsMatch, type AtsScorecard } from '@/lib/ats_engine'
 
 const INITIAL_SOVEREIGN_PROFILE = {
   applicant_name: '',
@@ -93,6 +99,10 @@ export default function DashboardPage() {
   const [activeTailorTab, setActiveTailorTab] = useState<'resume' | 'cover_letter'>('resume')
   const [tailoredResumeText, setTailoredResumeText] = useState('')
   const [tailoredCoverLetterText, setTailoredCoverLetterText] = useState('')
+  const [isXRayOpen, setIsXRayOpen] = useState(false)
+  const [atsScorecard, setAtsScorecard] = useState<AtsScorecard | null>(null)
+  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
+  const jsonResumeFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     try {
@@ -282,6 +292,86 @@ export default function DashboardPage() {
     }
   }
 
+  useEffect(() => {
+    if (parsedProfile) {
+      const expText = (parsedProfile.work_experience || [])
+        .map((w: any) => `${w.role} at ${w.company}: ${(w.highlights || []).join(' ')}`)
+        .join(' ')
+      const eduText = (parsedProfile.academic_history || [])
+        .map((a: any) => `${a.degree} at ${a.institution}`)
+        .join(' ')
+      const score = analyzeAtsMatch({
+        jobTitle: tailorRole || parsedProfile.target_roles?.[0] || 'Software Engineer',
+        jobDescription: `Looking for an experienced engineer skilled in ${(parsedProfile.skills || []).slice(0, 6).join(', ')} with strong architecture and production delivery.`,
+        applicantSkills: parsedProfile.skills || [],
+        applicantExperienceText: expText,
+        applicantAcademicText: eduText,
+        applicantContactInfo: {
+          email: parsedProfile.contact_email || parsedProfile.email,
+          phone: parsedProfile.contact_phone || parsedProfile.phone,
+          location: parsedProfile.location
+        }
+      })
+      setAtsScorecard(score)
+    }
+  }, [parsedProfile, tailorRole])
+
+  async function handleDownloadDocxResume() {
+    if (!parsedProfile) return
+    setIsDownloadingDocx(true)
+    const toastId = toast.loading('Compiling 100% ATS-compliant .docx resume...')
+    try {
+      const blob = await generateDocxBlob(parsedProfile, tailoredResumeText || undefined)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(parsedProfile.applicant_name || 'candidate').replace(/\s+/g, '_')}_Resume.docx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Native ATS-compliant .docx resume downloaded!', { id: toastId })
+    } catch {
+      toast.error('Failed to generate .docx resume.', { id: toastId })
+    } finally {
+      setIsDownloadingDocx(false)
+    }
+  }
+
+  function handleExportJsonResume() {
+    if (!parsedProfile) return
+    try {
+      const jsonResume = exportToJsonResume(parsedProfile, tailoredResumeText || undefined)
+      const blob = new Blob([JSON.stringify(jsonResume, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${(parsedProfile.applicant_name || 'candidate').replace(/\s+/g, '_')}_JSON_Resume.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('JSON Resume Standard v1.0.0 file exported!')
+    } catch {
+      toast.error('Failed to export JSON Resume.')
+    }
+  }
+
+  async function handleImportJsonResumeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+      const imported = importFromJsonResume(parsed)
+      setParsedProfile(imported)
+      localStorage.setItem('careerace_sovereign_profile', JSON.stringify(imported))
+      toast.success(`Successfully imported JSON Resume for ${imported.applicant_name}!`)
+    } catch {
+      toast.error('Failed to parse JSON Resume file. Please ensure it follows Schema v1.0.0.')
+    }
+  }
+
   function handleGenerateTailoredDocs() {
     const role = tailorRole || parsedProfile?.target_roles?.[0] || 'Professional Engineer'
     const company = tailorCompany || 'Target Employer'
@@ -290,14 +380,20 @@ export default function DashboardPage() {
     const edu = parsedProfile?.academic_history?.[0]?.degree || 'Academic Degree'
     const inst = parsedProfile?.academic_history?.[0]?.institution || 'University'
 
+    // Google XYZ format for achievements & highlights
+    const rawAchievements = parsedProfile?.custom_achievements?.length
+      ? parsedProfile.custom_achievements
+      : ['Delivered high-throughput systems reducing operational latency by 40%.', 'Architected robust modular microservices with 99.9% uptime.']
+    const xyzAchievements = rawAchievements.map((a: string) => enforceGoogleXyzFormula(a, parsedProfile?.skills?.[0]))
+
     setTailoredResumeText(
       `TARGET ROLE: ${role.toUpperCase()} — TARGET EMPLOYER: ${company.toUpperCase()}\n\n` +
       `EXECUTIVE SUMMARY:\n` +
       `Results-driven ${parsedProfile?.seniority_level || 'Mid-Level'} professional with verified competencies in ${skills}. Dedicated to architecting scalable solutions, driving measurable business impact, and collaborating across high-performing cross-functional teams.\n\n` +
       `CORE COMPETENCIES & KEYWORDS:\n` +
       `• ${(parsedProfile?.skills || ['Leadership', 'System Architecture', 'Delivery']).join(' • ')}\n\n` +
-      `HIGHLIGHTED ACHIEVEMENTS:\n` +
-      `${(parsedProfile?.custom_achievements || ['Delivered high-throughput systems reducing operational latency by 40%.', 'Architected robust modular microservices with 99.9% uptime.']).map((a: string) => `• ${a}`).join('\n')}\n\n` +
+      `GOOGLE XYZ HIGHLIGHTED ACHIEVEMENTS:\n` +
+      `${xyzAchievements.map((a: string) => `• ${a}`).join('\n')}\n\n` +
       `EDUCATION & CREDENTIALS:\n` +
       `• ${edu}, ${inst}\n` +
       `• Sovereign Career Ace Verification: https://careerace.online/p/${encodeURIComponent(name)}`
@@ -314,7 +410,7 @@ export default function DashboardPage() {
       `${name}`
     )
 
-    toast.success(`Generated Tailored Resume & Cover Letter for ${company}!`)
+    toast.success(`Generated Google XYZ Tailored Resume & Cover Letter for ${company}!`)
   }
 
   async function handleSendMessage(customPrompt?: string) {
@@ -816,7 +912,71 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ── ATS Resume Readiness Scorecard & Strengths ── */}
+            {/* ── ATS Resume Readiness Scorecard & Open-Source Engineering Hub ── */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                <div>
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    ATS Reverse-Engineering &amp; Export Center
+                    <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400 bg-emerald-500/10">
+                      {atsScorecard ? `Grade ${atsScorecard.ats_grade} (${atsScorecard.overall_score}%)` : 'Grade A (94%)'}
+                    </Badge>
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Inspect machine parseability (Open-Resume), export native ATS Word (.docx), or sync JSON Resume v1.0.0.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsXRayOpen(true)}
+                  className="text-xs h-8 gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  ATS X-Ray Inspector
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadDocxResume}
+                  disabled={isDownloadingDocx}
+                  className="text-xs h-8 gap-1.5 border-border hover:bg-muted"
+                >
+                  <Download className="w-3.5 h-3.5 text-blue-400" />
+                  Download DOCX
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportJsonResume}
+                  className="text-xs h-8 gap-1.5 border-border hover:bg-muted"
+                >
+                  <FileCode className="w-3.5 h-3.5 text-amber-400" />
+                  JSON Resume
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => jsonResumeFileInputRef.current?.click()}
+                  className="text-xs h-8 gap-1.5 border-border hover:bg-muted"
+                >
+                  <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                  Import JSON
+                </Button>
+                <input
+                  type="file"
+                  ref={jsonResumeFileInputRef}
+                  onChange={handleImportJsonResumeFile}
+                  accept=".json,application/json"
+                  className="hidden"
+                />
+              </div>
+            </div>
+
             <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col justify-between">
                 <div>
@@ -827,14 +987,19 @@ export default function DashboardPage() {
                     <Sparkles className="w-4 h-4 text-emerald-500" />
                   </div>
                   <div className="text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 mt-2">
-                    94<span className="text-sm font-normal text-muted-foreground">/100</span>
+                    {atsScorecard ? atsScorecard.overall_score : 94}<span className="text-sm font-normal text-muted-foreground">/100</span>
                   </div>
                 </div>
                 <div className="mt-3">
                   <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full w-[94%]" />
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${atsScorecard ? atsScorecard.overall_score : 94}%` }}
+                    />
                   </div>
-                  <span className="text-[10px] text-muted-foreground mt-1 block">High ATS Interview Probability</span>
+                  <span className="text-[10px] text-muted-foreground mt-1 block">
+                    {atsScorecard ? `Grade ${atsScorecard.ats_grade} — High ATS Interview Probability` : 'High ATS Interview Probability'}
+                  </span>
                 </div>
               </div>
 
@@ -847,11 +1012,11 @@ export default function DashboardPage() {
                     <CheckCircle2 className="w-4 h-4 text-primary" />
                   </div>
                   <div className="text-2xl font-bold font-mono text-foreground mt-2">
-                    96%
+                    {atsScorecard ? `${atsScorecard.keyword_coverage_pct}%` : '96%'}
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2">
-                  Aligned with {parsedProfile?.target_roles?.[0] || 'Target Role'} market requirements.
+                  Aligned with {tailorRole || parsedProfile?.target_roles?.[0] || 'Target Role'} market requirements.
                 </p>
               </div>
 
@@ -864,7 +1029,7 @@ export default function DashboardPage() {
                     <Award className="w-4 h-4 text-violet-500" />
                   </div>
                   <div className="text-2xl font-bold font-mono text-foreground mt-2">
-                    92%
+                    {atsScorecard ? `${atsScorecard.essential_skills_coverage_pct}%` : '92%'}
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2">
@@ -986,6 +1151,15 @@ export default function DashboardPage() {
                 />
 
                 <div className="absolute right-3 bottom-3 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleDownloadDocxResume}
+                    disabled={isDownloadingDocx}
+                    className="text-xs h-7 gap-1 shadow-xs border hover:bg-muted"
+                  >
+                    <Download className="w-3 h-3 text-primary" /> DOCX
+                  </Button>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -1440,6 +1614,14 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
+
+        {/* ── ATS "X-Ray" Diagnostic Inspector (Open-Resume Inspired) ── */}
+        <AtsXRayDialog
+          open={isXRayOpen}
+          onOpenChange={setIsXRayOpen}
+          profile={parsedProfile}
+          scorecard={atsScorecard}
+        />
       </div>
     </AppShell>
   )

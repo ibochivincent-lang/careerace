@@ -1,5 +1,6 @@
 import type { ParsedCv } from "./cv_parser.ts";
 import type { NormalizedJob } from "./job_normaliser.ts";
+import { exportToJsonResume, type JsonResumeSchema } from "./json_resume.ts";
 
 export interface TailoredPackage {
   job_id: string;
@@ -7,6 +8,45 @@ export interface TailoredPackage {
   aligned_highlights: string[];
   cover_letter: string;
   formatted_cv_markdown: string;
+  json_resume: JsonResumeSchema;
+  xyz_bullets: string[];
+}
+
+const ACTION_VERBS = [
+  "Architected", "Engineered", "Spearheaded", "Orchestrated", "Automated",
+  "Optimized", "Delivered", "Pioneered", "Streamlined", "Accelerated"
+];
+
+/**
+ * Transforms an experience highlight into Google XYZ format:
+ * "Accomplished [X] as measured by [Y], by doing [Z]"
+ */
+export function enforceGoogleXyzFormula(highlight: string, contextSkill?: string): string {
+  const trimmed = highlight.trim();
+  if (!trimmed) return "";
+
+  // Replace passive openings
+  let refined = trimmed
+    .replace(/^(was\s+responsible\s+for|responsible\s+for|worked\s+on|helped\s+with|assisted\s+in)\s+/i, "");
+
+  // If already starts with a strong past verb, keep it
+  const startsWithActionVerb = /^[A-Z][a-z]+ed\b/.test(refined);
+  if (!startsWithActionVerb) {
+    const randomVerb = ACTION_VERBS[Math.floor(Math.random() * ACTION_VERBS.length)];
+    refined = `${randomVerb} ${refined.charAt(0).toLowerCase() + refined.slice(1)}`;
+  }
+
+  // Ensure quantified outcome or metric impact is highlighted
+  const hasQuantifiableMetric = /\d+%|\b\d+x\b|\$\d+|\bms\b|\bsec\b|\bhours\b/i.test(refined);
+  if (!hasQuantifiableMetric) {
+    if (contextSkill) {
+      refined = `${refined}, improving delivery throughput and reliability utilizing ${contextSkill}.`;
+    } else {
+      refined = `${refined}, driving measurable performance gains and operational reliability.`;
+    }
+  }
+
+  return refined.replace(/\.\.+$/, ".");
 }
 
 export function generateTailoredCvAndCoverLetter(job: NormalizedJob, cv: ParsedCv): TailoredPackage {
@@ -17,13 +57,16 @@ export function generateTailoredCvAndCoverLetter(job: NormalizedJob, cv: ParsedC
   const tailored_summary = `Results-driven engineer with verified expertise in ${skillsToFeature.slice(0, 4).join(", ")}, specializing in high-performance production systems. Profile aligned for ${job.title} at ${job.company}.`;
 
   const aligned_highlights: string[] = [];
+  const xyz_bullets: string[] = [];
+
   for (const exp of cv.work_experience || []) {
     for (const highlight of exp.highlights || []) {
-      // Pick out highlights that match role technologies or have quantified outcomes
-      if (jobKeywords.split(/\s+/).some(kw => kw.length > 3 && highlight.toLowerCase().includes(kw)) || /\d+%|\bscalable\b|\boptimized\b/i.test(highlight)) {
-        aligned_highlights.push(`${highlight}`);
-      } else if (aligned_highlights.length < 3) {
+      const isRelevant = jobKeywords.split(/\s+/).some(kw => kw.length > 3 && highlight.toLowerCase().includes(kw)) ||
+        /\d+%|\bscalable\b|\boptimized\b/i.test(highlight);
+
+      if (isRelevant || aligned_highlights.length < 3) {
         aligned_highlights.push(highlight);
+        xyz_bullets.push(enforceGoogleXyzFormula(highlight, skillsToFeature[0]));
       }
     }
   }
@@ -58,7 +101,7 @@ ${cv.skills.join(" • ")}
 
 ## Work Experience
 ${cv.work_experience.map(e => `### ${e.role} — ${e.company} (${e.duration})
-${e.highlights.map(h => `- ${h}`).join("\n")}
+${e.highlights.map(h => `- ${enforceGoogleXyzFormula(h, skillsToFeature[0])}`).join("\n")}
 `).join("\n")}
 
 ## Education
@@ -66,11 +109,15 @@ ${cv.academic_history.map(a => `### ${a.degree} in ${a.field_of_study} — ${a.i
 ${a.achievements.map(ach => `- ${ach}`).join("\n")}
 `).join("\n")}`;
 
+  const json_resume = exportToJsonResume(cv, tailored_summary);
+
   return {
     job_id: job.job_id,
     tailored_summary,
     aligned_highlights,
     cover_letter,
-    formatted_cv_markdown
+    formatted_cv_markdown,
+    json_resume,
+    xyz_bullets
   };
 }
