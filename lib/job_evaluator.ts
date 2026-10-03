@@ -1,5 +1,6 @@
 import type { NormalizedJob } from "./job_normaliser.ts";
 import type { ParsedCv } from "./cv_parser.ts";
+import { analyzeAtsMatch, type AtsScorecard } from "./ats_engine.ts";
 
 export interface EvaluationResult {
   job_id: string;
@@ -8,52 +9,46 @@ export interface EvaluationResult {
   matched_skills: string[];
   missing_skills: string[];
   recommendation: "strong_apply" | "moderate_apply" | "manual_review";
+  ats_scorecard?: AtsScorecard;
 }
 
 export function evaluateJobFit(job: NormalizedJob, cv: ParsedCv): EvaluationResult {
-  const jobText = `${job.title} ${job.description}`.toLowerCase();
-  
-  const matched_skills: string[] = [];
-  const missing_skills: string[] = [];
-  const userSkillSet = new Set((cv.skills || []).map((s) => s.toLowerCase().trim()));
+  // Aggregate candidate experience text for deep matching
+  const experienceText = (cv.work_experience || [])
+    .map(w => `${w.role} at ${w.company}: ${(w.highlights || []).join(' ')}`)
+    .join(' ');
 
-  for (const skill of cv.skills || []) {
-    if (jobText.includes(skill.toLowerCase())) {
-      matched_skills.push(skill);
+  const academicText = (cv.academic_history || [])
+    .map(a => `${a.degree} ${a.field_of_study} at ${a.institution}`)
+    .join(' ');
+
+  const scorecard = analyzeAtsMatch({
+    jobTitle: job.title,
+    jobDescription: job.description,
+    applicantSkills: cv.skills || [],
+    applicantExperienceText: experienceText,
+    applicantAcademicText: academicText,
+    applicantContactInfo: {
+      email: cv.email,
+      phone: cv.phone
     }
-  }
+  });
 
-  // Common high priority stack keywords
-  const targetKeywords = ["react", "node", "typescript", "python", "next.js", "rest", "api", "sql", "aws"];
-  for (const kw of targetKeywords) {
-    if (jobText.includes(kw) && !userSkillSet.has(kw)) {
-      missing_skills.push(kw);
-    }
-  }
-
-  // Calculate fit score
-  let baseScore = 5;
-  if (matched_skills.length >= 3) baseScore += 3;
-  else if (matched_skills.length >= 1) baseScore += 1;
-
-  if (cv.target_roles.some(r => job.title.toLowerCase().includes(r.toLowerCase()))) {
-    baseScore += 2;
-  }
-
-  const fit_score = Math.min(10, Math.max(1, baseScore));
+  const fit_score = scorecard.fit_score_10;
 
   let recommendation: EvaluationResult["recommendation"] = "manual_review";
   if (fit_score >= 8) recommendation = "strong_apply";
   else if (fit_score >= 6) recommendation = "moderate_apply";
 
-  const match_reason = `Matched ${matched_skills.length} core skills (${matched_skills.join(", ")}). Fit score ${fit_score}/10 based on role requirements.`;
+  const match_reason = `ATS Match Grade ${scorecard.ats_grade} (${scorecard.overall_score}%). Matched ${scorecard.matched_skills.length} core keywords (${scorecard.matched_skills.slice(0, 4).join(", ")}). Keyword coverage: ${scorecard.keyword_coverage_pct}%.`;
 
   return {
     job_id: job.job_id,
     fit_score,
     match_reason,
-    matched_skills,
-    missing_skills,
-    recommendation
+    matched_skills: scorecard.matched_skills,
+    missing_skills: scorecard.missing_critical_skills.concat(scorecard.missing_secondary_skills).slice(0, 8),
+    recommendation,
+    ats_scorecard: scorecard
   };
 }
