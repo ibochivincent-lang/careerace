@@ -393,12 +393,12 @@ export default function ApplicationBoardPage() {
             }`}
           >
             <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Works Auto-Applied</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Auto Applied</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             </div>
             <div className="text-2xl font-bold font-mono text-emerald-500">{trackAApps.length}</div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
-              <span>Track A Direct</span>
+              <span>Auto-Dispatched</span>
               <span className="text-primary text-[10px] font-medium">{trackFilter === 'track_a' ? 'Showing' : 'Click to view'}</span>
             </p>
           </Card>
@@ -410,12 +410,12 @@ export default function ApplicationBoardPage() {
             }`}
           >
             <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Track Manual Review</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Manual Review</span>
               <AlertTriangle className="w-4 h-4 text-amber-500" />
             </div>
             <div className="text-2xl font-bold font-mono text-amber-500">{trackBApps.length}</div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
-              <span>Track B Queue</span>
+              <span>Tracked Queue</span>
               <span className="text-primary text-[10px] font-medium">{trackFilter === 'track_b' ? 'Showing' : 'Click to view'}</span>
             </p>
           </Card>
@@ -425,13 +425,13 @@ export default function ApplicationBoardPage() {
             className="p-4 cursor-pointer transition-all border-l-4 border-l-primary hover:shadow-md hover:border-primary"
           >
             <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Jobs Available</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Job Feeds</span>
               <Briefcase className="w-4 h-4 text-primary" />
             </div>
             <div className="text-2xl font-bold font-mono text-foreground">Live Feeds</div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
               <span>{isHarvesting ? 'Harvesting...' : 'Remote Roles'}</span>
-              <span className="text-primary text-[10px] font-medium">Evaluate &rarr;</span>
+              <span className="text-primary text-[10px] font-medium">Harvest &rarr;</span>
             </p>
           </Card>
 
