@@ -88,10 +88,17 @@ export default function InterviewRoomPage() {
       .catch(() => {})
 
     let role = 'Software Engineer'
-    let comp = 'Target Company'
+    let comp = 'Mysten Labs'
+    const storedSovereign = localStorage.getItem('careerace_sovereign_profile')
     const storedTitle = localStorage.getItem('careerace_target_title')
     const storedCv = localStorage.getItem('careerace_parsed_profile')
-    if (storedTitle && storedTitle.trim()) {
+
+    if (storedSovereign) {
+      try {
+        const parsed = JSON.parse(storedSovereign)
+        if (parsed.target_roles?.[0]) role = parsed.target_roles[0]
+      } catch {}
+    } else if (storedTitle && storedTitle.trim()) {
       role = storedTitle.trim()
     } else if (storedCv) {
       try {
@@ -234,21 +241,42 @@ export default function InterviewRoomPage() {
           </div>
 
           {/* Prominently Written Target Role & Company */}
-          <div className="rounded-xl border border-primary/25 bg-card/60 backdrop-blur p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Interview Preparation Target</div>
-                <div className="text-base font-bold text-foreground">
-                  {targetRole} <span className="text-muted-foreground font-normal">at</span> <span className="text-primary">{company}</span>
+          <div className="rounded-xl border border-primary/25 bg-card/60 backdrop-blur p-4 mb-6 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Interview Preparation Target</div>
+                  <div className="text-base font-bold text-foreground">
+                    {targetRole} <span className="text-muted-foreground font-normal">at</span> <span className="text-primary">{company}</span>
+                  </div>
                 </div>
               </div>
+              <Badge variant="outline" className="border-primary/30 text-primary w-fit text-xs px-2.5 py-0.5">
+                Role Simulation Active
+              </Badge>
             </div>
-            <Badge variant="outline" className="border-primary/30 text-primary w-fit text-xs px-2.5 py-0.5">
-              Role Simulation Active
-            </Badge>
+
+            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t text-xs">
+              <span className="text-muted-foreground mr-1 text-[11px]">Quick Switch Target:</span>
+              {['Mysten Labs', 'Stripe', 'Google', 'Vercel', 'Anthropic'].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    setCompany(c)
+                    loadQuestions(targetRole, c)
+                  }}
+                  className={`px-2 py-0.5 rounded-md border text-[11px] transition-colors cursor-pointer ${
+                    company === c ? 'bg-primary text-primary-foreground border-primary font-medium' : 'bg-background hover:bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Walrus Memory Cross-Session Recall Banner */}

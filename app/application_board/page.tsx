@@ -430,23 +430,29 @@ export default function ApplicationBoardPage() {
             </div>
             <div className="text-2xl font-bold font-mono text-foreground">Live Feeds</div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
-              <span>{isHarvesting ? 'Harvesting...' : 'Remote tech roles'}</span>
+              <span>{isHarvesting ? 'Harvesting...' : 'Remote Roles'}</span>
               <span className="text-primary text-[10px] font-medium">Evaluate &rarr;</span>
             </p>
           </Card>
 
           <Card
-            onClick={() => router.push('/interview_room')}
+            onClick={() => {
+              const uniqueCompanies = Array.from(new Set(applications.map((a) => a.company).filter(Boolean)))
+              const companyList = uniqueCompanies.length > 0 ? uniqueCompanies.slice(0, 5).join(', ') : 'Mysten Labs, Google, Vercel, Stripe, Anthropic'
+              toast.info(`Target Companies tracked: ${companyList}`)
+            }}
             className="p-4 cursor-pointer transition-all border-l-4 border-l-violet-500 hover:shadow-md hover:border-violet-500"
           >
             <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Interview Room</span>
-              <Target className="w-4 h-4 text-violet-500" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Target Companies</span>
+              <Building2 className="w-4 h-4 text-violet-500" />
             </div>
-            <div className="text-2xl font-bold font-mono text-foreground">STAR+R Prep</div>
+            <div className="text-2xl font-bold font-mono text-foreground">
+              {Array.from(new Set(applications.map((a) => a.company).filter(Boolean))).length || 5} Tracked
+            </div>
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
-              <span>Practice Ready</span>
-              <span className="text-primary text-[10px] font-medium">Enter room &rarr;</span>
+              <span>Dream Employers</span>
+              <span className="text-primary text-[10px] font-medium">View companies &rarr;</span>
             </p>
           </Card>
         </div>

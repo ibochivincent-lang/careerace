@@ -61,6 +61,7 @@ const RECALL_TOKEN_BUDGET = 700;
 const RESTORE_LIMIT = 25;
 
 const KIND_NAMESPACE: Record<FactKind, (a: string) => string> = {
+  candidate_identity: profileNs,
   experience: profileNs,
   education: profileNs,
   skill: profileNs,
@@ -99,7 +100,7 @@ export const recallFeedback = (address: string, query: string) => recallFrom(fee
  * come back on every turn.
  */
 export const CAREER_QUERY =
-  "target role, work experience, education, technical skills and verified accomplishments";
+  "candidate name, full name, identity, target role, work experience, education, technical skills and verified accomplishments";
 export const COACHING_QUERY =
   "interview feedback, STAR+R coaching assessments, job application history and career preferences";
 

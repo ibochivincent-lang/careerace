@@ -16,6 +16,35 @@ import {
   Building, ShieldCheck, Phone, Mail, Database, ExternalLink, Lock
 } from 'lucide-react'
 
+const INITIAL_SOVEREIGN_PROFILE = {
+  applicant_name: '',
+  contact_email: '',
+  contact_phone: '',
+  location: '',
+  availability: 'Remote-First (Full-time)',
+  seniority_level: 'Mid-Level',
+  target_roles: ['Software Engineer', 'Fullstack Engineer'],
+  skills: ['TypeScript', 'Next.js', 'React', 'Node.js', 'PostgreSQL'],
+  years_of_experience: '3',
+  academic_history: [
+    {
+      institution: 'University of Lagos / Tech Institute',
+      degree: 'B.Sc. in Computer Science',
+      graduation_year: '2023',
+    },
+  ],
+  work_experience: [
+    {
+      company: 'Tech Solutions Inc.',
+      role: 'Fullstack Engineer',
+      duration: '2023 - Present',
+      highlights: ['Engineered scalable microservices and built responsive web applications.'],
+    },
+  ],
+  certifications: ['AWS Certified Developer'],
+  custom_achievements: ['Won 1st place in regional Web3 hackathon'],
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
@@ -25,10 +54,11 @@ export default function DashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isParsing, setIsParsing] = useState(false)
-  const [parsedProfile, setParsedProfile] = useState<any>(null)
+  const [parsedProfile, setParsedProfile] = useState<any>(INITIAL_SOVEREIGN_PROFILE)
+  const [isSavingMemory, setIsSavingMemory] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
   const [cvText, setCvText] = useState('')
-  const [showHighlights, setShowHighlights] = useState(false)
+  const [showHighlights, setShowHighlights] = useState(true)
 
   // Universal Job Harvester state
   const [isHarvesting, setIsHarvesting] = useState(false)
@@ -60,6 +90,14 @@ export default function DashboardPage() {
   const [newCertInput, setNewCertInput] = useState('')
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+      if (stored) {
+        const loaded = JSON.parse(stored)
+        setParsedProfile({ ...INITIAL_SOVEREIGN_PROFILE, ...loaded })
+      }
+    } catch {}
+
     fetch('/api/auth/session')
       .then((r) => r.json())
       .then((data) => {
@@ -209,6 +247,35 @@ export default function DashboardPage() {
     setParsedProfile(updated)
   }
 
+  async function handleSaveAndSyncProfile() {
+    if (!parsedProfile) return
+    setIsSavingMemory(true)
+    const toastId = toast.loading('Sealing profile and syncing to Walrus Memory...')
+    try {
+      localStorage.setItem('careerace_sovereign_profile', JSON.stringify(parsedProfile))
+      localStorage.setItem('careerace_parsed_profile', JSON.stringify(parsedProfile))
+      if (parsedProfile.target_roles?.[0]) {
+        localStorage.setItem('careerace_target_title', parsedProfile.target_roles[0])
+      }
+
+      const res = await fetch('/api/memory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: parsedProfile })
+      })
+
+      if (res.ok) {
+        toast.success('Sovereign Candidate Profile & CV verified and synced to Walrus Memory!', { id: toastId })
+      } else {
+        toast.success('Profile saved to local vault.', { id: toastId })
+      }
+    } catch (e) {
+      toast.error('Failed to sync to Walrus Memory.', { id: toastId })
+    } finally {
+      setIsSavingMemory(false)
+    }
+  }
+
   async function handleSendMessage(customPrompt?: string) {
     const text = customPrompt || chatInput
     if (!text.trim() || isSending) return
@@ -232,6 +299,15 @@ export default function DashboardPage() {
         setChatMessages((prev) => [...prev, { role: 'assistant', content: data.content }])
         if (data.stored && Array.isArray(data.stored) && data.stored.length > 0) {
           toast.success(`Encrypted & saved to Walrus Memory: ${data.stored[0]}`)
+        }
+        if (data.candidate_name) {
+          setParsedProfile((prev: any) => {
+            const next = { ...(prev || INITIAL_SOVEREIGN_PROFILE), applicant_name: data.candidate_name }
+            try {
+              localStorage.setItem('careerace_sovereign_profile', JSON.stringify(next))
+            } catch {}
+            return next
+          })
         }
       }
     } catch (e) {
@@ -474,13 +550,13 @@ export default function DashboardPage() {
         <div id="copilot" className="scroll-mt-24">
           <Card className="p-6 border-2 shadow-lg bg-card flex flex-col h-[560px]">
             <div className="flex items-center justify-between border-b pb-4 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center p-1.5">
-                  <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/40 flex items-center justify-center shrink-0 shadow-sm ring-2 ring-primary/20">
+                  <img src="/copilot_avatar.png" alt="Career Ace Copilot Avatar" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg leading-tight">Career Ace AI Copilot</h3>
-                  <p className="text-xs text-muted-foreground">Autonomous Job Matching, CV Bullet Polishing & Interview Coaching</p>
+                  <p className="text-xs text-muted-foreground">Autonomous Job Matching, CV Bullet Polishing &amp; Interview Coaching</p>
                 </div>
               </div>
               <Badge variant="outline" className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
@@ -496,8 +572,8 @@ export default function DashboardPage() {
                   className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
-                      AI
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-primary/30 flex-shrink-0 shadow-xs mt-0.5 ring-1 ring-primary/20">
+                      <img src="/copilot_avatar.png" alt="Copilot" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div
@@ -513,8 +589,8 @@ export default function DashboardPage() {
               ))}
               {isSending && (
                 <div className="flex gap-3 justify-start">
-                  <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
-                    AI
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-primary/30 flex-shrink-0 shadow-xs mt-0.5 ring-1 ring-primary/20">
+                    <img src="/copilot_avatar.png" alt="Copilot" className="w-full h-full object-cover" />
                   </div>
                   <div className="rounded-2xl px-4 py-2.5 text-sm bg-muted/70 text-muted-foreground rounded-tl-sm border border-border/40 animate-pulse">
                     Thinking and strategizing...
@@ -643,437 +719,459 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* ── Interactive Candidate CV Showcase & Highlight Panel (Expandable) ── */}
-        {parsedProfile && showHighlights && (
-          <div id="cv-highlights" className="scroll-mt-24">
-            <Card className="p-8 border-2 border-primary/20 shadow-md bg-card/40">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-6 mb-6 gap-4">
+        {/* ── 2. SOVEREIGN CANDIDATE PROFILE & CV BUILDER HUB ── */}
+        <div id="profile-builder" className="scroll-mt-24">
+          <Card className="p-6 md:p-8 border-2 border-primary/25 shadow-lg bg-card/60 backdrop-blur">
+            {/* Header: Title, Status, and Actions */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b pb-6 mb-6 gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/30 text-primary flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
+                  <User className="w-6 h-6" />
+                </div>
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
-                      <User className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground">
-                        {parsedProfile.applicant_name || 'Candidate Profile'}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
-                        {parsedProfile.contact_email && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-3.5 h-3.5" /> {parsedProfile.contact_email}
-                          </span>
-                        )}
-                        {parsedProfile.contact_phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3.5 h-3.5" /> {parsedProfile.contact_phone}
-                          </span>
-                        )}
-                        {parsedProfile.years_of_experience && (
-                          <span className="flex items-center gap-1">
-                            <Briefcase className="w-3.5 h-3.5" /> {parsedProfile.years_of_experience} Years Exp
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl md:text-2xl font-bold text-foreground">
+                      Sovereign Candidate Profile &amp; CV Builder
+                    </h2>
+                    <Badge variant="outline" className="text-[11px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
+                      Walrus Memory Vault
+                    </Badge>
                   </div>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                    Your decentralized career credentials. Type your details below or upload your CV to auto-populate. All updates are cryptographically indexed to your sovereign memory.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isParsing}
+                  className="text-xs gap-1.5 border-primary/30 hover:bg-primary/5"
+                >
+                  <Upload className="w-3.5 h-3.5 text-primary" />
+                  {isParsing ? 'Parsing CV...' : 'Upload CV (.pdf, .docx)'}
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handleSaveAndSyncProfile}
+                  disabled={isSavingMemory}
+                  className="text-xs gap-1.5 shadow-sm bg-gradient-to-r from-primary to-primary/90 text-primary-foreground font-medium"
+                >
+                  <ShieldCheck className={`w-3.5 h-3.5 ${isSavingMemory ? 'animate-spin' : ''}`} />
+                  {isSavingMemory ? 'Sealing...' : 'Save & Sync to Walrus Memory'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Candidate Identity & Contact Details Grid */}
+            <div className="mb-8 p-5 rounded-xl border bg-muted/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <User className="w-3.5 h-3.5 text-primary" /> Personal Identity &amp; Contact Information
+                </h3>
+                <span className="text-[11px] text-muted-foreground">Directly editable &bull; synced across Copilot &amp; Interview Room</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    Full Name <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Vincent Ibochi"
+                    value={parsedProfile?.applicant_name || ''}
+                    onChange={(e) => setParsedProfile({ ...parsedProfile, applicant_name: e.target.value })}
+                    className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="px-3 py-1 font-mono text-xs">
-                    Walrus Memory Ready
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    Contact Email <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g. vincent@example.com"
+                    value={parsedProfile?.contact_email || ''}
+                    onChange={(e) => setParsedProfile({ ...parsedProfile, contact_email: e.target.value })}
+                    className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +234 800 000 0000"
+                    value={parsedProfile?.contact_phone || ''}
+                    onChange={(e) => setParsedProfile({ ...parsedProfile, contact_phone: e.target.value })}
+                    className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    Location / Residence
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Lagos, Nigeria / London, UK / San Francisco, CA"
+                    value={parsedProfile?.location || ''}
+                    onChange={(e) => setParsedProfile({ ...parsedProfile, location: e.target.value })}
+                    className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    Workplace Availability
+                  </label>
+                  <select
+                    value={parsedProfile?.availability || 'Remote-First (Full-time)'}
+                    onChange={(e) => setParsedProfile({ ...parsedProfile, availability: e.target.value })}
+                    className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="Remote-First (Full-time)">Remote-First (Full-time)</option>
+                    <option value="Remote (Contract / Freelance)">Remote (Contract / Freelance)</option>
+                    <option value="Hybrid (Office + Remote)">Hybrid (Office + Remote)</option>
+                    <option value="On-site / Relocation Open">On-site / Relocation Open</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    Seniority Level
+                  </label>
+                  <select
+                    value={parsedProfile?.seniority_level || 'Mid-Level'}
+                    onChange={(e) => setParsedProfile({ ...parsedProfile, seniority_level: e.target.value })}
+                    className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="Entry-Level / Junior (0-2 Yrs)">Entry-Level / Junior (0-2 Yrs)</option>
+                    <option value="Mid-Level (3-5 Yrs)">Mid-Level (3-5 Yrs)</option>
+                    <option value="Senior Engineer (5-8 Yrs)">Senior Engineer (5-8 Yrs)</option>
+                    <option value="Staff / Principal / Lead (8+ Yrs)">Staff / Principal / Lead (8+ Yrs)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Target Roles Section */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Briefcase className="w-3.5 h-3.5 text-primary" /> Target Roles &amp; Positions ({parsedProfile?.target_roles?.length || 0})
+                </h3>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Add role (e.g. Staff Fullstack Engineer)..."
+                    value={newRoleInput}
+                    onChange={(e) => setNewRoleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddRole()
+                    }}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-52"
+                  />
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddRole}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {parsedProfile?.target_roles?.map((role: string, idx: number) => (
+                  <Badge key={idx} variant="default" className="text-xs px-3 py-1 flex items-center gap-1.5">
+                    {role}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRole(role)}
+                      className="hover:opacity-75 focus:outline-none cursor-pointer"
+                      title="Remove role"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Core Technical & Domain Skills */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" /> Core Technical &amp; Domain Skills ({parsedProfile?.skills?.length || 0})
+                </h3>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Add custom skill (e.g. Rust, Sui Move)..."
+                    value={newSkillInput}
+                    onChange={(e) => setNewSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddSkill()
+                    }}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-48"
+                  />
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddSkill}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
                 </div>
               </div>
 
-              {/* Editable Target Roles */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Target Roles</h4>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Add role (e.g. Lead Architect)..."
-                      value={newRoleInput}
-                      onChange={(e) => setNewRoleInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddRole()
-                      }}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-48"
-                    />
-                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddRole}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {parsedProfile.target_roles?.map((role: string, idx: number) => (
-                    <Badge key={idx} variant="default" className="text-xs px-3 py-1 flex items-center gap-1.5">
-                      {role}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRole(role)}
-                        className="hover:opacity-75 focus:outline-none"
-                        title="Remove role"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
+              <div className="flex flex-wrap gap-1.5">
+                {parsedProfile?.skills?.map((skill: string, idx: number) => (
+                  <Badge key={idx} variant="outline" className="text-xs px-2.5 py-1 bg-background flex items-center gap-1.5">
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer"
+                      title="Remove skill"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Academic History & Highest Institution */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" /> Highest Educational Institutions &amp; Degrees ({parsedProfile?.academic_history?.length || 0})
+                </h3>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Institution (e.g. Stanford / UNILAG)..."
+                    value={newInstInput}
+                    onChange={(e) => setNewInstInput(e.target.value)}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-40"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Degree (e.g. B.Sc. Computer Science)..."
+                    value={newDegreeInput}
+                    onChange={(e) => setNewDegreeInput(e.target.value)}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Year..."
+                    value={newEduYearInput}
+                    onChange={(e) => setNewEduYearInput(e.target.value)}
+                    className="text-xs px-2 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-20"
+                  />
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddEducation}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
                 </div>
               </div>
 
-              {/* Editable Skills Section */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Core Technical & Domain Skills ({parsedProfile.skills?.length || 0})
-                  </h4>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Add custom skill..."
-                      value={newSkillInput}
-                      onChange={(e) => setNewSkillInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddSkill()
-                      }}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-40"
-                    />
-                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddSkill}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {parsedProfile.skills?.map((skill: string, idx: number) => (
-                    <Badge key={idx} variant="outline" className="text-xs px-2.5 py-1 bg-background flex items-center gap-1.5">
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="text-muted-foreground hover:text-foreground focus:outline-none"
-                        title="Remove skill"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Academic History & Degrees */}
-              <div className="mb-8">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-primary" /> Academic History & Degrees ({parsedProfile.academic_history?.length || 0})
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Institution (e.g. Stanford)..."
-                      value={newInstInput}
-                      onChange={(e) => setNewInstInput(e.target.value)}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-40"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Degree (e.g. B.S. in CS)..."
-                      value={newDegreeInput}
-                      onChange={(e) => setNewDegreeInput(e.target.value)}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-36"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Year (e.g. 2020)..."
-                      value={newEduYearInput}
-                      onChange={(e) => setNewEduYearInput(e.target.value)}
-                      className="text-xs px-2 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-20"
-                    />
-                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddEducation}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  {parsedProfile.academic_history?.map((edu: any, idx: number) => (
-                    <div key={idx} className="p-4 rounded-lg border bg-background/50 flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                          <Building className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="font-bold text-sm text-foreground">{edu.institution}</div>
-                          <div className="text-xs text-primary font-medium">{edu.degree}</div>
-                          {edu.graduation_year && (
-                            <div className="text-[11px] text-muted-foreground mt-0.5">Graduated: {edu.graduation_year}</div>
-                          )}
-                        </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {parsedProfile?.academic_history?.map((edu: any, idx: number) => (
+                  <div key={idx} className="p-4 rounded-lg border bg-background/50 flex items-start justify-between shadow-xs">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                        <Building className="w-4 h-4" />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveEducation(idx)}
-                        className="text-muted-foreground hover:text-destructive transition-colors ml-2"
-                        title="Remove education entry"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <div>
+                        <div className="font-bold text-sm text-foreground">{edu.institution}</div>
+                        <div className="text-xs text-primary font-medium">{edu.degree}</div>
+                        {edu.graduation_year && (
+                          <div className="text-[11px] text-muted-foreground mt-0.5">Graduated: {edu.graduation_year}</div>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                  {(!parsedProfile.academic_history || parsedProfile.academic_history.length === 0) && (
-                    <p className="text-xs text-muted-foreground italic col-span-2">
-                      No academic history detected. Add your institution and degree using the fields above.
-                    </p>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveEducation(idx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors ml-2 cursor-pointer"
+                      title="Remove education entry"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Verified Work Experience & Projects */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-primary" /> Verified Work Experience &amp; Roles ({parsedProfile?.work_experience?.length || 0})
+                </h3>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Role (e.g. Senior Fullstack Engineer)..."
+                    value={newExpRole}
+                    onChange={(e) => setNewExpRole(e.target.value)}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Company..."
+                    value={newExpCompany}
+                    onChange={(e) => setNewExpCompany(e.target.value)}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-32"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Duration (e.g. 2022 - Present)..."
+                    value={newExpDuration}
+                    onChange={(e) => setNewExpDuration(e.target.value)}
+                    className="text-xs px-2 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-36"
+                  />
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddExperience}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
                 </div>
               </div>
 
-              {/* Verified Work Experience */}
-              <div className="mb-8">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-primary" /> Verified Work Experience ({parsedProfile.work_experience?.length || 0})
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Role (e.g. Senior Engineer)..."
-                      value={newExpRole}
-                      onChange={(e) => setNewExpRole(e.target.value)}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-36"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Company..."
-                      value={newExpCompany}
-                      onChange={(e) => setNewExpCompany(e.target.value)}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-32"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Duration (e.g. 2021 - 2024)..."
-                      value={newExpDuration}
-                      onChange={(e) => setNewExpDuration(e.target.value)}
-                      className="text-xs px-2 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-36"
-                    />
-                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddExperience}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {parsedProfile.work_experience?.map((exp: any, idx: number) => (
-                    <div key={idx} className="p-4 rounded-lg border bg-background/50">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-sm text-foreground">
-                          {exp.role} @ {exp.company}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">{exp.duration}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExperience(idx)}
-                            className="text-muted-foreground hover:text-destructive transition-colors ml-1"
-                            title="Remove experience entry"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+              <div className="space-y-3">
+                {parsedProfile?.work_experience?.map((exp: any, idx: number) => (
+                  <div key={idx} className="p-4 rounded-lg border bg-background/50 shadow-xs">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-sm text-foreground">
+                        {exp.role} @ {exp.company}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{exp.duration}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExperience(idx)}
+                          className="text-muted-foreground hover:text-destructive transition-colors ml-1 cursor-pointer"
+                          title="Remove experience entry"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
+                    </div>
+                    {exp.highlights && exp.highlights.length > 0 && (
                       <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 mt-2">
-                        {exp.highlights?.map((h: string, hIdx: number) => (
+                        {exp.highlights.map((h: string, hIdx: number) => (
                           <li key={hIdx} className="leading-relaxed">{h}</li>
                         ))}
                       </ul>
-                    </div>
-                  ))}
-                  {(!parsedProfile.work_experience || parsedProfile.work_experience.length === 0) && (
-                    <p className="text-xs text-muted-foreground italic">
-                      No work experience detected. Add your roles and company details above.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Certifications & Professional Licenses */}
-              <div className="mb-8">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Award className="w-4 h-4 text-primary" /> Professional Certifications & Credentials ({parsedProfile.certifications?.length || 0})
-                  </h4>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Add certification (e.g. AWS Solutions Architect)..."
-                      value={newCertInput}
-                      onChange={(e) => setNewCertInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddCertification()
-                      }}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-60"
-                    />
-                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddCertification}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
+                    )}
                   </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {parsedProfile.certifications?.map((cert: string, idx: number) => (
-                    <Badge key={idx} variant="secondary" className="text-xs px-3 py-1 flex items-center gap-1.5">
-                      {cert}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCertification(cert)}
-                        className="text-muted-foreground hover:text-foreground focus:outline-none"
-                        title="Remove certification"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {(!parsedProfile.certifications || parsedProfile.certifications.length === 0) && (
-                    <p className="text-xs text-muted-foreground italic">
-                      No certifications listed. Add relevant credentials above.
-                    </p>
-                  )}
-                </div>
+                ))}
               </div>
-
-              {/* Custom Career Highlights & Achievements */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    Custom Achievements & Key Metrics ({parsedProfile.custom_achievements?.length || 0})
-                  </h4>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="Add measurable achievement (e.g. Cut latency 45%)..."
-                      value={newAchievementInput}
-                      onChange={(e) => setNewAchievementInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddAchievement()
-                      }}
-                      className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-72"
-                    />
-                    <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddAchievement}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {parsedProfile.custom_achievements?.map((ach: string, idx: number) => (
-                    <div key={idx} className="flex items-start justify-between p-3 rounded-lg border bg-background/50 text-xs">
-                      <span className="leading-relaxed">{ach}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAchievement(idx)}
-                        className="text-muted-foreground hover:text-destructive transition-colors ml-2"
-                        title="Remove achievement"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* ── 2. UNIVERSAL JOB HARVESTER & FIT SCORER BOX ── */}
-        <div id="jobs" className="scroll-mt-24">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">Universal Job Harvester</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Aggregates live remote listings across Remotive, WeWorkRemotely, Jobicy, RemoteOK, Himalayas, Nodesk, FreshRemote, Jobberman, and Google Jobs.
-              </p>
             </div>
-            <Button variant="outline" onClick={handleHarvest} disabled={isHarvesting} className="gap-2">
-              <Search className="w-4 h-4" /> {isHarvesting ? 'Scanning All Feeds...' : 'Refresh Listings'}
-            </Button>
-          </div>
 
-          {harvestedJobs.length === 0 ? (
-            <Card className="p-12 text-center border-dashed">
-              <p className="text-muted-foreground mb-4">No harvested jobs loaded yet. Click below to aggregate verified public job feeds.</p>
-              <Button onClick={handleHarvest} disabled={isHarvesting} className="gap-2">
-                <Search className="w-4 h-4" />
-                {isHarvesting ? 'Scanning All 9 Feeds...' : 'Scan Live Feeds'}
+            {/* Certifications & Professional Licenses */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Award className="w-4 h-4 text-primary" /> Professional Certifications &amp; Credentials ({parsedProfile?.certifications?.length || 0})
+                </h3>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Add certification (e.g. AWS Solutions Architect)..."
+                    value={newCertInput}
+                    onChange={(e) => setNewCertInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddCertification()
+                    }}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-64"
+                  />
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddCertification}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {parsedProfile?.certifications?.map((cert: string, idx: number) => (
+                  <Badge key={idx} variant="secondary" className="text-xs px-3 py-1 flex items-center gap-1.5">
+                    {cert}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCertification(cert)}
+                      className="text-muted-foreground hover:text-foreground focus:outline-none cursor-pointer"
+                      title="Remove certification"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Achievements & Key Metrics */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Custom Achievements &amp; Key Metrics ({parsedProfile?.custom_achievements?.length || 0})
+                </h3>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Add measurable achievement (e.g. Cut latency 45%)..."
+                    value={newAchievementInput}
+                    onChange={(e) => setNewAchievementInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddAchievement()
+                    }}
+                    className="text-xs px-2.5 py-1 border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-primary w-72"
+                  />
+                  <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={handleAddAchievement}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {parsedProfile?.custom_achievements?.map((ach: string, idx: number) => (
+                  <div key={idx} className="flex items-start justify-between p-3 rounded-lg border bg-background/50 text-xs shadow-xs">
+                    <span className="leading-relaxed">{ach}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAchievement(idx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors ml-2 cursor-pointer"
+                      title="Remove achievement"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Sync Banner */}
+            <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Sovereign Vault Synchronization</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    All edits are verified, client-encrypted, and synchronized across your public Career Ace passport and AI Copilot.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSaveAndSyncProfile}
+                disabled={isSavingMemory}
+                className="gap-1.5 text-xs shadow-sm font-medium"
+              >
+                <ShieldCheck className={`w-3.5 h-3.5 ${isSavingMemory ? 'animate-spin' : ''}`} />
+                {isSavingMemory ? 'Sealing to Walrus...' : 'Save & Sync to Walrus Memory'}
               </Button>
-            </Card>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {harvestedJobs.map((job, idx) => {
-                const evalData = evaluationResults[job.job_id]
-                const isEvaluating = evaluatingJobId === job.job_id
-
-                return (
-                  <Card key={idx} className="p-6 transition-all hover:shadow-md flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="font-bold text-lg">{job.title}</h3>
-                          <p className="text-sm text-muted-foreground">{job.company} • {job.location}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge variant="secondary" className="capitalize">{job.job_type || 'Remote'}</Badge>
-                          {evalData && (
-                            <Badge variant={evalData.evaluation.fit_score >= 6 ? "default" : "destructive"}>
-                              Score: {evalData.evaluation.fit_score}/10
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="text-sm line-clamp-3 mb-4 text-muted-foreground">{job.description}</p>
-
-                      {evalData && (
-                        <div className="mb-4 p-3 rounded-md bg-secondary/30 text-xs space-y-1">
-                          <div className="font-semibold text-foreground">
-                            {evalData.application.track === "track_a_auto_apply" ? "Track A: Auto-Apply Ready" : "Track B: Manual Review Queue"}
-                          </div>
-                          <div className="text-muted-foreground">{evalData.evaluation.match_reason}</div>
-                          {evalData.tailored_package && (
-                            <div className="text-primary font-medium mt-1">
-                              Cover letter & tailored CV generated and logged.
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t text-xs flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-muted-foreground">Source: {job.source}</span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleEvaluateJob(job)}
-                          disabled={isEvaluating}
-                        >
-                          <Sparkles className="w-3.5 h-3.5 mr-1" />
-                          {isEvaluating ? 'Scoring...' : evalData ? 'Re-Score' : 'Score Fit'}
-                        </Button>
-                        <a
-                          href={job.apply_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                        >
-                          Apply Direct <ChevronRight className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                  </Card>
-                )
-              })}
             </div>
-          )}
+          </Card>
         </div>
 
         {/* ── Decentralized Sovereign Vault Banner (Positioned Under Workspace) ── */}
