@@ -255,6 +255,7 @@ function DashboardContent() {
         google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
         groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
         openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
+        opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
       }
 
       const res = await fetch('/api/copilot', {
@@ -501,9 +502,11 @@ function DashboardContent() {
       const geminiKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || '' : ''
       const groqKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || '' : ''
       const openRouterKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || '' : ''
+      const openCodeKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || '' : ''
       if (geminiKey) formData.append('gemini_key', geminiKey)
       if (groqKey) formData.append('groq_key', groqKey)
       if (openRouterKey) formData.append('openrouter_key', openRouterKey)
+      if (openCodeKey) formData.append('opencode_key', openCodeKey)
 
       const res = await fetch('/api/cv_upload', {
         method: 'POST',

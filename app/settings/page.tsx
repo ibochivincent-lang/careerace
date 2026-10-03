@@ -36,6 +36,7 @@ export default function SettingsPage() {
   const [geminiKey, setGeminiKey] = useState('')
   const [groqKey, setGroqKey] = useState('')
   const [openRouterKey, setOpenRouterKey] = useState('')
+  const [openCodeKey, setOpenCodeKey] = useState('')
   const [isSavingAiKeys, setIsSavingAiKeys] = useState(false)
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
 
@@ -72,9 +73,11 @@ export default function SettingsPage() {
     const storedGemini = localStorage.getItem('careerace_gemini_key') || ''
     const storedGroq = localStorage.getItem('careerace_groq_key') || ''
     const storedOpenRouter = localStorage.getItem('careerace_openrouter_key') || ''
+    const storedOpenCode = localStorage.getItem('careerace_opencode_key') || ''
     setGeminiKey(storedGemini)
     setGroqKey(storedGroq)
     setOpenRouterKey(storedOpenRouter)
+    setOpenCodeKey(storedOpenCode)
 
     // Load zkLogin session
     fetch('/api/auth/session')
@@ -100,6 +103,7 @@ export default function SettingsPage() {
       localStorage.setItem('careerace_gemini_key', geminiKey.trim())
       localStorage.setItem('careerace_groq_key', groqKey.trim())
       localStorage.setItem('careerace_openrouter_key', openRouterKey.trim())
+      localStorage.setItem('careerace_opencode_key', openCodeKey.trim())
 
       if (sessionAddress) {
         if (geminiKey.trim()) await saveProviderKey('google', geminiKey.trim()).catch(() => {})
@@ -385,6 +389,35 @@ export default function SettingsPage() {
               />
               <p className="text-[11px] text-muted-foreground">
                 Access free reasoning models such as DeepSeek R1 free tier and Qwen 2.5 Coder.
+              </p>
+            </div>
+
+            {/* OpenCode Zen */}
+            <div className="rounded-lg border p-4 bg-card/40 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-xs text-foreground">OpenCode Zen / Go</span>
+                  <Badge variant="secondary" className="text-[10px] font-mono py-0">DeepSeek Flash · Qwen Flash</Badge>
+                </div>
+                <a
+                  href="https://opencode.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary flex items-center gap-1 hover:underline"
+                >
+                  OpenCode Console <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <input
+                id="opencode-key"
+                type="password"
+                value={openCodeKey}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOpenCodeKey(e.target.value)}
+                placeholder="oc_sk_... (Paste OpenCode Secret Key)"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Optional reasoning engine key for OpenCode Zen / Go subscribers.
               </p>
             </div>
           </div>

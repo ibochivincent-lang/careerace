@@ -7,6 +7,7 @@ export interface FreeLlmOptions {
     groq?: string;
     openrouter?: string;
     openai?: string;
+    opencode?: string;
   };
 }
 
@@ -40,15 +41,21 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     process.env.OPENROUTER_API_KEY ||
     "";
 
+  const openCodeKey =
+    options.custom_keys?.opencode ||
+    cookieKeys.opencode ||
+    process.env.OPENCODE_API_KEY ||
+    "";
+
   const openaiKey =
     options.custom_keys?.openai ||
     cookieKeys.openai ||
     process.env.OPENAI_API_KEY ||
     "";
 
-  // 1. Try Google Gemini API (gemini-2.0-flash / gemini-1.5-flash with free tier)
+  // 1. Try Google Gemini API (gemini-3.5-flash / gemini-3.1-flash-lite / gemini-3.8-flash)
   if (geminiKey) {
-    for (const modelName of ["gemini-2.0-flash", "gemini-1.5-flash"]) {
+    for (const modelName of ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.0-flash"]) {
       try {
         const payload: Record<string, unknown> = {
           contents: [{ role: "user", parts: [{ text: options.prompt }] }],
@@ -79,9 +86,9 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 2. Try Groq Cloud if configured (ultra-fast, free tier available)
+  // 2. Try Groq Cloud if configured (qwen/qwen3.8-27b / openai/gpt-oss-120b / llama-3.3-70b-versatile)
   if (groqKey) {
-    for (const model of ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
+    for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
       try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
@@ -107,16 +114,16 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 3. Try OpenRouter (DeepSeek R1 / Qwen 2.5 / Meta Llama free tier)
+  // 3. Try OpenRouter (qwen/qwen3.8-27b:free / nvidia/nemotron-3.5-lightning:free / gemma-4-31b-it:free)
   if (openRouterKey) {
-    for (const model of ["deepseek/deepseek-r1:free", "meta-llama/llama-3.3-70b-instruct:free", "qwen/qwen-2.5-coder-32b-instruct:free"]) {
+    for (const model of ["qwen/qwen3.8-27b:free", "nvidia/nemotron-3.5-lightning:free", "google/gemma-4-31b-it:free", "deepseek/deepseek-r1:free"]) {
       try {
         const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${openRouterKey}`,
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/ibochivincent-lang/careerace",
+            "HTTP-Referer": "https://careerace.online",
             "X-Title": "Career Ace"
           },
           body: JSON.stringify({
@@ -138,7 +145,36 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 4. Try OpenAI API if present
+  // 4. Try OpenCode Zen/Go API if present
+  if (openCodeKey) {
+    for (const model of ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash"]) {
+      try {
+        const res = await fetch("https://opencode.ai/zen/go/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openCodeKey}`,
+            "Content-Type": "application/json",
+            "x-opencode-session": "careerace_session"
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+              { role: "user", content: options.prompt }
+            ],
+            max_tokens: options.max_tokens || 800
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        }
+      } catch (_e) {}
+    }
+  }
+
+  // 5. Try OpenAI API if present
   if (openaiKey) {
     try {
       const res = await fetch("https://api.openai.com/v1/chat/completions", {

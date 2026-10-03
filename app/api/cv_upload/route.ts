@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     let extractionMethod = "text";
     let fileBuffer: Buffer | null = null;
 
-    let customKeys: { google?: string; groq?: string; openrouter?: string; openai?: string } | undefined;
+    let customKeys: { google?: string; groq?: string; openrouter?: string; openai?: string; opencode?: string } | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
@@ -23,11 +23,13 @@ export async function POST(req: Request) {
       const gKey = (formData.get("gemini_key") || formData.get("google_key")) as string | null;
       const grKey = formData.get("groq_key") as string | null;
       const orKey = formData.get("openrouter_key") as string | null;
-      if (gKey || grKey || orKey) {
+      const ocKey = formData.get("opencode_key") as string | null;
+      if (gKey || grKey || orKey || ocKey) {
         customKeys = {
           google: gKey || undefined,
           groq: grKey || undefined,
           openrouter: orKey || undefined,
+          opencode: ocKey || undefined,
         };
       }
 
