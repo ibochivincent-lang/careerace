@@ -110,6 +110,7 @@ const EXTENSIVE_SKILLS_DICTIONARY = [
  * Common role title patterns to detect in CV text.
  */
 const ROLE_PATTERNS = [
+  // Tech & Engineering
   "software engineer", "software developer", "web developer",
   "frontend developer", "frontend engineer", "front-end developer",
   "backend developer", "backend engineer", "back-end developer",
@@ -122,13 +123,28 @@ const ROLE_PATTERNS = [
   "machine learning engineer", "ml engineer", "ai engineer",
   "mobile developer", "ios developer", "android developer",
   "cloud engineer", "cloud architect", "solutions architect",
-  "product manager", "product owner", "scrum master",
   "qa engineer", "test engineer", "automation engineer",
-  "ux designer", "ui designer", "product designer",
+  "security engineer", "blockchain developer", "systems analyst",
+  // Product & Project Management
+  "product manager", "product owner", "scrum master",
   "project manager", "program manager", "delivery manager",
-  "business analyst", "systems analyst",
-  "security engineer", "blockchain developer",
-  "intern", "junior developer", "mid-level", "senior",
+  // Operations & Business
+  "operations manager", "operations lead", "operations coordinator",
+  "operations specialist", "director of operations", "head of operations",
+  "business analyst", "business development manager", "management consultant",
+  "supply chain manager", "logistics coordinator", "procurement specialist",
+  "account manager", "sales manager", "marketing manager", "marketing lead",
+  "financial analyst", "accountant", "finance manager", "controller",
+  "human resources manager", "hr specialist", "talent acquisition lead",
+  "customer success manager", "client relations specialist",
+  "executive assistant", "office manager", "administrative coordinator",
+  // Creative & Design
+  "ux designer", "ui designer", "product designer", "graphic designer",
+  "art director", "creative lead", "content strategist",
+  // Leadership & General
+  "director", "vice president", "vp", "general manager", "team lead",
+  "supervisor", "consultant", "specialist", "coordinator", "officer",
+  "administrator", "associate", "intern"
 ];
 
 /**
@@ -161,18 +177,22 @@ const KNOWN_CERTIFICATIONS = [
   "Meta Certified Front-End Developer",
   "Meta Certified Back-End Developer",
   "Oracle Certified Professional",
+  "Lean Six Sigma Green Belt",
+  "Lean Six Sigma Black Belt",
+  "Certified Public Accountant (CPA)",
+  "Chartered Financial Analyst (CFA)"
 ];
 
 /**
  * Section header patterns for robust section detection.
  */
 const SECTION_HEADERS = {
-  experience: /^(?:#{0,3}\s*)?(?:work\s+)?(?:experience|employment|professional\s+experience|career\s+history|work\s+history|relevant\s+experience|employment\s+history)/i,
-  education: /^(?:#{0,3}\s*)?(?:education|academic|qualifications|academic\s+background|academic\s+history|educational\s+background|degrees?|institutions?)/i,
-  skills: /^(?:#{0,3}\s*)?(?:skills?|technical\s+skills?|technologies|core\s+competencies|tools?\s*(?:&|and)?\s*technologies?|expertise|proficiencies|tech\s+stack)/i,
-  certifications: /^(?:#{0,3}\s*)?(?:certifications?|certificates?|professional\s+certifications?|licenses?|credentials?|accreditations?)/i,
-  projects: /^(?:#{0,3}\s*)?(?:projects?|personal\s+projects?|side\s+projects?|portfolio|key\s+projects?|notable\s+projects?)/i,
-  summary: /^(?:#{0,3}\s*)?(?:summary|profile|objective|about\s+me|professional\s+summary|career\s+objective|introduction)/i,
+  experience: /^(?:#{0,3}\s*)?(?:work\s+|professional\s+|career\s+|relevant\s+|employment\s+)?(?:experience|employment|work\s+history|career\s+history|employment\s+history|background|history|engagements|projects\s*(?:&|and)\s*experience)\b/i,
+  education: /^(?:#{0,3}\s*)?(?:education|academic|qualifications|academic\s+background|academic\s+history|educational\s+background|degrees?|institutions?|studies)\b/i,
+  skills: /^(?:#{0,3}\s*)?(?:skills?|technical\s+skills?|technologies|core\s+competencies|tools?\s*(?:&|and)?\s*technologies?|expertise|proficiencies|tech\s+stack|areas\s+of\s+expertise|key\s+skills)\b/i,
+  certifications: /^(?:#{0,3}\s*)?(?:certifications?|certificates?|professional\s+certifications?|licenses?|credentials?|accreditations?|courses?|awards?)\b/i,
+  projects: /^(?:#{0,3}\s*)?(?:projects?|personal\s+projects?|side\s+projects?|portfolio|key\s+projects?|notable\s+projects?)\b/i,
+  summary: /^(?:#{0,3}\s*)?(?:summary|profile|objective|about\s+me|professional\s+summary|career\s+objective|introduction|executive\s+summary)\b/i,
 };
 
 /**
@@ -222,30 +242,45 @@ export function parseCvText(rawText: string): ParsedCv {
     }
   }
 
-  // Name: First non-empty line in the top of the CV that is not a label, URL, email, or section
-  for (const line of lines.slice(0, 10)) {
+  // Name: Multi-pass extraction from top lines
+  for (const line of lines.slice(0, 12)) {
     const clean = line.replace(/^[#*\-\s]+/, "").trim();
-    const nameLabelMatch = clean.match(/^name[\s:]+([A-Za-z\s'-]{2,40})$/i);
+    const nameLabelMatch = clean.match(/^(?:name|candidate(?:\s+name)?|full\s+name)[\s:]+([A-Za-z\s'.-]{2,45})$/i);
     if (nameLabelMatch) {
       applicant_name = nameLabelMatch[1].trim();
       break;
     }
     if (
-      clean.length > 2 &&
-      clean.length < 50 &&
+      clean.length >= 3 &&
+      clean.length <= 40 &&
       !clean.includes("@") &&
       !clean.includes("http") &&
       !clean.includes(".com") &&
+      !clean.includes("/") &&
       !/^\+?\d/.test(clean) &&
       !SECTION_HEADERS.summary.test(clean) &&
       !SECTION_HEADERS.experience.test(clean) &&
       !SECTION_HEADERS.skills.test(clean) &&
       !SECTION_HEADERS.education.test(clean) &&
       !SECTION_HEADERS.certifications.test(clean) &&
-      !/^(curriculum\s+vitae|resume|cv|contact\s+details|personal\s+profile|portfolio)\b/i.test(clean)
+      !/^(curriculum\s+vitae|resume|cv|contact\s+details|personal\s+profile|portfolio|page\s+\d)\b/i.test(clean)
     ) {
-      applicant_name = clean;
-      break;
+      const words = clean.split(/\s+/);
+      if (words.length >= 2 && words.length <= 4 && words.every((w) => /^[A-Z][a-zA-Z'.-]*$/.test(w))) {
+        applicant_name = clean;
+        break;
+      }
+    }
+  }
+
+  // Fallback name from email if not detected from text
+  if (!applicant_name && email) {
+    const handle = email.split("@")[0].replace(/[0-9_.-]+/g, " ").trim();
+    if (handle.length > 2) {
+      applicant_name = handle
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
     }
   }
 
@@ -323,7 +358,7 @@ export function parseCvText(rawText: string): ParsedCv {
           SECTION_HEADERS.projects.test(l) ||
           SECTION_HEADERS.skills.test(l))
     );
-    const sectionEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, expHeadingIdx + 35);
+    const sectionEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, expHeadingIdx + 45);
     const expLines = lines.slice(expHeadingIdx + 1, sectionEnd);
 
     let currentCompany = "";
@@ -348,42 +383,61 @@ export function parseCvText(rawText: string): ParsedCv {
 
     for (const line of expLines) {
       const isBullet = /^[-*\u2022\u00b7>]/.test(line);
-      const hasDate = /\b(20\d{2}|19\d{2})\b/.test(line) ||
-        /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*[-\u2013]\s*/i.test(line) ||
-        /\b(present|current|now)\b/i.test(line);
-      const isShortLine = line.length < 80 && !isBullet;
-      const looksLikeRole = ROLE_PATTERNS.some((r) =>
-        line.toLowerCase().includes(r)
+      const dateMatch = line.match(
+        /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4}\s*[-\u2013—]\s*(?:present|current|now|to date|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4})|(?:20|19)\d{2}\s*[-\u2013—]\s*(?:present|current|now|to date)|(?:20|19)\d{2}\s*[-\u2013—]\s*(?:20|19)\d{2}|\b(?:20|19)\d{2}\b)/i
       );
 
       if (isBullet) {
-        currentHighlights.push(line.replace(/^[-*\u2022\u00b7>\s]+/, ""));
-      } else if (hasDate && isShortLine) {
-        if (currentCompany || currentRole) {
-          flushEntry();
-        }
-        const dateMatch = line.match(
-          /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s*\d{0,4}\s*[-\u2013]\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)?\w*\s*\d{0,4}|(?:20|19)\d{2}\s*[-\u2013]\s*(?:20|19)?\d{0,4}|(?:20|19)\d{2}\s*[-\u2013]\s*(?:present|current|now))/i
-        );
-        if (dateMatch) {
-          currentDuration = dateMatch[0].trim();
-          const remainder = line.replace(dateMatch[0], "").replace(/[|,\-\u2013]/g, " ").trim();
-          if (remainder.length > 2 && remainder.length < 60) {
-            if (looksLikeRole) {
-              currentRole = remainder;
-            } else {
-              currentCompany = remainder;
-            }
-          }
+        currentHighlights.push(line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim());
+      } else if (dateMatch && line.length < 90) {
+        // Line has date
+        const dateStr = dateMatch[0].trim();
+        const nonDatePart = line.replace(dateMatch[0], "").replace(/[|,\-\u2013—()]/g, " ").trim();
+
+        if (nonDatePart.length < 3 || /^(?:present|current|now|to date)$/i.test(nonDatePart)) {
+          // This line is strictly a date range for the previous role/company
+          currentDuration = line.trim();
         } else {
-          currentDuration = line;
+          // New entry with date and title/company on the same line
+          if (currentCompany || currentRole) flushEntry();
+          currentDuration = dateStr;
+
+          // Check if nonDatePart has separator
+          const sepMatch = nonDatePart.match(/(.*?)\s+(?:at|@|—|–|-|\|)\s+(.*)/i);
+          if (sepMatch) {
+            currentCompany = sepMatch[1].trim();
+            currentRole = sepMatch[2].trim();
+          } else {
+            currentCompany = nonDatePart;
+          }
         }
-      } else if (isShortLine && !currentCompany) {
-        currentCompany = line.replace(/^[#*\-\s]+/, "").trim();
-      } else if (isShortLine && !currentRole) {
-        currentRole = line.replace(/^[#*\-\s]+/, "").trim();
+      } else if (line.length < 90 && !isBullet) {
+        // Line without date: could be "Company — Role" or separate Role line
+        const sepMatch = line.match(/(.*?)\s+(?:at|@|—|–|-|\|)\s+(.*)/i);
+        if (sepMatch && sepMatch[1].length < 50 && sepMatch[2].length < 50) {
+          if (currentCompany || currentRole) flushEntry();
+          const p1 = sepMatch[1].replace(/^[#*\-\s]+/, "").trim();
+          const p2 = sepMatch[2].replace(/^[#*\-\s]+/, "").trim();
+          const p1IsRole = ROLE_PATTERNS.some((r) => p1.toLowerCase().includes(r)) || /(?:manager|lead|engineer|director|specialist|analyst|developer|officer|head)/i.test(p1);
+          const p2IsRole = ROLE_PATTERNS.some((r) => p2.toLowerCase().includes(r)) || /(?:manager|lead|engineer|director|specialist|analyst|developer|officer|head)/i.test(p2);
+
+          if (p1IsRole && !p2IsRole) {
+            currentRole = p1;
+            currentCompany = p2;
+          } else {
+            currentCompany = p1;
+            currentRole = p2;
+          }
+        } else if (!currentRole) {
+          if (currentCompany && currentDuration) flushEntry();
+          currentRole = line.replace(/^[#*\-\s]+/, "").trim();
+        } else if (!currentCompany) {
+          currentCompany = line.replace(/^[#*\-\s]+/, "").trim();
+        } else if (line.length > 20) {
+          currentHighlights.push(line.trim());
+        }
       } else if (line.length > 20 && !isBullet) {
-        currentHighlights.push(line);
+        currentHighlights.push(line.trim());
       }
     }
     flushEntry();
@@ -395,10 +449,10 @@ export function parseCvText(rawText: string): ParsedCv {
       const line = lines[i];
       const matchedRole = ROLE_PATTERNS.find((r) => line.toLowerCase().includes(r));
       const hasDate = /\b(20\d{2}|19\d{2})\b/.test(line);
-      if (matchedRole && line.length < 100) {
-        const parts = line.split(/[|,\-\u2013]/).map((p) => p.trim());
-        const role = parts[0] || matchedRole;
-        const company = parts[1] || "Company";
+      if ((hasDate || matchedRole) && line.length < 90 && !SECTION_HEADERS.education.test(line)) {
+        const parts = line.split(/[|,\-\u2013—]/).map((p) => p.trim());
+        const role = matchedRole || parts[0] || "Professional";
+        const company = parts[1] || "Organization";
         const dateMatch = line.match(/\b(?:20|19)\d{2}\b/);
         work_experience.push({
           company: company.length > 40 ? "Organization" : company,
@@ -579,9 +633,15 @@ export function parseCvText(rawText: string): ParsedCv {
 
   const certifications = Array.from(certificationsSet);
 
-  // 6. Target Roles inferred from candidate skills and detected roles in text
+  // 6. Target Roles: Inferred from real recent work experience, headline, or detected patterns
   const target_roles: string[] = [];
 
+  // Priority A: Candidate's most recent job role from work experience
+  if (work_experience.length > 0 && work_experience[0].role && work_experience[0].role !== "Role" && work_experience[0].role !== "Professional") {
+    target_roles.push(work_experience[0].role);
+  }
+
+  // Priority B: Scan text for explicitly matched role patterns
   for (const role of ROLE_PATTERNS) {
     if (textLower.includes(role)) {
       const formatted = role
@@ -595,26 +655,28 @@ export function parseCvText(rawText: string): ParsedCv {
     }
   }
 
-  // Fallback: infer from skills
+  // Priority C: Infer sensibly from skills ONLY if still empty (NEVER force Software Engineer)
   if (target_roles.length === 0) {
-    if (skills.some((s) => /react|next|vue|angular|frontend|front.end/i.test(s)))
+    if (skills.some((s) => /react|next|vue|angular|frontend/i.test(s)))
       target_roles.push("Frontend Developer");
-    if (skills.some((s) => /node|python|django|fastapi|backend|back.end|express/i.test(s)))
+    else if (skills.some((s) => /node|python|django|fastapi|backend|express/i.test(s)))
       target_roles.push("Backend Developer");
-    if (
-      target_roles.length >= 2 ||
-      skills.some((s) => /fullstack|full.stack/i.test(s))
-    )
-      target_roles.unshift("Fullstack Developer");
-    if (skills.some((s) => /docker|kubernetes|terraform|devops|ci\/cd/i.test(s)))
-      target_roles.push("DevOps Engineer");
-    if (skills.some((s) => /machine learning|tensorflow|pytorch|data/i.test(s)))
-      target_roles.push("Data Engineer");
-    if (target_roles.length === 0) target_roles.push("Software Engineer");
+    else if (skills.some((s) => /operations|supply chain|logistics/i.test(s)))
+      target_roles.push("Operations Specialist");
+    else if (skills.some((s) => /product|scrum|agile/i.test(s)))
+      target_roles.push("Product Specialist");
+    else if (skills.some((s) => /marketing|seo|brand/i.test(s)))
+      target_roles.push("Marketing Lead");
+    else if (skills.some((s) => /finance|accounting|audit/i.test(s)))
+      target_roles.push("Financial Specialist");
+    else if (academic_history.length > 0 && academic_history[0].field_of_study)
+      target_roles.push(`${academic_history[0].field_of_study} Professional`);
+    else
+      target_roles.push("Professional Profile");
   }
 
   return {
-    applicant_name: applicant_name || "Candidate",
+    applicant_name: applicant_name || (email ? email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "Verified Candidate"),
     email: email || "",
     phone,
     github_url,

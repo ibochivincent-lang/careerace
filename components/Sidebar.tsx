@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { Suspense } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Settings,
   Database,
@@ -20,23 +20,16 @@ import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
 import { useSidebar } from './SidebarContext'
 
-export function Sidebar() {
+function SidebarContent() {
   const pathname = usePathname()
   const router = useRouter()
-  const [currentTab, setCurrentTab] = useState('overview')
+  const searchParams = useSearchParams()
+  const currentTab = searchParams?.get('tab') || 'overview'
   const { collapsed, toggle } = useSidebar()
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      setCurrentTab(params.get('tab') || 'overview')
-    }
-  }, [pathname])
 
   const MAIN_NAV = [
     { label: 'Overview', href: '/dashboard?tab=overview', icon: LayoutDashboard, active: pathname === '/dashboard' && currentTab === 'overview' },
-    { label: 'Resumes', href: '/dashboard?tab=resumes', icon: FileText, active: pathname === '/dashboard' && currentTab === 'resumes' },
-    { label: 'Tailored Resumes', href: '/dashboard?tab=tailored', icon: Sparkles, active: pathname === '/dashboard' && currentTab === 'tailored' },
+    { label: 'Resumes', href: '/dashboard?tab=resumes', icon: FileText, active: pathname === '/dashboard' && (currentTab === 'resumes' || currentTab === 'tailored') },
     { label: 'Cover Letters', href: '/dashboard?tab=cover_letters', icon: Mail, active: pathname === '/dashboard' && currentTab === 'cover_letters' },
     { label: 'Job Board', href: '/application_board', icon: Briefcase, active: pathname.startsWith('/application_board') },
   ]
@@ -240,5 +233,13 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+  )
+}
+
+export function Sidebar() {
+  return (
+    <Suspense fallback={<aside className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 bg-sidebar border-r border-sidebar-border z-30 w-60" />}>
+      <SidebarContent />
+    </Suspense>
   )
 }

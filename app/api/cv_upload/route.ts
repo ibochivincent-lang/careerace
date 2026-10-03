@@ -116,20 +116,38 @@ export async function POST(req: Request) {
             `Walrus Encrypted Resume: ${docName} | blobId: ${walrusResult.blobId} | digest: ${walrusResult.sha256Digest.slice(0, 16)}`
           ).catch(() => {});
 
+          if (finalProfile.applicant_name && finalProfile.applicant_name !== "Candidate") {
+            await rememberFact(
+              address,
+              "candidate_identity",
+              `Candidate Name: ${finalProfile.applicant_name}`
+            ).catch(() => {});
+          }
+
           if (finalProfile.skills && Array.isArray(finalProfile.skills)) {
-            for (const skill of finalProfile.skills.slice(0, 5)) {
+            for (const skill of finalProfile.skills.slice(0, 10)) {
               await rememberFact(address, "skill", `Skill: ${skill}`).catch(() => {});
             }
           }
 
           if (finalProfile.target_roles && Array.isArray(finalProfile.target_roles)) {
-            for (const role of finalProfile.target_roles.slice(0, 2)) {
+            for (const role of finalProfile.target_roles.slice(0, 3)) {
               await rememberFact(address, "target_role", `Target role: ${role}`).catch(() => {});
             }
           }
 
+          if (finalProfile.academic_history && Array.isArray(finalProfile.academic_history)) {
+            for (const edu of finalProfile.academic_history.slice(0, 3)) {
+              await rememberFact(
+                address,
+                "education",
+                `Studied ${edu.degree || 'Degree'} at ${edu.institution}${edu.field_of_study ? ` in ${edu.field_of_study}` : ''}${edu.graduation_year ? ` (Graduated ${edu.graduation_year})` : ''}`
+              ).catch(() => {});
+            }
+          }
+
           if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
-            for (const exp of finalProfile.work_experience.slice(0, 2)) {
+            for (const exp of finalProfile.work_experience.slice(0, 4)) {
               await rememberFact(
                 address,
                 "experience",
@@ -184,6 +202,28 @@ function decodePdfLiteralString(str: string): string {
 }
 
 /**
+ * Decode PDF hex strings e.g. <00480065006C006C006F> or <48656C6C6F>
+ */
+function decodePdfHexString(hex: string): string {
+  const clean = hex.replace(/[^0-9a-fA-F]/g, "");
+  let decoded = "";
+  if (clean.length >= 4 && clean.length % 4 === 0 && clean.startsWith("00")) {
+    for (let i = 0; i < clean.length; i += 4) {
+      const code = parseInt(clean.slice(i, i + 4), 16);
+      if (code >= 32 && code <= 126) decoded += String.fromCharCode(code);
+      else if (code === 10 || code === 13) decoded += "\n";
+    }
+  } else {
+    for (let i = 0; i < clean.length; i += 2) {
+      const code = parseInt(clean.slice(i, i + 2), 16);
+      if (code >= 32 && code <= 126) decoded += String.fromCharCode(code);
+      else if (code === 10 || code === 13) decoded += "\n";
+    }
+  }
+  return decoded.trim();
+}
+
+/**
  * Extract text instructions from raw or decompressed PDF stream content.
  */
 function extractFromPdfStream(streamString: string, outputChunks: string[]) {
@@ -192,12 +232,21 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
     const tjArrays = block.match(/\[([^\]]+)\]\s*TJ/gi);
     if (tjArrays) {
       for (const arr of tjArrays) {
+        // Parenthesized literal strings
         const parts = arr.match(/\(([^()]*)\)/g);
         if (parts) {
           const combined = parts
             .map((p) => decodePdfLiteralString(p.slice(1, -1)))
             .join("");
           if (combined.trim()) outputChunks.push(combined.trim());
+        }
+        // Angle-bracket hex strings
+        const hexParts = arr.match(/<([0-9a-fA-F\s]+)>/g);
+        if (hexParts) {
+          const combinedHex = hexParts
+            .map((h) => decodePdfHexString(h.slice(1, -1)))
+            .join("");
+          if (combinedHex.trim()) outputChunks.push(combinedHex.trim());
         }
       }
     }
@@ -207,6 +256,15 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
       for (const m of tjMatches) {
         const inner = m.replace(/\)\s*T[jJ]$/, "").replace(/^\(/, "");
         const decoded = decodePdfLiteralString(inner).trim();
+        if (decoded) outputChunks.push(decoded);
+      }
+    }
+
+    const hexTjMatches = block.match(/<([0-9a-fA-F\s]+)>\s*T[jJ]/g);
+    if (hexTjMatches) {
+      for (const m of hexTjMatches) {
+        const inner = m.replace(/>\s*T[jJ]$/, "").replace(/^</, "");
+        const decoded = decodePdfHexString(inner).trim();
         if (decoded) outputChunks.push(decoded);
       }
     }

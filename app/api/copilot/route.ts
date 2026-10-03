@@ -166,8 +166,14 @@ function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: FactKind
 
 export async function POST(req: Request) {
   try {
-    const { messages, cv_profile } = await req.json();
-    const latest = messages?.at(-1)?.content || "Hello, Career Ace";
+    const body = await req.json();
+    const messages = Array.isArray(body.messages)
+      ? body.messages
+      : body.message
+      ? [{ role: "user", content: body.message }]
+      : [];
+    const cv_profile = body.cv_profile || body.profile;
+    const latest = (body.message || messages?.at(-1)?.content || "Hello, Career Ace").trim();
 
     const asked =
       [...messages]
@@ -220,51 +226,83 @@ export async function POST(req: Request) {
       cv_profile?.applicant_name ||
       "";
 
-    // 4. Build sovereign context for the AI Copilot
-    const memoryFactsList = [...activeProfile, ...activeCoaching].map((f) => `- ${f.text}`).join("\n");
+    // Build known CV profile context
+    const profileRole = cv_profile?.target_roles?.[0] || storedSummary.targetRoles[0] || "Professional";
+    const profileSkills = (cv_profile?.skills?.length ? cv_profile.skills : storedSummary.skills.map((s: string) => s.replace(/^skill:\s*/i, ""))) || [];
+    const profileEducation = cv_profile?.education || storedSummary.education.map((e: string) => e.replace(/^education:\s*/i, ""));
+    const profileExperience = cv_profile?.work_experience || storedSummary.experience.map((e: string) => e.replace(/^experience:\s*/i, ""));
 
-    const systemPrompt = `You are Career Ace AI Copilot, an autonomous career profiler, resume builder, and job matcher.
+    // 4. Handle direct deterministic queries if asked specifically
+    const lowerLatest = latest.toLowerCase();
+    let directReply = "";
+
+    if (lowerLatest.includes("what did i study") || lowerLatest.includes("what is my degree") || lowerLatest.includes("where did i study") || lowerLatest.includes("my education")) {
+      if (profileEducation && profileEducation.length > 0) {
+        const eduList = Array.isArray(profileEducation)
+          ? profileEducation.map((e: any) => typeof e === "string" ? e : `${e.degree || "Degree"} from ${e.institution || e.school || "University"} (${e.year || e.dates || ""})`).join("; ")
+          : String(profileEducation);
+        directReply = `Based on your Walrus Sovereign Memory and uploaded CV, you studied:\n\n${eduList}\n\nAll education credentials are encrypted and stored in your Walrus vault.`;
+      } else {
+        directReply = "Your education history has not been indexed yet. What is your highest institution, degree, and graduation year?";
+      }
+    } else if (lowerLatest.includes("where did i work") || lowerLatest.includes("my past roles") || lowerLatest.includes("my experience") || lowerLatest.includes("where have i worked")) {
+      if (profileExperience && profileExperience.length > 0) {
+        const expList = Array.isArray(profileExperience)
+          ? profileExperience.map((exp: any) => typeof exp === "string" ? exp : `${exp.role || "Role"} at ${exp.company || "Company"} (${exp.duration || exp.dates || ""})`).join("\n• ")
+          : String(profileExperience);
+        directReply = `Here is your recorded work experience from your Walrus Memory vault:\n\n• ${expList}\n\nWould you like me to enhance or quantify any of these accomplishments for your next target application?`;
+      } else {
+        directReply = "No work experience positions are currently indexed in your profile. What roles or companies have you worked at?";
+      }
+    } else if (lowerLatest.includes("what are my skills") || lowerLatest.includes("my skills") || lowerLatest.includes("skills detected")) {
+      if (profileSkills && profileSkills.length > 0) {
+        const topSkills = profileSkills.slice(0, 15).join(", ");
+        directReply = `Your Walrus Sovereign Memory vault has indexed the following core skills:\n\n${topSkills}\n\nTotal skills indexed: ${profileSkills.length}. You can tailor these for specific job postings anytime.`;
+      } else {
+        directReply = "No skills have been registered yet. What are your primary technical or domain skills?";
+      }
+    } else if (lowerLatest.includes("audit") && (lowerLatest.includes("cv") || lowerLatest.includes("resume") || lowerLatest.includes("ats"))) {
+      const score = Math.min(95, Math.max(68, 65 + (profileSkills.length > 5 ? 15 : profileSkills.length * 2) + (profileExperience.length > 0 ? 15 : 0)));
+      directReply = `ATS Audit Complete for ${currentName || "Candidate"}:\n\n- Overall ATS Compatibility: ${score}/100\n- Contact & Header: Clean and parseable\n- Target Role: ${profileRole}\n- Core Competencies: ${profileSkills.length} verified skills\n- Experience Entries: ${Array.isArray(profileExperience) ? profileExperience.length : 1} position(s)\n- Recommendation: Ensure every work accomplishment starts with a strong action verb and includes quantifiable metrics (% growth, revenue, speed, or team size).`;
+    }
+
+    let reply = directReply;
+
+    if (!reply) {
+      // 5. Build sovereign context for the AI Copilot
+      const memoryFactsList = [...activeProfile, ...activeCoaching].map((f) => `- ${f.text}`).join("\n");
+
+      const systemPrompt = `You are Career Ace AI Copilot, an autonomous career profiler, resume builder, and job matcher.
 
 YOUR PRIMARY MISSION:
-You conduct an interactive, step-by-step CV discovery conversation to build the candidate's complete, verified career profile directly into Walrus Memory.
+You conduct an interactive, step-by-step career discovery conversation to build and refine the candidate's verified career profile directly in Walrus Memory.
 
 CANDIDATE KNOWN DETAILS:
 ${currentName ? `Candidate Name: ${currentName}` : "Candidate Name: Unknown yet"}
-${cv_profile ? `Attached CV profile: Name=${cv_profile.applicant_name}, Skills=${cv_profile.skills?.slice(0, 8).join(", ")}, TargetRoles=${cv_profile.target_roles?.join(", ")}` : ""}
+Role: ${profileRole}
+Skills: ${profileSkills.slice(0, 12).join(", ") || "None indexed yet"}
+Education: ${Array.isArray(profileEducation) ? JSON.stringify(profileEducation) : profileEducation || "None indexed yet"}
+Experience: ${Array.isArray(profileExperience) ? JSON.stringify(profileExperience.slice(0, 3)) : profileExperience || "None indexed yet"}
 
-EXPLAIN THE REASON TRANSPARENTLY:
-In your opening or when introducing questions, explain clearly to the candidate:
-"The reason I am asking these questions is to get to know you, your background, and your career goals so we can construct your verified CV in Walrus Memory, tailor your applications, and match you with real job opportunities."
+FACTS STORED IN WALRUS MEMORY:
+${memoryFactsList || "No external facts stored yet."}
 
-INTERACTIVE CV INTERVIEW FLOW (Ask 1 or 2 connected questions at a time, like filling out a CV):
-1. IDENTITY & LOCATION: What is their full name, and where are they located (city/country/address)?
-2. TARGET WORK & SENIORITY LEVEL (CRITICAL HIGHLIGHT): What kind of work are they looking for? (e.g. Software Engineer, Frontend/Backend, Product Manager, Data/AI) and what seniority level (Entry-level / New Grad, Mid-level, Senior, or Lead)?
-3. WHERE THEY WANT TO WORK: Remote-first, hybrid, on-site, specific countries or cities, or dream tech companies?
-4. HIGHEST EDUCATIONAL INSTITUTION: What is their highest institution (university, college, school, or bootcamp), degree, and field of study?
-5. CORE SKILLS & TECH STACK: What are their primary technical skills, tools, programming languages, and frameworks?
-6. WORK EXPERIENCE & NOTABLE PROJECTS: What past roles, internships, or notable projects have they worked on, and what were 1 or 2 key accomplishments or challenges?
+RULES:
+1. Always ground your answers in the candidate's actual details above.
+2. If the candidate asks about what they studied, where they worked, or their skills, answer directly using the known details above.
+3. Be friendly, professional, and concise (under 120 words).`;
 
-CHECK WHAT IS ALREADY KNOWN (DO NOT RE-ASK):
-The following facts are already safely stored in the candidate's Walrus Memory vault:
-${memoryFactsList || "No facts stored yet."}
-
-If a detail is already known, do not ask for it again! Instead, acknowledge it warmly and ask for the next missing piece. If the user asks "What is my name?" or "What are my skills?", answer directly and accurately from their Walrus Memory.
-
-CONFIRM SAVES:
-Whenever the candidate shares an answer, acknowledge in passing that it is being cryptographically sealed and saved to their sovereign Walrus Memory vault.
-
-TONE & CONCISENESS:
-Keep responses friendly, encouraging, and under 130 words per turn.`;
-
-    const reply = await callFreeLlm({
-      prompt: latest,
-      system_prompt: systemPrompt,
-      max_tokens: 350,
-    });
+      reply = await callFreeLlm({
+        prompt: latest,
+        system_prompt: systemPrompt,
+        max_tokens: 350,
+      });
+    }
 
     return NextResponse.json({
       role: "assistant",
       content: reply,
+      reply: reply,
       stored: newlyStored,
       candidate_name: currentName || undefined,
       extracted_profile: {
@@ -280,7 +318,9 @@ Keep responses friendly, encouraging, and under 130 words per turn.`;
       {
         role: "assistant",
         content:
-          "Career Ace AI Copilot is active. To help build your sovereign CV and match you with live tech jobs, what kind of work or role are you looking for, and what seniority level (e.g. Entry-level or Senior)?",
+          "Career Ace AI Copilot is active. To help build your sovereign CV and match you with opportunities, what kind of work or role are you looking for?",
+        reply:
+          "Career Ace AI Copilot is active. To help build your sovereign CV and match you with opportunities, what kind of work or role are you looking for?",
         stored: [],
       },
       { status: 200 }

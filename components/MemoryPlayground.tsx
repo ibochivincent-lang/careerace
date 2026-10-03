@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   ChevronDown,
   ChevronUp,
+  Upload,
+  Trash2,
 } from 'lucide-react'
 
 interface RecalledRow {
@@ -60,6 +62,65 @@ export function MemoryPlayground() {
   const [newKind, setNewKind] = useState<string>('skill')
   const [newText, setNewText] = useState('')
   const [isPersisting, setIsPersisting] = useState(false)
+
+  // CV Upload & Reset controls in Career Vault
+  const cvInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingCv, setIsUploadingCv] = useState(false)
+  const [isResettingVault, setIsResettingVault] = useState(false)
+
+  async function handleCvUpload(file: File | null) {
+    if (!file) return
+    setIsUploadingCv(true)
+    const toastId = toast.loading(`Uploading and indexing ${file.name} to Walrus...`)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/cv_upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload CV')
+      }
+      if (data.profile) {
+        localStorage.setItem('careerace_sovereign_profile', JSON.stringify(data.profile))
+        localStorage.setItem('careerace_parsed_profile', JSON.stringify(data.profile))
+        await fetch('/api/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile: data.profile }),
+        }).catch(() => {})
+        toast.success(`CV parsed & indexed for ${data.profile.applicant_name || 'Candidate'}!`, { id: toastId })
+        router.refresh()
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to upload and index CV', { id: toastId })
+    } finally {
+      setIsUploadingCv(false)
+    }
+  }
+
+  async function handleResetVault() {
+    if (!confirm('Are you sure you want to reset your Walrus Memory Vault? All stored claims will be wiped.')) {
+      return
+    }
+    setIsResettingVault(true)
+    const toastId = toast.loading('Resetting Walrus vault...')
+    try {
+      localStorage.removeItem('careerace_sovereign_profile')
+      localStorage.removeItem('careerace_parsed_profile')
+      localStorage.removeItem('careerace_target_title')
+      localStorage.removeItem('careerace_chat_history')
+      await fetch('/api/memory', { method: 'DELETE' }).catch(() => {})
+      toast.success('Walrus Memory Vault reset successfully.', { id: toastId })
+      router.refresh()
+    } catch {
+      toast.error('Failed to reset memory vault.', { id: toastId })
+    } finally {
+      setIsResettingVault(false)
+    }
+  }
 
   async function handleSearch(queryToUse = searchQuery) {
     const q = queryToUse.trim()
@@ -146,16 +207,48 @@ export function MemoryPlayground() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="border-primary/30 text-primary hover:bg-primary/10 text-xs"
-        >
-          <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-          {showAddForm ? 'Hide Ingestion Panel' : 'Store New Fact to Walrus'}
-          {showAddForm ? <ChevronUp className="ml-1.5 h-3.5 w-3.5" /> : <ChevronDown className="ml-1.5 h-3.5 w-3.5" />}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={cvInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt"
+            className="hidden"
+            onChange={(e) => handleCvUpload(e.target.files?.[0] || null)}
+          />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => cvInputRef.current?.click()}
+            disabled={isUploadingCv}
+            className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-xs"
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" />
+            {isUploadingCv ? 'Indexing to Walrus...' : 'Attach / Replace CV'}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetVault}
+            disabled={isResettingVault}
+            className="border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 text-xs"
+          >
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+            Reset Vault
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="border-primary/30 text-primary hover:bg-primary/10 text-xs"
+          >
+            <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+            {showAddForm ? 'Hide Ingestion Panel' : 'Store New Fact to Walrus'}
+            {showAddForm ? <ChevronUp className="ml-1.5 h-3.5 w-3.5" /> : <ChevronDown className="ml-1.5 h-3.5 w-3.5" />}
+          </Button>
+        </div>
       </div>
 
       <p className="mt-2 text-xs md:text-sm text-muted-foreground max-w-3xl leading-relaxed">
