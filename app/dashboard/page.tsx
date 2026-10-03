@@ -783,7 +783,7 @@ export default function DashboardPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Vincent Ibochi"
+                    placeholder="e.g. John Doe"
                     value={parsedProfile?.applicant_name || ''}
                     onChange={(e) => setParsedProfile({ ...parsedProfile, applicant_name: e.target.value })}
                     className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
@@ -796,7 +796,7 @@ export default function DashboardPage() {
                   </label>
                   <input
                     type="email"
-                    placeholder="e.g. vincent@example.com"
+                    placeholder="e.g. candidate@example.com"
                     value={parsedProfile?.contact_email || ''}
                     onChange={(e) => setParsedProfile({ ...parsedProfile, contact_email: e.target.value })}
                     className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
@@ -809,7 +809,7 @@ export default function DashboardPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. +234 800 000 0000"
+                    placeholder="e.g. +1 555 019 2834"
                     value={parsedProfile?.contact_phone || ''}
                     onChange={(e) => setParsedProfile({ ...parsedProfile, contact_phone: e.target.value })}
                     className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
@@ -822,7 +822,7 @@ export default function DashboardPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Lagos, Nigeria / London, UK / San Francisco, CA"
+                    placeholder="e.g. Remote / New York, NY / London, UK / Lagos, Nigeria"
                     value={parsedProfile?.location || ''}
                     onChange={(e) => setParsedProfile({ ...parsedProfile, location: e.target.value })}
                     className="w-full text-xs px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
@@ -856,7 +856,7 @@ export default function DashboardPage() {
                   >
                     <option value="Entry-Level / Junior (0-2 Yrs)">Entry-Level / Junior (0-2 Yrs)</option>
                     <option value="Mid-Level (3-5 Yrs)">Mid-Level (3-5 Yrs)</option>
-                    <option value="Senior Engineer (5-8 Yrs)">Senior Engineer (5-8 Yrs)</option>
+                    <option value="Senior Professional (5-8 Yrs)">Senior Professional (5-8 Yrs)</option>
                     <option value="Staff / Principal / Lead (8+ Yrs)">Staff / Principal / Lead (8+ Yrs)</option>
                   </select>
                 </div>
@@ -872,7 +872,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-1.5">
                   <input
                     type="text"
-                    placeholder="Add role (e.g. Staff Fullstack Engineer)..."
+                    placeholder="Add role (e.g. Product Manager, Engineer, Designer)..."
                     value={newRoleInput}
                     onChange={(e) => setNewRoleInput(e.target.value)}
                     onKeyDown={(e) => {

@@ -87,8 +87,8 @@ export default function InterviewRoomPage() {
       })
       .catch(() => {})
 
-    let role = 'Software Engineer'
-    let comp = 'Mysten Labs'
+    let role = 'Candidate Professional'
+    let comp = 'Target Employer'
     const storedSovereign = localStorage.getItem('careerace_sovereign_profile')
     const storedTitle = localStorage.getItem('careerace_target_title')
     const storedCv = localStorage.getItem('careerace_parsed_profile')

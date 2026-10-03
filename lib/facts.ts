@@ -49,7 +49,7 @@ export type FactKind =
   | "preference"
   /**
    * Candidate personal identity: verified full name, contact, phone, location.
-   * e.g. "Candidate Name: Vincent Ibochi, Location: Lagos, Nigeria"
+   * e.g. "Candidate Name: John Doe, Location: London, UK"
    */
   | "candidate_identity"
   /**

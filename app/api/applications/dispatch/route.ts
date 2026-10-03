@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOwnerAddress } from "@/lib/session";
 import { rememberFact } from "@/lib/memory_contract";
-import { triggerZapierWebhook } from "@/lib/zapier";
-import { sendApplicationDispatchEmail } from "@/lib/email";
+import { sendApplicationDispatchEmail, sendEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +16,6 @@ export async function POST(req: Request) {
       cover_letter,
       candidate_name,
       candidate_email,
-      zapier_webhook_url,
     } = body;
 
     const address = await getOwnerAddress();
@@ -25,13 +23,13 @@ export async function POST(req: Request) {
     const targetTitle = title || "Software Engineer";
     const targetCompany = company || "Hiring Company";
     const targetRecruiterEmail = recruiter_email || `careers@${targetCompany.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`;
-    const passportUrl = `https://careerace.vercel.app/p/${encodeURIComponent(candidateName)}`;
+    const passportUrl = `https://careerace.online/p/${encodeURIComponent(candidateName)}`;
 
     const customCoverLetter =
       cover_letter ||
-      `Dear Hiring Team at ${targetCompany},\n\nI am writing to express my strong interest in the ${targetTitle} role. With proven experience in modern web architecture, distributed systems, and verified competencies evaluated through the Career Ace platform, I am confident in delivering high impact to your engineering organization.\n\nYou can review my cryptographically verified competencies, code repositories, and STAR+R assessment results on my Career Ace Passport: ${passportUrl}.\n\nBest regards,\n${candidateName}`;
+      `Dear Hiring Team at ${targetCompany},\n\nI am writing to express my strong interest in the ${targetTitle} role. With verified competencies evaluated through the Career Ace platform, I am confident in delivering high impact to your team.\n\nYou can review my cryptographically verified competencies and STAR+R assessment results on my Career Ace Passport: ${passportUrl}.\n\nBest regards,\n${candidateName}`;
 
-    // 1. Send via Resend transactional email
+    // 1. Send to recruiter via Resend transactional email
     let emailResult = null;
     if (targetRecruiterEmail) {
       emailResult = await sendApplicationDispatchEmail({
@@ -46,30 +44,23 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. If Zapier Webhook is provided or set in environment, trigger real external dispatch (Gmail, Outlook, Sheets, Notion)
-    const targetWebhookUrl = zapier_webhook_url || process.env.ZAPIER_WEBHOOK_URL || process.env.NEXT_PUBLIC_ZAPIER_WEBHOOK_URL;
-    let zapierResult = null;
-    if (targetWebhookUrl) {
-      zapierResult = await triggerZapierWebhook(
-        "application_dispatched",
-        {
-          address,
-          username: candidateName,
-          target_role: targetTitle,
-        },
-        {
-          application_id: application_id || `app_${Date.now()}`,
-          job_title: targetTitle,
-          company: targetCompany,
-          fit_score: fit_score || 9,
-          apply_url: apply_url || "",
-          recruiter_email: targetRecruiterEmail,
-          cover_letter: customCoverLetter,
-          passport_url: passportUrl,
-          dispatched_at: new Date().toISOString(),
-        },
-        zapier_webhook_url
-      );
+    // 2. Send instant confirmation receipt to candidate
+    if (candidate_email) {
+      sendEmail({
+        to: candidate_email,
+        subject: `Application Dispatched: ${targetTitle} at ${targetCompany}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #2563eb; margin-top: 0;">Application Dispatched Successfully</h2>
+            <p>Hi ${candidateName},</p>
+            <p>Your application for <strong>${targetTitle}</strong> at <strong>${targetCompany}</strong> has been dispatched to <code>${targetRecruiterEmail}</code>.</p>
+            <p><strong>Fit Score:</strong> ${fit_score || 9}/10</p>
+            <p><strong>Passport Link:</strong> <a href="${passportUrl}">${passportUrl}</a></p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #64748b;">This record has also been cryptographically indexed to your sovereign Walrus Memory Vault.</p>
+          </div>
+        `,
+      }).catch((err) => console.warn("[dispatch] Candidate receipt email notice:", err));
     }
 
     // 3. Persist dispatch record to candidate's sovereign Career Vault (non-blocking)
@@ -85,8 +76,6 @@ export async function POST(req: Request) {
       success: true,
       message: emailResult?.success
         ? `Application autonomously sent to ${targetRecruiterEmail} via Resend & recorded to sovereign vault!`
-        : zapierResult?.success
-        ? `Application autonomously dispatched to ${targetCompany} via Zapier!`
         : `Application packaged and recorded to sovereign Career Vault for ${targetCompany}.`,
       dispatch_record: {
         application_id,
@@ -98,7 +87,6 @@ export async function POST(req: Request) {
         dispatched_at: new Date().toISOString(),
       },
       email: emailResult,
-      zapier: zapierResult,
     });
   } catch (error) {
     console.error("[api/applications/dispatch] Error:", error);

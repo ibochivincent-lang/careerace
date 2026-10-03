@@ -269,7 +269,7 @@ export default function ApplicationBoardPage() {
     setDispatchApp(app)
     setRecruiterEmail(`careers@${cleanCompany || 'company'}.com`)
     setCoverLetter(
-      `Dear Hiring Team at ${app.company},\n\nI am writing to express my strong interest in the ${app.title} position. With verified competencies evaluated through Career Ace, I am excited to apply my background in modern web engineering and high-throughput systems to your team.\n\nYou can review my cryptographically verified profile, code repositories, and STAR+R interview results on my Career Ace Passport: https://careerace.vercel.app/p/${encodeURIComponent(candidateName)}\n\nBest regards,\n${candidateName}`
+      `Dear Hiring Team at ${app.company},\n\nI am writing to express my strong interest in the ${app.title} position. With verified competencies evaluated through Career Ace, I am excited to apply my background in modern web engineering and high-throughput systems to your team.\n\nYou can review my cryptographically verified profile, code repositories, and STAR+R interview results on my Career Ace Passport: https://careerace.online/p/${encodeURIComponent(candidateName)}\n\nBest regards,\n${candidateName}`
     )
   }
 
@@ -278,8 +278,8 @@ export default function ApplicationBoardPage() {
     setIsDispatching(true)
     const toastId = toast.loading(`Dispatching application to ${dispatchApp.company}...`)
     try {
-      const zapierWebhook = localStorage.getItem('careerace_zapier_webhook') || undefined
       const candidateName = localStorage.getItem('careerace_candidate_name') || 'Candidate'
+      const candidateEmail = localStorage.getItem('careerace_candidate_email') || undefined
 
       const res = await fetch('/api/applications/dispatch', {
         method: 'POST',
@@ -293,7 +293,7 @@ export default function ApplicationBoardPage() {
           recruiter_email: recruiterEmail,
           cover_letter: coverLetter,
           candidate_name: candidateName,
-          zapier_webhook_url: zapierWebhook,
+          candidate_email: candidateEmail,
         }),
       })
 
@@ -898,10 +898,10 @@ export default function ApplicationBoardPage() {
 
                 <div className="p-3 rounded-lg border bg-muted/30 flex items-center justify-between text-[11px]">
                   <span className="text-muted-foreground">
-                    Zapier Action: <strong>{typeof window !== 'undefined' && localStorage.getItem('careerace_zapier_webhook') ? 'Linked via Webhook (Auto-Mail / Notion)' : 'Sovereign Career Vault Recording'}</strong>
+                    Dispatch Engine: <strong>Direct Email via notifications@careerace.online</strong>
                   </span>
                   <Badge variant="outline" className="border-emerald-500/30 text-emerald-500 text-[10px]">
-                    Ready
+                    Verified Resend Delivery
                   </Badge>
                 </div>
               </div>

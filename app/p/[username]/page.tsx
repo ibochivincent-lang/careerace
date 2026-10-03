@@ -100,8 +100,11 @@ export default async function PublicProfilePage({ params }: Props) {
 
   // Fallback candidate profile if database record is fresh or guest-derived
   const profileName = candidate?.name || decodedUsername
-  const targetRole = candidate?.target_role || 'Senior Fullstack Engineer'
+  const targetRole = candidate?.target_role || 'Candidate Professional'
   const walletAddress = candidate?.wallet_address || '0x71a4f89d...31b2'
+  const displaySkills: string[] = candidate?.skills?.length
+    ? candidate.skills
+    : ['Technical Architecture', 'System Design', 'Strategic Execution', 'Domain Leadership', 'Problem Solving']
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
@@ -209,7 +212,7 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
 
           <div className="flex flex-wrap gap-2 pt-1">
-            {['TypeScript', 'React 19', 'Next.js 16', 'Node.js', 'Rust', 'Sui Move', 'TailwindCSS', 'Distributed Caching', 'REST & GraphQL APIs', 'Docker', 'PostgreSQL', 'Walrus Storage'].map((skill) => (
+            {displaySkills.map((skill) => (
               <span
                 key={skill}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs font-medium"
