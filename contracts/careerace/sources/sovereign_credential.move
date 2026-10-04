@@ -6,6 +6,8 @@
 /// Anchors Walrus blob IDs and SHA-256 cryptographic digests directly into Sui Move
 /// smart contracts, enabling decentralized, tamper-proof verification of candidate
 /// work history, tailored CV versions, and professional credentials.
+/// Also integrates with Sui Name Service (SuiNS) to resolve human-readable .sui domains
+/// directly to verified Walrus credentials.
 module careerace::sovereign_credential {
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};
@@ -16,6 +18,7 @@ module careerace::sovereign_credential {
     // --- Error Codes ---
     const ENotAuthorizedIssuer: u64 = 1;
     const EInvalidBlobId: u64 = 2;
+    const EInvalidDomain: u64 = 3;
 
     /// Cryptographic on-chain anchor binding a Walrus decentralized blob
     /// to a verified candidate Sui sovereign address.
@@ -26,6 +29,16 @@ module careerace::sovereign_credential {
         digest: String,
         credential_type: String, // e.g. "sovereign_resume", "tailored_cv", "stcw_marine_license", "work_experience"
         issuer: address,
+        timestamp_ms: u64,
+    }
+
+    /// On-chain anchor binding a human-readable SuiNS (.sui) domain
+    /// to a candidate's sovereign address and primary Walrus resume blob.
+    public struct SuiNSDomainAnchor has key, store {
+        id: UID,
+        candidate: address,
+        suins_domain: String, // e.g. "vincent.sui"
+        walrus_blob_id: String,
         timestamp_ms: u64,
     }
 
@@ -45,6 +58,15 @@ module careerace::sovereign_credential {
         anchor_id: address,
         candidate: address,
         walrus_blob_id: String,
+    }
+
+    /// On-chain event emitted when a SuiNS domain is bound to a candidate profile.
+    public struct SuiNSDomainBoundEvent has copy, drop {
+        anchor_id: address,
+        candidate: address,
+        suins_domain: String,
+        walrus_blob_id: String,
+        timestamp_ms: u64,
     }
 
     /// Entry point to anchor a verified Walrus blob on Sui Testnet/Mainnet.
@@ -81,6 +103,36 @@ module careerace::sovereign_credential {
         });
 
         // Transfer the verifiable credential directly to the candidate's sovereign address
+        sui::transfer::public_transfer(anchor, candidate);
+    }
+
+    /// Entry point to bind a human-readable SuiNS domain (.sui) to a candidate profile on-chain.
+    public entry fun bind_suins_domain(
+        candidate: address,
+        suins_domain: String,
+        walrus_blob_id: String,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        let timestamp = clock::timestamp_ms(clock);
+        let anchor = SuiNSDomainAnchor {
+            id: object::new(ctx),
+            candidate,
+            suins_domain,
+            walrus_blob_id,
+            timestamp_ms: timestamp,
+        };
+
+        let anchor_addr = object::uid_to_address(&anchor.id);
+
+        event::emit(SuiNSDomainBoundEvent {
+            anchor_id: anchor_addr,
+            candidate,
+            suins_domain,
+            walrus_blob_id,
+            timestamp_ms: timestamp,
+        });
+
         sui::transfer::public_transfer(anchor, candidate);
     }
 
@@ -135,5 +187,9 @@ module careerace::sovereign_credential {
 
     public fun timestamp_ms(anchor: &WorkCredentialAnchor): u64 {
         anchor.timestamp_ms
+    }
+
+    public fun suins_domain(anchor: &SuiNSDomainAnchor): &String {
+        &anchor.suins_domain
     }
 }

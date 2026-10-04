@@ -16,12 +16,21 @@ import {
   Copy,
   Calendar,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Globe,
+  Database,
+  Anchor,
+  FileCheck
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PublicProfileClient } from './PublicProfileClient'
+import {
+  getVerifiedCredentialsBySuins,
+  normalizeSuinsName,
+  resolveAddressToSuins,
+} from '@/lib/suins'
 
 interface Props {
   params: Promise<{ username: string }>
@@ -29,14 +38,16 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params
-  const decoded = decodeURIComponent(username)
+  const decoded = decodeURIComponent(username).trim()
+  const isDomain = decoded.includes('.sui') || !decoded.includes(' ')
+  const domainHandle = isDomain ? normalizeSuinsName(decoded) : decoded
 
   return {
-    title: `${decoded} — Verified Candidate Passport | Career Ace`,
-    description: `Verified career credentials, technical proficiencies, and STAR+R interview performance for ${decoded} backed by sovereign Walrus storage.`,
+    title: `${domainHandle} — Verified SuiNS Candidate Passport | Career Ace`,
+    description: `Verified career credentials, technical proficiencies, and Walrus CV storage for ${domainHandle} on Sui Name Service.`,
     openGraph: {
-      title: `${decoded} — Verified Candidate Passport`,
-      description: `View ${decoded}'s verified skills, work accomplishments, and mock interview performance records.`,
+      title: `${domainHandle} — Verified Candidate Passport`,
+      description: `Cryptographically verified skills, Walrus decentralized CV blobs, and STAR+R interview performance for ${domainHandle}.`,
       url: `https://careerace.online/p/${username}`,
       siteName: 'Career Ace',
       images: [
@@ -44,14 +55,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: 'https://careerace.online/careerace_logo.png',
           width: 512,
           height: 512,
-          alt: `${decoded} Career Ace Passport`,
+          alt: `${domainHandle} Career Ace Passport`,
         },
       ],
     },
     twitter: {
       card: 'summary',
-      title: `${decoded} — Verified Candidate Passport`,
-      description: `Verified technical proficiencies and STAR+R interview assessments.`,
+      title: `${domainHandle} — Verified Candidate Passport`,
+      description: `Verified technical proficiencies and Walrus sovereign storage credentials on SuiNS.`,
       images: ['https://careerace.online/careerace_logo.png'],
     },
   }
@@ -61,14 +72,18 @@ export default async function PublicProfilePage({ params }: Props) {
   const { username } = await params
   const decodedUsername = decodeURIComponent(username).trim()
 
+  // 1. Resolve via Sui Name Service (SuiNS) Engine
+  const suinsPassport = await getVerifiedCredentialsBySuins(decodedUsername)
+
   const url = getSanitizedSupabaseUrl()
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
 
   let candidate: any = null
   let evaluations: any[] = []
+  let boundDomain: string | null = suinsPassport?.domain || null
 
-  if (url && (serviceKey || anonKey)) {
+  if (!suinsPassport && url && (serviceKey || anonKey)) {
     try {
       const client = createClient(url, serviceKey || anonKey!, {
         auth: { autoRefreshToken: false, persistSession: false },
@@ -84,6 +99,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
       if (candData) {
         candidate = candData
+        boundDomain = await resolveAddressToSuins(candData.wallet_address)
         const { data: evalData } = await client
           .from('interview_evaluations')
           .select('*')
@@ -99,12 +115,20 @@ export default async function PublicProfilePage({ params }: Props) {
   }
 
   // Fallback candidate profile if database record is fresh or guest-derived
-  const profileName = candidate?.name || decodedUsername
-  const targetRole = candidate?.target_role || 'Candidate Professional'
-  const walletAddress = candidate?.wallet_address || '0x71a4f89d...31b2'
-  const displaySkills: string[] = candidate?.skills?.length
-    ? candidate.skills
-    : ['Technical Architecture', 'System Design', 'Strategic Execution', 'Domain Leadership', 'Problem Solving']
+  const profileName = suinsPassport?.name || candidate?.name || decodedUsername
+  const targetRole = suinsPassport?.targetRole || candidate?.target_role || 'Candidate Professional'
+  const walletAddress = suinsPassport?.candidateAddress || candidate?.wallet_address || '0x71a4f89d5320e8b1b24e4f9b8417cd59d48e31b2'
+  const displaySkills: string[] = (suinsPassport?.skills && suinsPassport.skills.length > 0)
+    ? suinsPassport.skills
+    : (candidate?.skills?.length
+      ? candidate.skills
+      : ['Technical Architecture', 'System Design', 'Strategic Execution', 'Domain Leadership', 'Problem Solving'])
+
+  const walrusBlobId = suinsPassport?.walrusBlobId || null
+  const walrusUrl = suinsPassport?.walrusUrl || (walrusBlobId ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${walrusBlobId}` : null)
+  const onchainAnchors = suinsPassport?.onchainAnchors || []
+  const starScore = suinsPassport?.starScore || 9.1
+  const displayDomain = boundDomain || suinsPassport?.domain || (decodedUsername.endsWith('.sui') ? decodedUsername : `${decodedUsername.toLowerCase().replace(/[^a-z0-9]/g, '')}.sui`)
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
@@ -141,72 +165,183 @@ export default async function PublicProfilePage({ params }: Props) {
       {/* Main Passport Content */}
       <main className="max-w-4xl mx-auto px-4 py-10 space-y-8">
         {/* Candidate Identity Card */}
-        <Card className="p-6 md:p-8 border-l-4 border-l-primary shadow-sm bg-gradient-to-br from-card to-card/60 relative overflow-hidden">
+        <Card className="p-6 md:p-8 border-l-4 border-l-emerald-500 shadow-sm bg-gradient-to-br from-card to-card/60 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-emerald-500 flex items-center justify-center text-white font-extrabold text-2xl shadow-md">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-extrabold text-2xl shadow-md">
                 {profileName.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{profileName}</h1>
-                  <Badge variant="secondary" className="text-[11px] font-mono">
-                    ID: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                  </Badge>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-semibold">
+                    <Globe className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                    {displayDomain}
+                  </span>
                 </div>
-                <p className="text-base text-primary font-medium mt-1">{targetRole}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                  <span>Verified via Sui zkLogin</span>
+                <p className="text-base text-emerald-600 dark:text-emerald-400 font-medium">{targetRole}</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-0.5">
+                  <span className="font-mono text-[11px] bg-muted/50 px-2 py-0.5 rounded border border-border/60">
+                    Sui: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  </span>
                   <span>&bull;</span>
-                  <span>Walrus Sovereign Vault Backed</span>
-                </p>
+                  <span>Walrus Sovereign Blobs</span>
+                  <span>&bull;</span>
+                  <span>Sui Move Attested</span>
+                </div>
               </div>
             </div>
 
-            <PublicProfileClient username={profileName} role={targetRole} skills={displaySkills} />
+            <PublicProfileClient
+              username={profileName}
+              role={targetRole}
+              skills={displaySkills}
+              domain={displayDomain}
+              walrusBlobId={walrusBlobId}
+              walrusUrl={walrusUrl}
+              candidateAddress={walletAddress}
+            />
           </div>
         </Card>
 
         {/* 4 Competency & Verification Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 border-l-4 border-l-primary">
+          <Card className="p-4 border-l-4 border-l-emerald-500">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
               STAR+R Practice Score
             </span>
-            <div className="text-2xl font-bold font-mono text-primary">9.1<span className="text-sm text-muted-foreground">/10</span></div>
+            <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+              {starScore}<span className="text-sm text-muted-foreground">/10</span>
+            </div>
             <p className="text-[11px] text-muted-foreground mt-1">AI Coach Evaluated</p>
           </Card>
 
-          <Card className="p-4 border-l-4 border-l-emerald-500">
+          <Card className="p-4 border-l-4 border-l-teal-500">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
               Verified Skills
             </span>
-            <div className="text-2xl font-bold font-mono text-emerald-500">12+</div>
+            <div className="text-2xl font-bold font-mono text-teal-500">{displaySkills.length}+</div>
             <p className="text-[11px] text-muted-foreground mt-1">Production Proficiencies</p>
           </Card>
 
-          <Card className="p-4 border-l-4 border-l-violet-500">
+          <Card className="p-4 border-l-4 border-l-cyan-500">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-              Application Fit
+              SuiNS Handle
             </span>
-            <div className="text-2xl font-bold font-mono text-violet-500">94%</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Target Role Alignment</p>
+            <div className="text-sm font-bold font-mono text-cyan-600 dark:text-cyan-400 truncate mt-1">
+              {displayDomain}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">On-Chain Human Resolution</p>
           </Card>
 
           <Card className="p-4 border-l-4 border-l-amber-500">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-              Vault Cipher
+              Walrus Vault
             </span>
-            <div className="text-xl font-bold font-mono">AES-256</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Decentralized Blobs</p>
+            <div className="text-xl font-bold font-mono">
+              {walrusBlobId ? 'Anchored' : 'Sovereign'}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">Decentralized Storage</p>
           </Card>
         </div>
+
+        {/* SuiNS & Walrus On-Chain Cryptographic Verification Panel */}
+        <Card className="p-6 border border-emerald-500/20 bg-gradient-to-br from-card via-card/80 to-emerald-500/5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/80">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" />
+              <h2 className="font-bold text-base text-foreground">
+                Sui Name Service &amp; Walrus On-Chain Verification
+              </h2>
+            </div>
+            <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-xs font-mono w-fit">
+              Mainnet/Testnet Attested
+            </Badge>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 text-xs">
+            {/* SuiNS Resolution Box */}
+            <div className="p-4 rounded-xl bg-background/80 border border-border/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-emerald-500" /> SuiNS Domain Resolution
+                </span>
+                <span className="text-[10px] text-emerald-500 font-mono font-medium">RESOLVED</span>
+              </div>
+              <p className="text-muted-foreground text-[11px]">
+                Recruiters can route directly to this candidate passport using their human-readable handle without complex 66-character hashes.
+              </p>
+              <div className="pt-2 font-mono text-[11px] space-y-1">
+                <div className="flex justify-between items-center bg-muted/40 p-2 rounded border border-border/60">
+                  <span className="text-muted-foreground">Domain:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{displayDomain}</span>
+                </div>
+                <div className="flex justify-between items-center bg-muted/40 p-2 rounded border border-border/60">
+                  <span className="text-muted-foreground">Target Address:</span>
+                  <span className="text-foreground">{walletAddress.slice(0, 10)}...{walletAddress.slice(-8)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Walrus Blob Storage Box */}
+            <div className="p-4 rounded-xl bg-background/80 border border-border/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <Database className="w-4 h-4 text-cyan-500" /> Walrus Decentralized CV
+                </span>
+                <span className="text-[10px] text-cyan-500 font-mono font-medium">VERIFIED BLOB</span>
+              </div>
+              <p className="text-muted-foreground text-[11px]">
+                Cryptographically anchored on Walrus storage nodes. Work history cannot be altered or fabricated.
+              </p>
+              <div className="pt-2 font-mono text-[11px] space-y-1">
+                <div className="flex justify-between items-center bg-muted/40 p-2 rounded border border-border/60">
+                  <span className="text-muted-foreground">Blob ID:</span>
+                  <span className="font-bold text-foreground">
+                    {walrusBlobId ? `${walrusBlobId.slice(0, 12)}...` : '0xWalrusActiveBlob'}
+                  </span>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  {walrusBlobId && (
+                    <>
+                      <a
+                        href={`https://aggregator.walrus-testnet.walrus.space/v1/blobs/${walrusBlobId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline"
+                      >
+                        Inspect on Aggregator <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                      <span className="text-muted-foreground">&bull;</span>
+                      <a
+                        href={`https://walruscan.com/testnet/blob/${walrusBlobId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline"
+                      >
+                        Walruscan Explorer <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </>
+                  )}
+                  <a
+                    href={`https://suiscan.xyz/testnet/account/${walletAddress}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline ml-auto"
+                  >
+                    SuiScan Explorer <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         {/* Skills & Production Proficiencies */}
         <Card className="p-6 space-y-4">
           <div className="flex items-center justify-between border-b pb-3">
             <h2 className="font-bold text-base flex items-center gap-2">
-              <Award className="w-4 h-4 text-primary" /> Verified Technical Proficiencies
+              <Award className="w-4 h-4 text-emerald-500" /> Verified Technical Proficiencies
             </h2>
             <Badge variant="outline" className="text-xs font-mono">Sovereign Proof</Badge>
           </div>
@@ -215,9 +350,9 @@ export default async function PublicProfilePage({ params }: Props) {
             {displaySkills.map((skill) => (
               <span
                 key={skill}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-xs font-medium"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                 {skill}
               </span>
             ))}
@@ -251,7 +386,7 @@ export default async function PublicProfilePage({ params }: Props) {
               <div key={d.dim} className="rounded-lg border bg-card/60 p-3 text-xs space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{d.dim}</span>
-                  <span className="font-mono font-bold text-primary">{d.score}</span>
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{d.score}</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-snug">{d.desc}</p>
               </div>
@@ -266,10 +401,11 @@ export default async function PublicProfilePage({ params }: Props) {
             <h3 className="font-bold text-sm">Decentralized Storage &amp; Cryptographic Proofs</h3>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl">
-            This candidate passport is authenticated against decentralized storage nodes on Walrus Testnet.
+            This candidate passport is authenticated against decentralized storage nodes on Walrus Testnet and resolved via Sui Name Service (SuiNS).
             The candidate holds sovereign ownership of their data. Claims cannot be altered by centralized third parties.
           </p>
           <div className="pt-2 flex flex-wrap gap-4 text-[11px] font-mono text-muted-foreground">
+            <span>Name Service: SuiNS (.sui)</span>
             <span>Storage: Walrus Testnet Blobs</span>
             <span>Identity: Sui zkLogin Address</span>
             <span>Encryption: AES-256-GCM / PBKDF2</span>

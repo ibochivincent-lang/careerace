@@ -11,12 +11,21 @@ export function PublicProfileClient({
   username,
   role,
   skills = [],
+  domain,
+  walrusBlobId,
+  walrusUrl,
+  candidateAddress,
 }: {
   username: string
   role: string
   skills?: string[]
+  domain?: string
+  walrusBlobId?: string | null
+  walrusUrl?: string | null
+  candidateAddress?: string
 }) {
   const [copied, setCopied] = useState(false)
+  const [copiedDomain, setCopiedDomain] = useState(false)
   const [isContacting, setIsContacting] = useState(false)
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
@@ -24,6 +33,14 @@ export function PublicProfileClient({
   const [recruiterEmail, setRecruiterEmail] = useState('')
   const [recruiterCompany, setRecruiterCompany] = useState('')
   const [recruiterMessage, setRecruiterMessage] = useState('')
+
+  function handleCopyDomain() {
+    if (!domain) return
+    navigator.clipboard.writeText(domain)
+    setCopiedDomain(true)
+    toast.success(`Copied SuiNS handle ${domain} to clipboard!`)
+    setTimeout(() => setCopiedDomain(false), 2000)
+  }
 
   function handleCopyLink() {
     if (typeof window !== 'undefined') {
@@ -146,6 +163,19 @@ export function PublicProfileClient({
         >
           <FileCode className="w-3.5 h-3.5 text-amber-500" /> JSON Resume
         </Button>
+
+        {domain && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCopyDomain}
+            className="text-xs h-9 gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 font-mono"
+            title={`Copy SuiNS domain: ${domain}`}
+          >
+            {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {domain}
+          </Button>
+        )}
 
         <Button
           size="sm"

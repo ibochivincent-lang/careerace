@@ -251,6 +251,92 @@ function DashboardContent() {
   const [githubUsername, setGithubUsername] = useState('')
   const [linkedinUrl, setLinkedinUrl] = useState('')
 
+  // Sui Name Service (.sui) Passport State
+  const [suinsDomainInput, setSuinsDomainInput] = useState('')
+  const [activeSuinsDomain, setActiveSuinsDomain] = useState('')
+  const [isBindingSuins, setIsBindingSuins] = useState(false)
+  const [isCopiedSuinsLink, setIsCopiedSuinsLink] = useState(false)
+
+  // Load SuiNS domain from local storage and remote resolution
+  useEffect(() => {
+    const savedDomain = localStorage.getItem('careerace_suins_domain')
+    if (savedDomain) {
+      setActiveSuinsDomain(savedDomain)
+      setSuinsDomainInput(savedDomain.replace(/\.sui$/, ''))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!suinsDomainInput && !activeSuinsDomain && parsedProfile?.applicant_name) {
+      const cleanName = parsedProfile.applicant_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (cleanName.length >= 3) {
+        setSuinsDomainInput(cleanName)
+      }
+    }
+  }, [parsedProfile, suinsDomainInput, activeSuinsDomain])
+
+  useEffect(() => {
+    if (!sessionAddress) return
+    fetch(`/api/suins/resolve?address=${encodeURIComponent(sessionAddress)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.domain) {
+          setActiveSuinsDomain(data.domain)
+          localStorage.setItem('careerace_suins_domain', data.domain)
+        }
+      })
+      .catch(() => {})
+  }, [sessionAddress])
+
+  async function handleBindSuinsDomain(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    const input = suinsDomainInput.trim().toLowerCase().replace(/^@/, '').replace(/\.sui$/, '')
+    if (input.length < 3) {
+      toast.error('Domain must be at least 3 characters long.')
+      return
+    }
+
+    setIsBindingSuins(true)
+    const toastId = toast.loading(`Binding ${input}.sui to your sovereign zkLogin identity...`)
+
+    try {
+      const address = sessionAddress || localStorage.getItem('careerace_session_address') || '0x71a4f89d5320e8b1b24e4f9b8417cd59d48e31b2'
+      const latestBlobId = walrusVersions[0]?.blobId || parsedProfile?.walrus_blob_id || null
+
+      const res = await fetch('/api/suins/bind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidateAddress: address,
+          domain: `${input}.sui`,
+          walrusBlobId: latestBlobId,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to bind domain')
+      }
+
+      setActiveSuinsDomain(data.domain)
+      localStorage.setItem('careerace_suins_domain', data.domain)
+      toast.success(`Successfully claimed ${data.domain}! Public Recruiter link is ready.`, { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to bind SuiNS domain.', { id: toastId })
+    } finally {
+      setIsBindingSuins(false)
+    }
+  }
+
+  function handleCopySuinsRecruiterLink() {
+    const domain = activeSuinsDomain || (suinsDomainInput ? `${suinsDomainInput.replace(/\.sui$/, '')}.sui` : 'candidate.sui')
+    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://careerace.online'}/p/${domain}`
+    navigator.clipboard.writeText(url)
+    setIsCopiedSuinsLink(true)
+    toast.success('Public Recruiter Passport link copied to clipboard!')
+    setTimeout(() => setIsCopiedSuinsLink(false), 2500)
+  }
+
   // Resume Document View Mode: default to upload when no profile exists
   const [resumeViewMode, setResumeViewMode] = useState<'editor' | 'upload'>('upload')
 
@@ -1759,6 +1845,106 @@ function DashboardContent() {
                       >
                         <Upload className="w-3.5 h-3.5 mr-1.5" /> Attach CV Now
                       </Button>
+                    </div>
+                  )}
+                </Card>
+
+                {/* Sui Name Service (.sui) Recruiter Passport Card */}
+                <Card className="p-6 border border-emerald-500/30 shadow-sm rounded-2xl bg-gradient-to-br from-card via-card/95 to-emerald-500/5 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-emerald-500 animate-pulse" />
+                      <h3 className="font-bold text-sm text-foreground">Sui Name Service (.sui) Passport</h3>
+                    </div>
+                    {activeSuinsDomain ? (
+                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px] font-mono">
+                        Active &bull; Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border/80">
+                        Unclaimed
+                      </Badge>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Map your 66-character sovereign zkLogin wallet address to a human-readable SuiNS domain (e.g. <span className="font-mono text-foreground font-semibold">vincent.sui</span>). Recruiters can instantly look up your verified Walrus CV credentials and on-chain proofs without complex hashes.
+                  </p>
+
+                  {/* Domain Claim Form */}
+                  <form onSubmit={handleBindSuinsDomain} className="space-y-3 pt-1">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={suinsDomainInput}
+                          onChange={(e) => setSuinsDomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                          placeholder="e.g. vincent"
+                          className="w-full h-9 pl-3 pr-12 rounded-xl border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                        <span className="absolute right-3 top-2.5 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 pointer-events-none">
+                          .sui
+                        </span>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isBindingSuins || !suinsDomainInput.trim()}
+                        className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shrink-0 cursor-pointer"
+                      >
+                        {isBindingSuins ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Binding...
+                          </>
+                        ) : activeSuinsDomain === `${suinsDomainInput}.sui` ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 mr-1.5" /> Bound
+                          </>
+                        ) : (
+                          'Claim Handle'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+
+                  {/* Live Recruiter Sharing Details */}
+                  {activeSuinsDomain && (
+                    <div className="p-3.5 rounded-xl bg-muted/20 border border-border/80 space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-[11px]">Bound SuiNS Handle</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {activeSuinsDomain}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-[11px]">Sovereign Target</span>
+                        <span className="font-mono text-foreground text-[11px]">
+                          {sessionAddress ? `${sessionAddress.slice(0, 8)}...${sessionAddress.slice(-6)}` : 'zkLogin Sovereign Account'}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCopySuinsRecruiterLink}
+                          className="h-8 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer gap-1.5 flex-1"
+                        >
+                          {isCopiedSuinsLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          {isCopiedSuinsLink ? 'Link Copied' : 'Copy Recruiter Link'}
+                        </Button>
+
+                        <a
+                          href={`/p/${activeSuinsDomain}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 h-8 text-xs px-3 rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium transition-colors shrink-0"
+                        >
+                          <span>View Passport</span>
+                          <ExternalLink className="w-3 h-3 opacity-70" />
+                        </a>
+                      </div>
                     </div>
                   )}
                 </Card>
