@@ -75,6 +75,14 @@ export function MemoryPlayground() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      const sessionAddr = typeof window !== 'undefined' ? localStorage.getItem('careerace_session_address') : null
+      if (sessionAddr) formData.append('address', sessionAddr)
+      const gKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') : null
+      if (gKey) formData.append('gemini_key', gKey)
+      const grKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') : null
+      if (grKey) formData.append('groq_key', grKey)
+      const orKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') : null
+      if (orKey) formData.append('openrouter_key', orKey)
       const res = await fetch('/api/cv_upload', {
         method: 'POST',
         body: formData,

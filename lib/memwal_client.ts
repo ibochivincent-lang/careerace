@@ -106,7 +106,7 @@ export function createMemWal(namespace: string) {
   const client = MemWal.create({
     key: key()!,
     accountId: accountId()!,
-    serverUrl: process.env.MEMWAL_SERVER_URL ?? "https://relayer-staging.memory.walrus.xyz",
+    serverUrl: process.env.MEMWAL_SERVER_URL ?? "https://relayer.memory.walrus.xyz",
     namespace,
   });
   live.set(namespace, client);

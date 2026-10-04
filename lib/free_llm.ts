@@ -1,6 +1,7 @@
 export interface FreeLlmOptions {
   prompt: string;
   system_prompt?: string;
+  messages?: Array<{ role: string; content: string }>;
   max_tokens?: number;
   custom_keys?: {
     google?: string;
@@ -22,7 +23,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
   }
 
   const geminiKey =
-    options.custom_keys?.google ||
+    options.custom_keys?.google?.trim() ||
     cookieKeys.google ||
     process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
     process.env.GEMINI_API_KEY ||
@@ -30,37 +31,61 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     "";
 
   const groqKey =
-    options.custom_keys?.groq ||
+    options.custom_keys?.groq?.trim() ||
     cookieKeys.groq ||
     process.env.GROQ_API_KEY ||
     "";
 
   const openRouterKey =
-    options.custom_keys?.openrouter ||
+    options.custom_keys?.openrouter?.trim() ||
     cookieKeys.openrouter ||
     process.env.OPENROUTER_API_KEY ||
     "";
 
   const openCodeKey =
-    options.custom_keys?.opencode ||
+    options.custom_keys?.opencode?.trim() ||
     cookieKeys.opencode ||
     process.env.OPENCODE_API_KEY ||
     "";
 
   const openaiKey =
-    options.custom_keys?.openai ||
+    options.custom_keys?.openai?.trim() ||
     cookieKeys.openai ||
     process.env.OPENAI_API_KEY ||
     "";
 
+  // Build unified chat messages history if available
+  const chatMessages: Array<{ role: string; content: string }> = [];
+  if (options.messages && options.messages.length > 0) {
+    for (const m of options.messages) {
+      if (m.content) {
+        chatMessages.push({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        });
+      }
+    }
+    const lastMsg = chatMessages[chatMessages.length - 1];
+    if (!lastMsg || lastMsg.content !== options.prompt) {
+      chatMessages.push({ role: "user", content: options.prompt });
+    }
+  } else {
+    chatMessages.push({ role: "user", content: options.prompt });
+  }
+
   // 1. Try Google Gemini API (gemini-3.5-flash / gemini-3.1-flash-lite / gemini-3.8-flash)
   if (geminiKey) {
+    const geminiContents = chatMessages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
     for (const modelName of ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.0-flash"]) {
       try {
         const payload: Record<string, unknown> = {
-          contents: [{ role: "user", parts: [{ text: options.prompt }] }],
+          contents: geminiContents,
           generationConfig: {
-            maxOutputTokens: options.max_tokens || 800,
+            maxOutputTokens: options.max_tokens || 1000,
           },
         };
         if (options.system_prompt) {
@@ -88,6 +113,11 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
 
   // 2. Try Groq Cloud if configured (qwen/qwen3.8-27b / openai/gpt-oss-120b / llama-3.3-70b-versatile)
   if (groqKey) {
+    const groqPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
     for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
       try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -98,11 +128,8 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           },
           body: JSON.stringify({
             model,
-            messages: [
-              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-              { role: "user", content: options.prompt }
-            ],
-            max_tokens: options.max_tokens || 800
+            messages: groqPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
           })
         });
         if (res.ok) {
@@ -116,6 +143,11 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
 
   // 3. Try OpenRouter (qwen/qwen3.8-27b:free / nvidia/nemotron-3.5-lightning:free / gemma-4-31b-it:free)
   if (openRouterKey) {
+    const openRouterPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
     for (const model of ["qwen/qwen3.8-27b:free", "nvidia/nemotron-3.5-lightning:free", "google/gemma-4-31b-it:free", "deepseek/deepseek-r1:free"]) {
       try {
         const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -128,11 +160,8 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           },
           body: JSON.stringify({
             model,
-            messages: [
-              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-              { role: "user", content: options.prompt }
-            ],
-            max_tokens: options.max_tokens || 800
+            messages: openRouterPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
           })
         });
 
@@ -296,7 +325,7 @@ export async function callFreeLlmJson<T>(
   const raw = await callFreeLlm({
     prompt,
     system_prompt: `${system_prompt}\nReturn ONLY a valid, raw JSON object without markdown formatting or backticks.`,
-    max_tokens: 1500,
+    max_tokens: 3000,
     custom_keys,
   });
 

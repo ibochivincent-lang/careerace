@@ -47,6 +47,21 @@ function DashboardContent() {
   const [parsedProfile, setParsedProfile] = useState<any>(null)
   const [isSavingMemory, setIsSavingMemory] = useState(false)
   const [isClearingMemory, setIsClearingMemory] = useState(false)
+  const [sessionAddress, setSessionAddress] = useState<string>('')
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.address) {
+          setSessionAddress(data.address)
+        } else {
+          const stored = localStorage.getItem('careerace_session_address')
+          if (stored) setSessionAddress(stored)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   // Career Ace AI Copilot Chatbot state
   const [chatInput, setChatInput] = useState('')
@@ -265,6 +280,7 @@ function DashboardContent() {
           message: text,
           messages: updatedMessages,
           profile: parsedProfile,
+          address: sessionAddress || undefined,
           custom_keys: customAiKeys,
         })
       })
@@ -315,7 +331,10 @@ function DashboardContent() {
       const res = await fetch('/api/memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: parsedProfile })
+        body: JSON.stringify({
+          profile: parsedProfile,
+          address: sessionAddress || undefined,
+        })
       })
 
       if (res.ok) {
@@ -499,6 +518,9 @@ function DashboardContent() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      if (sessionAddress) {
+        formData.append('address', sessionAddress)
+      }
       const geminiKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || '' : ''
       const groqKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || '' : ''
       const openRouterKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || '' : ''
@@ -521,21 +543,26 @@ function DashboardContent() {
         setResumeViewMode('editor')
         localStorage.setItem('careerace_sovereign_profile', JSON.stringify(data.profile))
         localStorage.setItem('careerace_parsed_profile', JSON.stringify(data.profile))
-
-        // Also sync facts to Walrus Memory automatically
-        fetch('/api/memory', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile: data.profile })
-        }).catch(() => {})
+        if (data.address) {
+          setSessionAddress(data.address)
+          localStorage.setItem('careerace_session_address', data.address)
+        }
 
         toast.success(`CV parsed and indexed into Sovereign Memory for ${data.profile.applicant_name || 'Candidate'}!`, { id: toastId })
         
+        const candidateName = data.profile.applicant_name && data.profile.applicant_name !== 'Candidate'
+          ? data.profile.applicant_name
+          : 'Candidate';
+        const topSkills = (data.profile.skills || []).slice(0, 10).join(', ') || 'Technical competencies';
+        const targetRoles = (data.profile.target_roles || []).join(', ') || 'Software Engineer';
+        const expCount = data.profile.work_experience?.length || 0;
+        const eduCount = data.profile.academic_history?.length || 0;
+
         setChatMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: `I have successfully parsed and attached **${file.name}**!\n\n**Candidate:** ${data.profile.applicant_name || 'Verified Candidate'}\n• **Skills Detected:** ${(data.profile.skills || []).slice(0, 8).join(', ') || 'General competencies'}\n• **Target Roles:** ${(data.profile.target_roles || []).join(', ') || 'Engineering & Technology'}\n• **Experience Count:** ${data.profile.work_experience?.length || 0} position(s)\n\nYour profile has been indexed into your Walrus Sovereign Memory vault. You can now audit ATS compliance, generate tailored cover letters, or ask me to polish your bullets.`
+            content: `I have successfully analyzed **${file.name}** and indexed it into your Walrus Sovereign Memory vault!\n\n• **Candidate Name:** ${candidateName}\n• **Target Roles:** ${targetRoles}\n• **Skills Detected:** ${topSkills}\n• **Work History:** ${expCount} verified position(s)\n• **Academic Background:** ${eduCount} credential(s)\n\nAll credentials are sealed to ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'your vault'} on Walrus decentralized storage. You can now ask me to review your resume, practice STAR+R interview questions, tailor applications, or audit ATS compliance.`
           }
         ])
       }

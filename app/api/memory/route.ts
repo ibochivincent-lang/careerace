@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOwnerAddress } from "@/lib/session";
+import { resolveTargetAddress } from "@/lib/target_address";
 import {
   recallProfile,
   recallFeedback,
@@ -13,12 +14,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const address = await getOwnerAddress();
-    if (!address) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
+    const paramAddress = searchParams.get("address");
+    const address = await resolveTargetAddress(paramAddress);
+
     const query = searchParams.get("query") || "target role, skills, experience, interview feedback";
 
     const [profile, feedback] = await Promise.all([
@@ -62,12 +61,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    let address = await getOwnerAddress();
-    if (!address) {
-      address = "0x0000000000000000000000000000000000000000000000000000000000000001";
-    }
-
     const body = await req.json();
+    const address = await resolveTargetAddress(body.address);
 
     // 1. Batch profile indexing
     if (body.profile) {

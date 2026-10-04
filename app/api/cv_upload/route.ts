@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseCvText, parseCvWithAi } from "@/lib/cv_parser";
 import { getOwnerAddress } from "@/lib/session";
+import { resolveTargetAddress } from "@/lib/target_address";
 import { uploadEncryptedResumeToWalrus } from "@/lib/walrus_storage";
 import { rememberFact } from "@/lib/memory_contract";
 import zlib from "zlib";
@@ -13,12 +14,14 @@ export async function POST(req: Request) {
     let extractionMethod = "text";
     let fileBuffer: Buffer | null = null;
 
+    let explicitAddress: string | null = null;
     let customKeys: { google?: string; groq?: string; openrouter?: string; openai?: string; opencode?: string } | undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       const clientExtractedText = formData.get("cv_text") as string | null;
+      explicitAddress = (formData.get("address") as string) || null;
 
       const gKey = (formData.get("gemini_key") || formData.get("google_key")) as string | null;
       const grKey = formData.get("groq_key") as string | null;
@@ -75,6 +78,7 @@ export async function POST(req: Request) {
     } else {
       const body = await req.json();
       cvText = body.cv_text || body.text || "";
+      explicitAddress = body.address || null;
       extractionMethod = "pasted_text";
       if (body.custom_keys) {
         customKeys = body.custom_keys;
@@ -96,100 +100,103 @@ export async function POST(req: Request) {
       );
     }
 
-    // Always run the reliable rule-based parser
-    const ruleBasedProfile = parseCvText(cvText);
+    // Parse candidate CV with AI model cascade and heuristic fallback
+    const finalProfile = await parseCvWithAi(cvText, customKeys);
 
-    // Attempt AI-enhanced parsing (uses Gemini / Groq / OpenRouter)
-    let finalProfile = ruleBasedProfile;
+    // Resolve sovereign Walrus Memory address
+    const address = await resolveTargetAddress(explicitAddress);
+
+    // Walrus Sovereign Encrypted Resume Storage
+    const uploadBuffer = fileBuffer || Buffer.from(cvText, "utf-8");
+    const safeDocName = (fileName || `${(finalProfile.applicant_name || "Candidate").replace(/[^a-zA-Z0-9_-]/g, "_")}_Resume.txt`).trim();
+
+    let walrusBlobResult: { blobId: string; sha256Digest: string } | null = null;
     try {
-      const aiProfile = await parseCvWithAi(cvText, customKeys);
-      if (
-        aiProfile &&
-        aiProfile.skills &&
-        Array.isArray(aiProfile.skills) &&
-        aiProfile.skills.length > 0
-      ) {
-        finalProfile = aiProfile;
-      }
-    } catch (_aiErr) {
-      // AI parsing failed silently; rule-based result is used
+      walrusBlobResult = await uploadEncryptedResumeToWalrus(
+        uploadBuffer,
+        address,
+        safeDocName
+      );
+    } catch (blobErr) {
+      console.warn("[cv_upload] Walrus encrypted resume upload notice:", blobErr);
     }
 
-    // Walrus Sovereign Encrypted Resume Storage & Career Vault Memory Indexing (non-blocking)
-    getOwnerAddress()
-      .then(async (address) => {
-        if (!address) return;
-        const uploadBuffer = fileBuffer || Buffer.from(cvText, "utf-8");
-        const docName = fileName || "Candidate_Resume.txt";
-        try {
-          const walrusResult = await uploadEncryptedResumeToWalrus(
-            uploadBuffer,
-            address,
-            docName
-          );
+    // Persist verified CV profile facts into Walrus Sovereign Memory
+    const factsToStore: Array<{ kind: "candidate_identity" | "target_role" | "skill" | "education" | "experience" | "tailored_cv"; text: string }> = [];
 
-          await rememberFact(
-            address,
-            "tailored_cv",
-            `Walrus Encrypted Resume: ${docName} | blobId: ${walrusResult.blobId} | digest: ${walrusResult.sha256Digest.slice(0, 16)}`
-          ).catch(() => {});
-
-          if (finalProfile.applicant_name && finalProfile.applicant_name !== "Candidate") {
-            await rememberFact(
-              address,
-              "candidate_identity",
-              `Candidate Name: ${finalProfile.applicant_name}`
-            ).catch(() => {});
-          }
-
-          if (finalProfile.skills && Array.isArray(finalProfile.skills)) {
-            for (const skill of finalProfile.skills.slice(0, 10)) {
-              await rememberFact(address, "skill", `Skill: ${skill}`).catch(() => {});
-            }
-          }
-
-          if (finalProfile.target_roles && Array.isArray(finalProfile.target_roles)) {
-            for (const role of finalProfile.target_roles.slice(0, 3)) {
-              await rememberFact(address, "target_role", `Target role: ${role}`).catch(() => {});
-            }
-          }
-
-          if (finalProfile.academic_history && Array.isArray(finalProfile.academic_history)) {
-            for (const edu of finalProfile.academic_history.slice(0, 3)) {
-              await rememberFact(
-                address,
-                "education",
-                `Studied ${edu.degree || 'Degree'} at ${edu.institution}${edu.field_of_study ? ` in ${edu.field_of_study}` : ''}${edu.graduation_year ? ` (Graduated ${edu.graduation_year})` : ''}`
-              ).catch(() => {});
-            }
-          }
-
-          if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
-            for (const exp of finalProfile.work_experience.slice(0, 4)) {
-              await rememberFact(
-                address,
-                "experience",
-                `${exp.role} at ${exp.company}${exp.duration ? ` (${exp.duration})` : ""}`
-              ).catch(() => {});
-            }
-          }
-        } catch (err) {
-          console.warn("[cv_upload] Background Walrus sync warning:", err);
-        }
-      })
-      .catch((err) => {
-        console.warn("[cv_upload] Background address lookup skipped:", err);
+    if (walrusBlobResult?.blobId) {
+      factsToStore.push({
+        kind: "tailored_cv",
+        text: `Walrus Encrypted Resume: ${safeDocName} | blobId: ${walrusBlobResult.blobId} | digest: ${walrusBlobResult.sha256Digest.slice(0, 16)}`,
       });
+    }
+
+    if (finalProfile.applicant_name && finalProfile.applicant_name !== "Candidate") {
+      factsToStore.push({
+        kind: "candidate_identity",
+        text: `Candidate Name: ${finalProfile.applicant_name}`,
+      });
+    }
+
+    if (finalProfile.target_roles && Array.isArray(finalProfile.target_roles) && finalProfile.target_roles.length > 0) {
+      factsToStore.push({
+        kind: "target_role",
+        text: `Target role: ${finalProfile.target_roles.join(", ")}`,
+      });
+    }
+
+    if (finalProfile.skills && Array.isArray(finalProfile.skills) && finalProfile.skills.length > 0) {
+      factsToStore.push({
+        kind: "skill",
+        text: `Skill: ${finalProfile.skills.slice(0, 15).join(", ")}`,
+      });
+    }
+
+    if (finalProfile.academic_history && Array.isArray(finalProfile.academic_history)) {
+      for (const edu of finalProfile.academic_history.slice(0, 3)) {
+        if (edu.institution || edu.degree) {
+          factsToStore.push({
+            kind: "education",
+            text: `Education: Studied ${edu.degree || "Degree"} at ${edu.institution}${edu.field_of_study ? ` in ${edu.field_of_study}` : ""}${edu.graduation_year ? ` (${edu.graduation_year})` : ""}`,
+          });
+        }
+      }
+    }
+
+    if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
+      for (const exp of finalProfile.work_experience.slice(0, 4)) {
+        if (exp.company || exp.role) {
+          const highlightsText = exp.highlights && exp.highlights.length > 0 ? ` - Key achievements: ${exp.highlights.slice(0, 2).join("; ")}` : "";
+          factsToStore.push({
+            kind: "experience",
+            text: `Experience: ${exp.role} at ${exp.company}${exp.duration ? ` (${exp.duration})` : ""}${highlightsText}`,
+          });
+        }
+      }
+    }
+
+    // Await storage into Walrus Memory synchronously before returning
+    const memorySettled = await Promise.allSettled(
+      factsToStore.map((f) => rememberFact(address, f.kind, f.text))
+    );
+
+    const indexedCount = memorySettled.filter((r) => r.status === "fulfilled").length;
 
     return NextResponse.json({
       success: true,
-      file_name: fileName || "Pasted Resume Text",
-      message: "CV successfully parsed and candidate profile updated.",
+      file_name: safeDocName,
+      message: "CV successfully parsed and indexed into Sovereign Walrus Memory.",
       extraction_method: extractionMethod,
       extracted_text_length: cvText.length,
       extracted_text: cvText,
+      address,
       profile: finalProfile,
-      walrus_vault: { status: 'syncing_in_background' },
+      walrus_vault: {
+        status: "indexed",
+        address,
+        blobId: walrusBlobResult?.blobId || null,
+        facts_indexed: indexedCount,
+      },
     });
   } catch (error) {
     console.error("[cv_upload] Error:", error);
