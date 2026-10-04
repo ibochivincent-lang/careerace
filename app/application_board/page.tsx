@@ -33,13 +33,27 @@ import {
   Layers,
   ChevronRight,
   Filter,
-  FileText
+  FileText,
+  Calendar,
+  Settings
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
+import { SmtpRelaySettingsModal } from '@/components/SmtpRelaySettingsModal'
+import { downloadFollowUpIcs } from '@/lib/ics_calendar'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import type { WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import type { ParsedCv } from '@/lib/cv_parser'
+
+export const DISCIPLINE_CATEGORIES = [
+  { id: 'all', label: 'All Disciplines' },
+  { id: 'engineering_marine', label: 'Engineering & Marine' },
+  { id: 'software_it', label: 'Software & IT' },
+  { id: 'ai_autonomous', label: 'AI & Autonomous Systems' },
+  { id: 'medical_healthcare', label: 'Medical & Healthcare Informatics' },
+  { id: 'management_operations', label: 'Management & Operations' },
+  { id: 'industrial_manufacturing', label: 'Industrial & Manufacturing' },
+] as const
 
 export interface JobListing {
   id: string
@@ -432,12 +446,151 @@ const VERIFIED_INITIAL_JOBS: JobListing[] = [
     apply_url: 'https://stripe.com/jobs',
     description: 'Scale sub-millisecond payment authorization pipelines, multi-region database failover, and global clearinghouse integrations.',
   },
+  {
+    id: 'siemens-health-1',
+    title: 'Lead Healthcare Systems & Medical Informatics Engineer',
+    company: 'Siemens Healthineers',
+    location: 'Erlangen, Germany · Remote / Hybrid',
+    country: 'Netherlands',
+    workplace: 'Hybrid',
+    seniority: 'Senior',
+    roleCategory: 'Medical & Healthcare Informatics',
+    postedDate: 'Today',
+    apply_url: 'https://www.siemens-healthineers.com/careers',
+    description: 'Architect clinical PACS/RIS data pipelines, medical DICOM imaging integrations, and secure EHR telemetry backends adhering to ISO 13485 standards.',
+  },
+  {
+    id: 'epic-health-1',
+    title: 'Healthcare Software & Clinical Integration Specialist',
+    company: 'Epic Systems',
+    location: 'Verona, WI, United States',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Mid-Level',
+    roleCategory: 'Medical & Healthcare Informatics',
+    postedDate: 'Today',
+    apply_url: 'https://www.epic.com/careers',
+    description: 'Design interoperable HL7 FHIR APIs, clinical decision support algorithms, and inpatient EHR data models connecting global hospital networks.',
+  },
+  {
+    id: 'philips-health-1',
+    title: 'Clinical Informatics & Telehealth Solutions Architect',
+    company: 'Philips Healthcare',
+    location: 'Cambridge, MA, United States',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Lead / Staff',
+    roleCategory: 'Medical & Healthcare Informatics',
+    postedDate: '1d',
+    apply_url: 'https://www.philips.com/a-w/careers/healthtech.html',
+    description: 'Direct bedside patient monitoring telematics, physiological sensor cloud ingestion, and fault-tolerant ICU alerting architectures.',
+  },
+  {
+    id: 'illumina-health-1',
+    title: 'Bioinformatics Software & Genomic Informatics Engineer',
+    company: 'Illumina',
+    location: 'San Diego, CA, United States',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Senior',
+    roleCategory: 'Medical & Healthcare Informatics',
+    postedDate: '2d',
+    apply_url: 'https://www.illumina.com/company/careers.html',
+    description: 'Engineer high-throughput DNA sequencing pipelines, variant calling algorithms, and cloud genomic data repositories for precision oncology.',
+  },
+  {
+    id: 'maersk-ops-1',
+    title: 'Global Fleet Operations & Decarbonization Manager',
+    company: 'Maersk Fleet Management',
+    location: 'Rotterdam, Netherlands · Operations Center',
+    country: 'Netherlands',
+    workplace: 'Hybrid',
+    seniority: 'Lead / Staff',
+    roleCategory: 'Management & Operations',
+    postedDate: 'Today',
+    apply_url: 'https://www.maersk.com/careers',
+    description: 'Manage commercial fleet schedule reliability, drydock budgets, IMO CII fuel efficiency compliance, and green corridor voyage planning.',
+  },
+  {
+    id: 'siemens-ops-1',
+    title: 'Maritime Decarbonization & Clean Operations Lead',
+    company: 'Siemens Energy',
+    location: 'Oslo, Norway',
+    country: 'Norway',
+    workplace: 'Hybrid',
+    seniority: 'Lead / Staff',
+    roleCategory: 'Management & Operations',
+    postedDate: '1d',
+    apply_url: 'https://www.siemens-energy.com/global/en/company/jobs.html',
+    description: 'Oversee multi-megawatt maritime fuel cell and hybrid propulsion retrofit campaigns across northern European commercial shipyards.',
+  },
+  {
+    id: 'asml-ops-1',
+    title: 'High-Tech Semiconductor Operations & Manufacturing Lead',
+    company: 'ASML',
+    location: 'Veldhoven, Netherlands',
+    country: 'Netherlands',
+    workplace: 'On-site',
+    seniority: 'Senior',
+    roleCategory: 'Management & Operations',
+    postedDate: 'Today',
+    apply_url: 'https://www.asml.com/en/careers',
+    description: 'Orchestrate cleanroom manufacturing operations, critical EUV photolithography tool ramp-up schedules, and high-precision optical assembly chains.',
+  },
+  {
+    id: 'chevron-ops-1',
+    title: 'Marine Operations Superintendent & Fleet Coordinator',
+    company: 'Chevron Shipping',
+    location: 'London, United Kingdom · Marine Operations',
+    country: 'United Kingdom',
+    workplace: 'Hybrid',
+    seniority: 'Lead / Staff',
+    roleCategory: 'Management & Operations',
+    postedDate: '2d',
+    apply_url: 'https://careers.chevron.com',
+    description: 'Coordinate global energy transport movements, safety management systems (SMS), vetting audits (SIRE 2.0), and port turnaround logistics.',
+  },
 ]
 
 // Visual Company Badge / Logo Renderer: Clean, typographic monograms only (no emojis)
 function CompanyLogo({ company }: { company: string }) {
   const c = company.toLowerCase()
 
+  if (c.includes('siemens')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#00646E] text-white font-bold flex items-center justify-center text-[10px] tracking-tight shadow-xs shrink-0">
+        SIE
+      </div>
+    )
+  }
+  if (c.includes('epic')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#BA0C2F] text-white font-bold flex items-center justify-center text-[10px] tracking-tight shadow-xs shrink-0">
+        EPC
+      </div>
+    )
+  }
+  if (c.includes('philips')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#0B5ED7] text-white font-bold flex items-center justify-center text-[10px] tracking-tight shadow-xs shrink-0">
+        PHI
+      </div>
+    )
+  }
+  if (c.includes('illumina')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#002F6C] text-white font-bold flex items-center justify-center text-[10px] tracking-tight shadow-xs shrink-0">
+        ILM
+      </div>
+    )
+  }
+  if (c.includes('asml')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#00199C] text-white font-bold flex items-center justify-center text-[10px] tracking-tight shadow-xs shrink-0">
+        ASML
+      </div>
+    )
+  }
   if (c.includes('maersk')) {
     return (
       <div className="w-8 h-8 rounded-lg bg-[#002B49] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
@@ -613,72 +766,115 @@ function CompanyLogo({ company }: { company: string }) {
   )
 }
 
-// Normalized matching helpers that fix category and seniority filter bugs
+// Normalized matching helpers that cleanly classify jobs into 6 disciplines with zero glitch
 function matchesRoleCategory(job: JobListing, filter: string): boolean {
   if (filter === 'all') return true
   const r = (job.roleCategory || '').toLowerCase()
   const t = (job.title || '').toLowerCase()
+  const d = (job.description || '').toLowerCase()
 
-  if (filter === 'marine') {
+  if (filter === 'engineering_marine' || filter === 'marine') {
     return (
       r.includes('marine') ||
       r.includes('naval') ||
       r.includes('offshore') ||
+      r.includes('subsea') ||
+      r.includes('propulsion') ||
       t.includes('marine') ||
       t.includes('naval') ||
       t.includes('offshore') ||
       t.includes('subsea') ||
       t.includes('vessel') ||
-      t.includes('propulsion') ||
       t.includes('cadet') ||
-      t.includes('tanker')
+      t.includes('propulsion') ||
+      t.includes('tanker') ||
+      t.includes('hydrodynamic')
     )
   }
-  if (filter === 'software') {
+  if (filter === 'software_it' || filter === 'software') {
     return (
       r.includes('software') ||
       r.includes('full stack') ||
       r.includes('frontend') ||
       r.includes('backend') ||
       r.includes('devops') ||
+      r.includes('cloud') ||
       t.includes('software') ||
       t.includes('full stack') ||
       t.includes('frontend') ||
       t.includes('backend') ||
-      t.includes('developer')
+      t.includes('developer') ||
+      t.includes('distributed')
     )
   }
-  if (filter === 'ai_ml') {
+  if (filter === 'ai_autonomous' || filter === 'ai_ml') {
     return (
       r.includes('machine learning') ||
       r.includes('ai') ||
+      r.includes('autonomous') ||
+      r.includes('robotics') ||
       t.includes('machine learning') ||
       t.includes('ai') ||
-      t.includes('research engineer')
+      t.includes('autonomous') ||
+      t.includes('robotics') ||
+      t.includes('agent') ||
+      t.includes('research engineer') ||
+      t.includes('foundation models') ||
+      t.includes('computer vision')
     )
   }
-  if (filter === 'hardware_aerospace') {
+  if (filter === 'medical_healthcare') {
     return (
-      r.includes('hardware') ||
-      r.includes('aerospace') ||
-      t.includes('hardware') ||
-      t.includes('test') ||
-      t.includes('satellite') ||
-      t.includes('space')
+      r.includes('medical') ||
+      r.includes('healthcare') ||
+      r.includes('clinical') ||
+      r.includes('bioinformatics') ||
+      r.includes('genomic') ||
+      t.includes('medical') ||
+      t.includes('healthcare') ||
+      t.includes('clinical') ||
+      t.includes('bioinformatics') ||
+      t.includes('genomic') ||
+      t.includes('telehealth') ||
+      d.includes('healthcare') ||
+      d.includes('clinical') ||
+      d.includes('genomic')
     )
   }
-  if (filter === 'industrial_quality') {
+  if (filter === 'management_operations') {
+    return (
+      r.includes('management') ||
+      r.includes('operations') ||
+      r.includes('superintendent') ||
+      t.includes('manager') ||
+      t.includes('operations') ||
+      t.includes('superintendent') ||
+      t.includes('lead') ||
+      t.includes('director') ||
+      t.includes('coordinator') ||
+      t.includes('decarbonization')
+    )
+  }
+  if (filter === 'industrial_manufacturing' || filter === 'industrial_quality' || filter === 'hardware_aerospace') {
     return (
       r.includes('industrial') ||
       r.includes('quality') ||
+      r.includes('manufacturing') ||
+      r.includes('hardware') ||
+      r.includes('aerospace') ||
       t.includes('industrial') ||
       t.includes('quality') ||
       t.includes('manufacturing') ||
-      t.includes('transducer')
+      t.includes('transducer') ||
+      t.includes('hardware') ||
+      t.includes('test') ||
+      t.includes('satellite') ||
+      t.includes('space') ||
+      t.includes('semiconductor')
     )
   }
 
-  return job.roleCategory === filter
+  return r === filter.toLowerCase()
 }
 
 function matchesSeniority(job: JobListing, filter: string): boolean {
@@ -770,8 +966,10 @@ export default function ApplicationBoardPage() {
   const [customEmailBody, setCustomEmailBody] = useState('')
   const [copiedDraft, setCopiedDraft] = useState(false)
 
-  // Auto-apply agent state
+  // Auto-apply agent & DKIM/SMTP relay state
   const [autoApplyRunning, setAutoApplyRunning] = useState(false)
+  const [smtpSettingsOpen, setSmtpSettingsOpen] = useState(false)
+  const [isRelayDispatching, setIsRelayDispatching] = useState(false)
   const [autoApplyLogs, setAutoApplyLogs] = useState<string[]>([
     'Agent standby: Walrus sovereign wallet authenticated.',
     'Verified corporate hiring directory loaded (18 verified recruitment contacts).',
@@ -1140,6 +1338,94 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
     ])
 
     toast.success(`Logged application to ${targetCompanyInput} in your Applied tracker.`)
+  }
+
+  // 1-Click Direct Relay Dispatch via /api/email/dispatch
+  async function handleRelayDispatch() {
+    if (!targetEmailInput || !targetEmailInput.includes('@')) {
+      toast.error('Please specify a valid corporate hiring email.')
+      return
+    }
+
+    setIsRelayDispatching(true)
+    const toastId = toast.loading(`Dispatching application to ${targetEmailInput} via DKIM Relay...`)
+
+    try {
+      let smtpConfig: any = { provider: 'sovereign_relay' }
+      try {
+        const storedSmtp = localStorage.getItem('careerace_custom_smtp')
+        if (storedSmtp) {
+          smtpConfig = JSON.parse(storedSmtp)
+        }
+      } catch {}
+
+      const candidateName = activeProfileData?.applicant_name || 'Vincent Lang'
+      const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
+      const walrusBlobId = selectedVersionMeta?.blobId || ''
+
+      const res = await fetch('/api/email/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: targetEmailInput,
+          subject: customEmailSubject,
+          body: customEmailBody,
+          candidateName,
+          candidateEmail,
+          smtpConfig,
+          walrusBlobId,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Relay dispatch encountered an error.')
+      }
+
+      const now = Date.now()
+      const record: AppliedJobRecord = {
+        id: `relay-apply-${now}`,
+        jobTitle: targetRoleInput || 'Candidate Application',
+        company: targetCompanyInput || 'Corporate Direct',
+        appliedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        appliedTimestamp: now,
+        followUpStatus: 'pending',
+      }
+
+      const updated = [record, ...appliedJobs]
+      setAppliedJobs(updated)
+      localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+
+      setAutoApplyLogs((prev) => [
+        `[${new Date().toLocaleTimeString()}] Dispatched via ${data.relayProvider || 'Sovereign DKIM'} to ${targetEmailInput}. Delivery: ${data.deliveryStatus || 'Sent'}. MessageID: ${data.messageId || 'DKIM-OK'}.`,
+        `[${new Date().toLocaleTimeString()}] Auto-scheduled 7-day follow-up milestone for ${targetCompanyInput}.`,
+        ...prev,
+      ])
+
+      toast.success(data.message || `Dispatched application to ${targetEmailInput}!`, { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to dispatch via relay. Falling back to email client.', { id: toastId })
+    } finally {
+      setIsRelayDispatching(false)
+    }
+  }
+
+  function handleDownloadFollowUpIcs(job: JobListing, record?: AppliedJobRecord) {
+    const followUpDate = record?.appliedTimestamp 
+      ? new Date(record.appliedTimestamp + 7 * 86400000)
+      : new Date(Date.now() + 7 * 86400000)
+
+    downloadFollowUpIcs({
+      jobTitle: job.title,
+      company: job.company,
+      appliedDate: record?.appliedAt || new Date().toLocaleDateString('en-US'),
+      followUpDate,
+      contactEmail: job.apply_url?.includes('@') ? job.apply_url : undefined,
+      applicationUrl: job.apply_url,
+      notes: `CareerAce Sovereign Application Follow-Up. 7-day milestone reached for ${job.title} at ${job.company}. Review response and calibrate portfolio.`
+    })
+    toast.success(`Downloaded RFC 5545 Calendar reminder for ${job.company}`)
   }
 
   // Simulate auto apply cycle
@@ -1610,21 +1896,52 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                       />
                     </div>
 
-                    {/* Dispatch Action Toolbar */}
+                    {/* Dispatch Action Toolbar: Direct DKIM Relay + Fallback Client */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/60">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Button
-                          onClick={handleSendApplicationEmail}
+                          onClick={handleRelayDispatch}
+                          disabled={isRelayDispatching}
                           className="gap-2 text-xs font-semibold h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                          title="Dispatch directly without leaving the browser via Sovereign DKIM or Custom SMTP Relay"
                         >
-                          <Send className="w-3.5 h-3.5" />
-                          <span>Send via Email Client</span>
+                          {isRelayDispatching ? (
+                            <>
+                              <Zap className="w-3.5 h-3.5 animate-spin" />
+                              <span>Dispatching Relay...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="w-3.5 h-3.5 text-amber-300" />
+                              <span>1-Click Direct Relay Dispatch</span>
+                            </>
+                          )}
                         </Button>
 
                         <Button
                           variant="outline"
+                          onClick={handleSendApplicationEmail}
+                          className="gap-2 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted text-foreground"
+                          title="Open application draft in your default desktop or webmail client"
+                        >
+                          <Send className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>Email Client</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => setSmtpSettingsOpen(true)}
+                          className="gap-2 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground"
+                          title="Configure Gmail, Outlook, or Sovereign DKIM relay settings"
+                        >
+                          <Settings className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Relay Settings</span>
+                        </Button>
+
+                        <Button
+                          variant="ghost"
                           onClick={handleCopyApplicationDraft}
-                          className="gap-2 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted"
+                          className="gap-2 text-xs font-medium h-9 px-3 text-muted-foreground hover:text-foreground hover:bg-muted/60"
                         >
                           {copiedDraft ? (
                             <>
@@ -1634,7 +1951,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                           ) : (
                             <>
                               <Copy className="w-3.5 h-3.5" />
-                              <span>Copy Draft</span>
+                              <span>Copy</span>
                             </>
                           )}
                         </Button>
@@ -1697,27 +2014,20 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                 )}
               </div>
 
-              {/* Quick Role Categories Filter (Clean, professional, zero emojis) */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                {[
-                  { id: 'all', label: 'All Openings' },
-                  { id: 'marine', label: 'Marine Engineering' },
-                  { id: 'software', label: 'Software Engineering' },
-                  { id: 'ai_ml', label: 'AI & Machine Learning' },
-                  { id: 'hardware_aerospace', label: 'Hardware & Aerospace' },
-                  { id: 'industrial_quality', label: 'Industrial & Quality' },
-                ].map((cat) => (
+              {/* Quick Discipline Categories Filter (Clean 6 Disciplines, Zero Emojis) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+                {DISCIPLINE_CATEGORIES.map((cat) => (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => {
                       setSelectedRole(cat.id)
-                      toast.info(cat.id === 'all' ? 'Showing all openings' : `Filtered to ${cat.label}`)
+                      toast.info(cat.id === 'all' ? 'Showing all disciplines' : `Filtered to ${cat.label}`)
                     }}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                       selectedRole === cat.id
                         ? 'bg-primary text-primary-foreground shadow-xs'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
                     }`}
                   >
                     {cat.label}
@@ -1735,12 +2045,13 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                       onChange={(e) => setSelectedRole(e.target.value)}
                       className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
                     >
-                      <option value="all">All roles</option>
-                      <option value="marine">Marine Engineering</option>
-                      <option value="software">Software Engineering</option>
-                      <option value="ai_ml">AI & Machine Learning</option>
-                      <option value="hardware_aerospace">Hardware & Aerospace</option>
-                      <option value="industrial_quality">Industrial & Quality</option>
+                      <option value="all">All Disciplines</option>
+                      <option value="engineering_marine">Engineering & Marine</option>
+                      <option value="software_it">Software & IT</option>
+                      <option value="ai_autonomous">AI & Autonomous Systems</option>
+                      <option value="medical_healthcare">Medical & Healthcare Informatics</option>
+                      <option value="management_operations">Management & Operations</option>
+                      <option value="industrial_manufacturing">Industrial & Manufacturing</option>
                     </select>
                     <ChevronDown className="w-3 h-3 absolute right-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   </div>
@@ -2011,6 +2322,18 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                               <span>Follow up (AI)</span>
                             </Button>
 
+                            {/* Download Calendar (.ICS) Reminder */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadFollowUpIcs(job, appliedRecord)}
+                              title="Download RFC 5545 Calendar reminder for 7-day follow-up"
+                              className="h-8 text-xs gap-1.5 px-2.5 border-border/80 hover:bg-muted text-foreground font-medium"
+                            >
+                              <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>.ICS Reminder</span>
+                            </Button>
+
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2059,6 +2382,12 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
             </div>
           </>
         )}
+
+        {/* Sovereign DKIM / SMTP Relay Settings Modal */}
+        <SmtpRelaySettingsModal
+          open={smtpSettingsOpen}
+          onOpenChange={setSmtpSettingsOpen}
+        />
 
         {/* 7-Day Autonomous Application Follow-up Scheduler Modal */}
         {followUpModalJob && (

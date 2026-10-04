@@ -203,7 +203,7 @@ export function MemoryPlayground() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                Hackathon Showcase
+                Sovereign Vault Showcase
               </span>
               <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-[10px] py-0">
                 Live MemWal Relayer

@@ -246,19 +246,88 @@ export async function POST(req: Request) {
       cv_profile?.work_experience ||
       storedSummary.experience.map((e: string) => e.replace(/^experience:\s*/i, ""));
 
+    const appliedJobs = Array.isArray(body.appliedJobs)
+      ? body.appliedJobs
+      : Array.isArray(body.applied_jobs)
+      ? body.applied_jobs
+      : [];
+
+    const profileCertifications =
+      cv_profile?.certifications ||
+      cv_profile?.licenses ||
+      claimsOfKind(activeProfile, "certification" as any) ||
+      [];
+
     // 4. Handle direct deterministic queries if asked specifically
     const lowerLatest = latest.toLowerCase();
     let directReply = "";
 
-    // Direct CV / Resume Read Intent
+    // Applied Jobs & 7-Day Follow-Up Intent
     if (
+      lowerLatest.includes("applied job") ||
+      lowerLatest.includes("jobs applied") ||
+      lowerLatest.includes("follow-up") ||
+      lowerLatest.includes("follow up") ||
+      lowerLatest.includes("followup") ||
+      lowerLatest.includes("applications") ||
+      lowerLatest.includes("application status")
+    ) {
+      if (appliedJobs.length > 0) {
+        const now = Date.now();
+        const formattedJobs = appliedJobs.map((j: any, i: number) => {
+          const appliedTime = j.appliedAt ? new Date(j.appliedAt).getTime() : now;
+          const daysAgo = Math.max(0, Math.floor((now - appliedTime) / (1000 * 60 * 60 * 24)));
+          const isDue = daysAgo >= 7;
+          const statusText = isDue
+            ? `⚠️ 7-Day Follow-Up Due (${daysAgo} days elapsed)`
+            : `⏳ Follow-up milestone in ${7 - daysAgo} day(s)`;
+          return `${i + 1}. **${j.role || j.title || "Target Role"}** at **${j.company || "Company"}**\n   • Applied: ${j.appliedAt ? new Date(j.appliedAt).toLocaleDateString() : "Recently"}\n   • Contact: ${j.contactEmail || j.email || "HR / Recruiter on file"}\n   • Status: ${statusText}`;
+        }).join("\n\n");
+
+        directReply = `Here is your live application log and 7-day follow-up tracking from your browser session:\n\n${formattedJobs}\n\n**Actionable Advice:** For any application over 7 days old, dispatch a polite follow-up email reiterating your top 3 matching skills and referencing your Walrus-verified CV credentials.`;
+      } else {
+        directReply = `You have no tracked job applications yet.\n\nVisit the **Application Board** to explore verified corporate openings across Engineering & Marine, Software & IT, AI & Autonomous Systems, Medical Informatics, and Management. When you dispatch an application, CareerAce automatically tracks it and triggers a 7-day follow-up reminder.`;
+      }
+    } else if (
+      lowerLatest.includes("certification") ||
+      lowerLatest.includes("license") ||
+      lowerLatest.includes("credential") ||
+      lowerLatest.includes("certifications & licenses")
+    ) {
+      if (profileCertifications && profileCertifications.length > 0) {
+        const certList = Array.isArray(profileCertifications)
+          ? profileCertifications
+              .map((c: any) => typeof c === "string" ? c : `${c.name || c.title || "Certification"}${c.issuer ? ` (${c.issuer})` : ""}${c.year ? ` · ${c.year}` : ""}`)
+              .join("\n• ")
+          : String(profileCertifications);
+        directReply = `Here are your verified licenses and certifications registered in your sovereign profile:\n\n• ${certList}\n\nThese credentials can be highlighted in your tailored CV bullets and cover letters for regulated and technical disciplines.`;
+      } else {
+        directReply = `No specific certifications or licenses have been recorded yet in your profile.\n\nYou can add professional credentials (e.g. STCW, USCG/IMO Maritime licenses, AWS/Azure, PMP, Professional Engineer) to your profile, and CareerAce will index them into your decentralized Walrus vault.`;
+      }
+    } else if (
+      lowerLatest.includes("career feedback") ||
+      lowerLatest.includes("give me feedback") ||
+      lowerLatest.includes("career advice") ||
+      lowerLatest.includes("how can i improve") ||
+      lowerLatest.includes("profile review")
+    ) {
+      const skillsCount = profileSkills.length;
+      const expCount = Array.isArray(profileExperience) ? profileExperience.length : 1;
+      directReply = `Career Strategy & Profile Feedback for ${currentName || "Candidate"}:\n\n` +
+        `1. **ATS Alignment & Keywords:** You have ${skillsCount} verified technical competencies indexed. Focus on tailoring top keywords directly from target role job descriptions before applying.\n` +
+        `2. **Impact & Metrics in Experience:** You have ${expCount} career tenure position(s) listed. Ensure every bullet leads with a strong action verb (e.g., *Engineered, Spearheaded, Overhauled*) and includes quantifiable metrics (speed, cost reduction, scale, or team size).\n` +
+        `3. **Target Discipline Strategy:** Align your application outreach to specialized disciplines: ${profileRole}. Tailor each resume version uniquely rather than submitting a generic canvas.\n` +
+        `4. **Follow-Up Discipline:** Track every outreach on the Application Board and dispatch follow-ups on day 7 to maximize recruiter response rates.`;
+    } else if (
+      lowerLatest.includes("cv & background") ||
       lowerLatest.includes("read my cv") ||
       lowerLatest.includes("read my resume") ||
       lowerLatest.includes("can you read cv") ||
       lowerLatest.includes("what is on my cv") ||
       lowerLatest.includes("summarize my cv") ||
       lowerLatest.includes("summarize my resume") ||
-      lowerLatest.includes("who am i")
+      lowerLatest.includes("who am i") ||
+      lowerLatest.includes("background")
     ) {
       const candidateDisplayName = currentName && currentName !== "Candidate" ? currentName : "Candidate";
       const expFormatted = Array.isArray(profileExperience) && profileExperience.length > 0
@@ -269,7 +338,7 @@ export async function POST(req: Request) {
         ? profileEducation.map((a: any) => typeof a === "string" ? a : `${a.degree || "Degree"} from ${a.institution || "Institution"}${a.graduation_year ? ` (${a.graduation_year})` : ""}`).slice(0, 2).join("; ")
         : "Education indexed in Walrus Memory";
 
-      directReply = `Yes! I have read and verified your CV from your Walrus Sovereign Memory vault:\n\n• **Candidate Name:** ${candidateDisplayName}\n• **Target Role:** ${profileRole}\n• **Core Skills:** ${profileSkills.slice(0, 10).join(", ") || "Technical competencies"}\n• **Work History:** ${expFormatted}\n• **Academic Background:** ${eduFormatted}\n\nYour CV is sealed on Walrus decentralized storage. How would you like to proceed? We can run an ATS compliance audit, generate a tailored cover letter, or refine your accomplishment bullets.`;
+      directReply = `Yes! I have read and verified your background from your Walrus Sovereign Memory vault:\n\n• **Candidate Name:** ${candidateDisplayName}\n• **Target Role:** ${profileRole}\n• **Core Skills:** ${profileSkills.slice(0, 10).join(", ") || "Technical competencies"}\n• **Work History:** ${expFormatted}\n• **Academic Background:** ${eduFormatted}\n\nYour profile is cryptographically anchored to Walrus decentralized storage. Select a quick action below or ask about specific roles, certifications, or applications!`;
     } else if (
       lowerLatest.includes("what did i study") ||
       lowerLatest.includes("what is my degree") ||
@@ -416,9 +485,9 @@ RULES:
       {
         role: "assistant",
         content:
-          "Career Ace AI Copilot is active. To help build your sovereign CV and match you with opportunities, what kind of work or role are you looking for?",
+          "CareerAce Chatbot is active and connected to your Walrus Sovereign Memory. I can answer questions about your verified CV, past work tenures, education, certifications, and track 7-day follow-ups on your applications.",
         reply:
-          "Career Ace AI Copilot is active. To help build your sovereign CV and match you with opportunities, what kind of work or role are you looking for?",
+          "CareerAce Chatbot is active and connected to your Walrus Sovereign Memory. I can answer questions about your verified CV, past work tenures, education, certifications, and track 7-day follow-ups on your applications.",
         stored: [],
       },
       { status: 200 }

@@ -24,6 +24,7 @@ import {
   Lightbulb
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { downloadFollowUpIcs } from '@/lib/ics_calendar'
 
 function LinkedInIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
   return (
@@ -265,14 +266,33 @@ export function ApplicationFollowUpModal({
 
         {/* Footer Actions */}
         <div className="p-4 bg-muted/30 border-t border-border/70 flex flex-wrap items-center justify-between gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="text-xs text-muted-foreground"
-          >
-            Close
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="text-xs text-muted-foreground"
+            >
+              Close
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                downloadFollowUpIcs({
+                  jobTitle,
+                  company,
+                  appliedDate,
+                  notes: `CareerAce Sovereign Follow-up for ${jobTitle} at ${company}. Action tip: ${followUpData?.actionTip || 'Review recruiter response and follow-up message.'}`
+                })
+                toast.success(`Downloaded RFC 5545 calendar reminder for ${company}`)
+              }}
+              className="gap-1.5 text-xs h-8 border-border text-foreground hover:bg-muted"
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Add to Calendar (.ICS)</span>
+            </Button>
+          </div>
 
           <Button
             size="sm"

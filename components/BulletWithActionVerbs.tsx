@@ -140,8 +140,8 @@ export function BulletWithActionVerbs({
           {/* Single-Click "Integrate" Pill for Missing Keywords */}
           {showSuggestions && suggestedMissingKeywords.length > 0 && (
             <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-muted-foreground font-semibold text-[9px] uppercase tracking-wider ml-1 mr-0.5">
-                Suggest:
+              <span className="text-muted-foreground font-semibold text-[8px] uppercase tracking-wider ml-1 mr-0.5">
+                Add:
               </span>
               {suggestedMissingKeywords.map((kw, mIdx) => (
                 <button
@@ -151,11 +151,11 @@ export function BulletWithActionVerbs({
                     e.preventDefault();
                     handleIntegrateKeyword(kw);
                   }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/20 hover:text-emerald-800 dark:hover:text-emerald-200 hover:border-emerald-500/60 transition-all active:scale-95 cursor-pointer shadow-2xs"
-                  title={`Click to integrate "${kw}" smoothly into this bullet`}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md font-medium text-[9px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/20 hover:text-emerald-800 dark:hover:text-emerald-200 hover:border-emerald-500/60 transition-all active:scale-95 cursor-pointer"
+                  title={`Click to integrate "${kw}" into this bullet`}
                 >
-                  <PlusCircle className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Integrate "{kw}"</span>
+                  <PlusCircle className="w-2 h-2 text-emerald-600 dark:text-emerald-400" />
+                  <span>+{kw}</span>
                 </button>
               ))}
             </div>
@@ -163,17 +163,15 @@ export function BulletWithActionVerbs({
         </div>
       )}
 
-      {/* ── ROLE-AWARE POWER VERBS SUGGESTION CHIPS ── */}
+      {/* ── ROLE-AWARE POWER VERBS SUGGESTION CHIPS (Compact Typography) ── */}
       {showSuggestions && (
-        <div className="no-print flex flex-wrap items-center gap-1.5 pl-4 pt-1 animate-in fade-in duration-200">
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25">
-            <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="no-print flex flex-wrap items-center gap-1 pl-4 pt-0.5 animate-in fade-in duration-200">
+          <div className="flex items-center gap-0.5 text-[8.5px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/25">
+            <Sparkles className="w-2 h-2 text-emerald-600 dark:text-emerald-400" />
             <span>
               {analysis.weakPhrase
-                ? `Boost Impact (replaces "${analysis.weakPhrase}"):`
-                : analysis.isStrongAlready
-                ? "Active Verb! Role Alternatives:"
-                : "Power Verbs:"}
+                ? `Boost (${analysis.weakPhrase}):`
+                : "Verbs:"}
             </span>
           </div>
 
@@ -185,12 +183,12 @@ export function BulletWithActionVerbs({
                 e.preventDefault();
                 handleSelectVerb(sugg);
               }}
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md bg-background border border-border/80 text-foreground hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 shadow-2xs transition-all active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded bg-background border border-border/80 text-foreground hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 transition-all active:scale-95 cursor-pointer"
               title={`Click to substitute with '${sugg.verb}'`}
             >
-              <Zap className="w-2.5 h-2.5 text-amber-500" />
+              <Zap className="w-2 h-2 text-amber-500" />
               <span className="font-semibold">{sugg.verb}</span>
-              <span className="text-[9px] text-muted-foreground">+{sugg.points} pts</span>
+              <span className="text-[8px] text-muted-foreground">+{sugg.points}p</span>
             </button>
           ))}
         </div>

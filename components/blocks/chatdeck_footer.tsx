@@ -44,7 +44,7 @@ export function ChatdeckFooter() {
               <li><button type="button" onClick={() => router.push('/dashboard?tab=resumes')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Resume Optimizer</button></li>
               <li><button type="button" onClick={() => router.push('/dashboard?tab=tailored')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Resume Tailoring</button></li>
               <li><button type="button" onClick={() => router.push('/dashboard?tab=overview')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">ATS Checker</button></li>
-              <li><button type="button" onClick={() => router.push('/dashboard?tab=cover_letters')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Cover Letters</button></li>
+              <li><button type="button" onClick={() => router.push('/cover_letter')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Cover Letters</button></li>
               <li><button type="button" onClick={() => router.push('/interview_room')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0">Mock Interviews</button></li>
             </ul>
           </div>

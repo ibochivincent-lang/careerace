@@ -39,19 +39,20 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
-const OVERVIEW_PROMPT_CHIPS = [
-  'Audit my CV',
-  'What did I study?',
-  'Where did I work?',
-  'What are my skills?',
-  'Highlight my Certifications & Licenses',
-  'Suggest High-Impact Action Verbs'
+const OVERVIEW_KEYWORD_PILLS = [
+  'CV & Background',
+  'Study & Education',
+  'Work Experience',
+  'Skills & Tools',
+  'Certifications & Licenses',
+  'Applied Jobs & 7-Day Follow-ups',
+  'Career Feedback'
 ]
 
 const FRESH_WELCOME_MESSAGE = {
   role: 'assistant' as const,
   content:
-    "Welcome to Career Ace! I am your autonomous AI career copilot powered by Walrus Sovereign Memory. I securely store your verified experience, technical skills, and target roles across every session.\n\nAttach your CV (.pdf or .docx) to index your profile, or ask me anything to get started. How can I assist your career today?"
+    "Welcome to CareerAce! I am your centralized career intelligence agent powered by Walrus Sovereign Memory. I recall your verified background, work tenures, education, certifications, and track 7-day follow-ups for all your job applications.\n\nSelect a topic below, attach your CV (.pdf, .docx), or ask any question to begin."
 }
 
 function DashboardContent() {
@@ -315,7 +316,7 @@ function DashboardContent() {
 
   const SUGGESTED_COPILOT_ACTIONS = [
     {
-      label: '✨ Align core competencies',
+      label: 'Align core competencies',
       prompt: 'Refine my core competencies and skills for target role standards',
       run: (profile: any) => {
         const targetRoleLower = (tailorRole || profile?.target_roles?.[0] || '').toLowerCase()
@@ -343,7 +344,7 @@ function DashboardContent() {
       }
     },
     {
-      label: '📈 Quantify achievement bullets',
+      label: 'Quantify achievement bullets',
       prompt: 'Strengthen my experience bullets with clear, measurable outcomes',
       run: (profile: any) => {
         const exp = (profile?.work_experience || []).map((e: any) => ({
@@ -357,7 +358,7 @@ function DashboardContent() {
       }
     },
     {
-      label: '🎯 Align executive summary',
+      label: 'Align executive summary',
       prompt: 'Generate an executive professional summary aligned with my target role',
       run: (profile: any) => {
         const targetTitle = tailorRole || profile?.target_roles?.[0] || 'Professional'
@@ -697,6 +698,10 @@ function DashboardContent() {
         opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
       }
 
+      const storedAppliedJobs = typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('careerace_applied_jobs') || '[]')
+        : []
+
       const res = await fetch('/api/copilot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -704,6 +709,7 @@ function DashboardContent() {
           message: text,
           messages: updatedMessages,
           profile: activeProfileForCall,
+          appliedJobs: storedAppliedJobs,
           address: sessionAddress || undefined,
           custom_keys: customAiKeys,
         })
@@ -730,7 +736,7 @@ function DashboardContent() {
         ...prev,
         {
           role: 'assistant',
-          content: 'I have logged your request into your session. Attach your CV or ask another question to proceed.'
+          content: 'CareerAce Chatbot is connected to your Walrus Sovereign Memory. Attach your CV or select a keyword topic to proceed.'
         }
       ])
     } finally {
@@ -869,13 +875,42 @@ function DashboardContent() {
     }
   }
 
-  function handleGenerateCoverLetter() {
+  async function handleGenerateCoverLetter() {
     const role = tailorRole.trim() || 'the position'
     const company = tailorCompany.trim() || 'your organization'
-    const name = parsedProfile?.applicant_name || 'Candidate'
-    const email = parsedProfile?.contact_email || ''
-    const phone = parsedProfile?.contact_phone || ''
+    const name = parsedProfile?.applicant_name || 'Vincent Lang'
+    const email = parsedProfile?.contact_email || parsedProfile?.email || 'applicant@careerace.online'
+    const phone = parsedProfile?.contact_phone || parsedProfile?.phone || ''
     const location = parsedProfile?.location || ''
+    const toastId = toast.loading(`Synthesizing tailored cover letter for ${company}...`)
+
+    try {
+      const res = await fetch('/api/cover_letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetRole: role,
+          targetCompany: company,
+          jobDescription: keyProblemsSolved,
+          keyProblems: keyProblemsSolved,
+          candidateName: name,
+          candidateEmail: email,
+          candidatePhone: phone,
+          candidateLocation: location,
+          candidateSkills: parsedProfile?.skills,
+          recentExperience: parsedProfile?.work_experience?.[0],
+          walrusBlobId: parsedProfile?.walrus_blob_id || ''
+        })
+      })
+
+      const data = await res.json()
+      if (data.success && data.coverLetter) {
+        setTailoredCoverLetterText(data.coverLetter)
+        toast.success(`Custom cover letter generated for ${company}!`, { id: toastId })
+        return
+      }
+    } catch {}
+
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     const topSkills = (parsedProfile?.skills || []).slice(0, 5).join(', ')
     const recentExp = parsedProfile?.work_experience?.[0]
@@ -908,7 +943,7 @@ function DashboardContent() {
       `${name}`
 
     setTailoredCoverLetterText(letter)
-    toast.success(`Custom cover letter generated for ${company}!`)
+    toast.success(`Custom cover letter generated for ${company}!`, { id: toastId })
   }
 
   async function handleFileSelect(file: File | null) {
@@ -1046,7 +1081,7 @@ function DashboardContent() {
           onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
         />
 
-        {/* ── TAB 1: OVERVIEW = SIDE-BY-SIDE BALANCED DASHBOARD ── */}
+        {/* ── TAB 1: OVERVIEW = CENTRALIZED CAREERACE CHATBOT + ATS SCORECARD & SOVEREIGN VAULT ── */}
         {activeTab === 'overview' && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -1061,22 +1096,143 @@ function DashboardContent() {
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Your sovereign career intelligence vault and autonomous AI copilot with Walrus Sovereign Memory.
+                  Sovereign career intelligence vault and autonomous CareerAce Chatbot powered by Walrus Memory.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 px-2.5 py-1">
-                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-500" /> Walrus Sovereign Vault Active
+                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-500" /> Walrus Sovereign Memory Grounded
                 </Badge>
               </div>
             </div>
 
-            {/* Side-by-Side Grid Layout: Left Column (7 cols) + Right Column (5 cols) */}
+            {/* 1. CENTRALIZED CAREERACE CHATBOT (FULL-WIDTH PRIMARY EXPERIENCE) */}
+            <div className="w-full">
+              <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[560px]">
+                {/* Status Bar */}
+                <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-bold text-sm text-foreground">CareerAce Chatbot</h3>
+                        <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
+                          Walrus Memory
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {parsedProfile?.applicant_name 
+                          ? `Grounded in ${parsedProfile.applicant_name}'s verified background & application log` 
+                          : 'Connected to decentralized memory vault'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
+                    <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin Verified
+                  </Badge>
+                </div>
+
+                {/* Chat Messages Feed */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
+                  {chatMessages.map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-start gap-2.5 leading-relaxed ${
+                        msg.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <div className="w-6 h-6 rounded-md bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                          <Bot className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+
+                      <div
+                        className={`max-w-[85%] p-3.5 rounded-2xl whitespace-pre-wrap text-xs ${
+                          msg.role === 'assistant'
+                            ? 'bg-muted/40 border border-border/80 text-foreground'
+                            : 'bg-emerald-600 text-white font-medium shadow-xs'
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+
+                  {isSending && (
+                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60">
+                      <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                      <span>Querying Walrus Memory...</span>
+                    </div>
+                  )}
+                  <div ref={chatMessagesEndRef} />
+                </div>
+
+                {/* Prominent Keyword Topic Pills on Overview */}
+                <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1.5 overflow-x-auto">
+                  {OVERVIEW_KEYWORD_PILLS.map((pill, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSendMessage(pill)}
+                      disabled={isSending}
+                      className="text-[11px] px-2.5 py-1 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left cursor-pointer"
+                    >
+                      <span>{pill}</span>
+                      <ArrowRight className="w-3 h-3 text-emerald-500 opacity-70 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+
+                {/* Bottom Input */}
+                <div className="p-3 border-t border-border/80 bg-card flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => chatFileInputRef.current?.click()}
+                    title="Attach CV File (.pdf, .docx)"
+                    className="h-9 w-9 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder={
+                      parsedProfile 
+                        ? "Ask about your education, work experience, certifications, applied jobs, or 7-day follow-ups..." 
+                        : "Type your query or attach your CV to query Walrus Memory..."
+                    }
+                    className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+
+                  <Button
+                    size="sm"
+                    onClick={() => handleSendMessage()}
+                    disabled={isSending || !chatInput.trim()}
+                    className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* 2. SIDE-BY-SIDE GRID BELOW CHATBOT: Left Column (ATS Score + Daily Checklist) + Right Column (Sovereign Profile & Walrus Vault) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: ATS Scorecard + Setup Checklist + Quick Action Cards */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* 1. Circular ATS Health & Resume Scorecard */}
+              {/* Left Column (6 cols): ATS Scorecard + Daily Job-Hunting Action Checklist */}
+              <div className="lg:col-span-6 space-y-6">
+                {/* Circular ATS Health & Resume Scorecard */}
                 <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
@@ -1122,18 +1278,17 @@ function DashboardContent() {
                           {atsScorecard
                             ? `${atsScorecard.keyword_coverage_pct}% keyword match · ${atsScorecard.matched_skills.length} matched · ${atsScorecard.missing_critical_skills.length} critical gaps`
                             : parsedProfile
-                            ? '📋 Paste a job description in the Tailor panel to get your real ATS score.'
+                            ? 'Paste a job description in the Tailoring Assistant to calibrate your ATS score.'
                             : 'Upload your CV to calculate your live ATS parsing grade and keyword match.'}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-
                       <Button
                         size="sm"
                         onClick={() => router.push('/dashboard?tab=resumes')}
-                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white min-h-[38px] shadow-xs"
+                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white min-h-[38px] shadow-xs cursor-pointer"
                       >
                         {parsedProfile ? 'Open Resume Studio' : 'Upload Resume'} <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
@@ -1160,300 +1315,200 @@ function DashboardContent() {
                   )}
                 </Card>
 
-                {/* 2. Candidate Setup Checklist */}
+                {/* Daily Job-Hunting Action Checklist (Empowering candidates to get work) */}
                 <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-border/60">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <h3 className="font-bold text-sm text-foreground">Sovereign Profile Checklist</h3>
+                      <h3 className="font-bold text-sm text-foreground">Daily Job-Hunting Action Checklist</h3>
                     </div>
-                    <span className="text-xs font-mono text-muted-foreground">
-                      {[
-                        Boolean(parsedProfile?.applicant_name),
-                        Boolean(parsedProfile?.target_roles?.length),
-                        Boolean(parsedProfile?.skills?.length && parsedProfile.skills.length >= 3),
-                        Boolean(parsedProfile?.work_experience?.length),
-                        Boolean(parsedProfile)
-                      ].filter(Boolean).length} / 5 Complete
-                    </span>
+                    <Badge variant="outline" className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+                      Work Placement Focus
+                    </Badge>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {[
                       {
-                        title: 'Candidate Identity & Contact Information',
-                        desc: parsedProfile?.applicant_name 
-                          ? `${parsedProfile.applicant_name} · ${parsedProfile.contact_email || 'Contact on file'}`
-                          : 'Extract candidate name, email, and location from CV',
-                        done: Boolean(parsedProfile?.applicant_name)
+                        title: '1. Review New Discipline Openings',
+                        desc: 'Inspect verified corporate job postings matching your engineering, marine, IT, or medical discipline on the Application Board.',
+                        link: '/application_board',
+                        linkText: 'Browse Openings →'
                       },
                       {
-                        title: 'Target Professional Role',
-                        desc: parsedProfile?.target_roles?.[0]
-                          ? `Targeting: ${parsedProfile.target_roles.join(', ')}`
-                          : 'Set your primary target title and seniority',
-                        done: Boolean(parsedProfile?.target_roles?.length)
+                        title: '2. Check 7-Day Follow-Up Milestones',
+                        desc: 'Review dispatched applications and send timely follow-up messages for submissions that have hit the 7-day mark.',
+                        link: '/application_board',
+                        linkText: 'Check Follow-ups →'
                       },
                       {
-                        title: 'Core Competencies & Technical Skills',
-                        desc: parsedProfile?.skills?.length
-                          ? `${parsedProfile.skills.length} cross-industry and technical skills indexed`
-                          : 'Extract technical keywords and domain tools',
-                        done: Boolean(parsedProfile?.skills?.length && parsedProfile.skills.length >= 3)
+                        title: '3. Calibrate Role ATS Keywords',
+                        desc: 'Match your resume bullet points and competencies against specific employer job requirements to maintain >= 80% keyword alignment.',
+                        link: '/dashboard?tab=resumes',
+                        linkText: 'Resume Studio →'
                       },
                       {
-                        title: 'Work Experience & Quantified Bullets',
-                        desc: parsedProfile?.work_experience?.length
-                          ? `${parsedProfile.work_experience.length} career positions recorded with achievements`
-                          : 'Extract career timeline, company tenures, and impact points',
-                        done: Boolean(parsedProfile?.work_experience?.length)
+                        title: '4. Lead with High-Impact Power Verbs',
+                        desc: 'Ensure every career accomplishment begins with strong action verbs and includes quantifiable metrics (cost, speed, scale).',
+                        link: '/dashboard?tab=resumes',
+                        linkText: 'Polish Bullets →'
                       },
                       {
-                        title: 'Walrus Sovereign Vault Sealing',
-                        desc: parsedProfile
-                          ? 'Encrypted and cryptographically anchored to your Sui zkLogin'
-                          : 'Attach your CV to seal credentials in decentralized storage',
-                        done: Boolean(parsedProfile)
+                        title: '5. Anchor Latest Profile to Walrus Vault',
+                        desc: 'Re-seal and commit your verified credentials and latest tailored version snapshot to decentralized Walrus storage.',
+                        link: '/memory',
+                        linkText: 'View Walrus Vault →'
                       }
                     ].map((item, idx) => (
                       <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/60 text-xs">
-                        {item.done ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full border border-border/80 text-muted-foreground flex items-center justify-center shrink-0 mt-0.5" />
-                        )}
+                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                          {idx + 1}
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`font-semibold ${item.done ? 'text-foreground' : 'text-muted-foreground'}`}>{item.title}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{item.desc}</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-foreground">{item.title}</p>
+                            <button
+                              type="button"
+                              onClick={() => router.push(item.link)}
+                              className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium shrink-0 cursor-pointer"
+                            >
+                              {item.linkText}
+                            </button>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{item.desc}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </Card>
-
-                {/* 3. Fast-Track Navigation */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/dashboard?tab=resumes')}
-                    className="p-4 rounded-xl border border-border/80 bg-card hover:bg-muted/30 transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <FileText className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <span className="font-bold text-xs text-foreground block">Resume Studio</span>
-                    <span className="text-[11px] text-muted-foreground">Select templates, edit sections & download .docx</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => router.push('/dashboard?tab=resumes&mode=tailored')}
-                    className="p-4 rounded-xl border border-border/80 bg-card hover:bg-muted/30 transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Sparkles className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <span className="font-bold text-xs text-foreground block">Tailored Resumes</span>
-                    <span className="text-[11px] text-muted-foreground">Align bullets with target job requirements</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => router.push('/dashboard?tab=cover_letters')}
-                    className="p-4 rounded-xl border border-border/80 bg-card hover:bg-muted/30 transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Mail className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <span className="font-bold text-xs text-foreground block">Cover Letters</span>
-                    <span className="text-[11px] text-muted-foreground">Generate strategic problem-solving narratives</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => router.push('/memory')}
-                    className="p-4 rounded-xl border border-border/80 bg-card hover:bg-muted/30 transition-all text-left group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Database className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <span className="font-bold text-xs text-foreground block">Career Vault</span>
-                    <span className="text-[11px] text-muted-foreground">Manage Walrus facts, replace CV & reset vault</span>
-                  </button>
-                </div>
               </div>
 
-              {/* Right Column: Embedded Autonomous AI Copilot Chatbot */}
-              <div className="lg:col-span-5 sticky top-6">
-                <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[680px]">
-                  {/* Status Bar */}
-                  <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                          <Bot className="w-4 h-4" />
-                        </div>
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="font-bold text-xs text-foreground">AI Career Copilot</h3>
-                          <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
-                            MemWal
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground truncate max-w-[190px]">
-                          {parsedProfile?.applicant_name ? `${parsedProfile.applicant_name} Vault` : 'Autonomous Profiler'}
-                        </p>
-                      </div>
+              {/* Right Column (6 cols): Sovereign Profile & Walrus Vault Summary */}
+              <div className="lg:col-span-6 space-y-6">
+                <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-5">
+                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      <h3 className="font-bold text-sm text-foreground">Sovereign Profile &amp; Walrus Vault</h3>
                     </div>
-
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
-                      <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin
+                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border/80">
+                      {sessionAddress ? `${sessionAddress.slice(0, 6)}...${sessionAddress.slice(-4)}` : 'Decentralized Vault'}
                     </Badge>
                   </div>
 
-                  {/* Chat Messages Feed */}
-                  <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs">
-                    {chatMessages.map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-start gap-2.5 leading-relaxed ${
-                          msg.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        {msg.role === 'assistant' && (
-                          <div className="w-6 h-6 rounded-md bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                            <Bot className="w-3.5 h-3.5" />
+                  {parsedProfile ? (
+                    <div className="space-y-4 text-xs">
+                      {/* Identity Details */}
+                      <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground">Candidate Name</span>
+                          <span className="font-bold text-foreground text-sm">{parsedProfile.applicant_name || 'Candidate'}</span>
+                        </div>
+                        {parsedProfile.contact_email && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-muted-foreground">Email Contact</span>
+                            <span className="font-medium text-foreground">{parsedProfile.contact_email}</span>
                           </div>
                         )}
-
-                        <div
-                          className={`max-w-[85%] p-3.5 rounded-2xl whitespace-pre-wrap text-xs ${
-                            msg.role === 'assistant'
-                              ? 'bg-muted/40 border border-border/80 text-foreground'
-                              : 'bg-emerald-600 text-white font-medium shadow-xs'
-                          }`}
-                        >
-                          {msg.content}
-                          {typeof msg.edits_added === 'number' && msg.edits_added > 0 && (
-                            <div className="mt-2.5 pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
-                              <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> {msg.edits_added} edit{msg.edits_added > 1 ? 's' : ''} added to resume
-                              </span>
-                              <button
-                                type="button"
-                                onClick={handleUndo}
-                                className="text-[11px] text-muted-foreground hover:text-foreground underline flex items-center gap-1 font-medium"
-                              >
-                                <RotateCcw className="w-3 h-3" /> Undo
-                              </button>
-                            </div>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground">Target Role</span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            {tailorRole || parsedProfile.target_roles?.[0] || 'Target Role Pending'}
+                          </span>
                         </div>
                       </div>
-                    ))}
 
-                    {isSending && (
-                      <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60">
-                        <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-                        <span>Querying Walrus Memory...</span>
+                      {/* Verified Skills */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
+                            Verified Skills ({parsedProfile.skills?.length || 0})
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto p-2 rounded-xl bg-muted/20 border border-border/60">
+                          {(parsedProfile.skills || []).map((skill: string, sIdx: number) => (
+                            <span
+                              key={sIdx}
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-background border border-border/80 font-medium text-foreground"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                    <div ref={chatMessagesEndRef} />
-                  </div>
 
-                  {/* Classic Starter Prompt Chips on Overview */}
-                  <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                    {OVERVIEW_PROMPT_CHIPS.map((chip, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setChatInput(chip)
-                          const updated = [...chatMessages, { role: 'user' as const, content: chip }]
-                          setChatMessages(updated)
-                          setIsSending(true)
-                          const customAiKeys = {
-                            google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
-                            groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
-                            openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
-                            opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
-                          }
-                          fetch('/api/chat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              messages: updated,
-                              profile: parsedProfile,
-                              address: sessionAddress,
-                              custom_keys: customAiKeys
-                            })
-                          })
-                            .then((r) => r.json())
-                            .then((data) => {
-                              if (data.message) {
-                                setChatMessages([...updated, { role: 'assistant', content: data.message }])
-                              }
-                            })
-                            .catch(() => {
-                              toast.error('Failed to get answer from Copilot')
-                            })
-                            .finally(() => setIsSending(false))
-                        }}
-                        className="text-[11px] px-2.5 py-1 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left"
+                      {/* Work & Education Highlights */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
+                          <span className="text-[10px] text-muted-foreground block uppercase tracking-wider font-semibold">Career Positions</span>
+                          <span className="font-extrabold text-base text-foreground mt-0.5 block">
+                            {parsedProfile.work_experience?.length || 0}
+                          </span>
+                          <p className="text-[10px] text-muted-foreground mt-1 truncate">
+                            {parsedProfile.work_experience?.[0]?.company || 'History indexed'}
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
+                          <span className="text-[10px] text-muted-foreground block uppercase tracking-wider font-semibold">Academic History</span>
+                          <span className="font-extrabold text-base text-foreground mt-0.5 block">
+                            {parsedProfile.academic_history?.length || (parsedProfile.education ? 1 : 0)}
+                          </span>
+                          <p className="text-[10px] text-muted-foreground mt-1 truncate">
+                            {parsedProfile.academic_history?.[0]?.institution || parsedProfile.education || 'Institution indexed'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Walrus Versions & Anchor Status */}
+                      <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Database className="w-4 h-4 text-emerald-500" />
+                          <div>
+                            <span className="font-bold text-xs text-foreground block">Walrus Storage Status</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {walrusVersions.length > 0
+                                ? `${walrusVersions.length} version snapshot(s) anchored`
+                                : 'Profile loaded from local sovereign vault'}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push('/memory')}
+                          className="text-xs h-8 border-border text-foreground hover:bg-muted cursor-pointer"
+                        >
+                          Manage Vault →
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-muted/40 border border-border flex items-center justify-center mx-auto text-muted-foreground">
+                        <Upload className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-foreground">No CV Attached Yet</h4>
+                        <p className="text-xs text-muted-foreground max-w-xs mx-auto mt-1">
+                          Attach your CV (.pdf or .docx) to index your work experience, skills, and education into Walrus memory.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer"
                       >
-                        <span>{chip}</span>
-                        <ArrowRight className="w-3 h-3 text-emerald-500 opacity-70 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Bottom Input */}
-                  <div className="p-3 border-t border-border/80 bg-card flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => chatFileInputRef.current?.click()}
-                      title="Attach CV File (.pdf, .docx)"
-                      className="h-9 w-9 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </Button>
-
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      placeholder={
-                        parsedProfile 
-                          ? "Ask about your experience, audit ATS, or polish bullets..." 
-                          : "Type your query or attach your CV..."
-                      }
-                      className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-
-                    <Button
-                      size="sm"
-                      onClick={() => handleSendMessage()}
-                      disabled={isSending || !chatInput.trim()}
-                      className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+                        <Upload className="w-3.5 h-3.5 mr-1.5" /> Attach CV Now
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               </div>
             </div>
           </motion.div>
         )}
+
 
         {/* ── TAB 2: RESUMES & TAILORED RESUMES STUDIO ── */}
         {(activeTab === 'resumes' || activeTab === 'tailored') && (
@@ -1675,13 +1730,13 @@ function DashboardContent() {
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <h3 className="font-bold text-xs text-foreground">AI Career Copilot</h3>
+                                <h3 className="font-bold text-xs text-foreground">Resume Tailoring Assistant</h3>
                                 <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
                                   MemWal
                                 </Badge>
                               </div>
                               <p className="text-[10px] text-muted-foreground">
-                                Real-time suggestions &amp; tailoring assistant
+                                Bullet polishing, action verbs &amp; Walrus commits
                               </p>
                             </div>
                           </div>
@@ -1807,11 +1862,22 @@ function DashboardContent() {
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
-            <div className="pb-4 border-b">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
-              <p className="text-xs text-muted-foreground mt-1">
-                Generate tailored cover letters grounded strictly in your real skills and the specific problems you can solve.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Generate tailored cover letters grounded strictly in your real skills and the specific problems you can solve.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/cover_letter')}
+                className="text-xs gap-1.5 h-9"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Open Full Studio</span>
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

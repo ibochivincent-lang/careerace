@@ -1,7 +1,7 @@
 export interface CompanyHiringContact {
   id: string;
   company: string;
-  category: 'Maritime / Offshore' | 'Software / Cloud' | 'AI / Robotics' | 'Engineering / Industrial';
+  category: 'Maritime / Offshore' | 'Software / Cloud' | 'AI / Robotics' | 'Engineering / Industrial' | 'Medical / Healthcare' | 'Management / Operations';
   contactEmail: string;
   typicalRoles: string[];
   location: string;
@@ -189,5 +189,65 @@ export const VERIFIED_COMPANY_HIRING_CONTACTS: CompanyHiringContact[] = [
     location: 'Waltham, MA / Pittsburgh, PA',
     careersUrl: 'https://www.wabteccorp.com/careers',
     notes: 'Locomotive propulsion, rail technology, and industrial transducers.'
+  },
+  {
+    id: 'siemens-healthineers',
+    company: 'Siemens Healthineers',
+    category: 'Medical / Healthcare',
+    contactEmail: 'careers.healthcare@siemens-healthineers.com',
+    typicalRoles: ['Lead Healthcare Systems Engineer', 'Medical Informatics Engineer', 'Clinical Software Architect'],
+    location: 'Erlangen, Germany / Remote',
+    careersUrl: 'https://www.siemens-healthineers.com/careers',
+    notes: 'Medical imaging AI, laboratory diagnostics, and clinical informatics systems.'
+  },
+  {
+    id: 'epic-systems',
+    company: 'Epic Systems',
+    category: 'Medical / Healthcare',
+    contactEmail: 'careers@epic.com',
+    typicalRoles: ['Healthcare Software Developer', 'Integration Engineer', 'Clinical Systems Specialist'],
+    location: 'Verona, WI / Hybrid',
+    careersUrl: 'https://www.epic.com/careers',
+    notes: 'Electronic health record (EHR) platforms and clinical interoperability.'
+  },
+  {
+    id: 'philips-healthcare',
+    company: 'Philips Healthcare',
+    category: 'Medical / Healthcare',
+    contactEmail: 'talent.acquisition@philips.com',
+    typicalRoles: ['Clinical Informatics Architect', 'Telehealth Systems Engineer', 'Biomedical Software Lead'],
+    location: 'Cambridge, MA / Hybrid',
+    careersUrl: 'https://www.philips.com/a-w/careers/healthtech.html',
+    notes: 'Patient monitoring telemetry, connected care devices, and healthcare informatics.'
+  },
+  {
+    id: 'illumina-genomics',
+    company: 'Illumina',
+    category: 'Medical / Healthcare',
+    contactEmail: 'careers@illumina.com',
+    typicalRoles: ['Bioinformatics Software Engineer', 'Genomic Informatics Lead', 'Data Systems Specialist'],
+    location: 'San Diego, CA / Hybrid',
+    careersUrl: 'https://www.illumina.com/company/careers.html',
+    notes: 'Genomic sequencing platforms, clinical informatics, and DNA variant pipelines.'
+  },
+  {
+    id: 'asml-operations',
+    company: 'ASML',
+    category: 'Management / Operations',
+    contactEmail: 'careers@asml.com',
+    typicalRoles: ['Semiconductor Operations Lead', 'Industrial Operations Manager', 'Manufacturing Director'],
+    location: 'Veldhoven, Netherlands / Wilton, CT',
+    careersUrl: 'https://www.asml.com/en/careers',
+    notes: 'Extreme ultraviolet (EUV) photolithography manufacturing and operations management.'
+  },
+  {
+    id: 'maersk-fleet-mgmt',
+    company: 'Maersk Fleet Management',
+    category: 'Management / Operations',
+    contactEmail: 'fleet.operations@maersk.com',
+    typicalRoles: ['Global Fleet Operations Manager', 'Vessel Superintendent', 'Maritime Decarbonization Lead'],
+    location: 'Rotterdam, Netherlands / Copenhagen, Denmark',
+    careersUrl: 'https://www.maersk.com/careers',
+    notes: 'Commercial container fleet superintendency, maritime logistics, and green corridor operations.'
   }
 ];

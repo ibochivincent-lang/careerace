@@ -40,7 +40,7 @@ export default function PricingPage() {
     {
       name: 'Career Pro',
       price: 'Free',
-      period: 'during Walrus hackathon',
+      period: 'during sovereign launch',
       description: 'Continuous autonomous career copilot with real-time job harvesting and multi-session Walrus memory.',
       badge: 'Most Popular',
       features: [
