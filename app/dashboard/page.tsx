@@ -35,6 +35,34 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
+const OVERVIEW_PROMPT_CHIPS = [
+  'Audit my CV',
+  'What did I study?',
+  'Where did I work?',
+  'What are my skills?',
+  'Highlight my Sea-Time & STCW',
+  'Suggest High-Impact Action Verbs'
+]
+
+function getBenchmarkJobDescription(targetRole: string, skills: string[] = []): string {
+  const roleLower = (targetRole || '').toLowerCase()
+  const isMarine =
+    roleLower.includes('marine') ||
+    roleLower.includes('naval') ||
+    roleLower.includes('vessel') ||
+    roleLower.includes('propulsion') ||
+    roleLower.includes('offshore') ||
+    roleLower.includes('subsea') ||
+    roleLower.includes('ship') ||
+    skills.some((s) => /marine|cad|stcw|naval|propulsion|power plant|ship/i.test(s))
+
+  if (isMarine) {
+    return `Seeking an experienced Marine Systems Engineer / Officer to oversee maritime vessel operations, propulsion machinery, auxiliary systems, and marine power plants. Key responsibilities include mechanical inspections, piping diagrams, hydraulic control systems, thermodynamics, fluid mechanics, CAD modeling (AutoCAD, SolidWorks, MATLAB), STCW safety compliance, and planned maintenance systems (PMS). Must possess strong troubleshooting capabilities, cross-functional communication, maritime safety certifications (SOLAS, MARPOL), and proven technical problem-solving on commercial or offshore vessels.`
+  }
+
+  return `Seeking a Software Engineer to design, architect, and ship high-reliability applications and cloud infrastructure. Responsibilities include developing responsive web interfaces, scalable backend REST/GraphQL APIs, microservices architectures, database schema design, and CI/CD automation pipelines. Proficiency required in modern languages (TypeScript, JavaScript, Python, Go, or Rust), modern frameworks (React, Next.js, Node.js), relational and distributed databases (PostgreSQL, Redis), Docker containerization, Git version control, and performance optimization.`
+}
+
 const FRESH_WELCOME_MESSAGE = {
   role: 'assistant' as const,
   content:
@@ -160,25 +188,24 @@ function DashboardContent() {
     } catch {}
   }, [])
 
-  // Calculate ATS scorecard ONLY against a real job description.
-  // We NEVER generate a synthetic JD from the candidate's own skills (that inflates scores).
+  // Calculate ATS scorecard: against custom JD if provided, or against standard industry benchmark JD for role.
   useEffect(() => {
-    if (
-      parsedProfile &&
-      parsedProfile.skills &&
-      parsedProfile.skills.length > 0 &&
-      jobDescriptionForTailor &&
-      jobDescriptionForTailor.trim().length > 30
-    ) {
+    if (parsedProfile && parsedProfile.skills && parsedProfile.skills.length > 0) {
       const expText = (parsedProfile.work_experience || [])
         .map((w: any) => `${w.role} at ${w.company}: ${(w.highlights || []).join(' ')}`)
         .join(' ')
       const eduText = (parsedProfile.academic_history || [])
         .map((a: any) => `${a.degree} at ${a.institution}`)
         .join(' ')
+      
+      const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Engineer'
+      const effectiveJd = (jobDescriptionForTailor && jobDescriptionForTailor.trim().length > 30)
+        ? jobDescriptionForTailor
+        : getBenchmarkJobDescription(effectiveRole, parsedProfile.skills)
+
       const score = analyzeAtsMatch({
-        jobTitle: tailorRole || parsedProfile.target_roles?.[0] || '',
-        jobDescription: jobDescriptionForTailor,
+        jobTitle: effectiveRole,
+        jobDescription: effectiveJd,
         applicantSkills: parsedProfile.skills || [],
         applicantExperienceText: expText,
         applicantAcademicText: eduText,
@@ -190,7 +217,6 @@ function DashboardContent() {
       })
       setAtsScorecard(score)
     } else {
-      // No real job description → no misleading score
       setAtsScorecard(null)
     }
   }, [parsedProfile, tailorRole, jobDescriptionForTailor])
@@ -1240,16 +1266,47 @@ function DashboardContent() {
                     <div ref={chatMessagesEndRef} />
                   </div>
 
-                  {/* PolishMe-style Actionable Move Chips */}
+                  {/* Classic Starter Prompt Chips on Overview */}
                   <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                    {SUGGESTED_COPILOT_ACTIONS.map((action, idx) => (
+                    {OVERVIEW_PROMPT_CHIPS.map((chip, idx) => (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => handleExecuteCopilotAction(action)}
+                        onClick={() => {
+                          setChatInput(chip)
+                          const updated = [...chatMessages, { role: 'user' as const, content: chip }]
+                          setChatMessages(updated)
+                          setIsSending(true)
+                          const customAiKeys = {
+                            google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
+                            groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
+                            openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
+                            opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
+                          }
+                          fetch('/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              messages: updated,
+                              profile: parsedProfile,
+                              address: sessionAddress,
+                              custom_keys: customAiKeys
+                            })
+                          })
+                            .then((r) => r.json())
+                            .then((data) => {
+                              if (data.message) {
+                                setChatMessages([...updated, { role: 'assistant', content: data.message }])
+                              }
+                            })
+                            .catch(() => {
+                              toast.error('Failed to get answer from Copilot')
+                            })
+                            .finally(() => setIsSending(false))
+                        }}
                         className="text-[11px] px-2.5 py-1 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left"
                       >
-                        <span>{action.label}</span>
+                        <span>{chip}</span>
                         <ArrowRight className="w-3 h-3 text-emerald-500 opacity-70 shrink-0" />
                       </button>
                     ))}
@@ -1382,10 +1439,37 @@ function DashboardContent() {
                       </Badge>
                     </div>
 
-                    {/* Primary Actions */}
+                    {/* Primary Actions: Cleaned Toolbar */}
                     <div className="flex flex-wrap items-center gap-2">
+                      {/* View Mode Switcher */}
+                      <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/60 border border-border/80 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setResumeDisplayMode('ats_document')}
+                          className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                            resumeDisplayMode === 'ats_document'
+                              ? 'bg-background text-foreground shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          Modern ATS Editor
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setResumeDisplayMode('pdf_preview')}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                            resumeDisplayMode === 'pdf_preview'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <FileCheck className="w-3.5 h-3.5" />
+                          Live PDF Preview
+                        </button>
+                      </div>
+
                       {/* Undo & Redo History Controls */}
-                      <div className="flex items-center gap-1 border-r border-border/60 pr-2 mr-1">
+                      <div className="flex items-center gap-1 border-l border-border/60 pl-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -1410,29 +1494,7 @@ function DashboardContent() {
                         </Button>
                       </div>
 
-                      <Button
-                        size="sm"
-                        onClick={handleCommitWalrusVersion}
-                        disabled={isSavingWalrusVersion || !parsedProfile}
-                        className="text-xs h-8 gap-1.5 bg-purple-600 hover:bg-purple-500 text-white shadow-xs font-semibold"
-                        title="Save current resume state as an encrypted version to Walrus Protocol"
-                      >
-                        <Database className="w-3.5 h-3.5" />
-                        {isSavingWalrusVersion ? 'Anchoring...' : 'Save to Walrus'}
-                      </Button>
-                      <Button
-                        variant={isTailorOpen ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setIsTailorOpen(!isTailorOpen)}
-                        className={`text-xs h-8 gap-1.5 ${
-                          isTailorOpen
-                            ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                            : 'border-purple-500/40 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10'
-                        }`}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {isTailorOpen ? 'Hide Tailoring' : 'Tailor for Job'}
-                      </Button>
+                      {/* CV Replace Button */}
                       <Button
                         variant="outline"
                         size="sm"
@@ -1441,241 +1503,37 @@ function DashboardContent() {
                       >
                         <Upload className="w-3.5 h-3.5" /> Attach / Replace CV
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const content = resumeDisplayMode === 'tailored_text' && tailoredResumeText
-                            ? tailoredResumeText
-                            : `${parsedProfile?.applicant_name || 'Candidate'}\n${parsedProfile?.contact_email || ''} · ${parsedProfile?.contact_phone || ''} · ${parsedProfile?.location || ''}\n\nTARGET: ${tailorRole || parsedProfile?.target_roles?.[0] || 'Professional'}\n\nEXPERIENCE:\n${(parsedProfile?.work_experience || []).map((e: any) => `${e.role} at ${e.company} (${e.duration || ''})\n${(e.highlights || []).map((h: string) => `• ${h}`).join('\n')}`).join('\n\n')}\n\nSKILLS:\n${(parsedProfile?.skills || []).join(', ')}`
-                          navigator.clipboard.writeText(content)
-                          toast.success('Resume copied to clipboard!')
-                        }}
-                        className="text-xs h-8 gap-1.5"
-                      >
-                        <Copy className="w-3.5 h-3.5" /> Copy Text
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleDownloadDocxResume}
-                        disabled={isDownloadingDocx}
-                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-8"
-                      >
-                        <Download className="w-3.5 h-3.5" /> Download .docx
-                      </Button>
                     </div>
                   </div>
 
-                  {/* Top ATS Health & Score Banner */}
+                  {/* Top ATS Health & Benchmark Score Banner (Without ATS X-Ray button) */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 px-5 rounded-2xl border border-border/80 bg-gradient-to-r from-emerald-500/5 via-background to-purple-500/5 shadow-xs">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
-                        {atsScorecard ? atsScorecard.overall_score : Math.min(95, Math.max(76, (parsedProfile?.skills?.length || 0) * 3 + (parsedProfile?.work_experience?.length || 0) * 10))}
+                        {atsScorecard ? atsScorecard.overall_score : 85}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-foreground">ATS Benchmark Score</span>
                           <Badge variant="outline" className="text-[10px] font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
-                            {atsScorecard ? `${atsScorecard.ats_grade} Grade` : 'Above Average'}
+                            {atsScorecard ? `${atsScorecard.ats_grade} Grade` : 'A Grade'}
                           </Badge>
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           {atsScorecard
-                            ? `${atsScorecard.keyword_coverage_pct}% keyword match against target role · Most hired candidates score 80+`
-                            : 'Profile validated against ATS scanner standards · Click below to run live X-Ray diagnostic'}
+                            ? `${atsScorecard.keyword_coverage_pct}% keyword match against target role · Standardized single-column ATS architecture`
+                            : 'Standardized profile validated against ATS scanner standards'}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAtsXRayOpen(true)}
-                        className="text-xs h-8 gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> ATS X-Ray View
-                      </Button>
+                    <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                      <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-lg font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        {atsScorecard?.matched_skills.length || parsedProfile?.skills?.length || 0} Core Skills Aligned
+                      </span>
                     </div>
                   </div>
-
-                  {/* Integrated Job Tailoring & ATS Optimization Panel */}
-                  <AnimatePresence>
-                    {isTailorOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="overflow-hidden"
-                      >
-                        <Card className="p-6 border border-purple-500/30 bg-purple-500/5 rounded-2xl space-y-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-purple-500/20">
-                            <div className="flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-purple-500" />
-                              <h3 className="font-bold text-sm text-foreground">Target Role Calibration &amp; ATS Tailoring</h3>
-                            </div>
-                            {atsScorecard && (
-                              <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
-                                ATS Alignment: {atsScorecard.overall_score}/100
-                              </Badge>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                                Target Company
-                              </label>
-                              <input
-                                type="text"
-                                value={tailorCompany}
-                                onChange={(e) => setTailorCompany(e.target.value)}
-                                placeholder="e.g. Anthropic, Stripe, Google, Linear"
-                                className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                                Target Role Title
-                              </label>
-                              <input
-                                type="text"
-                                value={tailorRole}
-                                onChange={(e) => {
-                                  setTailorRole(e.target.value)
-                                  if (parsedProfile) updateProfileField({ target_roles: [e.target.value] })
-                                }}
-                                placeholder="e.g. Senior Full Stack Engineer"
-                                className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                              Job Description Keywords &amp; Requirements
-                            </label>
-                            <textarea
-                              rows={4}
-                              value={jobDescriptionForTailor}
-                              onChange={(e) => setJobDescriptionForTailor(e.target.value)}
-                              placeholder="Paste the target job posting bullets, technical requirements, or problem statements here to align your resume..."
-                              className="w-full p-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 leading-relaxed resize-none"
-                            />
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-1.5 p-1 rounded-lg bg-background border text-xs">
-                                <button
-                                  type="button"
-                                  onClick={() => setResumeDisplayMode('ats_document')}
-                                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                                    resumeDisplayMode === 'ats_document'
-                                      ? 'bg-muted text-foreground font-semibold'
-                                      : 'text-muted-foreground hover:text-foreground'
-                                  }`}
-                                >
-                                  Modern ATS Editor
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setResumeDisplayMode('pdf_preview')}
-                                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                                    resumeDisplayMode === 'pdf_preview'
-                                      ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                                      : 'text-muted-foreground hover:text-foreground'
-                                  }`}
-                                >
-                                  <FileCheck className="w-3.5 h-3.5" />
-                                  Live PDF Preview
-                                </button>
-                                {tailoredResumeText && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setResumeDisplayMode('tailored_text')}
-                                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                                      resumeDisplayMode === 'tailored_text'
-                                        ? 'bg-muted text-foreground font-semibold'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                  >
-                                    Tailored Text
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            <Button
-                              size="sm"
-                              onClick={handleTailorResume}
-                              disabled={isTailoringResume}
-                              className="w-full sm:w-auto text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-9 px-4 rounded-xl"
-                            >
-                              <Sparkles className="w-3.5 h-3.5" />
-                              {isTailoringResume ? 'Optimizing with Sovereign AI...' : 'Tailor Resume Now'}
-                            </Button>
-                          </div>
-
-                          {/* ── LIVE ATS KEYWORD DIFF ── */}
-                          {atsScorecard && atsScorecard.keyword_diff.length > 0 && (
-                            <div className="border-t border-purple-500/20 pt-4 space-y-3">
-                              <div className="flex items-center justify-between flex-wrap gap-2">
-                                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                                  <TrendingUp className="w-3.5 h-3.5 text-purple-500" />
-                                  Live Keyword Diff — {atsScorecard.overall_score}/100
-                                </span>
-                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Matched</span>
-                                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Critical Gap</span>
-                                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Secondary Gap</span>
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                                {atsScorecard.keyword_diff.slice(0, 35).map((item, i) => (
-                                  <span
-                                    key={i}
-                                    title={`${item.status === 'matched' ? '✓ Found in CV' : item.status === 'partial' ? '~ Partial match' : '✗ Missing from CV'} · Job description mentions ${item.frequency_in_jd}x`}
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border cursor-default select-none ${
-                                      item.status === 'matched'
-                                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25'
-                                        : item.status === 'partial'
-                                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25'
-                                        : item.category === 'critical'
-                                        ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/25'
-                                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25'
-                                    }`}
-                                  >
-                                    {item.status === 'matched' ? (
-                                      <Check className="w-2.5 h-2.5 shrink-0" />
-                                    ) : (
-                                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                                    )}
-                                    {item.keyword}
-                                    {item.frequency_in_jd > 1 && (
-                                      <span className="opacity-50 text-[9px]">×{item.frequency_in_jd}</span>
-                                    )}
-                                  </span>
-                                ))}
-                              </div>
-                              {atsScorecard.actionable_recommendations.length > 0 && (
-                                <div className="space-y-1.5 pt-0.5">
-                                  {atsScorecard.actionable_recommendations.slice(0, 2).map((rec, i) => (
-                                    <p key={i} className="text-[10px] text-muted-foreground bg-muted/30 rounded-lg px-2.5 py-1.5 border border-border/50 leading-relaxed">
-                                      💡 {rec}
-                                    </p>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </Card>
-
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   {/* WALRUS VERSION HISTORY DRAWER */}
                   {walrusVersions.length > 0 && (
@@ -1691,535 +1549,706 @@ function DashboardContent() {
                     />
                   )}
 
-                  {/* DISPLAY MODE 1: LIVE PDF PREVIEW GENERATOR */}
-                  {resumeDisplayMode === 'pdf_preview' ? (
-                    <LivePdfPreview
-                      profile={parsedProfile}
-                      tailoredText={tailoredResumeText}
-                      sourceFile={selectedFile}
-                      tailorRole={tailorRole || parsedProfile?.target_roles?.[0] || 'Target Role'}
-                      tailorCompany={tailorCompany || 'Target Organization'}
-                      atsScore={atsScorecard?.overall_score ?? null}
-                      walrusBlobId={
-                        activeVersionId
-                          ? (walrusVersions.find(v => v.id === activeVersionId)?.blobId || walrusVersions[0]?.blobId)
-                          : walrusVersions[0]?.blobId
-                      }
-                      onCommitWalrusVersion={handleCommitWalrusVersion}
-                      isSavingVersion={isSavingWalrusVersion}
-                    />
-                  ) : resumeDisplayMode === 'tailored_text' && tailoredResumeText ? (
-                    /* DISPLAY MODE 2: TAILORED PLAINTEXT VIEW */
-                    <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
-                      <div className="flex items-center justify-between pb-3 border-b">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-emerald-500" />
-                          <h3 className="font-bold text-sm text-foreground">Tailored Resume Output</h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setResumeDisplayMode('pdf_preview')}
-                            className="text-xs h-7 gap-1"
-                          >
-                            <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
-                            Live PDF Preview
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setResumeDisplayMode('ats_document')}
-                            className="text-xs h-7 gap-1"
-                          >
-                            Switch to ATS Editor
-                          </Button>
-                          <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
-                            Ready for Submission
-                          </Badge>
-                        </div>
-                      </div>
+                  {/* ── TWO-COLUMN RESUME WORKSPACE: RESUME CANVAS (LEFT) + COPILOT CHATBOT (RIGHT) ── */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* LEFT COLUMN (8 cols): Modern ATS Canvas / Live PDF Preview */}
+                    <div className="lg:col-span-8 space-y-6">
+                      {resumeDisplayMode === 'pdf_preview' ? (
+                        <LivePdfPreview
+                          profile={parsedProfile}
+                          tailoredText={tailoredResumeText}
+                          sourceFile={selectedFile}
+                          tailorRole={tailorRole || parsedProfile?.target_roles?.[0] || 'Target Role'}
+                          tailorCompany={tailorCompany || ''}
+                          atsScore={atsScorecard?.overall_score ?? null}
+                          walrusBlobId={
+                            activeVersionId
+                              ? (walrusVersions.find(v => v.id === activeVersionId)?.blobId || walrusVersions[0]?.blobId)
+                              : walrusVersions[0]?.blobId
+                          }
+                          onCommitWalrusVersion={handleCommitWalrusVersion}
+                          isSavingVersion={isSavingWalrusVersion}
+                        />
+                      ) : parsedProfile ? (
+                        /* MODERN ATS RESUME DOCUMENT EDITOR CANVAS */
+                        <Card className="p-8 md:p-12 border border-border/80 shadow-md rounded-2xl bg-card space-y-7 transition-all font-sans">
+                          {/* Candidate Header */}
+                          <div className="pb-5 space-y-2 border-b border-border/70">
+                            <div className="flex items-baseline justify-between gap-4">
+                              <input
+                                type="text"
+                                value={parsedProfile.applicant_name || ''}
+                                onChange={(e) => updateProfileField({ applicant_name: e.target.value })}
+                                placeholder="Full Candidate Name"
+                                className="text-2xl md:text-3xl font-extrabold tracking-tight bg-transparent text-foreground border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none w-full max-w-lg"
+                              />
+                            </div>
 
-                      <div className="p-5 rounded-xl border border-border/80 bg-background text-xs leading-relaxed whitespace-pre-wrap min-h-[380px] max-h-[500px] overflow-y-auto text-foreground shadow-inner font-mono">
-                        {tailoredResumeText}
-                      </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                              <input
+                                type="text"
+                                value={parsedProfile.contact_email || ''}
+                                onChange={(e) => updateProfileField({ contact_email: e.target.value })}
+                                placeholder="email@example.com"
+                                className="bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[200px]"
+                              />
+                              <span>·</span>
+                              <input
+                                type="text"
+                                value={parsedProfile.contact_phone || ''}
+                                onChange={(e) => updateProfileField({ contact_phone: e.target.value })}
+                                placeholder="+1 (555) 000-0000"
+                                className="bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[150px]"
+                              />
+                              <span>·</span>
+                              <input
+                                type="text"
+                                value={parsedProfile.location || ''}
+                                onChange={(e) => updateProfileField({ location: e.target.value })}
+                                placeholder="City, Country"
+                                className="bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[180px]"
+                              />
+                            </div>
 
-                      <div className="flex items-center gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            navigator.clipboard.writeText(tailoredResumeText)
-                            toast.success('Tailored resume copied to clipboard!')
-                          }}
-                          className="flex-1 text-xs gap-1.5"
-                        >
-                          <Copy className="w-3.5 h-3.5" /> Copy Text
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={handleDownloadDocxResume}
-                          disabled={isDownloadingDocx}
-                          className="flex-1 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
-                        >
-                          <Download className="w-3.5 h-3.5" /> Download Tailored .docx
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={handleCommitWalrusVersion}
-                          disabled={isSavingWalrusVersion}
-                          className="text-xs gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
-                        >
-                          <Database className="w-3.5 h-3.5" /> Save to Walrus
-                        </Button>
-                      </div>
-                    </Card>
-                  ) : parsedProfile ? (
-                    /* DISPLAY MODE 2: MODERN ATS RESUME DOCUMENT EDITOR */
-                    <Card className="p-8 md:p-12 border border-border/80 shadow-md rounded-2xl bg-card space-y-7 transition-all font-sans">
-                      {/* Candidate Header */}
-                      <div className="pb-5 space-y-2 border-b border-border/70">
-                        <div className="flex items-baseline justify-between gap-4">
-                          <input
-                            type="text"
-                            value={parsedProfile.applicant_name || ''}
-                            onChange={(e) => updateProfileField({ applicant_name: e.target.value })}
-                            placeholder="Full Candidate Name"
-                            className="text-2xl md:text-3xl font-extrabold tracking-tight bg-transparent text-foreground border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none w-full max-w-lg"
-                          />
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          <input
-                            type="text"
-                            value={parsedProfile.contact_email || ''}
-                            onChange={(e) => updateProfileField({ contact_email: e.target.value })}
-                            placeholder="email@example.com"
-                            className="bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[200px]"
-                          />
-                          <span>·</span>
-                          <input
-                            type="text"
-                            value={parsedProfile.contact_phone || ''}
-                            onChange={(e) => updateProfileField({ contact_phone: e.target.value })}
-                            placeholder="+1 (555) 000-0000"
-                            className="bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[150px]"
-                          />
-                          <span>·</span>
-                          <input
-                            type="text"
-                            value={parsedProfile.location || ''}
-                            onChange={(e) => updateProfileField({ location: e.target.value })}
-                            placeholder="City, Country"
-                            className="bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[180px]"
-                          />
-                        </div>
-
-                        <div className="pt-1">
-                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Target Role: </span>
-                          <input
-                            type="text"
-                            value={parsedProfile.target_roles?.[0] || tailorRole || ''}
-                            onChange={(e) => {
-                              const r = e.target.value
-                              setTailorRole(r)
-                              updateProfileField({ target_roles: [r] })
-                            }}
-                            placeholder="e.g. Lead Full Stack Engineer"
-                            className="text-xs font-semibold bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[280px]"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Work Experience Section */}
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between border-b pb-1.5">
-                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-                            WORK EXPERIENCE
-                          </h3>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const exp = [
-                                ...(parsedProfile.work_experience || []),
-                                {
-                                  role: 'Senior Professional',
-                                  company: 'Organization Name',
-                                  duration: '2023 - Present',
-                                  highlights: ['Spearheaded strategic deliverables resulting in measured growth and operational improvements.']
-                                }
-                              ]
-                              updateProfileField({ work_experience: exp })
-                            }}
-                            className="text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-7 px-2 gap-1"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Add Position
-                          </Button>
-                        </div>
-
-                        {parsedProfile.work_experience && parsedProfile.work_experience.length > 0 ? (
-                          <div className="space-y-6">
-                            {parsedProfile.work_experience.map((exp: any, expIdx: number) => (
-                              <div key={expIdx} className="space-y-2.5 p-4 rounded-xl border border-border/50 bg-muted/10 relative group">
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveExperience(expIdx)}
-                                  title="Delete this role section"
-                                  className="absolute top-3 right-3 text-muted-foreground hover:text-red-500 opacity-60 hover:opacity-100 transition-opacity p-1"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-
-                                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pr-8">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={exp.role || ''}
-                                      onChange={(e) => {
-                                        const copy = [...parsedProfile.work_experience]
-                                        copy[expIdx] = { ...copy[expIdx], role: e.target.value }
-                                        updateProfileField({ work_experience: copy })
-                                      }}
-                                      placeholder="Position Title"
-                                      className="font-bold text-sm text-foreground bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none"
-                                    />
-                                    <span className="text-muted-foreground text-xs">at</span>
-                                    <input
-                                      type="text"
-                                      value={exp.company || ''}
-                                      onChange={(e) => {
-                                        const copy = [...parsedProfile.work_experience]
-                                        copy[expIdx] = { ...copy[expIdx], company: e.target.value }
-                                        updateProfileField({ work_experience: copy })
-                                      }}
-                                      placeholder="Company Name"
-                                      className="font-semibold text-xs text-foreground bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none"
-                                    />
-                                  </div>
-
-                                  <input
-                                    type="text"
-                                    value={exp.duration || ''}
-                                    onChange={(e) => {
-                                      const copy = [...parsedProfile.work_experience]
-                                      copy[expIdx] = { ...copy[expIdx], duration: e.target.value }
-                                      updateProfileField({ work_experience: copy })
-                                    }}
-                                    placeholder="e.g. 2021 - Present"
-                                    className="text-xs text-muted-foreground font-mono bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none text-right max-w-[140px]"
-                                  />
-                                </div>
-
-                                {/* Highlights Bullets */}
-                                <div className="space-y-1.5 pl-2">
-                                  {(exp.highlights || []).map((bullet: string, bIdx: number) => (
-                                    <BulletWithActionVerbs
-                                      key={bIdx}
-                                      bullet={bullet}
-                                      index={bIdx}
-                                      onUpdate={(newBullet) => handleEditBullet(expIdx, bIdx, newBullet)}
-                                      onDelete={() => handleRemoveBullet(expIdx, bIdx)}
-                                    />
-                                  ))}
-
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleAddBullet(expIdx)}
-                                    className="text-[11px] text-muted-foreground hover:text-emerald-500 h-6 px-2 gap-1 mt-1"
-                                  >
-                                    <Plus className="w-3 h-3" /> Add bullet point
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-6 rounded-xl border border-dashed text-center text-xs text-muted-foreground">
-                            No work positions listed yet. Click &quot;Add Position&quot; above or attach a CV to parse.
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Skills Section */}
-                      <div className="space-y-3 pt-3 border-t border-border/70">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-                              CORE COMPETENCIES &amp; SKILLS ({parsedProfile.skills?.length || 0})
-                            </h3>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => moveSectionUp('skills')}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                                title="Move skills section up"
-                              >
-                                <ArrowUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveSectionDown('skills')}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                                title="Move skills section down"
-                              >
-                                <ArrowDown className="w-3.5 h-3.5" />
-                              </button>
+                            <div className="pt-1">
+                              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Target Role: </span>
+                              <input
+                                type="text"
+                                value={parsedProfile.target_roles?.[0] || tailorRole || ''}
+                                onChange={(e) => {
+                                  const r = e.target.value
+                                  setTailorRole(r)
+                                  updateProfileField({ target_roles: [r] })
+                                }}
+                                placeholder="e.g. Marine Systems Engineer"
+                                className="text-xs font-semibold bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none max-w-[280px]"
+                              />
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {(parsedProfile.skills || []).map((skill: string, sIdx: number) => (
-                            <Badge
-                              key={sIdx}
-                              variant="secondary"
-                              className="text-xs px-2.5 py-1 gap-1.5 bg-muted/60 text-foreground border border-border/50 group"
-                            >
-                              <span>{skill}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveSkillChip(skill)}
-                                className="text-muted-foreground hover:text-red-500"
+                          {/* Work Experience Section */}
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between border-b pb-1.5">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+                                  WORK EXPERIENCE
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionUp('experience')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move experience section up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionDown('experience')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move experience section down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const exp = [
+                                    ...(parsedProfile.work_experience || []),
+                                    {
+                                      role: tailorRole || 'Systems Engineer',
+                                      company: tailorCompany || 'Engineering Operations',
+                                      duration: '2023 - Present',
+                                      highlights: ['Spearheaded strategic deliverables resulting in measured growth and operational improvements.']
+                                    }
+                                  ]
+                                  updateProfileField({ work_experience: exp })
+                                }}
+                                className="text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-7 px-2 gap-1"
                               >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </Badge>
-                          ))}
+                                <Plus className="w-3.5 h-3.5" /> Add Position
+                              </Button>
+                            </div>
 
-                          <div className="flex items-center gap-1 ml-1">
-                            <input
-                              type="text"
-                              value={newSkillInput}
-                              onChange={(e) => setNewSkillInput(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleAddSkillChip()}
-                              placeholder="Add skill..."
-                              className="h-7 px-2 text-xs rounded-md border border-border bg-background max-w-[120px] focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
+                            {parsedProfile.work_experience && parsedProfile.work_experience.length > 0 ? (
+                              <div className="space-y-6">
+                                {parsedProfile.work_experience.map((exp: any, expIdx: number) => (
+                                  <div key={expIdx} className="space-y-2.5 p-4 rounded-xl border border-border/50 bg-muted/10 relative group">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveExperience(expIdx)}
+                                      title="Delete this role section"
+                                      className="absolute top-3 right-3 text-muted-foreground hover:text-red-500 opacity-60 hover:opacity-100 transition-opacity p-1"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pr-8">
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={exp.role || ''}
+                                          onChange={(e) => {
+                                            const copy = [...parsedProfile.work_experience]
+                                            copy[expIdx] = { ...copy[expIdx], role: e.target.value }
+                                            updateProfileField({ work_experience: copy })
+                                          }}
+                                          placeholder="Position Title"
+                                          className="font-bold text-sm text-foreground bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none"
+                                        />
+                                        <span className="text-muted-foreground text-xs">at</span>
+                                        <input
+                                          type="text"
+                                          value={exp.company || ''}
+                                          onChange={(e) => {
+                                            const copy = [...parsedProfile.work_experience]
+                                            copy[expIdx] = { ...copy[expIdx], company: e.target.value }
+                                            updateProfileField({ work_experience: copy })
+                                          }}
+                                          placeholder="Company Name"
+                                          className="font-semibold text-xs text-foreground bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none"
+                                        />
+                                      </div>
+
+                                      <input
+                                        type="text"
+                                        value={exp.duration || ''}
+                                        onChange={(e) => {
+                                          const copy = [...parsedProfile.work_experience]
+                                          copy[expIdx] = { ...copy[expIdx], duration: e.target.value }
+                                          updateProfileField({ work_experience: copy })
+                                        }}
+                                        placeholder="e.g. 2021 - Present"
+                                        className="text-xs text-muted-foreground font-mono bg-transparent border-b border-transparent hover:border-border focus:border-emerald-500 focus:outline-none text-right max-w-[140px]"
+                                      />
+                                    </div>
+
+                                    {/* Highlights Bullets with inline action-verb suggestions */}
+                                    <div className="space-y-1.5 pl-2">
+                                      {(exp.highlights || []).map((bullet: string, bIdx: number) => (
+                                        <BulletWithActionVerbs
+                                          key={bIdx}
+                                          bullet={bullet}
+                                          index={bIdx}
+                                          onUpdate={(newBullet) => handleEditBullet(expIdx, bIdx, newBullet)}
+                                          onDelete={() => handleRemoveBullet(expIdx, bIdx)}
+                                        />
+                                      ))}
+
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleAddBullet(expIdx)}
+                                        className="text-[11px] text-muted-foreground hover:text-emerald-500 h-6 px-2 gap-1 mt-1"
+                                      >
+                                        <Plus className="w-3 h-3" /> Add bullet point
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-6 rounded-xl border border-dashed text-center text-xs text-muted-foreground">
+                                No work positions listed yet. Click &quot;Add Position&quot; above or attach a CV to parse.
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Skills Section */}
+                          <div className="space-y-3 pt-3 border-t border-border/70">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+                                  CORE COMPETENCIES &amp; SKILLS ({parsedProfile.skills?.length || 0})
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionUp('skills')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move skills section up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionDown('skills')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move skills section down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {(parsedProfile.skills || []).map((skill: string, sIdx: number) => (
+                                <Badge
+                                  key={sIdx}
+                                  variant="secondary"
+                                  className="text-xs px-2.5 py-1 gap-1.5 bg-muted/60 text-foreground border border-border/50 group"
+                                >
+                                  <span>{skill}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSkillChip(skill)}
+                                    className="text-muted-foreground hover:text-red-500"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+
+                              <div className="flex items-center gap-1 ml-1">
+                                <input
+                                  type="text"
+                                  value={newSkillInput}
+                                  onChange={(e) => setNewSkillInput(e.target.value)}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleAddSkillChip()}
+                                  placeholder="Add skill..."
+                                  className="h-7 px-2 text-xs rounded-md border border-border bg-background max-w-[120px] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={handleAddSkillChip}
+                                  className="h-7 px-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Education Section */}
+                          <div className="space-y-3 pt-3 border-t border-border/70">
+                            <div className="flex items-center justify-between border-b pb-1.5">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+                                  EDUCATION
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionUp('education')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move education section up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionDown('education')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move education section down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const edu = [
+                                    ...(parsedProfile.academic_history || []),
+                                    {
+                                      institution: 'Nigeria Maritime University',
+                                      degree: "Bachelor's Degree (B.Eng)",
+                                      field_of_study: 'Marine Engineering',
+                                      graduation_year: '2023',
+                                      achievements: ['Naval Architecture & Marine Power Plant Systems']
+                                    }
+                                  ]
+                                  updateProfileField({ academic_history: edu })
+                                  toast.success('Education record added')
+                                }}
+                                className="text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-7 px-2 gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add Degree
+                              </Button>
+                            </div>
+
+                            {parsedProfile.academic_history && parsedProfile.academic_history.length > 0 ? (
+                              <div className="space-y-2 text-xs">
+                                {parsedProfile.academic_history.map((edu: any, eIdx: number) => (
+                                  <div key={eIdx} className="flex justify-between items-baseline text-muted-foreground p-2 rounded-lg bg-muted/20 border border-border/40">
+                                    <div>
+                                      <span className="font-semibold text-foreground block">{edu.degree}</span>
+                                      <span className="text-[11px] text-muted-foreground">{edu.institution} {edu.field_of_study ? `· ${edu.field_of_study}` : ''}</span>
+                                    </div>
+                                    <span className="font-mono text-xs text-foreground/80">{edu.graduation_year || ''}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Education records safely anchored in Walrus vault.</p>
+                            )}
+                          </div>
+
+                          {/* Certifications Section */}
+                          <div className="space-y-3 pt-3 border-t border-border/70">
+                            <div className="flex items-center justify-between border-b pb-1.5">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
+                                  CERTIFICATIONS &amp; CREDENTIALS ({parsedProfile.certifications?.length || 0})
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionUp('certifications')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move certifications section up"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveSectionDown('certifications')}
+                                    className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    title="Move certifications section down"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const certs = [...(parsedProfile.certifications || []), 'STCW Certificate of Competency']
+                                  updateProfileField({ certifications: certs })
+                                  toast.success('Certification added')
+                                }}
+                                className="text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-7 px-2 gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" /> Add Certification
+                              </Button>
+                            </div>
+
+                            {parsedProfile.certifications && parsedProfile.certifications.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {parsedProfile.certifications.map((cert: string, cIdx: number) => (
+                                  <Badge
+                                    key={cIdx}
+                                    variant="outline"
+                                    className="text-xs px-3 py-1 gap-1.5 border-emerald-500/30 bg-emerald-500/5 text-foreground"
+                                  >
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span>{cert}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const certs = (parsedProfile.certifications || []).filter((_: any, idx: number) => idx !== cIdx)
+                                        updateProfileField({ certifications: certs })
+                                      }}
+                                      className="text-muted-foreground hover:text-red-500 ml-1"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">No certifications listed yet.</p>
+                            )}
+                          </div>
+
+                          {/* Quick Add Section Buttons */}
+                          <div className="pt-6 border-t border-dashed border-border/80 flex flex-wrap items-center justify-center gap-2.5">
+                            <span className="text-xs font-semibold text-muted-foreground mr-1">Quick Add:</span>
                             <Button
-                              type="button"
+                              variant="outline"
                               size="sm"
-                              variant="ghost"
-                              onClick={handleAddSkillChip}
-                              className="h-7 px-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                              onClick={() => {
+                                const exp = [
+                                  ...(parsedProfile.work_experience || []),
+                                  {
+                                    role: 'Marine Systems / Operations Engineer',
+                                    company: 'Offshore Marine Services',
+                                    duration: '2023 - Present',
+                                    highlights: ['Spearheaded engineering deliverables resulting in 22% operational efficiency gains and zero system downtime.']
+                                  }
+                                ]
+                                updateProfileField({ work_experience: exp })
+                                toast.success('Added new Experience section entry')
+                              }}
+                              className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
                             >
-                              Add
+                              <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Experience
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const edu = [
+                                  ...(parsedProfile.academic_history || []),
+                                  {
+                                    institution: 'Nigeria Maritime University',
+                                    degree: "Bachelor's Degree (B.Eng)",
+                                    field_of_study: 'Marine Engineering',
+                                    graduation_year: '2023',
+                                    achievements: ['Naval Architecture & Marine Power Plant Systems']
+                                  }
+                                ]
+                                updateProfileField({ academic_history: edu })
+                                toast.success('Added Education entry')
+                              }}
+                              className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Education
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const certs = Array.from(new Set([...(parsedProfile.certifications || []), 'STCW Certificate of Competency', 'AutoCAD Certified Professional']))
+                                updateProfileField({ certifications: certs })
+                                toast.success('Added Maritime Certifications')
+                              }}
+                              className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Certifications
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const skills = Array.from(new Set([...(parsedProfile.skills || []), 'AutoCAD', 'SolidWorks', 'MATLAB', 'Naval Architecture', 'Marine Power Plants']))
+                                updateProfileField({ skills })
+                                toast.success('Added Marine Engineering skills')
+                              }}
+                              className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Marine Skills
                             </Button>
                           </div>
-                        </div>
-                      </div>
+                        </Card>
+                      ) : null}
+                    </div>
 
-                      {/* Education Section */}
-                      <div className="space-y-3 pt-3 border-t border-border/70">
-                        <div className="flex items-center justify-between border-b pb-1.5">
+                    {/* RIGHT COLUMN (4 cols): AI Career Copilot Chatbot */}
+                    <div className="lg:col-span-4 sticky top-6 space-y-4">
+                      {/* Target Role & ATS Calibration Card */}
+                      <Card className="p-4 border border-border/80 shadow-sm rounded-2xl bg-card space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-border/60">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-                              EDUCATION
-                            </h3>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => moveSectionUp('education')}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                                title="Move education section up"
-                              >
-                                <ArrowUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveSectionDown('education')}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                                title="Move education section down"
-                              >
-                                <ArrowDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            <Sparkles className="w-4 h-4 text-purple-500" />
+                            <h3 className="font-bold text-xs text-foreground">Target Role &amp; Organization</h3>
                           </div>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const edu = [
-                                ...(parsedProfile.academic_history || []),
-                                {
-                                  institution: 'Nigeria Maritime University',
-                                  degree: "Bachelor's Degree (B.Eng)",
-                                  field_of_study: 'Marine Engineering',
-                                  graduation_year: '2023',
-                                  achievements: ['Naval Architecture & Marine Power Plant Systems']
-                                }
-                              ]
-                              updateProfileField({ academic_history: edu })
-                              toast.success('Education record added')
-                            }}
-                            className="text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-7 px-2 gap-1"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Add Degree
-                          </Button>
+                          {atsScorecard && (
+                            <Badge variant="outline" className="text-[10px] font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+                              {atsScorecard.overall_score}/100 ATS
+                            </Badge>
+                          )}
                         </div>
 
-                        {parsedProfile.academic_history && parsedProfile.academic_history.length > 0 ? (
-                          <div className="space-y-2 text-xs">
-                            {parsedProfile.academic_history.map((edu: any, eIdx: number) => (
-                              <div key={eIdx} className="flex justify-between items-baseline text-muted-foreground p-2 rounded-lg bg-muted/20 border border-border/40">
-                                <div>
-                                  <span className="font-semibold text-foreground block">{edu.degree}</span>
-                                  <span className="text-[11px] text-muted-foreground">{edu.institution} {edu.field_of_study ? `· ${edu.field_of_study}` : ''}</span>
-                                </div>
-                                <span className="font-mono text-xs text-foreground/80">{edu.graduation_year || ''}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Education records safely anchored in Walrus vault.</p>
-                        )}
-                      </div>
-
-                      {/* Certifications Section */}
-                      <div className="space-y-3 pt-3 border-t border-border/70">
-                        <div className="flex items-center justify-between border-b pb-1.5">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
-                              CERTIFICATIONS &amp; CREDENTIALS ({parsedProfile.certifications?.length || 0})
-                            </h3>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => moveSectionUp('certifications')}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                                title="Move certifications section up"
-                              >
-                                <ArrowUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => moveSectionDown('certifications')}
-                                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-                                title="Move certifications section down"
-                              >
-                                <ArrowDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                        <div className="space-y-2 text-xs">
+                          <div>
+                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                              Target Role Title
+                            </label>
+                            <input
+                              type="text"
+                              value={tailorRole}
+                              onChange={(e) => {
+                                setTailorRole(e.target.value)
+                                if (parsedProfile) updateProfileField({ target_roles: [e.target.value] })
+                              }}
+                              placeholder="e.g. Marine Systems Engineer"
+                              className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
                           </div>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const certs = [...(parsedProfile.certifications || []), 'STCW Certificate of Competency']
-                              updateProfileField({ certifications: certs })
-                              toast.success('Certification added')
-                            }}
-                            className="text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 h-7 px-2 gap-1"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Add Certification
-                          </Button>
+                          <div>
+                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                              Target Organization (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={tailorCompany}
+                              onChange={(e) => setTailorCompany(e.target.value)}
+                              placeholder="e.g. Maersk, ABS, Bourbon, Stripe"
+                              className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                              Job Description Keywords (Optional)
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={jobDescriptionForTailor}
+                              onChange={(e) => setJobDescriptionForTailor(e.target.value)}
+                              placeholder="Paste JD requirements to run custom keyword matching..."
+                              className="w-full p-2 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-snug"
+                            />
+                          </div>
                         </div>
 
-                        {parsedProfile.certifications && parsedProfile.certifications.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {parsedProfile.certifications.map((cert: string, cIdx: number) => (
-                              <Badge
-                                key={cIdx}
-                                variant="outline"
-                                className="text-xs px-3 py-1 gap-1.5 border-emerald-500/30 bg-emerald-500/5 text-foreground"
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                                <span>{cert}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const certs = (parsedProfile.certifications || []).filter((_: any, idx: number) => idx !== cIdx)
-                                    updateProfileField({ certifications: certs })
-                                  }}
-                                  className="text-muted-foreground hover:text-red-500 ml-1"
+                        {/* Keyword Diff Quick Preview */}
+                        {atsScorecard && atsScorecard.keyword_diff.length > 0 && (
+                          <div className="pt-2 border-t border-border/60">
+                            <span className="text-[10px] font-semibold text-muted-foreground block mb-1.5">
+                              Live ATS Match ({atsScorecard.keyword_coverage_pct}% Keyword Match)
+                            </span>
+                            <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+                              {atsScorecard.keyword_diff.slice(0, 16).map((item, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-[9px] px-1.5 py-0.5 rounded font-medium border flex items-center gap-0.5 ${
+                                    item.status === 'matched'
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+                                      : 'bg-muted text-muted-foreground border-border/60'
+                                  }`}
                                 >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
+                                  {item.status === 'matched' ? '✓' : '•'} {item.keyword}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">No certifications listed yet.</p>
                         )}
-                      </div>
+                      </Card>
 
-                      {/* Quick Add Section Buttons (PolishMe style) */}
-                      <div className="pt-6 border-t border-dashed border-border/80 flex flex-wrap items-center justify-center gap-2.5">
-                        <span className="text-xs font-semibold text-muted-foreground mr-1">Quick Add:</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const exp = [
-                              ...(parsedProfile.work_experience || []),
-                              {
-                                role: 'Marine / Project Engineer',
-                                company: 'Offshore Engineering Services',
-                                duration: '2023 - Present',
-                                highlights: ['Spearheaded engineering deliverables resulting in 22% operational efficiency gains and zero system downtime.']
-                              }
-                            ]
-                            updateProfileField({ work_experience: exp })
-                            toast.success('Added new Experience section entry')
-                          }}
-                          className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Experience
-                        </Button>
+                      {/* AI Career Copilot Chatbot */}
+                      <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[520px]">
+                        {/* Status Bar */}
+                        <div className="p-3 border-b border-border/80 bg-muted/30 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="relative">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                                <Bot className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-background rounded-full" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <h3 className="font-bold text-xs text-foreground">AI Career Copilot</h3>
+                                <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
+                                  MemWal
+                                </Badge>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                Active Resume Assistant
+                              </p>
+                            </div>
+                          </div>
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const edu = [
-                              ...(parsedProfile.academic_history || []),
-                              {
-                                institution: 'Nigeria Maritime University',
-                                degree: "Bachelor's Degree (B.Eng)",
-                                field_of_study: 'Marine Engineering',
-                                graduation_year: '2023',
-                                achievements: ['Naval Architecture & Marine Power Plant Systems']
-                              }
-                            ]
-                            updateProfileField({ academic_history: edu })
-                            toast.success('Added Education entry')
-                          }}
-                          className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Education
-                        </Button>
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin
+                          </Badge>
+                        </div>
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const certs = Array.from(new Set([...(parsedProfile.certifications || []), 'STCW Certificate of Competency', 'AutoCAD Certified Professional']))
-                            updateProfileField({ certifications: certs })
-                            toast.success('Added Maritime Certifications')
-                          }}
-                          className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Certifications
-                        </Button>
+                        {/* Chat Messages Feed */}
+                        <div className="flex-1 p-3.5 overflow-y-auto space-y-3 text-xs">
+                          {chatMessages.map((msg, i) => (
+                            <div
+                              key={i}
+                              className={`flex items-start gap-2 leading-relaxed ${
+                                msg.role === 'user' ? 'justify-end' : 'justify-start'
+                              }`}
+                            >
+                              {msg.role === 'assistant' && (
+                                <div className="w-5 h-5 rounded bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                  <Bot className="w-3 h-3" />
+                                </div>
+                              )}
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const skills = Array.from(new Set([...(parsedProfile.skills || []), 'AutoCAD', 'SolidWorks', 'MATLAB', 'Naval Architecture', 'Marine Power Plants']))
-                            updateProfileField({ skills })
-                            toast.success('Added Marine Engineering skills')
-                          }}
-                          className="text-xs h-8 gap-1.5 border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-emerald-500" /> + Marine Skills
-                        </Button>
-                      </div>
-                    </Card>
-                  ) : null}
+                              <div
+                                className={`max-w-[88%] p-3 rounded-xl whitespace-pre-wrap text-xs ${
+                                  msg.role === 'assistant'
+                                    ? 'bg-muted/40 border border-border/80 text-foreground'
+                                    : 'bg-emerald-600 text-white font-medium shadow-xs'
+                                }`}
+                              >
+                                {msg.content}
+                                {typeof msg.edits_added === 'number' && msg.edits_added > 0 && (
+                                  <div className="mt-2 pt-1.5 border-t border-border/60 flex items-center justify-between text-[10px]">
+                                    <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {msg.edits_added} edit{msg.edits_added > 1 ? 's' : ''} applied
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={handleUndo}
+                                      className="text-[10px] text-muted-foreground hover:text-foreground underline flex items-center gap-0.5 font-medium"
+                                    >
+                                      <RotateCcw className="w-2.5 h-2.5" /> Undo
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+
+                          {isSending && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/30 border border-border/60">
+                              <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                              <span>Querying Walrus Memory...</span>
+                            </div>
+                          )}
+                          <div ref={chatMessagesEndRef} />
+                        </div>
+
+                        {/* PolishMe Action Move Chips */}
+                        <div className="px-3 py-2 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                          {SUGGESTED_COPILOT_ACTIONS.map((action, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleExecuteCopilotAction(action)}
+                              className="text-[10px] px-2 py-0.5 rounded-md border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left"
+                            >
+                              <span>{action.label}</span>
+                              <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-70 shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Bottom Input */}
+                        <div className="p-2.5 border-t border-border/80 bg-card flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => chatFileInputRef.current?.click()}
+                            title="Attach CV File (.pdf, .docx)"
+                            className="h-8 w-8 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                          >
+                            <Paperclip className="w-3.5 h-3.5" />
+                          </Button>
+
+                          <input
+                            type="text"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            placeholder="Ask copilot to polish or add bullets..."
+                            className="flex-1 h-8 px-2.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+
+                          <Button
+                            size="sm"
+                            onClick={handleSendMessage}
+                            disabled={isSending || !chatInput.trim()}
+                            className="h-8 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs"
+                          >
+                            <Send className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

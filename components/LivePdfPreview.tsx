@@ -279,6 +279,8 @@ export function LivePdfPreview({
     profile.github_url,
   ].filter(Boolean) as string[];
 
+  const cleanCompany = (tailorCompany && tailorCompany.trim() !== "Target Organization" && tailorCompany.trim() !== "Not specified") ? tailorCompany.trim() : "";
+
   const summaryText =
     (profile as any).summary ||
     (profile.work_experience?.length
@@ -496,7 +498,7 @@ export function LivePdfPreview({
                     </h1>
                     {tailorRole && (
                       <p className="text-xs uppercase tracking-widest text-slate-700 italic mt-1">
-                        {tailorRole} {tailorCompany ? `— ${tailorCompany}` : ""}
+                        {tailorRole} {cleanCompany ? `— ${cleanCompany}` : ""}
                       </p>
                     )}
                     {contactParts.length > 0 && (
@@ -601,7 +603,7 @@ export function LivePdfPreview({
                         </h1>
                         {tailorRole && (
                           <p className="text-xs font-bold font-mono text-emerald-700 uppercase tracking-widest mt-1">
-                            {tailorRole} {tailorCompany ? `· ${tailorCompany}` : ""}
+                            {tailorRole} {cleanCompany ? `· ${cleanCompany}` : ""}
                           </p>
                         )}
                       </div>
@@ -708,7 +710,7 @@ export function LivePdfPreview({
                       </h1>
                       {tailorRole && (
                         <span className="bg-slate-900 text-white text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-xs">
-                          {tailorRole} {tailorCompany ? `· ${tailorCompany}` : ""}
+                          {tailorRole} {cleanCompany ? `· ${cleanCompany}` : ""}
                         </span>
                       )}
                     </div>
