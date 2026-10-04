@@ -187,6 +187,22 @@ export async function POST(req: Request) {
 
     const indexedCount = factsToStore.length;
 
+    let onchainAnchor: any = null;
+    if (walrusBlobResult?.blobId) {
+      try {
+        const { anchorWalrusCredentialOnchain } = await import("@/lib/walrus_anchor");
+        onchainAnchor = await anchorWalrusCredentialOnchain({
+          blobId: walrusBlobResult.blobId,
+          sha256Digest: walrusBlobResult.sha256Digest,
+          credentialType: "sovereign_resume",
+          candidateAddress: address,
+          fileName: safeDocName,
+        });
+      } catch (anchorErr) {
+        console.warn("[cv_upload] Auto on-chain anchor notice:", anchorErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       file_name: safeDocName,
@@ -201,6 +217,7 @@ export async function POST(req: Request) {
         address,
         blobId: walrusBlobResult?.blobId || null,
         facts_indexed: indexedCount,
+        anchor: onchainAnchor,
       },
     });
   } catch (error) {

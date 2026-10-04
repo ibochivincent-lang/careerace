@@ -32,6 +32,9 @@ export interface WalrusResumeVersionItem {
   profileSnapshot: ParsedCv;
   tailoredText?: string;
   encrypted?: boolean;
+  suiTxDigest?: string;
+  suiExplorerUrl?: string;
+  suiObjectId?: string;
 }
 
 interface WalrusVersionDrawerProps {
@@ -39,6 +42,7 @@ interface WalrusVersionDrawerProps {
   activeVersionId?: string | null;
   onRestoreVersion: (version: WalrusResumeVersionItem) => void;
   onClearHistory?: () => void;
+  onAnchorToSui?: (version: WalrusResumeVersionItem) => Promise<void>;
 }
 
 export function WalrusVersionDrawer({
@@ -46,6 +50,7 @@ export function WalrusVersionDrawer({
   activeVersionId,
   onRestoreVersion,
   onClearHistory,
+  onAnchorToSui,
 }: WalrusVersionDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedBlobId, setCopiedBlobId] = useState<string | null>(null);
@@ -140,10 +145,33 @@ export function WalrusVersionDrawer({
                     <span className="font-mono text-emerald-600 dark:text-emerald-400">
                       Blob: {ver.blobId.slice(0, 10)}...{ver.blobId.slice(-6)}
                     </span>
+                    {ver.suiTxDigest && (
+                      <a
+                        href={ver.suiExplorerUrl || `https://suiscan.xyz/testnet/tx/${ver.suiTxDigest}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-sky-600 dark:text-sky-400 hover:underline"
+                        title="View verifiable Sui Move on-chain transaction anchor"
+                      >
+                        ⚓ Sui Anchored ({ver.suiTxDigest.slice(0, 8)}...)
+                      </a>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {onAnchorToSui && !ver.suiTxDigest && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onAnchorToSui(ver)}
+                      className="h-7 px-2 text-[11px] border-sky-500/40 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10"
+                      title="Anchor this Walrus blob on the Sui blockchain"
+                    >
+                      ⚓ Anchor Sui
+                    </Button>
+                  )}
+
                   <Button
                     variant="ghost"
                     size="sm"

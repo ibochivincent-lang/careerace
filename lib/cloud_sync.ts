@@ -167,3 +167,111 @@ export function syncCandidateDataToCloud(payload?: CloudSyncPayload): void {
     }
   }, 800);
 }
+
+import { createClient } from "@supabase/supabase-js";
+import { getSanitizedSupabaseUrl } from "./supabase";
+
+export interface RealtimeSyncEvent {
+  kind: "sovereign_profile_snapshot" | "walrus_versions_snapshot" | "tailored_cover_letter_snapshot" | "saved_jobs_snapshot" | "sui_onchain_anchor" | string;
+  data: any;
+  walrusBlobId?: string | null;
+  updatedAt?: string;
+}
+
+let browserSupabaseClient: any = null;
+
+function getBrowserSupabaseClient() {
+  if (browserSupabaseClient) return browserSupabaseClient;
+  const url = getSanitizedSupabaseUrl();
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) return null;
+  browserSupabaseClient = createClient(url, anonKey, {
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
+  });
+  return browserSupabaseClient;
+}
+
+/**
+ * Subscribes to Supabase Realtime WebSocket channel on candidate_memories table.
+ * Changes made on desktop will reflect on open mobile screens live within 50ms without page refresh.
+ */
+export function subscribeCandidateRealtime(
+  walletAddress: string,
+  onUpdate: (event: RealtimeSyncEvent) => void,
+  onStatusChange?: (status: string) => void
+): () => void {
+  if (typeof window === "undefined" || !walletAddress) return () => {};
+
+  const client = getBrowserSupabaseClient();
+  if (!client) return () => {};
+
+  const cleanAddress = walletAddress.toLowerCase().trim();
+  const channelName = `realtime_memories_${cleanAddress.replace(/[^a-z0-9]/g, "_").slice(0, 32)}`;
+
+  try {
+    const channel = client
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "candidate_memories",
+          filter: `candidate_wallet=eq.${cleanAddress}`,
+        },
+        (payload: any) => {
+          const newRecord = payload?.new;
+          if (!newRecord || !newRecord.fact_kind) return;
+
+          const kind = newRecord.fact_kind;
+          const text = newRecord.fact_text;
+          const blobId = newRecord.walrus_blob_id || null;
+
+          if (kind === "sovereign_profile_snapshot" && text) {
+            try {
+              const parsed = JSON.parse(text);
+              localStorage.setItem("careerace_sovereign_profile", JSON.stringify(parsed));
+              if (blobId) localStorage.setItem("careerace_walrus_blob_id", blobId);
+              onUpdate({ kind, data: parsed, walrusBlobId: blobId, updatedAt: newRecord.created_at });
+            } catch {}
+          } else if (kind === "walrus_versions_snapshot" && text) {
+            try {
+              const parsed = JSON.parse(text);
+              localStorage.setItem("careerace_walrus_versions", JSON.stringify(parsed));
+              onUpdate({ kind, data: parsed, walrusBlobId: blobId, updatedAt: newRecord.created_at });
+            } catch {}
+          } else if (kind === "tailored_cover_letter_snapshot" && text) {
+            localStorage.setItem("careerace_tailored_cover_letter", text);
+            onUpdate({ kind, data: text, walrusBlobId: blobId, updatedAt: newRecord.created_at });
+          } else if (kind === "saved_jobs_snapshot" && text) {
+            try {
+              const parsed = JSON.parse(text);
+              localStorage.setItem("careerace_saved_jobs", JSON.stringify(parsed));
+              onUpdate({ kind, data: parsed, updatedAt: newRecord.created_at });
+            } catch {}
+          } else if (kind === "sui_onchain_anchor" && text) {
+            try {
+              const parsed = JSON.parse(text);
+              onUpdate({ kind, data: parsed, walrusBlobId: blobId, updatedAt: newRecord.created_at });
+            } catch {}
+          }
+        }
+      )
+      .subscribe((status: string) => {
+        if (onStatusChange) onStatusChange(status);
+      });
+
+    return () => {
+      try {
+        client.removeChannel(channel);
+      } catch {}
+    };
+  } catch (err) {
+    console.warn("[cloud_sync] Realtime subscription init error:", err);
+    return () => {};
+  }
+}

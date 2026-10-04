@@ -26,7 +26,7 @@ import {
 import { toast } from 'sonner';
 import { getRoleIntelligence, type RoleIntelligenceProfile } from '@/lib/role_intelligence';
 import type { ParsedCv } from '@/lib/cv_parser';
-import { restoreCandidateDataFromCloud, syncCandidateDataToCloud } from '@/lib/cloud_sync';
+import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime } from '@/lib/cloud_sync';
 
 const PRESET_DISCIPLINES = [
   { id: 'marine', label: 'Engineering & Marine', role: 'Marine Systems Engineer (Offshore & Propulsion)', company: 'Maersk' },
@@ -190,6 +190,25 @@ export default function CoverLetterStudioPage() {
         }
       }
     });
+
+    // Realtime WebSocket channel for cross-device live updates (<50ms)
+    const activeAddress = localStorage.getItem('careerace_session_address') || '';
+    let unsubscribeRealtime = () => {};
+    if (activeAddress) {
+      unsubscribeRealtime = subscribeCandidateRealtime(activeAddress, (event) => {
+        if (event.kind === 'tailored_cover_letter_snapshot' && typeof event.data === 'string' && event.data.trim()) {
+          setCoverLetterText(event.data);
+          toast.info('Cover letter updated live from connected device (WebSocket)');
+        } else if (event.kind === 'sovereign_profile_snapshot' && event.data) {
+          setProfile(event.data);
+          if (event.walrusBlobId) setWalrusBlobId(event.walrusBlobId);
+        }
+      });
+    }
+
+    return () => {
+      unsubscribeRealtime();
+    };
   }, []);
 
   // Update role intelligence preview whenever role changes

@@ -1,0 +1,10 @@
+[package]
+name = "careerace_sovereign_credentials"
+edition = "2024"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet-v1.35.0" }
+Walrus = { git = "https://github.com/MystenLabs/walrus.git", rev = "testnet", subdir = "testnet-contracts/walrus" }
+
+[addresses]
+careerace = "0x0"

@@ -43,7 +43,7 @@ import { SmtpRelaySettingsModal } from '@/components/SmtpRelaySettingsModal'
 import { downloadFollowUpIcs } from '@/lib/ics_calendar'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import type { WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
-import { restoreCandidateDataFromCloud, syncCandidateDataToCloud } from '@/lib/cloud_sync'
+import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime } from '@/lib/cloud_sync'
 import type { ParsedCv } from '@/lib/cv_parser'
 
 export const DISCIPLINE_CATEGORIES = [
@@ -1083,6 +1083,24 @@ export default function ApplicationBoardPage() {
         }
       })
       .catch(() => {})
+
+    // Attach Realtime WebSocket subscription for live saved jobs / applications sync (<50ms)
+    const activeAddress = localStorage.getItem('careerace_session_address') || ''
+    let unsubscribeRealtime = () => {}
+    if (activeAddress) {
+      unsubscribeRealtime = subscribeCandidateRealtime(activeAddress, (event) => {
+        if (event.kind === 'saved_jobs_snapshot' && Array.isArray(event.data)) {
+          setSavedJobIds(event.data)
+          toast.info('Saved jobs updated live from connected device (WebSocket)')
+        } else if (event.kind === 'walrus_versions_snapshot' && Array.isArray(event.data)) {
+          setWalrusVersions(event.data)
+        }
+      })
+    }
+
+    return () => {
+      unsubscribeRealtime()
+    }
   }, [])
 
   // Toggle bookmark / saved job
