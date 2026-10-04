@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
-import { issueSession, SESSION_COOKIE, deriveVaultAddressFromUserId } from "@/lib/auth";
+import { issueSession, SESSION_COOKIE, deriveVaultAddressFromEmail, deriveVaultAddressFromUserId } from "@/lib/auth";
 import { SupabaseDatabaseService, getSanitizedSupabaseUrl } from "@/lib/supabase";
 
 export async function POST(req: Request) {
@@ -103,8 +103,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Derive deterministic 66-character sovereign vault address
-    const sovereignAddress = deriveVaultAddressFromUserId(user.id);
+    // 3. Derive deterministic 66-character sovereign vault address canonically from verified email
+    const userEmail = (user.email || email)?.toLowerCase().trim();
+    const sovereignAddress = userEmail
+      ? deriveVaultAddressFromEmail(userEmail)
+      : deriveVaultAddressFromUserId(user.id);
 
     // 4. Provision candidate profile in public.candidates
     const db = new SupabaseDatabaseService();

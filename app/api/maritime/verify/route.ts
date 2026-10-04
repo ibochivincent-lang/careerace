@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       documentText && documentText.trim().length > 20
         ? documentText.trim()
         : `SEAMAN'S DISCHARGE BOOK & STCW CERTIFICATE OF COMPETENCY
-Candidate Name: ${providedName || "Vincent Lang"}
+Candidate Name: ${providedName || "Candidate"}
 STCW Regulation: STCW 78/2010 Reg III/1 & III/2 - Officer in Charge of Engineering Watch / 2nd Engineer
 Certificate No: UK-MCA/ENG/984210-C
 Issuing Administration: Maritime & Coastguard Agency (MCA), United Kingdom
@@ -112,7 +112,7 @@ Respond with JSON only.`;
       // Fallback structured parser if LLM output parsing hiccups
       parsedResult = {
         verified: true,
-        candidateName: providedName || "Vincent Lang",
+        candidateName: providedName || "Candidate",
         certificateName: "STCW Reg III/1 - Officer in Charge of Engineering Watch (OICEW)",
         certificateNumber: "UK-MCA/ENG/984210-C",
         issuingAuthority: "Maritime & Coastguard Agency (MCA), United Kingdom",

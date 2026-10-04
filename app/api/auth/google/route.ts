@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { decodeJwt } from "@mysten/sui/zklogin";
-import { issueSession, SESSION_COOKIE, deriveVaultAddressFromUserId } from "@/lib/auth";
+import { issueSession, SESSION_COOKIE, deriveVaultAddressFromEmail, deriveVaultAddressFromUserId } from "@/lib/auth";
 import { SupabaseDatabaseService } from "@/lib/supabase";
 
 /**
@@ -37,8 +37,9 @@ export async function POST(req: Request) {
     const name = typeof payload.name === "string" ? payload.name : email.split("@")[0] || "Candidate";
     const sub = decoded.sub;
 
-    // Derive deterministic 66-character sovereign vault address from Google sub ID
-    const sovereignAddress = deriveVaultAddressFromUserId(`google:${sub}`);
+    // Derive deterministic 66-character sovereign vault address canonically from verified email,
+    // guaranteeing that signing in with Google or Email with the same address unlocks the identical vault.
+    const sovereignAddress = email ? deriveVaultAddressFromEmail(email) : deriveVaultAddressFromUserId(`google:${sub}`);
 
     // Upsert candidate profile
     const db = new SupabaseDatabaseService();

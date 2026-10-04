@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { initiateGoogleZkLogin, completeGoogleZkLogin } from '@/lib/zklogin'
+import { restoreCandidateDataFromCloud } from '@/lib/cloud_sync'
 import {
   Eye, EyeOff, Mail, Lock, User, ArrowRight, ShieldCheck,
   ArrowLeft, RefreshCw, CheckCircle2, KeyRound, RotateCcw
@@ -158,7 +159,8 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
     try {
       const { address } = await completeGoogleZkLogin(idToken)
       setCurrentAddress(address)
-      setStatusMessage('Authentication successful! Opening workspace\u2026')
+      setStatusMessage('Authentication successful! Restoring sovereign workspace\u2026')
+      await restoreCandidateDataFromCloud()
       window.history.replaceState(null, '', window.location.pathname)
       const sp = new URLSearchParams(window.location.search)
       window.location.href = sp.get('callbackUrl') || '/dashboard'
@@ -254,7 +256,8 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       if (!res.ok) throw new Error((await res.text()) || 'Invalid login credentials.')
       const data = await res.json()
       setCurrentAddress(data.address)
-      setStatusMessage('Welcome back! Opening workspace\u2026')
+      setStatusMessage('Welcome back! Restoring sovereign workspace\u2026')
+      await restoreCandidateDataFromCloud()
       const sp = new URLSearchParams(window.location.search)
       window.location.href = sp.get('callbackUrl') || '/dashboard'
     } catch (err) {
@@ -305,7 +308,8 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       if (!res.ok) throw new Error((await res.text()) || 'Invalid or expired code.')
       const data = await res.json()
       setCurrentAddress(data.address)
-      setStatusMessage('Welcome back! Opening workspace\u2026')
+      setStatusMessage('Welcome back! Restoring sovereign workspace\u2026')
+      await restoreCandidateDataFromCloud()
       const sp = new URLSearchParams(window.location.search)
       window.location.href = sp.get('callbackUrl') || '/dashboard'
     } catch (err) {

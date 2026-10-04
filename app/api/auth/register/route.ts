@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
-import { issueSession, SESSION_COOKIE, deriveVaultAddressFromUserId } from "@/lib/auth";
+import { issueSession, SESSION_COOKIE, deriveVaultAddressFromEmail, deriveVaultAddressFromUserId } from "@/lib/auth";
 import { SupabaseDatabaseService, getSanitizedSupabaseUrl } from "@/lib/supabase";
 
 export async function POST(req: Request) {
@@ -72,8 +72,10 @@ export async function POST(req: Request) {
       return new Response("Failed to instantiate candidate account.", { status: 500 });
     }
 
-    // 5. Deterministically derive sovereign 66-character hex vault address
-    const sovereignAddress = deriveVaultAddressFromUserId(newUser.user.id);
+    // 5. Deterministically derive sovereign 66-character hex vault address canonically from email
+    const sovereignAddress = cleanEmail
+      ? deriveVaultAddressFromEmail(cleanEmail)
+      : deriveVaultAddressFromUserId(newUser.user.id);
 
     // 6. Upsert candidate profile into public.candidates
     const db = new SupabaseDatabaseService();

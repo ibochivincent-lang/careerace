@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
-import { issueSession, SESSION_COOKIE, deriveVaultAddressFromUserId } from "@/lib/auth";
+import { issueSession, SESSION_COOKIE, deriveVaultAddressFromEmail, deriveVaultAddressFromUserId } from "@/lib/auth";
 import { SupabaseDatabaseService, getSanitizedSupabaseUrl } from "@/lib/supabase";
 
 export async function POST(req: Request) {
@@ -71,8 +71,12 @@ export async function POST(req: Request) {
     const user = authData.user;
     const username = (user.user_metadata?.username as string) || cleanIdentifier;
 
-    // Derive deterministic 66-character sovereign vault address
-    const sovereignAddress = deriveVaultAddressFromUserId(user.id);
+    // Derive deterministic 66-character sovereign vault address canonically from verified email,
+    // unifying Google OAuth and Email login identities into the exact same vault.
+    const resolvedEmail = (user.email || emailToAuth)?.toLowerCase().trim();
+    const sovereignAddress = resolvedEmail
+      ? deriveVaultAddressFromEmail(resolvedEmail)
+      : deriveVaultAddressFromUserId(user.id);
 
     // Ensure candidate record exists
     const db = new SupabaseDatabaseService();

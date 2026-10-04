@@ -43,6 +43,7 @@ import { SmtpRelaySettingsModal } from '@/components/SmtpRelaySettingsModal'
 import { downloadFollowUpIcs } from '@/lib/ics_calendar'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import type { WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
+import { restoreCandidateDataFromCloud, syncCandidateDataToCloud } from '@/lib/cloud_sync'
 import type { ParsedCv } from '@/lib/cv_parser'
 
 export const DISCIPLINE_CATEGORIES = [
@@ -767,11 +768,17 @@ function CompanyLogo({ company }: { company: string }) {
 }
 
 // Normalized matching helpers that cleanly classify jobs into 6 disciplines with zero glitch
-function matchesRoleCategory(job: JobListing, filter: string): boolean {
+function matchesRoleCategory(job: JobListing, filter: string, customFilter = ''): boolean {
   if (filter === 'all') return true
   const r = (job.roleCategory || '').toLowerCase()
   const t = (job.title || '').toLowerCase()
   const d = (job.description || '').toLowerCase()
+
+  if (filter === 'others') {
+    if (!customFilter.trim()) return true
+    const q = customFilter.toLowerCase().trim()
+    return r.includes(q) || t.includes(q) || d.includes(q)
+  }
 
   if (filter === 'engineering_marine' || filter === 'marine') {
     return (
@@ -874,7 +881,7 @@ function matchesRoleCategory(job: JobListing, filter: string): boolean {
     )
   }
 
-  return r === filter.toLowerCase()
+  return r.includes(filter.toLowerCase()) || filter.toLowerCase().includes(r)
 }
 
 function matchesSeniority(job: JobListing, filter: string): boolean {
@@ -940,6 +947,7 @@ export default function ApplicationBoardPage() {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRole, setSelectedRole] = useState('all')
+  const [customRoleInput, setCustomRoleInput] = useState('')
   const [selectedSeniority, setSelectedSeniority] = useState('all')
   const [selectedCompany, setSelectedCompany] = useState('all')
   const [selectedCountry, setSelectedCountry] = useState('all')
@@ -976,12 +984,16 @@ export default function ApplicationBoardPage() {
     'Candidate sovereign attestations indexed for direct immutable verification.',
   ])
 
-  // Load saved & applied jobs, Walrus versions, and sovereign profile from localStorage
+  // Load saved & applied jobs, Walrus versions, and sovereign profile from localStorage & cloud
   useEffect(() => {
+    let hasLocalApplied = false
+    let hasLocalSaved = false
+
     try {
       const storedSaved = localStorage.getItem('careerace_saved_job_ids')
       if (storedSaved) {
         setSavedJobIds(JSON.parse(storedSaved))
+        hasLocalSaved = true
       }
     } catch {}
 
@@ -989,6 +1001,7 @@ export default function ApplicationBoardPage() {
       const storedApplied = localStorage.getItem('careerace_applied_jobs')
       if (storedApplied) {
         setAppliedJobs(JSON.parse(storedApplied))
+        hasLocalApplied = true
       }
     } catch {}
 
@@ -1005,6 +1018,24 @@ export default function ApplicationBoardPage() {
         setActiveDraftProfile(JSON.parse(storedProfile))
       }
     } catch {}
+
+    // Cross-device cloud restore: hydrate applications, versions, and profile onto mobile
+    restoreCandidateDataFromCloud().then((cloudData) => {
+      if (cloudData) {
+        if (cloudData.profile) {
+          setActiveDraftProfile((prev) => prev || cloudData.profile)
+        }
+        if (Array.isArray(cloudData.walrusVersions) && cloudData.walrusVersions.length > 0) {
+          setWalrusVersions((prev) => (prev.length === 0 ? cloudData.walrusVersions! : prev))
+        }
+        if (Array.isArray(cloudData.appliedJobs) && cloudData.appliedJobs.length > 0) {
+          setAppliedJobs((prev) => (prev.length === 0 ? cloudData.appliedJobs! : prev))
+        }
+        if (Array.isArray(cloudData.savedJobIds) && cloudData.savedJobIds.length > 0) {
+          setSavedJobIds((prev) => (prev.length === 0 ? cloudData.savedJobIds! : prev))
+        }
+      }
+    })
 
     // Harvest fresh live tech & marine jobs
     fetch('/api/harvest?query=software%20engineer')
@@ -1066,6 +1097,7 @@ export default function ApplicationBoardPage() {
     }
     setSavedJobIds(updated)
     localStorage.setItem('careerace_saved_job_ids', JSON.stringify(updated))
+    syncCandidateDataToCloud({ savedJobIds: updated })
   }
 
   // Mark as applied: Removes from Discovery and adds to Applied list with 7-day scheduler baseline
@@ -1083,6 +1115,7 @@ export default function ApplicationBoardPage() {
     const updated = [record, ...appliedJobs.filter((a) => a.id !== job.id)]
     setAppliedJobs(updated)
     localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+    syncCandidateDataToCloud({ appliedJobs: updated })
 
     toast.success(`Applied to ${job.company}! Removed from Discovery and scheduled 7-day follow-up.`)
   }
@@ -1144,7 +1177,7 @@ export default function ApplicationBoardPage() {
       }
 
       // 3. Role Category Filter (Normalized to prevent bugs)
-      if (!matchesRoleCategory(job, selectedRole)) {
+      if (!matchesRoleCategory(job, selectedRole, customRoleInput)) {
         return false
       }
 
@@ -1359,7 +1392,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
         }
       } catch {}
 
-      const candidateName = activeProfileData?.applicant_name || 'Vincent Lang'
+      const candidateName = activeProfileData?.applicant_name || 'Candidate'
       const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
       const walrusBlobId = selectedVersionMeta?.blobId || ''
 
@@ -1396,6 +1429,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
       const updated = [record, ...appliedJobs]
       setAppliedJobs(updated)
       localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+      syncCandidateDataToCloud({ appliedJobs: updated })
 
       setAutoApplyLogs((prev) => [
         `[${new Date().toLocaleTimeString()}] Dispatched via ${data.relayProvider || 'Sovereign DKIM'} to ${targetEmailInput}. Delivery: ${data.deliveryStatus || 'Sent'}. MessageID: ${data.messageId || 'DKIM-OK'}.`,
@@ -1471,12 +1505,11 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-muted text-foreground">1</span>
               <Briefcase className="w-3.5 h-3.5" />
               <span>Discovery</span>
             </button>
 
-            {/* Stage 2: Saved */}
+            {/* Stage: Saved */}
             <button
               onClick={() => setActiveBoardTab('saved')}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -1485,7 +1518,6 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-muted text-foreground">2</span>
               <Bookmark className="w-3.5 h-3.5" />
               <span>Saved</span>
               {savedJobIds.length > 0 && (
@@ -1495,7 +1527,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
               )}
             </button>
 
-            {/* Stage 3: Applied */}
+            {/* Stage: Applied */}
             <button
               onClick={() => setActiveBoardTab('applied')}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -1504,7 +1536,6 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-muted text-foreground">3</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               <span>Applied</span>
               {appliedJobs.length > 0 && (
@@ -1514,7 +1545,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
               )}
             </button>
 
-            {/* Stage 4: Auto Apply */}
+            {/* Stage: Auto Apply */}
             <button
               onClick={() => setActiveBoardTab('auto_apply')}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
@@ -1523,7 +1554,6 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-sm bg-muted text-foreground">4</span>
               <Bot className="w-3.5 h-3.5 text-primary" />
               <span>Auto Apply</span>
               <Badge variant="outline" className="text-[9px] py-0 px-1 border-primary/30 text-primary">
@@ -2014,27 +2044,6 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                 )}
               </div>
 
-              {/* Quick Discipline Categories Filter (Clean 6 Disciplines, Zero Emojis) */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-                {DISCIPLINE_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRole(cat.id)
-                      toast.info(cat.id === 'all' ? 'Showing all disciplines' : `Filtered to ${cat.label}`)
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                      selectedRole === cat.id
-                        ? 'bg-primary text-primary-foreground shadow-xs'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
               {/* 5 Filter Dropdowns (Roles, Seniority / Maritime Ranks, Companies, Countries, Workplaces) */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -2042,7 +2051,12 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                   <div className="relative">
                     <select
                       value={selectedRole}
-                      onChange={(e) => setSelectedRole(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedRole(e.target.value)
+                        if (e.target.value !== 'others') {
+                          setCustomRoleInput('')
+                        }
+                      }}
                       className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
                     >
                       <option value="all">All Disciplines</option>
@@ -2052,9 +2066,31 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                       <option value="medical_healthcare">Medical & Healthcare Informatics</option>
                       <option value="management_operations">Management & Operations</option>
                       <option value="industrial_manufacturing">Industrial & Manufacturing</option>
+                      <option value="others">Others (Custom Sector / Role)</option>
                     </select>
                     <ChevronDown className="w-3 h-3 absolute right-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   </div>
+
+                  {/* Custom Role / Sector Input (when 'others' is selected) */}
+                  {selectedRole === 'others' && (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={customRoleInput}
+                        onChange={(e) => setCustomRoleInput(e.target.value)}
+                        placeholder="Type custom discipline or sector..."
+                        className="h-8 pl-3 pr-7 rounded-lg border border-primary/40 bg-card text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-52 shadow-xs"
+                      />
+                      {customRoleInput && (
+                        <button
+                          onClick={() => setCustomRoleInput('')}
+                          className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Filter 2: Seniority & Maritime Ranks (Cadet, Junior, Officer, Senior, Chief/Superintendent) */}
                   <div className="relative">
@@ -2125,6 +2161,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
 
                   {/* Reset filter pill if any active */}
                   {(selectedRole !== 'all' ||
+                    customRoleInput !== '' ||
                     selectedSeniority !== 'all' ||
                     selectedCompany !== 'all' ||
                     selectedCountry !== 'all' ||
@@ -2133,13 +2170,14 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                     <button
                       onClick={() => {
                         setSelectedRole('all')
+                        setCustomRoleInput('')
                         setSelectedSeniority('all')
                         setSelectedCompany('all')
                         setSelectedCountry('all')
                         setSelectedWorkplace('all')
                         setSearchQuery('')
                       }}
-                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1"
+                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1 cursor-pointer"
                     >
                       Reset filters
                     </button>
@@ -2180,22 +2218,23 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                       ? 'You have not saved any roles yet. Switch to Discovery and click the bookmark icon on any job.'
                       : 'Try broadening your search term or resetting some of the role or company dropdowns.'}
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedRole('all')
-                      setSelectedSeniority('all')
-                      setSelectedCompany('all')
-                      setSelectedCountry('all')
-                      setSelectedWorkplace('all')
-                      setSearchQuery('')
-                      if (activeBoardTab !== 'discover') setActiveBoardTab('discover')
-                    }}
-                    className="mt-4 text-xs"
-                  >
-                    {activeBoardTab === 'discover' ? 'Clear all filters' : 'Return to Discovery'}
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedRole('all')
+                        setCustomRoleInput('')
+                        setSelectedSeniority('all')
+                        setSelectedCompany('all')
+                        setSelectedCountry('all')
+                        setSelectedWorkplace('all')
+                        setSearchQuery('')
+                        if (activeBoardTab !== 'discover') setActiveBoardTab('discover')
+                      }}
+                      className="mt-4 text-xs cursor-pointer"
+                    >
+                      {activeBoardTab === 'discover' ? 'Clear all filters' : 'Return to Discovery'}
+                    </Button>
                 </Card>
               ) : (
                 filteredJobs.map((job) => {

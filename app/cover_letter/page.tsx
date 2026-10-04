@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import { getRoleIntelligence, type RoleIntelligenceProfile } from '@/lib/role_intelligence';
 import type { ParsedCv } from '@/lib/cv_parser';
+import { restoreCandidateDataFromCloud, syncCandidateDataToCloud } from '@/lib/cloud_sync';
 
 const PRESET_DISCIPLINES = [
   { id: 'marine', label: 'Engineering & Marine', role: 'Marine Systems Engineer (Offshore & Propulsion)', company: 'Maersk' },
@@ -37,12 +38,80 @@ const PRESET_DISCIPLINES = [
   { id: 'industrial', label: 'Industrial & Manufacturing', role: 'Manufacturing & Transducer Quality Engineer', company: 'Wabtec' },
 ];
 
+function generateLocalDraft(params: {
+  role: string;
+  company: string;
+  jobDescription?: string;
+  keyProblems?: string;
+  candidateName: string;
+  candidateEmail?: string;
+  candidatePhone?: string;
+  candidateLocation?: string;
+  recentExperience?: any;
+  walrusBlobId?: string;
+}): string {
+  const intel = getRoleIntelligence(params.role, params.jobDescription);
+  const company = params.company.trim() || 'Target Organization';
+  const problems = params.keyProblems?.trim()
+    ? [params.keyProblems.trim(), ...intel.keyProblemsSolved.slice(0, 2)]
+    : intel.keyProblemsSolved;
+
+  const topKeywords = intel.technicalKeywords.slice(0, 6).join(', ');
+  const verifiedMetric = intel.measurableImpactMetrics[0] || 'Maintained consistent high-reliability performance';
+  const recentExpSummary = params.recentExperience?.company
+    ? `In my recent role as ${params.recentExperience.role || 'Engineer'} at ${params.recentExperience.company}, I was directly accountable for ${params.recentExperience.highlights?.[0] || 'delivering verified operational outcomes'}.`
+    : `Throughout my career, I have focused on solving high-stakes technical bottlenecks with verifiable execution.`;
+
+  const contactPieces = [params.candidateEmail, params.candidatePhone, params.candidateLocation].filter(Boolean);
+  const contactLine = contactPieces.length > 0 ? contactPieces.join(' · ') : 'Direct Contact Verified · Sovereign Record';
+
+  const walrusLine = params.walrusBlobId
+    ? `My verified work attestations and cryptographic portfolio are permanently anchored on Mysten Labs Walrus storage at: https://walruscan.com/testnet/blob/${params.walrusBlobId}`
+    : `My verified credentials and technical portfolio are registered through the CareerAce sovereign proof network.`;
+
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  return `${params.candidateName || 'Candidate'}
+${contactLine}
+
+${todayDate}
+
+Hiring Team · ${company}
+
+Dear ${company} Hiring Team,
+
+I am writing to formally submit my application for the position of ${params.role} at ${company}. With a background centered on ${topKeywords}, I take direct accountability for engineering reliability, operational discipline, and technical execution.
+
+The scope of the ${params.role} role demands focused execution across critical operational priorities:
+• ${intel.coreResponsibilities[0] || 'Execution of mission-critical systems and workflows'}
+• ${intel.coreResponsibilities[1] || 'Ensuring compliance, high availability, and operational safety'}
+• ${intel.coreResponsibilities[2] || 'Troubleshooting and rapid resolution of complex operational anomalies'}
+
+Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact ${company}:
+1. ${problems[0] || 'Mitigating system downtime through predictive diagnostics and rigorous preventive maintenance'}
+2. ${problems[1] || 'Optimizing resource allocation and operational throughput under high-constraint environments'}
+
+${recentExpSummary} As a proven benchmark, I have ${verifiedMetric.toLowerCase()}, ensuring that theoretical plans translate into measurable field reliability.
+
+${walrusLine}
+
+I would welcome the opportunity to discuss how my disciplined background and practical problem-solving approach align with ${company}'s upcoming milestones. Thank you for your time and consideration.
+
+Sincerely,
+
+${params.candidateName || 'Candidate'}`;
+}
+
 export default function CoverLetterStudioPage() {
   const router = useRouter();
 
   // Inputs
-  const [targetCompany, setTargetCompany] = useState('Maersk');
-  const [targetRole, setTargetRole] = useState('Marine Systems Engineer (Offshore & Propulsion)');
+  const [targetCompany, setTargetCompany] = useState('');
+  const [targetRole, setTargetRole] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [keyProblemsInput, setKeyProblemsInput] = useState('');
 
@@ -52,37 +121,89 @@ export default function CoverLetterStudioPage() {
 
   // Generated outputs & intelligence
   const [isGenerating, setIsGenerating] = useState(false);
-  const [roleScope, setRoleScope] = useState<RoleIntelligenceProfile>(() => getRoleIntelligence(targetRole));
+  const [roleScope, setRoleScope] = useState<RoleIntelligenceProfile>(() => getRoleIntelligence('Systems Engineer'));
   const [coverLetterText, setCoverLetterText] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Load sovereign profile & Walrus credentials on mount
+  // Load sovereign profile & initial cover letter draft on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem('careerace_sovereign_profile');
+      let loadedProfile: ParsedCv | null = null;
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setProfile(parsed);
+        loadedProfile = JSON.parse(stored);
+        setProfile(loadedProfile);
       }
-      const storedBlob = localStorage.getItem('careerace_walrus_blob_id');
+      const storedBlob = localStorage.getItem('careerace_walrus_blob_id') || '';
       if (storedBlob) {
         setWalrusBlobId(storedBlob);
       }
-    } catch {}
+
+      const initialRole = loadedProfile?.work_experience?.[0]?.role || 'Senior Systems Engineer';
+      const initialCompany = loadedProfile?.work_experience?.[0]?.company || 'Target Organization';
+
+      setTargetRole(initialRole);
+      setTargetCompany(initialCompany);
+
+      // Check if candidate already has an active tailored cover letter in storage
+      const savedLetter = localStorage.getItem('careerace_tailored_cover_letter');
+      if (savedLetter && savedLetter.trim()) {
+        setCoverLetterText(savedLetter);
+        return;
+      }
+
+      // Check saved letters vault
+      const vault = JSON.parse(localStorage.getItem('careerace_saved_letters') || '[]');
+      if (vault.length > 0 && vault[0].text) {
+        setCoverLetterText(vault[0].text);
+        if (vault[0].company) setTargetCompany(vault[0].company);
+        if (vault[0].role) setTargetRole(vault[0].role);
+        return;
+      }
+
+      // Generate instant initial draft so the studio is immediately populated with zero delay
+      const instant = generateLocalDraft({
+        role: initialRole,
+        company: initialCompany,
+        candidateName: loadedProfile?.applicant_name || 'Candidate',
+        candidateEmail: loadedProfile?.email || '',
+        candidatePhone: loadedProfile?.phone || '',
+        candidateLocation: loadedProfile?.location || 'Global Remote',
+        recentExperience: loadedProfile?.work_experience?.[0],
+        walrusBlobId: storedBlob
+      });
+      setCoverLetterText(instant);
+      localStorage.setItem('careerace_tailored_cover_letter', instant);
+      syncCandidateDataToCloud({ coverLetter: instant });
+    } catch (e) {
+      console.error('Error during Cover Letter Studio initialization:', e);
+    }
+
+    // Cross-device cloud restore: fetch cover letter and profile onto mobile
+    restoreCandidateDataFromCloud().then((cloudData) => {
+      if (cloudData) {
+        if (cloudData.profile) {
+          setProfile((prev) => prev || cloudData.profile);
+        }
+        if (cloudData.coverLetter) {
+          setCoverLetterText((prev) => prev || cloudData.coverLetter!);
+        }
+      }
+    });
   }, []);
 
   // Update role intelligence preview whenever role changes
   useEffect(() => {
-    const intel = getRoleIntelligence(targetRole, jobDescription);
-    setRoleScope(intel);
+    if (targetRole) {
+      const intel = getRoleIntelligence(targetRole, jobDescription);
+      setRoleScope(intel);
+    }
   }, [targetRole, jobDescription]);
 
   // Generate cover letter
   async function handleGenerate() {
-    if (!targetRole.trim()) {
-      toast.error('Please enter a target role.');
-      return;
-    }
+    const role = targetRole.trim() || 'Systems Engineer';
+    const company = targetCompany.trim() || 'Target Organization';
 
     setIsGenerating(true);
     const toastId = toast.loading('Extracting role scope & synthesizing tailored cover letter...');
@@ -92,14 +213,14 @@ export default function CoverLetterStudioPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          targetRole,
-          targetCompany: targetCompany.trim() || 'the Organization',
+          targetRole: role,
+          targetCompany: company,
           jobDescription,
           keyProblems: keyProblemsInput,
-          candidateName: profile?.applicant_name || 'Vincent Lang',
-          candidateEmail: profile?.email || 'applicant@careerace.online',
-          candidatePhone: profile?.phone || '+1 (415) 890-4221',
-          candidateLocation: profile?.location || 'Rotterdam / Global Remote',
+          candidateName: profile?.applicant_name || 'Candidate',
+          candidateEmail: profile?.email || '',
+          candidatePhone: profile?.phone || '',
+          candidateLocation: profile?.location || 'Global Remote',
           candidateSkills: profile?.skills || roleScope.technicalKeywords,
           recentExperience: profile?.work_experience?.[0],
           walrusBlobId
@@ -112,23 +233,39 @@ export default function CoverLetterStudioPage() {
       }
 
       setCoverLetterText(data.coverLetter);
+      try {
+        localStorage.setItem('careerace_tailored_cover_letter', data.coverLetter);
+        syncCandidateDataToCloud({ coverLetter: data.coverLetter });
+      } catch {}
       if (data.roleScope) {
         setRoleScope(data.roleScope);
       }
 
-      toast.success(`Tailored cover letter generated for ${targetCompany}!`, { id: toastId });
+      toast.success(`Tailored cover letter generated for ${company}!`, { id: toastId });
     } catch (err: any) {
-      toast.error(err.message || 'Error generating cover letter.', { id: toastId });
+      // Fallback to local sovereign synthesis if network or server error occurs
+      const fallbackDraft = generateLocalDraft({
+        role,
+        company,
+        jobDescription,
+        keyProblems: keyProblemsInput,
+        candidateName: profile?.applicant_name || 'Candidate',
+        candidateEmail: profile?.email || '',
+        candidatePhone: profile?.phone || '',
+        candidateLocation: profile?.location || 'Global Remote',
+        recentExperience: profile?.work_experience?.[0],
+        walrusBlobId
+      });
+      setCoverLetterText(fallbackDraft);
+      try {
+        localStorage.setItem('careerace_tailored_cover_letter', fallbackDraft);
+        syncCandidateDataToCloud({ coverLetter: fallbackDraft });
+      } catch {}
+      toast.info('Synthesized letter via sovereign role engine.', { id: toastId });
     } finally {
       setIsGenerating(false);
     }
   }
-
-  // Auto-generate on first load
-  useEffect(() => {
-    handleGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   function handleCopy() {
     if (!coverLetterText) return;
@@ -253,7 +390,7 @@ export default function CoverLetterStudioPage() {
                     type="text"
                     value={targetCompany}
                     onChange={(e) => setTargetCompany(e.target.value)}
-                    placeholder="e.g. Maersk, Siemens, Chevron, Vercel"
+                    placeholder="e.g. Acme Corp, Siemens, Vercel, Chevron"
                     className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
@@ -266,7 +403,7 @@ export default function CoverLetterStudioPage() {
                     type="text"
                     value={targetRole}
                     onChange={(e) => setTargetRole(e.target.value)}
-                    placeholder="e.g. Marine Systems Engineer, Engine Cadet, Full Stack Engineer"
+                    placeholder="e.g. Senior Full Stack Engineer, Systems Specialist, Operations Lead"
                     className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
@@ -373,7 +510,12 @@ export default function CoverLetterStudioPage() {
               <div className="relative">
                 <textarea
                   value={coverLetterText}
-                  onChange={(e) => setCoverLetterText(e.target.value)}
+                  onChange={(e) => {
+                    setCoverLetterText(e.target.value);
+                    try {
+                      localStorage.setItem('careerace_tailored_cover_letter', e.target.value);
+                    } catch {}
+                  }}
                   rows={20}
                   className="w-full p-5 rounded-xl border border-border bg-background text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
                   placeholder="Your tailored cover letter will render here..."

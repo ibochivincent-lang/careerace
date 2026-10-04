@@ -74,6 +74,17 @@ export function deriveUserSalt(iss: string, sub: string): string {
 }
 
 /**
+ * Deterministically derives a 66-character sovereign hex address (0x...) from an email address.
+ * Guarantees that logging in via Google OAuth, Email/Password, or Email OTP with the same email
+ * resolves to the EXACT same candidate sovereign vault across all devices.
+ */
+export function deriveVaultAddressFromEmail(email: string): string {
+  const normalized = email.trim().toLowerCase();
+  const hash = crypto.createHash("sha256").update(`careerace:email:${normalized}`).digest("hex");
+  return `0x${hash}`;
+}
+
+/**
  * Deterministically derives a 66-character sovereign hex address (0x...) from a user ID or email.
  * This guarantees consistent vault access and data isolation for username/email credentials.
  */
@@ -81,4 +92,5 @@ export function deriveVaultAddressFromUserId(userId: string): string {
   const hash = crypto.createHash("sha256").update(`careerace:user:${userId.trim().toLowerCase()}`).digest("hex");
   return `0x${hash}`;
 }
+
 

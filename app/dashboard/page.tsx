@@ -31,12 +31,80 @@ import { WalrusVersionModal } from '@/components/WalrusVersionModal'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { SaveWalrusSnapshotModal } from '@/components/SaveWalrusSnapshotModal'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
+import { restoreCandidateDataFromCloud, syncCandidateDataToCloud } from '@/lib/cloud_sync'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
+}
+
+// Formatted Chat Message component that renders bold, italics, bullets, and numbered items cleanly without raw asterisks
+function FormattedChatMessage({ content, role }: { content: string; role: 'user' | 'assistant' }) {
+  if (role === 'user') {
+    return <div className="whitespace-pre-wrap">{content}</div>
+  }
+
+  const lines = content.split('\n')
+  return (
+    <div className="space-y-1.5 leading-relaxed text-xs">
+      {lines.map((line, lineIdx) => {
+        if (!line.trim()) {
+          return <div key={lineIdx} className="h-1.5" />
+        }
+
+        const bulletMatch = line.match(/^(\s*)([•\-\*]|\d+\.)\s+(.*)$/)
+        const isBullet = Boolean(bulletMatch)
+        const textToFormat = bulletMatch ? bulletMatch[3] : line
+
+        const parts: React.ReactNode[] = []
+        const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g
+        let lastIndex = 0
+        let match: RegExpExecArray | null
+
+        while ((match = regex.exec(textToFormat)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push(textToFormat.slice(lastIndex, match.index))
+          }
+          const token = match[0]
+          if (token.startsWith('**') && token.endsWith('**')) {
+            parts.push(
+              <strong key={match.index} className="font-bold text-foreground">
+                {token.slice(2, -2)}
+              </strong>
+            )
+          } else if (token.startsWith('*') && token.endsWith('*')) {
+            parts.push(
+              <em key={match.index} className="italic text-foreground/90">
+                {token.slice(1, -1)}
+              </em>
+            )
+          }
+          lastIndex = regex.lastIndex
+        }
+
+        if (lastIndex < textToFormat.length) {
+          parts.push(textToFormat.slice(lastIndex))
+        }
+
+        if (isBullet) {
+          const prefix = bulletMatch![2]
+          const isNumber = /^\d+\./.test(prefix)
+          return (
+            <div key={lineIdx} className="flex items-start gap-2 pl-1 my-0.5">
+              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[11px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-xs"}>
+                {prefix}
+              </span>
+              <div className="flex-1">{parts}</div>
+            </div>
+          )
+        }
+
+        return <div key={lineIdx}>{parts}</div>
+      })}
+    </div>
+  )
 }
 
 const OVERVIEW_KEYWORD_PILLS = [
@@ -49,10 +117,16 @@ const OVERVIEW_KEYWORD_PILLS = [
   'Career Feedback'
 ]
 
-const FRESH_WELCOME_MESSAGE = {
+const FRESH_OVERVIEW_WELCOME_MESSAGE = {
   role: 'assistant' as const,
   content:
-    "Welcome to CareerAce! I am your centralized career intelligence agent powered by Walrus Sovereign Memory. I recall your verified background, work tenures, education, certifications, and track 7-day follow-ups for all your job applications.\n\nSelect a topic below, attach your CV (.pdf, .docx), or ask any question to begin."
+    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\nHere is how I can assist you across our ecosystem:\n• **Resume Studio:** Upload your CV, maintain 2 or 3 tailored versions for different industries, polish bullet points with active verbs, and seal tamper-proof snapshots to Walrus storage.\n• **Cover Letter Studio:** Generate laser-targeted, problem-solving cover letters calibrated directly to any job requirements without AI slop.\n• **Application Board:** Discover verified corporate openings, track your applications across Discovery, Saved, and Applied stages, and manage 7-day recruiter follow-up milestones.\n\nType **\"hello\"** to review your profile status, click a topic below, or ask any question about your career journey!"
+}
+
+const FRESH_RESUME_ASSISTANT_WELCOME = {
+  role: 'assistant' as const,
+  content:
+    "Welcome to the Resume Tailoring Assistant! I am focused directly on your active CV canvas.\n\nI can help you:\n• Recalibrate target role & industry keywords\n• Polish work experience bullets with quantifiable metrics\n• Audit ATS alignment against live job descriptions\n• Commit cryptographic snapshots directly to Walrus storage\n\nType a command or select an action below to begin tailoring."
 }
 
 function DashboardContent() {
@@ -133,12 +207,20 @@ function DashboardContent() {
       .catch(() => {})
   }, [])
 
-  // Career Ace AI Copilot Chatbot state
-  const [chatInput, setChatInput] = useState('')
-  const [isSending, setIsSending] = useState(false)
-  const chatMessagesEndRef = useRef<HTMLDivElement>(null)
-  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; edits_added?: number }>>([
-    FRESH_WELCOME_MESSAGE
+  // 1. Career Ace Centralized Overview Chatbot state (Grounded in Walrus Sovereign Memory)
+  const [overviewChatInput, setOverviewChatInput] = useState('')
+  const [isOverviewSending, setIsOverviewSending] = useState(false)
+  const overviewChatEndRef = useRef<HTMLDivElement>(null)
+  const [overviewChatMessages, setOverviewChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    FRESH_OVERVIEW_WELCOME_MESSAGE
+  ])
+
+  // 2. Resume Studio Assistant state (Dedicated to active CV canvas tailoring & bullets)
+  const [resumeAssistantInput, setResumeAssistantInput] = useState('')
+  const [isResumeSending, setIsResumeSending] = useState(false)
+  const resumeChatEndRef = useRef<HTMLDivElement>(null)
+  const [resumeAssistantMessages, setResumeAssistantMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; edits_added?: number }>>([
+    FRESH_RESUME_ASSISTANT_WELCOME
   ])
 
   // Tailoring & Cover Letter state - No mock company or role defaults
@@ -179,10 +261,14 @@ function DashboardContent() {
     }
   }, [activeTab])
 
-  // Auto-scroll chat on message change
+  // Auto-scroll chat feeds on message change
   useEffect(() => {
-    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages, isSending])
+    overviewChatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [overviewChatMessages, isOverviewSending])
+
+  useEffect(() => {
+    resumeChatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [resumeAssistantMessages, isResumeSending])
 
   // Load stored profile and Walrus version snapshots
   useEffect(() => {
@@ -194,7 +280,7 @@ function DashboardContent() {
     } catch {}
   }, [])
 
-  // Load stored profile strictly if valid
+  // Load stored profile and synchronize cross-device with Supabase cloud
   useEffect(() => {
     try {
       const stored = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
@@ -204,9 +290,28 @@ function DashboardContent() {
           setParsedProfile(loaded)
           if (loaded.target_roles?.[0]) setTailorRole(loaded.target_roles[0])
           setResumeViewMode('editor')
+          // Auto backup local profile to cloud so secondary devices (e.g. mobile) have immediate access
+          syncCandidateDataToCloud({ profile: loaded })
         }
       }
     } catch {}
+
+    // Cloud Restore: fetch from Supabase to seamlessly hydrate phone or another browser
+    restoreCandidateDataFromCloud().then((cloudData) => {
+      if (cloudData && cloudData.profile) {
+        setParsedProfile((prev: any) => {
+          if (!prev || !prev.applicant_name) {
+            if (cloudData.profile.target_roles?.[0]) setTailorRole(cloudData.profile.target_roles[0])
+            setResumeViewMode('editor')
+            return cloudData.profile
+          }
+          return prev
+        })
+      }
+      if (cloudData && Array.isArray(cloudData.walrusVersions) && cloudData.walrusVersions.length > 0) {
+        setWalrusVersions((prev) => (prev.length === 0 ? cloudData.walrusVersions! : prev))
+      }
+    })
   }, [])
 
   // Calculate ATS scorecard: against custom JD if provided, or against standard industry benchmark JD for role.
@@ -252,6 +357,7 @@ function DashboardContent() {
     setParsedProfile(next)
     localStorage.setItem('careerace_sovereign_profile', JSON.stringify(next))
     localStorage.setItem('careerace_parsed_profile', JSON.stringify(next))
+    syncCandidateDataToCloud({ profile: next })
   }
 
   function handleUndo() {
@@ -268,6 +374,7 @@ function DashboardContent() {
     setParsedProfile(prevProfile)
     localStorage.setItem('careerace_sovereign_profile', JSON.stringify(prevProfile))
     localStorage.setItem('careerace_parsed_profile', JSON.stringify(prevProfile))
+    syncCandidateDataToCloud({ profile: prevProfile })
     toast.success('Reverted last edit (Undo)')
   }
 
@@ -285,6 +392,7 @@ function DashboardContent() {
     setParsedProfile(nextProfile)
     localStorage.setItem('careerace_sovereign_profile', JSON.stringify(nextProfile))
     localStorage.setItem('careerace_parsed_profile', JSON.stringify(nextProfile))
+    syncCandidateDataToCloud({ profile: nextProfile })
     toast.success('Redone')
   }
 
@@ -378,7 +486,7 @@ function DashboardContent() {
     if (res.updatedProfile && res.count > 0) {
       updateProfileField(res.updatedProfile)
     }
-    setChatMessages((prev) => [
+    setResumeAssistantMessages((prev) => [
       ...prev,
       { role: 'user', content: actionItem.prompt },
       { role: 'assistant', content: res.text, edits_added: res.count }
@@ -546,6 +654,7 @@ function DashboardContent() {
       setWalrusVersions(updated)
       setActiveVersionId(newVersion.id)
       localStorage.setItem('careerace_walrus_versions', JSON.stringify(updated))
+      syncCandidateDataToCloud({ walrusVersions: updated, profile: parsedProfile })
       setIsSaveWalrusModalOpen(false)
 
       toast.success(`Anchored "${chosenRole}" to Walrus! Blob: ${data.blob_id.slice(0, 10)}...`, { id: toastId })
@@ -561,6 +670,7 @@ function DashboardContent() {
       setParsedProfile(version.profileSnapshot)
       localStorage.setItem('careerace_sovereign_profile', JSON.stringify(version.profileSnapshot))
       localStorage.setItem('careerace_parsed_profile', JSON.stringify(version.profileSnapshot))
+      syncCandidateDataToCloud({ profile: version.profileSnapshot })
     }
     if (version.tailoredText) {
       setTailoredResumeText(version.tailoredText)
@@ -614,7 +724,7 @@ function DashboardContent() {
       const skillsList = Array.isArray(skills) && skills.length > 0 ? skills.slice(0, 8).join(', ') : 'Not specified'
       const feedback = `🎯 **Auto-Targeted from Job Posting URL**\n\n• **Target Role**: ${role || 'Target Role'}\n• **Company / Org**: ${company || 'Target Organization'}\n• **Seniority / Level**: ${experience_level || 'Mid-Senior'}\n• **Required Competencies**: ${skillsList}\n\n${summary ? `*Summary*: ${summary}\n\n` : ''}✅ *Target parameters populated for Cover Letter Studio and keyword suggestions.*`
 
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: feedback }])
+      setResumeAssistantMessages((prev) => [...prev, { role: 'assistant', content: feedback }])
     } catch (err: any) {
       toast.error(err.message || 'Could not auto-scrape job URL. You can paste requirements manually.', { id: 'scrape-job' })
     } finally {
@@ -622,14 +732,79 @@ function DashboardContent() {
     }
   }
 
-  async function handleSendMessage(overrideText?: string) {
-    const rawText = typeof overrideText === 'string' ? overrideText : chatInput
-    if (!rawText.trim() || isSending) return
+  // 1. Overview Chatbot: Conversational queries, ecosystem navigation & Walrus memory recall
+  async function handleSendOverviewMessage(overrideText?: string) {
+    const rawText = typeof overrideText === 'string' ? overrideText : overviewChatInput
+    if (!rawText.trim() || isOverviewSending) return
     const text = rawText.trim()
-    setChatInput('')
-    const updatedMessages = [...chatMessages, { role: 'user' as const, content: text }]
-    setChatMessages(updatedMessages)
-    setIsSending(true)
+    setOverviewChatInput('')
+    const updatedMessages = [...overviewChatMessages, { role: 'user' as const, content: text }]
+    setOverviewChatMessages(updatedMessages)
+    setIsOverviewSending(true)
+
+    try {
+      const customAiKeys = {
+        google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
+        groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
+        openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
+        opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
+      }
+
+      const storedAppliedJobs = typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('careerace_applied_jobs') || '[]')
+        : []
+
+      const res = await fetch('/api/copilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          messages: updatedMessages,
+          profile: parsedProfile,
+          appliedJobs: storedAppliedJobs,
+          address: sessionAddress || undefined,
+          custom_keys: customAiKeys,
+        })
+      })
+      const data = await res.json()
+      const assistantReply = data.reply || data.content
+      if (assistantReply) {
+        setOverviewChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])
+      } else {
+        setOverviewChatMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `I've analyzed your query: "${text}". ${
+              parsedProfile 
+                ? `I am leveraging your verified profile for ${parsedProfile.applicant_name || 'Candidate'} from your Walrus Memory vault.` 
+                : 'Head over to Resume Studio to upload your CV to unlock personalized answers tailored to your exact work history and skills.'
+            }`
+          }
+        ])
+      }
+    } catch {
+      setOverviewChatMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'CareerAce Chatbot is connected to your Walrus Sovereign Memory. Select a keyword topic below to proceed or ask a career query.'
+        }
+      ])
+    } finally {
+      setIsOverviewSending(false)
+    }
+  }
+
+  // 2. Resume Studio Assistant: Direct CV canvas tailoring, bullet actions & JD calibration
+  async function handleSendResumeAssistantMessage(overrideText?: string) {
+    const rawText = typeof overrideText === 'string' ? overrideText : resumeAssistantInput
+    if (!rawText.trim() || isResumeSending) return
+    const text = rawText.trim()
+    setResumeAssistantInput('')
+    const updatedMessages = [...resumeAssistantMessages, { role: 'user' as const, content: text }]
+    setResumeAssistantMessages(updatedMessages)
+    setIsResumeSending(true)
 
     // URL Auto-Targeting detection (LinkedIn, Greenhouse, Lever, Workday, Career links)
     const urlMatch = text.match(/https?:\/\/[^\s]+/i)
@@ -639,7 +814,7 @@ function DashboardContent() {
         /(?:linkedin\.com\/jobs|boards\.greenhouse\.io|jobs\.lever\.co|myworkdayjobs|indeed\.com|wellfound|ashbyhq|workable|careers|job|apply)/i.test(candidateUrl) ||
         text.trim() === candidateUrl
       if (isJobLink) {
-        setIsSending(false)
+        setIsResumeSending(false)
         await handleScrapeJobUrl(candidateUrl)
         return
       }
@@ -717,30 +892,26 @@ function DashboardContent() {
       const data = await res.json()
       const assistantReply = data.reply || data.content
       if (assistantReply) {
-        setChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])
+        setResumeAssistantMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])
       } else {
-        setChatMessages((prev) => [
+        setResumeAssistantMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: `I've analyzed your question: "${text}". ${
-              parsedProfile 
-                ? `I am leveraging your verified profile for ${parsedProfile.applicant_name || 'Candidate'} and cross-referencing industry standards.` 
-                : 'Upload or attach your CV to unlock personalized answers tailored to your exact work history and skills.'
-            }`
+            content: `I've analyzed your tailoring request: "${text}". Tailoring recommendations aligned with your active CV canvas.`
           }
         ])
       }
     } catch {
-      setChatMessages((prev) => [
+      setResumeAssistantMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'CareerAce Chatbot is connected to your Walrus Sovereign Memory. Attach your CV or select a keyword topic to proceed.'
+          content: 'Resume Assistant is connected to your active CV canvas. Choose an action below or enter a bullet point to polish.'
         }
       ])
     } finally {
-      setIsSending(false)
+      setIsResumeSending(false)
     }
   }
 
@@ -757,6 +928,7 @@ function DashboardContent() {
       if (parsedProfile.target_roles?.[0]) {
         localStorage.setItem('careerace_target_title', parsedProfile.target_roles[0])
       }
+      syncCandidateDataToCloud({ profile: parsedProfile })
 
       const res = await fetch('/api/memory', {
         method: 'POST',
@@ -801,7 +973,8 @@ function DashboardContent() {
       setTailoredResumeText('')
       setTailoredCoverLetterText('')
       setAtsScorecard(null)
-      setChatMessages([FRESH_WELCOME_MESSAGE])
+      setOverviewChatMessages([FRESH_OVERVIEW_WELCOME_MESSAGE])
+      setResumeAssistantMessages([FRESH_RESUME_ASSISTANT_WELCOME])
       setResumeViewMode('upload')
 
       toast.success('Memory vault cleared. Fresh session initialized.', { id: toastId })
@@ -878,8 +1051,8 @@ function DashboardContent() {
   async function handleGenerateCoverLetter() {
     const role = tailorRole.trim() || 'the position'
     const company = tailorCompany.trim() || 'your organization'
-    const name = parsedProfile?.applicant_name || 'Vincent Lang'
-    const email = parsedProfile?.contact_email || parsedProfile?.email || 'applicant@careerace.online'
+    const name = parsedProfile?.applicant_name || 'Candidate'
+    const email = parsedProfile?.contact_email || parsedProfile?.email || 'candidate@careerace.online'
     const phone = parsedProfile?.contact_phone || parsedProfile?.phone || ''
     const location = parsedProfile?.location || ''
     const toastId = toast.loading(`Synthesizing tailored cover letter for ${company}...`)
@@ -996,6 +1169,7 @@ function DashboardContent() {
             }
             localStorage.setItem('careerace_sovereign_profile', JSON.stringify(instantProfile))
             localStorage.setItem('careerace_parsed_profile', JSON.stringify(instantProfile))
+            syncCandidateDataToCloud({ profile: instantProfile })
             toast.success(`Resume rendered instantly for ${instantProfile.applicant_name || 'Candidate'}!`, { id: toastId })
             setIsParsing(false)
           }
@@ -1030,6 +1204,7 @@ function DashboardContent() {
               const merged = { ...prev, ...data.profile }
               localStorage.setItem('careerace_sovereign_profile', JSON.stringify(merged))
               localStorage.setItem('careerace_parsed_profile', JSON.stringify(merged))
+              syncCandidateDataToCloud({ profile: merged, walrusBlobId: data.blobId || data.walrusBlobId })
               return merged
             })
             if (data.profile.target_roles?.[0]) {
@@ -1042,11 +1217,18 @@ function DashboardContent() {
             const candidateName = data.profile.applicant_name && data.profile.applicant_name !== 'Candidate'
               ? data.profile.applicant_name
               : 'Candidate'
-            setChatMessages((prev) => [
+            setResumeAssistantMessages((prev) => [
               ...prev,
               {
                 role: 'assistant',
-                content: `✓ **${file.name}** is sealed to your Walrus Sovereign Memory vault!\n\n• **Candidate:** ${candidateName}\n• **Target Roles:** ${(data.profile.target_roles || []).join(', ') || 'Engineer'}\n• **Skills:** ${(data.profile.skills || []).slice(0, 8).join(', ')}\n• **Walrus Vault:** ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'Active'}\n\nAsk me anything or click a suggested action below to optimize your resume canvas!`
+                content: `✓ **${file.name}** is sealed to your Walrus Sovereign Memory vault!\n\n• **Candidate:** ${candidateName}\n• **Target Roles:** ${(data.profile.target_roles || []).join(', ') || 'Professional'}\n• **Skills:** ${(data.profile.skills || []).slice(0, 8).join(', ')}\n• **Walrus Vault:** ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'Active'}\n\nAsk me anything or click a suggested action below to optimize your resume canvas!`
+              }
+            ])
+            setOverviewChatMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: `✓ **${file.name}** verified & sealed to Walrus Sovereign Memory for **${candidateName}** (${(data.profile.target_roles || []).join(', ') || 'Professional'}). Your background, skills, and work history are now live!`
               }
             ])
             toast.success('CV permanently anchored to Walrus!')
@@ -1141,7 +1323,7 @@ function DashboardContent() {
 
                 {/* Chat Messages Feed */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
-                  {chatMessages.map((msg, i) => (
+                  {overviewChatMessages.map((msg, i) => (
                     <div
                       key={i}
                       className={`flex items-start gap-2.5 leading-relaxed ${
@@ -1155,24 +1337,24 @@ function DashboardContent() {
                       )}
 
                       <div
-                        className={`max-w-[85%] p-3.5 rounded-2xl whitespace-pre-wrap text-xs ${
+                        className={`max-w-[85%] p-3.5 rounded-2xl text-xs ${
                           msg.role === 'assistant'
                             ? 'bg-muted/40 border border-border/80 text-foreground'
                             : 'bg-emerald-600 text-white font-medium shadow-xs'
                         }`}
                       >
-                        {msg.content}
+                        <FormattedChatMessage content={msg.content} role={msg.role} />
                       </div>
                     </div>
                   ))}
 
-                  {isSending && (
+                  {isOverviewSending && (
                     <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60">
                       <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
                       <span>Querying Walrus Memory...</span>
                     </div>
                   )}
-                  <div ref={chatMessagesEndRef} />
+                  <div ref={overviewChatEndRef} />
                 </div>
 
                 {/* Prominent Keyword Topic Pills on Overview */}
@@ -1181,8 +1363,8 @@ function DashboardContent() {
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => handleSendMessage(pill)}
-                      disabled={isSending}
+                      onClick={() => handleSendOverviewMessage(pill)}
+                      disabled={isOverviewSending}
                       className="text-[11px] px-2.5 py-1 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left cursor-pointer"
                     >
                       <span>{pill}</span>
@@ -1191,35 +1373,25 @@ function DashboardContent() {
                   ))}
                 </div>
 
-                {/* Bottom Input */}
+                {/* Bottom Input (Zero attachment clutter - direct conversational interface) */}
                 <div className="p-3 border-t border-border/80 bg-card flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => chatFileInputRef.current?.click()}
-                    title="Attach CV File (.pdf, .docx)"
-                    className="h-9 w-9 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </Button>
-
                   <input
                     type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    value={overviewChatInput}
+                    onChange={(e) => setOverviewChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendOverviewMessage()}
                     placeholder={
                       parsedProfile 
                         ? "Ask about your education, work experience, certifications, applied jobs, or 7-day follow-ups..." 
-                        : "Type your query or attach your CV to query Walrus Memory..."
+                        : "Ask any question about your career, target roles, or type 'hello' to explore..."
                     }
                     className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
 
                   <Button
                     size="sm"
-                    onClick={() => handleSendMessage()}
-                    disabled={isSending || !chatInput.trim()}
+                    onClick={() => handleSendOverviewMessage()}
+                    disabled={isOverviewSending || !overviewChatInput.trim()}
                     className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
@@ -1750,7 +1922,7 @@ function DashboardContent() {
 
                         {/* Chat Messages Feed */}
                         <div className="flex-1 p-3.5 overflow-y-auto space-y-3 text-xs">
-                          {chatMessages.map((msg, i) => (
+                          {resumeAssistantMessages.map((msg, i) => (
                             <div
                               key={i}
                               className={`flex items-start gap-2 leading-relaxed ${
@@ -1764,13 +1936,13 @@ function DashboardContent() {
                               )}
 
                               <div
-                                className={`max-w-[88%] p-3 rounded-xl whitespace-pre-wrap text-xs ${
+                                className={`max-w-[88%] p-3 rounded-xl text-xs ${
                                   msg.role === 'assistant'
                                     ? 'bg-muted/40 border border-border/80 text-foreground'
                                     : 'bg-emerald-600 text-white font-medium shadow-xs'
                                 }`}
                               >
-                                {msg.content}
+                                <FormattedChatMessage content={msg.content} role={msg.role} />
                                 {typeof msg.edits_added === 'number' && msg.edits_added > 0 && (
                                   <div className="mt-2 pt-1.5 border-t border-border/60 flex items-center justify-between text-[10px]">
                                     <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
@@ -1779,7 +1951,7 @@ function DashboardContent() {
                                     <button
                                       type="button"
                                       onClick={handleUndo}
-                                      className="text-[10px] text-muted-foreground hover:text-foreground underline flex items-center gap-0.5 font-medium"
+                                      className="text-[10px] text-muted-foreground hover:text-foreground underline flex items-center gap-0.5 font-medium cursor-pointer"
                                     >
                                       <RotateCcw className="w-2.5 h-2.5" /> Undo
                                     </button>
@@ -1789,25 +1961,23 @@ function DashboardContent() {
                             </div>
                           ))}
 
-                          {isSending && (
+                          {isResumeSending && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/30 border border-border/60">
                               <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
                               <span>Querying Walrus Memory...</span>
                             </div>
                           )}
-                          <div ref={chatMessagesEndRef} />
+                          <div ref={resumeChatEndRef} />
                         </div>
 
                         {/* Interactive Assistant Quick Actions (Calibration & Polish) */}
                         <div className="px-3 py-2 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 max-h-28 overflow-y-auto">
-
-
                           {SUGGESTED_COPILOT_ACTIONS.map((action, idx) => (
                             <button
                               key={idx}
                               type="button"
                               onClick={() => handleExecuteCopilotAction(action)}
-                              className="text-[10px] px-2 py-0.5 rounded-md border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left"
+                              className="text-[10px] px-2 py-0.5 rounded-md border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left cursor-pointer"
                             >
                               <span>{action.label}</span>
                               <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-70 shrink-0" />
@@ -1822,25 +1992,25 @@ function DashboardContent() {
                             size="sm"
                             onClick={() => chatFileInputRef.current?.click()}
                             title="Attach CV File (.pdf, .docx)"
-                            className="h-8 w-8 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                            className="h-8 w-8 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             <Paperclip className="w-3.5 h-3.5" />
                           </Button>
 
                           <input
                             type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            value={resumeAssistantInput}
+                            onChange={(e) => setResumeAssistantInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendResumeAssistantMessage()}
                             placeholder="Ask copilot to tailor, set target role, or add bullets..."
                             className="flex-1 h-8 px-2.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                           />
 
                           <Button
                             size="sm"
-                            onClick={() => handleSendMessage()}
-                            disabled={isSending || !chatInput.trim()}
-                            className="h-8 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs"
+                            onClick={() => handleSendResumeAssistantMessage()}
+                            disabled={isResumeSending || !resumeAssistantInput.trim()}
+                            className="h-8 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs cursor-pointer"
                           >
                             <Send className="w-3 h-3" />
                           </Button>

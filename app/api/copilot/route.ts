@@ -259,11 +259,42 @@ export async function POST(req: Request) {
       [];
 
     // 4. Handle direct deterministic queries if asked specifically
-    const lowerLatest = latest.toLowerCase();
+    const lowerLatest = latest.toLowerCase().trim();
     let directReply = "";
 
-    // Applied Jobs & 7-Day Follow-Up Intent
-    if (
+    // Greetings & Ecosystem Orientation Intent (Chatbot welcome and functional breakdown)
+    const isGreeting =
+      /^(hi|hello|hey|good\s+morning|good\s+afternoon|good\s+evening|greetings|help|howdy|start)\b/i.test(lowerLatest) ||
+      lowerLatest === "hi" ||
+      lowerLatest === "hello" ||
+      lowerLatest === "help" ||
+      lowerLatest.includes("who are you") ||
+      lowerLatest.includes("what can you do") ||
+      lowerLatest.includes("what do you do") ||
+      lowerLatest.includes("how does this work") ||
+      lowerLatest.includes("how can you assist") ||
+      lowerLatest.includes("get started");
+
+    if (isGreeting) {
+      const candidateDisplayName = currentName && currentName !== "Candidate" ? currentName : "";
+      const hasUploadedResume = Boolean(profileSkills.length > 0 || (Array.isArray(profileExperience) && profileExperience.length > 0));
+
+      if (hasUploadedResume) {
+        directReply = `Hello${candidateDisplayName ? ` ${candidateDisplayName}` : ""}! I am your CareerAce Career Assistant, grounded directly in your decentralized Walrus Sovereign Memory vault.\n\n` +
+          `• **Current Sovereign Profile:** Verified background on file for **${profileRole}** with **${profileSkills.length} core skills** and **${Array.isArray(profileExperience) ? profileExperience.length : 1} work tenure(s)** indexed.\n` +
+          `• **Multiple Resumes Supported:** You can maintain 2 or 3 distinct CV versions tailored to different industries (e.g. Software, Systems Engineering, Management). Head over to **Resume Studio** to manage or switch between your tailored snapshots.\n` +
+          `• **Cover Letter Studio:** Generate laser-targeted, problem-solving cover letters for any prospective employer without AI slop.\n` +
+          `• **Application Board:** Track your applications across Discovery, Saved, and Applied stages, and monitor automatic 7-day follow-up milestones.\n\n` +
+          `Feel free to ask me anything about your work experience, education, skills, applied jobs, or general career strategy!`;
+      } else {
+        directReply = `Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\n` +
+          `Here is how I can assist you across our ecosystem:\n` +
+          `• **Resume Studio:** Head over to Resume Studio to upload your CV. You can create and manage 2 or 3 tailored versions for different roles, audit bullet points for ATS compliance, and seal tamper-proof snapshots into Walrus storage.\n` +
+          `• **Cover Letter Studio:** Synthesize customized, problem-solving cover letters addressing specific company needs without robotic AI filler.\n` +
+          `• **Application Board:** Explore verified openings, track your applications across Discovery, Saved, and Applied stages, and manage 7-day recruiter follow-up reminders.\n\n` +
+          `To get started, head over to **Resume Studio** to upload your resume, or ask me any question about your career goals!`;
+      }
+    } else if (
       lowerLatest.includes("applied job") ||
       lowerLatest.includes("jobs applied") ||
       lowerLatest.includes("follow-up") ||
@@ -286,7 +317,7 @@ export async function POST(req: Request) {
 
         directReply = `Here is your live application log and 7-day follow-up tracking from your browser session:\n\n${formattedJobs}\n\n**Actionable Advice:** For any application over 7 days old, dispatch a polite follow-up email reiterating your top 3 matching skills and referencing your Walrus-verified CV credentials.`;
       } else {
-        directReply = `You have no tracked job applications yet.\n\nVisit the **Application Board** to explore verified corporate openings across Engineering & Marine, Software & IT, AI & Autonomous Systems, Medical Informatics, and Management. When you dispatch an application, CareerAce automatically tracks it and triggers a 7-day follow-up reminder.`;
+        directReply = `You have no tracked job applications yet.\n\nVisit the **Application Board** to explore verified corporate openings across Engineering, Software & IT, AI & Autonomous Systems, Medical Informatics, and Management. When you dispatch an application, CareerAce automatically tracks it and triggers a 7-day follow-up reminder.`;
       }
     } else if (
       lowerLatest.includes("certification") ||
@@ -302,7 +333,7 @@ export async function POST(req: Request) {
           : String(profileCertifications);
         directReply = `Here are your verified licenses and certifications registered in your sovereign profile:\n\n• ${certList}\n\nThese credentials can be highlighted in your tailored CV bullets and cover letters for regulated and technical disciplines.`;
       } else {
-        directReply = `No specific certifications or licenses have been recorded yet in your profile.\n\nYou can add professional credentials (e.g. STCW, USCG/IMO Maritime licenses, AWS/Azure, PMP, Professional Engineer) to your profile, and CareerAce will index them into your decentralized Walrus vault.`;
+        directReply = `No specific certifications or licenses have been recorded yet in your profile.\n\nYou can add professional credentials (e.g. AWS/Azure, PMP, Professional Engineer, technical licenses) to your profile, and CareerAce will index them into your decentralized Walrus vault.`;
       }
     } else if (
       lowerLatest.includes("career feedback") ||
@@ -364,6 +395,9 @@ export async function POST(req: Request) {
       lowerLatest.includes("where did i work") ||
       lowerLatest.includes("my past roles") ||
       lowerLatest.includes("my experience") ||
+      lowerLatest.includes("work experience") ||
+      lowerLatest === "experience" ||
+      lowerLatest.includes("past experience") ||
       lowerLatest.includes("where have i worked") ||
       lowerLatest.includes("what companies")
     ) {
