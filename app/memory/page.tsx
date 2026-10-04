@@ -70,7 +70,7 @@ export default async function MemoryPage() {
 
             <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                <Database className="w-4 h-4 text-purple-500" />
+                <Database className="w-4 h-4 text-emerald-500" />
                 <span>Decentralized Walrus Availability</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">

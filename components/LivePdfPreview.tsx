@@ -688,7 +688,7 @@ export function LivePdfPreview({
               size="sm"
               onClick={onCommitWalrusVersion}
               disabled={isSavingVersion}
-              className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-xs"
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-xs"
               title="Save current version as immutable snapshot to Walrus Protocol"
             >
               <Database className="w-3 h-3" />
@@ -702,10 +702,10 @@ export function LivePdfPreview({
               variant="outline"
               size="sm"
               onClick={onOpenWalrusHistory}
-              className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-purple-500/40 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10 rounded-lg shadow-xs"
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-border/80 text-foreground hover:bg-muted rounded-lg shadow-xs"
               title="View immutable Walrus snapshots"
             >
-              <History className="w-3 h-3 text-purple-500" />
+              <History className="w-3 h-3 text-emerald-500" />
               <span>History ({walrusVersions.length})</span>
             </Button>
           )}
@@ -1097,10 +1097,10 @@ export function LivePdfPreview({
                                     },
                                   })
                                 }
-                                className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors shadow-2xs"
+                                className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors shadow-2xs"
                                 title="Click to view verified decentralized proof on Walrus"
                               >
-                                <ShieldCheck className="w-3 h-3 text-purple-600" />
+                                <ShieldCheck className="w-3 h-3 text-emerald-600" />
                                 <span>{exp.proofAttachment.title || "Walrus Proof Verified"}</span>
                               </button>
                             ) : (
@@ -1121,10 +1121,10 @@ export function LivePdfPreview({
                                     },
                                   })
                                 }
-                                className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-500 hover:text-purple-600 transition-colors"
+                                className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-500 hover:text-emerald-600 transition-colors"
                                 title="Attach certificate scan, sea-time slip, or Google Drive link"
                               >
-                                <Database className="w-3 h-3 text-slate-400 group-hover:text-purple-500" />
+                                <Database className="w-3 h-3 text-slate-400 group-hover:text-emerald-500" />
                                 <span>+ Attach Proof (Walrus/Drive)</span>
                               </button>
                             )}
@@ -1231,7 +1231,7 @@ export function LivePdfPreview({
                   <div className="w-full border-t-2 border-dashed border-slate-300" />
                 </div>
                 <div className="relative bg-slate-100 text-slate-600 text-[10px] font-mono font-bold px-3 py-0.5 rounded-full border border-slate-300 shadow-2xs flex items-center gap-1.5 uppercase tracking-wider">
-                  <FileText className="w-3 h-3 text-purple-600" />
+                  <FileText className="w-3 h-3 text-emerald-600" />
                   <span>A4 Multi-Page Flow · Page 1 / Page 2 Break Guide</span>
                 </div>
               </div>
@@ -1278,10 +1278,10 @@ export function LivePdfPreview({
                           },
                         })
                       }
-                      className="text-[11px] h-6 px-2 gap-1 border-purple-500/40 text-purple-700 dark:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20"
+                      className="text-[11px] h-6 px-2 gap-1 border-border/80 text-foreground hover:bg-muted"
                       title="Attach Walrus scan, Google Drive link, or credential proof"
                     >
-                      <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       <span>Attach Proof (Walrus / Drive)</span>
                     </Button>
                   </div>
@@ -1323,7 +1323,7 @@ export function LivePdfPreview({
                                 },
                               })
                             }
-                            className="no-print inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-600/15 text-purple-700 dark:text-purple-300 hover:bg-purple-600/25 ml-1 transition-colors"
+                            className="no-print inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-600/25 ml-1 transition-colors"
                             title="Click to view verified proof on Walrus or Drive"
                           >
                             <span>✓ Proof</span>
@@ -1347,7 +1347,7 @@ export function LivePdfPreview({
                                 },
                               })
                             }
-                            className="no-print opacity-40 group-hover/cert:opacity-100 text-[9px] text-purple-600 dark:text-purple-400 hover:underline ml-1 transition-opacity"
+                            className="no-print opacity-40 group-hover/cert:opacity-100 text-[9px] text-emerald-600 dark:text-emerald-400 hover:underline ml-1 transition-opacity"
                             title="Attach proof document or Walrus scan to this certification"
                           >
                             + Proof
@@ -1604,11 +1604,11 @@ export function LivePdfPreview({
                         href={att.previewUrl || att.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 text-xs transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 text-xs transition-colors"
                       >
-                        <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                         <span className="font-semibold">{att.title}</span>
-                        <ExternalLink className="w-3 h-3 text-purple-400" />
+                        <ExternalLink className="w-3 h-3 text-emerald-500" />
                       </a>
                     ))}
                   </div>
@@ -1661,7 +1661,7 @@ export function LivePdfPreview({
           Active Layout: <strong className="text-foreground">{activeTemplateConfig.name}</strong>
         </span>
         <span className="flex items-center gap-3">
-          <span className="text-purple-600 dark:text-purple-400 flex items-center gap-1 font-mono text-[10px]">
+          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-mono text-[10px]">
             <Database className="w-3 h-3" />
             Walrus Proof Active
           </span>

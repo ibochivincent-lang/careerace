@@ -41,9 +41,9 @@ export function DemoInfoDialog() {
                   When you have the wrong mental model. Forces you to examine concepts from first principles.
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900">
-                <p className="text-sm font-medium text-purple-900 dark:text-purple-200">Tier 2: Procedural</p>
-                <p className="text-xs text-purple-700 dark:text-purple-400 mt-0.5">
+              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900">
+                <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">Tier 2: Procedural</p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
                   When your concept is right but method is wrong. Asks about specific steps.
                 </p>
               </div>

@@ -53,12 +53,12 @@ export function WalrusVersionModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs animate-in fade-in-0 duration-200"
     >
       <div
-        className="w-full max-w-2xl rounded-2xl border border-purple-500/30 bg-card shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl rounded-2xl border border-border/80 bg-card shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200"
       >
         {/* Modal Header */}
-        <div className="p-4 px-5 border-b border-border/80 bg-purple-950/15 flex items-center justify-between">
+        <div className="p-4 px-5 border-b border-border/80 bg-muted/40 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 flex items-center justify-center shadow-xs">
               <Database className="w-5 h-5" />
             </div>
             <div>
@@ -66,7 +66,7 @@ export function WalrusVersionModal({
                 <h3 id="walrus-history-modal-title" className="font-bold text-sm text-foreground">
                   Walrus Decentralized Version History
                 </h3>
-                <Badge variant="outline" className="text-[10px] text-purple-400 border-purple-500/30 bg-purple-500/10 font-mono">
+                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono">
                   {versions.length} {versions.length === 1 ? "Snapshot" : "Snapshots"}
                 </Badge>
               </div>
@@ -105,7 +105,7 @@ export function WalrusVersionModal({
         <div className="p-4 overflow-y-auto space-y-3 flex-1 text-xs">
           {versions.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              <History className="w-8 h-8 mx-auto mb-2 opacity-40 text-purple-400" />
+              <History className="w-8 h-8 mx-auto mb-2 opacity-40 text-emerald-500" />
               <p className="font-medium">No Walrus snapshots recorded yet.</p>
               <p className="text-[11px] mt-1">
                 Click &ldquo;Save to Walrus&rdquo; in your resume editor to commit an encrypted immutable snapshot.
@@ -119,8 +119,8 @@ export function WalrusVersionModal({
                   key={ver.id || idx}
                   className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     isCurrent
-                      ? "border-purple-500/60 bg-purple-500/10 shadow-xs"
-                      : "border-border/70 bg-card hover:border-purple-500/30 hover:bg-purple-500/5"
+                      ? "border-emerald-500/60 bg-emerald-500/10 shadow-xs"
+                      : "border-border/70 bg-card hover:border-emerald-500/30 hover:bg-emerald-500/5"
                   }`}
                 >
                   <div className="space-y-1">
@@ -131,21 +131,9 @@ export function WalrusVersionModal({
                       {ver.company && (
                         <span className="text-xs text-muted-foreground">@ {ver.company}</span>
                       )}
-                      {ver.atsScore > 0 && (
-                        <Badge
-                          variant="secondary"
-                          className={`text-[10px] font-semibold ${
-                            ver.atsScore >= 70
-                              ? "text-emerald-500 bg-emerald-500/10"
-                              : "text-amber-500 bg-amber-500/10"
-                          }`}
-                        >
-                          {ver.atsScore}% ATS
-                        </Badge>
-                      )}
                       {ver.encrypted && (
-                        <Badge variant="outline" className="text-[9px] text-muted-foreground border-purple-500/30">
-                          <ShieldCheck className="w-2.5 h-2.5 mr-0.5 text-purple-400" />
+                        <Badge variant="outline" className="text-[9px] text-muted-foreground border-emerald-500/30">
+                          <ShieldCheck className="w-2.5 h-2.5 mr-0.5 text-emerald-500" />
                           AES-256
                         </Badge>
                       )}
@@ -153,7 +141,7 @@ export function WalrusVersionModal({
 
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
                       <span>{new Date(ver.createdAt).toLocaleString()}</span>
-                      <span className="font-mono text-purple-600 dark:text-purple-400">
+                      <span className="font-mono text-emerald-600 dark:text-emerald-400">
                         Blob: {ver.blobId.slice(0, 10)}...{ver.blobId.slice(-6)}
                       </span>
                     </div>
@@ -192,7 +180,11 @@ export function WalrusVersionModal({
                         onRestoreVersion(ver);
                         onClose();
                       }}
-                      className="h-7 px-2.5 text-[11px] font-semibold gap-1"
+                      className={`h-7 px-2.5 text-[11px] font-semibold gap-1 ${
+                        isCurrent
+                          ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                          : "border-border/80 hover:bg-muted"
+                      }`}
                     >
                       <RotateCcw className="w-3 h-3" />
                       {isCurrent ? "Active" : "Restore"}

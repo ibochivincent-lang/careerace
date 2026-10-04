@@ -151,10 +151,10 @@ export function BulletWithActionVerbs({
                     e.preventDefault();
                     handleIntegrateKeyword(kw);
                   }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-400/40 hover:bg-emerald-500/15 hover:text-emerald-700 hover:border-emerald-500/60 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/20 hover:text-emerald-800 dark:hover:text-emerald-200 hover:border-emerald-500/60 transition-all active:scale-95 cursor-pointer shadow-2xs"
                   title={`Click to integrate "${kw}" smoothly into this bullet`}
                 >
-                  <PlusCircle className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                  <PlusCircle className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Integrate "{kw}"</span>
                 </button>
               ))}

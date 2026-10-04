@@ -83,7 +83,7 @@ export function AtsBenchmarkSimulatorModal({
       case 'under_represented':
         return 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300'
       case 'over_stuffed':
-        return 'bg-purple-500/15 border-purple-500/40 text-purple-700 dark:text-purple-300'
+        return 'bg-blue-500/15 border-blue-500/40 text-blue-700 dark:text-blue-300'
       case 'optimal':
       default:
         return 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
@@ -97,7 +97,7 @@ export function AtsBenchmarkSimulatorModal({
       case 'under_represented':
         return <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10">Under-represented</Badge>
       case 'over_stuffed':
-        return <Badge variant="outline" className="text-[10px] border-purple-500/40 text-purple-600 dark:text-purple-400 bg-purple-500/10">Over-stuffed</Badge>
+        return <Badge variant="outline" className="text-[10px] border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/10">Over-stuffed</Badge>
       case 'optimal':
       default:
         return <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">Optimal Fit</Badge>
@@ -482,7 +482,7 @@ export function AtsBenchmarkSimulatorModal({
                 <span>Optimal Density</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-purple-500/60 border border-purple-500" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-blue-500/60 border border-blue-500" />
                 <span>Keyword Stuffing Risk</span>
               </span>
             </div>

@@ -29,6 +29,7 @@ import { parseCvText } from '@/lib/heuristic_cv_parser'
 import { LivePdfPreview } from '@/components/LivePdfPreview'
 import { WalrusVersionModal } from '@/components/WalrusVersionModal'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
+import { SaveWalrusSnapshotModal } from '@/components/SaveWalrusSnapshotModal'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 
 function getGreeting(): string {
@@ -143,7 +144,6 @@ function DashboardContent() {
   const [tailorCompany, setTailorCompany] = useState('')
   const [tailorRole, setTailorRole] = useState('')
   const [keyProblemsSolved, setKeyProblemsSolved] = useState('')
-  const [coverLetterAngle, setCoverLetterAngle] = useState<'systems' | 'product' | 'startup'>('systems')
   const [tailoredResumeText, setTailoredResumeText] = useState('')
   const [tailoredCoverLetterText, setTailoredCoverLetterText] = useState('')
   const [atsScorecard, setAtsScorecard] = useState<AtsScorecard | null>(null)
@@ -162,6 +162,7 @@ function DashboardContent() {
   const [walrusVersions, setWalrusVersions] = useState<WalrusResumeVersionItem[]>([])
   const [isSavingWalrusVersion, setIsSavingWalrusVersion] = useState(false)
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null)
+  const [isSaveWalrusModalOpen, setIsSaveWalrusModalOpen] = useState(false)
 
   // Profiles State
   const [githubUsername, setGithubUsername] = useState('')
@@ -496,11 +497,16 @@ function DashboardContent() {
     }
   }
 
-  async function handleCommitWalrusVersion() {
+  function handlePromptSaveWalrusVersion() {
     if (!parsedProfile) {
       toast.error('Please upload or load a resume first.')
       return
     }
+    setIsSaveWalrusModalOpen(true)
+  }
+
+  async function handleExecuteCommitWalrusVersion(chosenRole: string, chosenCompany: string) {
+    if (!parsedProfile) return
     setIsSavingWalrusVersion(true)
     const toastId = toast.loading('Committing encrypted snapshot to Walrus Protocol...')
     try {
@@ -509,9 +515,9 @@ function DashboardContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: sessionAddress,
-          company: tailorCompany || 'Target Organization',
-          role: tailorRole || parsedProfile.target_roles?.[0] || 'Target Role',
-          atsScore: atsScorecard?.overall_score || 0,
+          company: chosenCompany || tailorCompany || 'General',
+          role: chosenRole || tailorRole || parsedProfile.target_roles?.[0] || 'Full-Stack Developer',
+          atsScore: 0,
           profile: parsedProfile,
           tailoredText: tailoredResumeText,
           customSummary: (parsedProfile as any).summary || ''
@@ -523,10 +529,10 @@ function DashboardContent() {
       const newVersion: WalrusResumeVersionItem = {
         id: data.version_id,
         versionNumber: walrusVersions.length + 1,
-        label: `v${walrusVersions.length + 1} · ${data.role} @ ${data.company}`,
-        company: data.company,
-        role: data.role,
-        atsScore: data.ats_score,
+        label: `v${walrusVersions.length + 1} · ${chosenRole}`,
+        company: chosenCompany,
+        role: chosenRole,
+        atsScore: 0,
         blobId: data.blob_id,
         walrusUrl: data.walrus_url,
         createdAt: data.timestamp,
@@ -539,8 +545,9 @@ function DashboardContent() {
       setWalrusVersions(updated)
       setActiveVersionId(newVersion.id)
       localStorage.setItem('careerace_walrus_versions', JSON.stringify(updated))
+      setIsSaveWalrusModalOpen(false)
 
-      toast.success(`Anchored to Walrus! Blob: ${data.blob_id.slice(0, 10)}...`, { id: toastId })
+      toast.success(`Anchored "${chosenRole}" to Walrus! Blob: ${data.blob_id.slice(0, 10)}...`, { id: toastId })
     } catch (err: any) {
       toast.error(err.message || 'Walrus version upload failed', { id: toastId })
     } finally {
@@ -878,36 +885,15 @@ function DashboardContent() {
       problemSolvingBlock = `Specifically, I specialize in addressing and resolving the following key challenges:\n${keyProblemsSolved.trim()}\n\n`
     }
 
-    let narrative = ''
-    if (coverLetterAngle === 'systems') {
-      narrative =
-        `I am writing to express my enthusiastic interest in the ${role} opening at ${company}. ` +
-        (topSkills ? `With core expertise in ${topSkills}, ` : '') +
-        `I have dedicated my career to designing dependable, resilient systems with measurable delivery impact.\n\n` +
-        problemSolvingBlock +
-        (recentExp
-          ? `In my work at ${recentExp.company || 'my previous organization'} as ${recentExp.role || 'an engineer'}, I took ownership of complex operational workflows and collaborated cross-functionally to achieve measurable results.\n\n`
-          : '') +
-        `I am eager to bring this same engineering discipline, accountability, and problem-solving focus to ${company}.`
-    } else if (coverLetterAngle === 'product') {
-      narrative =
-        `I am excited to submit my application for the ${role} role at ${company}. ` +
-        (topSkills ? `Leveraging hands-on mastery in ${topSkills}, ` : '') +
-        `I blend technical rigor with a deep commitment to user velocity, interface responsiveness, and business impact.\n\n` +
-        problemSolvingBlock +
-        (recentExp
-          ? `Throughout my tenure at ${recentExp.company || 'my previous organization'}, I worked directly alongside product stakeholders to turn strategic roadmaps into resilient, production-ready deliverables.\n\n`
-          : '') +
-        `I welcome the chance to partner with ${company} to accelerate feature delivery and enhance customer satisfaction.`
-    } else {
-      narrative =
-        `I am reaching out regarding the ${role} opportunity at ${company}. As a proactive builder who thrives with high autonomy and end-to-end ownership, I excel at taking ambiguous objectives and converting them into reliable, clean solutions.\n\n` +
-        problemSolvingBlock +
-        (recentExp
-          ? `At ${recentExp.company || 'my prior role'}, I repeatedly stepped up to solve unblocking challenges and streamline technical execution across the entire stack.\n\n`
-          : '') +
-        `I am genuinely inspired by ${company}'s work and would be thrilled to contribute to your core initiatives.`
-    }
+    const narrative =
+      `I am writing to express my interest in the ${role} opening at ${company}. ` +
+      (topSkills ? `With core expertise in ${topSkills}, ` : '') +
+      `I have built a track record of delivering reliable outcomes, solving operational bottlenecks, and taking direct accountability for deliverables.\n\n` +
+      problemSolvingBlock +
+      (recentExp
+        ? `In my work at ${recentExp.company || 'my previous organization'} as ${recentExp.role || 'a specialist'}, I managed key workflows and collaborated with cross-functional partners to achieve measurable results.\n\n`
+        : '') +
+      `I welcome the opportunity to bring this practical discipline, accountability, and problem-solving focus to ${company}.`
 
     const contactLine = [email, phone, location].filter(Boolean).join(' · ')
     const letter =
@@ -1268,7 +1254,7 @@ function DashboardContent() {
                     className="p-4 rounded-xl border border-border/80 bg-card hover:bg-muted/30 transition-all text-left group"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <Sparkles className="w-4 h-4 text-purple-500 group-hover:scale-110 transition-transform" />
+                      <Sparkles className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
                       <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                     <span className="font-bold text-xs text-foreground block">Tailored Resumes</span>
@@ -1547,18 +1533,12 @@ function DashboardContent() {
                           <FileText className="w-5 h-5 text-emerald-500" />
                           Resume Workspace
                         </h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Standardized to <span className="font-semibold text-foreground">Modern ATS</span> format for optimal scanner compatibility.
-                        </p>
                       </div>
-                      <Badge variant="outline" className="hidden sm:inline-flex text-[11px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
-                        Modern ATS Standard
-                      </Badge>
                     </div>
 
                     {/* Primary Actions: Cleaned Toolbar */}
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Undo & Redo History Controls */}
+                      {/* Undo & Redo Controls */}
                       <div className="flex items-center gap-1">
                         <Button
                           variant="outline"
@@ -1593,20 +1573,6 @@ function DashboardContent() {
                       >
                         <Upload className="w-3.5 h-3.5" /> Attach / Replace CV
                       </Button>
-
-                      {/* Walrus Version History Trigger */}
-                      {walrusVersions.length > 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsWalrusHistoryModalOpen(true)}
-                          className="text-xs h-8 gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10"
-                          title="View Walrus Version History"
-                        >
-                          <Database className="w-3.5 h-3.5 text-purple-400" />
-                          <span className="hidden sm:inline">Walrus History</span> ({walrusVersions.length})
-                        </Button>
-                      )}
                     </div>
                   </div>
 
@@ -1636,7 +1602,7 @@ function DashboardContent() {
                         }
                         walrusVersions={walrusVersions}
                         onOpenWalrusHistory={() => setIsWalrusHistoryModalOpen(true)}
-                        onCommitWalrusVersion={handleCommitWalrusVersion}
+                        onCommitWalrusVersion={handlePromptSaveWalrusVersion}
                         isSavingVersion={isSavingWalrusVersion}
                         onUpdateProfile={updateProfileField}
                       />
@@ -1921,31 +1887,7 @@ function DashboardContent() {
                     />
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground block mb-2">
-                      Problem-Solving Angle
-                    </label>
-                    <div className="space-y-2">
-                      {[
-                        { id: 'systems', title: 'Technical Scaling & Architecture', desc: 'Emphasizes reliability, throughput, and robust systems design.' },
-                        { id: 'product', title: 'Product Velocity & UI Delivery', desc: 'Emphasizes rapid delivery, customer feedback, and clean interfaces.' },
-                        { id: 'startup', title: 'High-Autonomy & Ownership', desc: 'Emphasizes wearing multiple hats, proactive unblocking, and speed.' }
-                      ].map((angle) => (
-                        <div
-                          key={angle.id}
-                          onClick={() => setCoverLetterAngle(angle.id as any)}
-                          className={`p-3 rounded-xl border cursor-pointer transition-colors ${
-                            coverLetterAngle === angle.id
-                              ? 'border-emerald-500 bg-emerald-500/10 text-foreground'
-                              : 'border-border/70 hover:bg-muted/40 text-muted-foreground'
-                          }`}
-                        >
-                          <span className="font-semibold block text-xs">{angle.title}</span>
-                          <span className="text-[11px] text-muted-foreground">{angle.desc}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+
 
                   <Button
                     size="sm"
@@ -2105,6 +2047,16 @@ function DashboardContent() {
             localStorage.removeItem('careerace_walrus_versions')
             toast.success('Walrus version cache cleared.')
           }}
+        />
+
+        {/* Walrus Save Snapshot Modal with Role Selection */}
+        <SaveWalrusSnapshotModal
+          isOpen={isSaveWalrusModalOpen}
+          onClose={() => setIsSaveWalrusModalOpen(false)}
+          defaultRole={tailorRole || parsedProfile?.target_roles?.[0] || 'Full-Stack Developer'}
+          defaultCompany={tailorCompany || 'General'}
+          isSaving={isSavingWalrusVersion}
+          onConfirmSave={handleExecuteCommitWalrusVersion}
         />
       </div>
     </AppShell>

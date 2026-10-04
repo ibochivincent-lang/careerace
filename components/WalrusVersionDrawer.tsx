@@ -62,10 +62,10 @@ export function WalrusVersionDrawer({
   }
 
   return (
-    <div className="rounded-2xl border border-purple-500/30 bg-purple-950/10 dark:bg-purple-950/20 backdrop-blur-xs p-4 space-y-3 transition-all">
+    <div className="rounded-2xl border border-border/80 bg-muted/20 backdrop-blur-xs p-4 space-y-3 transition-all">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400">
+          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
             <Database className="w-4 h-4" />
           </div>
           <div>
@@ -73,7 +73,7 @@ export function WalrusVersionDrawer({
               <h4 className="text-xs font-bold text-foreground">
                 Walrus Decentralized Version History
               </h4>
-              <Badge variant="outline" className="text-[10px] text-purple-400 border-purple-500/30 bg-purple-500/10">
+              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
                 {versions.length} {versions.length === 1 ? "Version" : "Versions"} Anchored
               </Badge>
             </div>
@@ -99,7 +99,7 @@ export function WalrusVersionDrawer({
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(!isOpen)}
-            className="text-xs h-7 gap-1 text-purple-600 dark:text-purple-400 font-semibold"
+            className="text-xs h-7 gap-1 text-emerald-600 dark:text-emerald-400 font-semibold"
           >
             <History className="w-3.5 h-3.5" />
             {isOpen ? "Hide History" : "View Versions"}
@@ -109,7 +109,7 @@ export function WalrusVersionDrawer({
       </div>
 
       {isOpen && (
-        <div className="pt-2 border-t border-purple-500/20 space-y-2.5 max-h-72 overflow-y-auto pr-1">
+        <div className="pt-2 border-t border-border/60 space-y-2.5 max-h-72 overflow-y-auto pr-1">
           {versions.map((ver, idx) => {
             const isCurrent = activeVersionId === ver.id;
             return (
@@ -117,8 +117,8 @@ export function WalrusVersionDrawer({
                 key={ver.id || idx}
                 className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                   isCurrent
-                    ? "border-purple-500/60 bg-purple-500/15 shadow-xs"
-                    : "border-border/60 bg-card/60 hover:border-purple-500/30"
+                    ? "border-emerald-500/60 bg-emerald-500/10 shadow-xs"
+                    : "border-border/60 bg-card hover:border-emerald-500/30 hover:bg-emerald-500/5"
                 }`}
               >
                 <div className="space-y-1">
@@ -127,21 +127,9 @@ export function WalrusVersionDrawer({
                       v{ver.versionNumber || versions.length - idx} · {ver.role}
                     </span>
                     <span className="text-xs text-muted-foreground">@ {ver.company}</span>
-                    {ver.atsScore > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className={`text-[10px] font-semibold ${
-                          ver.atsScore >= 70
-                            ? "text-emerald-500 bg-emerald-500/10"
-                            : "text-amber-500 bg-amber-500/10"
-                        }`}
-                      >
-                        {ver.atsScore}% ATS
-                      </Badge>
-                    )}
                     {ver.encrypted && (
-                      <Badge variant="outline" className="text-[9px] text-muted-foreground">
-                        <ShieldCheck className="w-2.5 h-2.5 mr-0.5 text-purple-400" />
+                      <Badge variant="outline" className="text-[9px] text-muted-foreground border-emerald-500/30">
+                        <ShieldCheck className="w-2.5 h-2.5 mr-0.5 text-emerald-500" />
                         AES-256
                       </Badge>
                     )}
@@ -149,7 +137,7 @@ export function WalrusVersionDrawer({
 
                   <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
                     <span>{new Date(ver.createdAt).toLocaleString()}</span>
-                    <span className="font-mono text-purple-600 dark:text-purple-400">
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400">
                       Blob: {ver.blobId.slice(0, 10)}...{ver.blobId.slice(-6)}
                     </span>
                   </div>
@@ -185,7 +173,11 @@ export function WalrusVersionDrawer({
                     size="sm"
                     variant={isCurrent ? "secondary" : "outline"}
                     onClick={() => onRestoreVersion(ver)}
-                    className="h-7 px-2.5 text-[11px] font-semibold gap-1"
+                    className={`h-7 px-2.5 text-[11px] font-semibold gap-1 ${
+                      isCurrent
+                        ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                        : "border-border/80 hover:bg-muted"
+                    }`}
                   >
                     <RotateCcw className="w-3 h-3" />
                     {isCurrent ? "Active" : "Restore"}

@@ -154,7 +154,7 @@ export function ProofAttachmentModal({
         <DialogHeader className="p-5 pb-3 border-b border-border/80 bg-muted/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-600/10 text-purple-600 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600/10 text-emerald-600 flex items-center justify-center font-bold">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
@@ -166,7 +166,7 @@ export function ProofAttachmentModal({
                 </DialogDescription>
               </div>
             </div>
-            <Badge variant="outline" className="border-purple-500/30 text-purple-600 font-mono text-[10px]">
+            <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 font-mono text-[10px]">
               Walrus Decentralized
             </Badge>
           </div>
@@ -179,7 +179,7 @@ export function ProofAttachmentModal({
                 onClick={() => setTab("preview")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   tab === "preview"
-                    ? "bg-purple-600 text-white shadow-xs"
+                    ? "bg-emerald-600 text-white shadow-xs"
                     : "text-muted-foreground hover:text-foreground bg-background border"
                 }`}
               >
@@ -192,7 +192,7 @@ export function ProofAttachmentModal({
               onClick={() => setTab("walrus")}
               className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                 tab === "walrus"
-                  ? "bg-purple-600 text-white shadow-xs"
+                  ? "bg-emerald-600 text-white shadow-xs"
                   : "text-muted-foreground hover:text-foreground bg-background border"
               }`}
             >
@@ -204,7 +204,7 @@ export function ProofAttachmentModal({
               onClick={() => setTab("drive")}
               className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                 tab === "drive"
-                  ? "bg-purple-600 text-white shadow-xs"
+                  ? "bg-emerald-600 text-white shadow-xs"
                   : "text-muted-foreground hover:text-foreground bg-background border"
               }`}
             >
@@ -218,7 +218,7 @@ export function ProofAttachmentModal({
           {/* TAB 1: ACTIVE PROOF PREVIEW */}
           {tab === "preview" && existingProof && (
             <div className="space-y-4">
-              <div className="p-3.5 rounded-xl border border-purple-500/20 bg-purple-500/5 space-y-2">
+              <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="space-y-0.5">
                     <span className="text-xs font-bold text-foreground block">
@@ -234,7 +234,7 @@ export function ProofAttachmentModal({
                 </div>
 
                 {existingProof.blobId && (
-                  <div className="text-[11px] font-mono text-purple-700 dark:text-purple-300 break-all bg-purple-500/10 p-2 rounded-lg">
+                  <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 break-all bg-emerald-500/10 p-2 rounded-lg">
                     <span className="font-semibold block text-[10px] uppercase text-muted-foreground">Walrus Blob ID:</span>
                     {existingProof.blobId}
                   </div>
@@ -253,14 +253,14 @@ export function ProofAttachmentModal({
                     ) : (
                       <div className="p-3 rounded-lg border border-border bg-background flex items-center justify-between">
                         <span className="text-xs font-medium text-foreground flex items-center gap-1.5 truncate">
-                          <FileText className="w-4 h-4 text-purple-500 shrink-0" />
+                          <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
                           {existingProof.title}
                         </span>
                         <a
                           href={existingProof.previewUrl || existingProof.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs font-semibold text-purple-600 hover:underline flex items-center gap-1 shrink-0"
+                          className="text-xs font-semibold text-emerald-600 hover:underline flex items-center gap-1 shrink-0"
                         >
                           View Document <ExternalLink className="w-3 h-3" />
                         </a>
@@ -291,7 +291,7 @@ export function ProofAttachmentModal({
             </div>
           )}
 
-          {/* TAB 2: WALRUS IMMUTABLE UPLOAD */}
+          {/* TAB 2: WALRUS UPLOAD */}
           {tab === "walrus" && (
             <div className="space-y-4">
               <div>
@@ -303,14 +303,14 @@ export function ProofAttachmentModal({
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
                   placeholder="e.g. STCW Certificate of Competency / Project Lead Proof"
-                  className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
               {/* Upload Dropzone */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border/80 hover:border-purple-500/60 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/10 hover:bg-muted/30 transition-all"
+                className="border-2 border-dashed border-border/80 hover:border-emerald-500/60 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer bg-muted/10 hover:bg-muted/30 transition-all"
               >
                 <input
                   ref={fileInputRef}
@@ -322,7 +322,7 @@ export function ProofAttachmentModal({
 
                 {selectedFile ? (
                   <div className="space-y-2">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 flex items-center justify-center mx-auto">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
                       <FileCheck className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-bold text-foreground">
@@ -334,7 +334,7 @@ export function ProofAttachmentModal({
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 flex items-center justify-center mx-auto">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
                       <Upload className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-semibold text-foreground">
@@ -366,7 +366,7 @@ export function ProofAttachmentModal({
                   size="sm"
                   onClick={handleUploadToWalrus}
                   disabled={isUploading || !selectedFile}
-                  className="text-xs h-8 bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+                  className="text-xs h-8 bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5"
                 >
                   {isUploading ? (
                     <>
@@ -394,7 +394,7 @@ export function ProofAttachmentModal({
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
                   placeholder="e.g. Marine Engineering Portfolio / Google Drive Folder"
-                  className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
@@ -411,7 +411,7 @@ export function ProofAttachmentModal({
                     value={externalUrl}
                     onChange={(e) => setExternalUrl(e.target.value)}
                     placeholder="https://drive.google.com/file/d/... or https://..."
-                    className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
@@ -427,7 +427,7 @@ export function ProofAttachmentModal({
                   size="sm"
                   onClick={handleSaveExternalLink}
                   disabled={!externalUrl.trim()}
-                  className="text-xs h-8 bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+                  className="text-xs h-8 bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" /> Save Verified Link
                 </Button>

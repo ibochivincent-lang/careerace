@@ -26,7 +26,7 @@ const TYPE_STYLES: Record<AppNotification['type'], string> = {
   exam_soon:  'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300',
   achievement:'bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-300',
   tip:        'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
-  reminder:   'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300',
+  reminder:   'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
 }
 
 const TYPE_ICONS: Record<AppNotification['type'], React.ReactNode> = {

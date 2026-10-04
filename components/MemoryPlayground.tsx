@@ -43,7 +43,7 @@ const KIND_COLORS: Record<string, string> = {
   experience: 'border-blue-500/40 bg-blue-500/10 text-blue-400',
   education: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400',
   skill: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
-  target_role: 'border-purple-500/40 bg-purple-500/10 text-purple-400',
+  target_role: 'border-teal-500/40 bg-teal-500/10 text-teal-400',
   tailored_cv: 'border-pink-500/40 bg-pink-500/10 text-pink-400',
   application: 'border-amber-500/40 bg-amber-500/10 text-amber-400',
   interview_feedback: 'border-rose-500/40 bg-rose-500/10 text-rose-400',
