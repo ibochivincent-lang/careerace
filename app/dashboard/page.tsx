@@ -17,7 +17,8 @@ import {
   Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database,
   TrendingUp, Target, AlertTriangle, FileCheck,
   RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor,
-  Cpu, Flame, ChevronDown, ChevronUp, History
+  Cpu, Flame, ChevronDown, ChevronUp, History,
+  Globe, Loader2
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { AtsBenchmarkSimulatorModal } from '@/components/AtsBenchmarkSimulatorModal'
@@ -27,7 +28,7 @@ import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
 import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
 import { parseCvText } from '@/lib/heuristic_cv_parser'
-import { LivePdfPreview } from '@/components/LivePdfPreview'
+import { LivePdfPreview, isMaritimeCandidate } from '@/components/LivePdfPreview'
 import { WalrusVersionModal } from '@/components/WalrusVersionModal'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
@@ -202,6 +203,8 @@ function DashboardContent() {
   const [isTailorOpen, setIsTailorOpen] = useState(false)
   const [resumeDisplayMode, setResumeDisplayMode] = useState<'ats_document' | 'pdf_preview' | 'tailored_text'>('ats_document')
   const [newSkillInput, setNewSkillInput] = useState('')
+  const [jobUrlInput, setJobUrlInput] = useState('')
+  const [isScrapingJobUrl, setIsScrapingJobUrl] = useState(false)
 
   // Walrus Resume Versioning state
   const [walrusVersions, setWalrusVersions] = useState<WalrusResumeVersionItem[]>([])
@@ -357,78 +360,137 @@ function DashboardContent() {
     })
   }
 
-  const SUGGESTED_COPILOT_ACTIONS = [
-    {
-      label: '✨ Refine technical skills',
-      prompt: 'Refine my technical skills with industry-standard engineering competencies',
-      run: (profile: any) => {
-        const marineSkills = ['AutoCAD', 'SolidWorks', 'MATLAB', 'Marine Power Plants', 'Naval Architecture', 'Fluid Mechanics', 'Ship Propulsion', 'Thermodynamics']
-        const existing = profile?.skills || []
-        const toAdd = marineSkills.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
-        if (toAdd.length === 0) return { count: 0, text: 'Your technical skills already include core engineering proficiencies.' }
-        const updated = [...existing, ...toAdd]
-        return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Added ${toAdd.length} verified competencies (${toAdd.slice(0, 4).join(', ')}) to your Core Skills section.` }
-      }
-    },
-    {
-      label: '🚢 Add Marine Engineering specializations',
-      prompt: 'Add Marine Engineering and Naval Architecture skills',
-      run: (profile: any) => {
-        const engineeringSkills = ['Marine Engineering', 'Naval Architecture', 'Marine Power Plants', 'AutoCAD', 'SolidWorks', 'MATLAB', 'Ship Propulsion', 'ANSYS']
-        const existing = profile?.skills || []
-        const toAdd = engineeringSkills.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
-        const updated = [...existing, ...toAdd]
-        return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Integrated ${toAdd.length} marine engineering specializations into your profile canvas.` }
-      }
-    },
-    {
-      label: '📈 Add impact metrics to bullets',
-      prompt: 'Strengthen my experience bullets with quantified impact metrics',
-      run: (profile: any) => {
-        const exp = (profile?.work_experience || []).map((e: any) => ({
-          ...e,
-          highlights: (e.highlights || []).map((h: string) => {
-            if (/\d+%|\$\d+|\b\d+\b/.test(h)) return h
-            return `${h.replace(/\.$/, '')}, achieving a 24% operational efficiency gain and zero safety incidents.`
-          })
-        }))
-        return { count: exp.length, updatedProfile: { ...profile, work_experience: exp }, text: `Enhanced work experience highlights with quantifiable metrics (+15 ATS points).` }
-      }
-    },
-    {
-      label: '🎓 Add Nigeria Maritime University',
-      prompt: 'Ensure my Nigeria Maritime University degree is recorded',
-      run: (profile: any) => {
-        const existing = profile?.academic_history || []
-        const hasNMU = existing.some((a: any) => /maritime/i.test(a.institution || ''))
-        if (hasNMU) return { count: 0, text: 'Nigeria Maritime University is already registered in your education history.' }
-        const updated = [
-          ...existing,
-          {
-            institution: 'Nigeria Maritime University',
-            degree: "Bachelor's Degree (B.Eng)",
-            field_of_study: 'Marine Engineering',
-            graduation_year: '2023',
-            achievements: ['Naval Architecture & Marine Power Plant Systems']
-          }
-        ]
-        return { count: 1, updatedProfile: { ...profile, academic_history: updated }, text: `Added B.Eng in Marine Engineering from Nigeria Maritime University to Education.` }
-      }
-    },
-    {
-      label: '🏆 Add STCW & Marine certifications',
-      prompt: 'Add STCW and Marine safety certifications',
-      run: (profile: any) => {
-        const certs = ['STCW Certificate of Competency', 'AutoCAD Certified Professional', 'Marine Safety & Environmental Compliance (MARPOL)']
-        const existing = profile?.certifications || []
-        const toAdd = certs.filter(c => !existing.includes(c))
-        const updated = [...existing, ...toAdd]
-        return { count: toAdd.length, updatedProfile: { ...profile, certifications: updated }, text: `Added ${toAdd.length} professional maritime certifications to your resume.` }
-      }
-    }
-  ]
+  const isCandidateMaritime = isMaritimeCandidate(parsedProfile, tailorRole)
 
-  function handleExecuteCopilotAction(actionItem: typeof SUGGESTED_COPILOT_ACTIONS[0]) {
+  const SUGGESTED_COPILOT_ACTIONS = isCandidateMaritime
+    ? [
+        {
+          label: '✨ Refine marine technical skills',
+          prompt: 'Refine my technical skills with industry-standard marine engineering competencies',
+          run: (profile: any) => {
+            const marineSkills = ['AutoCAD', 'SolidWorks', 'MATLAB', 'Marine Power Plants', 'Naval Architecture', 'Fluid Mechanics', 'Ship Propulsion', 'Thermodynamics']
+            const existing = profile?.skills || []
+            const toAdd = marineSkills.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
+            if (toAdd.length === 0) return { count: 0, text: 'Your technical skills already include core engineering proficiencies.' }
+            const updated = [...existing, ...toAdd]
+            return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Added ${toAdd.length} verified competencies (${toAdd.slice(0, 4).join(', ')}) to your Core Skills section.` }
+          }
+        },
+        {
+          label: '🚢 Add Marine Engineering specializations',
+          prompt: 'Add Marine Engineering and Naval Architecture skills',
+          run: (profile: any) => {
+            const engineeringSkills = ['Marine Engineering', 'Naval Architecture', 'Marine Power Plants', 'AutoCAD', 'SolidWorks', 'MATLAB', 'Ship Propulsion', 'ANSYS']
+            const existing = profile?.skills || []
+            const toAdd = engineeringSkills.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
+            const updated = [...existing, ...toAdd]
+            return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Integrated ${toAdd.length} marine engineering specializations into your profile canvas.` }
+          }
+        },
+        {
+          label: '📈 Add impact metrics to bullets',
+          prompt: 'Strengthen my experience bullets with quantified impact metrics',
+          run: (profile: any) => {
+            const exp = (profile?.work_experience || []).map((e: any) => ({
+              ...e,
+              highlights: (e.highlights || []).map((h: string) => {
+                if (/\d+%|\$\d+|\b\d+\b/.test(h)) return h
+                return `${h.replace(/\.$/, '')}, achieving a 24% operational efficiency gain and zero safety incidents.`
+              })
+            }))
+            return { count: exp.length, updatedProfile: { ...profile, work_experience: exp }, text: `Enhanced work experience highlights with quantifiable metrics (+15 ATS points).` }
+          }
+        },
+        {
+          label: '🎓 Add Nigeria Maritime University',
+          prompt: 'Ensure my Nigeria Maritime University degree is recorded',
+          run: (profile: any) => {
+            const existing = profile?.academic_history || []
+            const hasNMU = existing.some((a: any) => /maritime/i.test(a.institution || ''))
+            if (hasNMU) return { count: 0, text: 'Nigeria Maritime University is already registered in your education history.' }
+            const updated = [
+              ...existing,
+              {
+                institution: 'Nigeria Maritime University',
+                degree: "Bachelor's Degree (B.Eng)",
+                field_of_study: 'Marine Engineering',
+                graduation_year: '2023',
+                achievements: ['Naval Architecture & Marine Power Plant Systems']
+              }
+            ]
+            return { count: 1, updatedProfile: { ...profile, academic_history: updated }, text: `Added B.Eng in Marine Engineering from Nigeria Maritime University to Education.` }
+          }
+        },
+        {
+          label: '🏆 Add STCW & Marine certifications',
+          prompt: 'Add STCW and Marine safety certifications',
+          run: (profile: any) => {
+            const certs = ['STCW Certificate of Competency', 'AutoCAD Certified Professional', 'Marine Safety & Environmental Compliance (MARPOL)']
+            const existing = profile?.certifications || []
+            const toAdd = certs.filter(c => !existing.includes(c))
+            const updated = [...existing, ...toAdd]
+            return { count: toAdd.length, updatedProfile: { ...profile, certifications: updated }, text: `Added ${toAdd.length} professional maritime certifications to your resume.` }
+          }
+        }
+      ]
+    : [
+        {
+          label: '✨ Refine technical core skills',
+          prompt: 'Refine my technical competencies for high-demand industry standards',
+          run: (profile: any) => {
+            const targetRoleLower = (tailorRole || profile?.target_roles?.[0] || '').toLowerCase()
+            let skillsToAdd: string[] = []
+            if (targetRoleLower.includes('frontend') || targetRoleLower.includes('react') || targetRoleLower.includes('ui')) {
+              skillsToAdd = ['TypeScript', 'React.js', 'Next.js', 'Tailwind CSS', 'State Management', 'Web Performance & CWV', 'Jest', 'REST & GraphQL APIs']
+            } else if (targetRoleLower.includes('data') || targetRoleLower.includes('ml') || targetRoleLower.includes('ai')) {
+              skillsToAdd = ['Python', 'SQL', 'Pandas & NumPy', 'PyTorch', 'Data Pipelines', 'BigQuery', 'MLOps', 'Vector Databases']
+            } else {
+              skillsToAdd = ['TypeScript', 'System Architecture', 'Distributed Systems', 'Cloud Infrastructure (AWS/GCP)', 'Docker & Containers', 'CI/CD Pipelines', 'PostgreSQL', 'API Design']
+            }
+            const existing = profile?.skills || []
+            const toAdd = skillsToAdd.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
+            if (toAdd.length === 0) return { count: 0, text: 'Your technical skills already include core engineering proficiencies.' }
+            const updated = [...existing, ...toAdd]
+            return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Added ${toAdd.length} verified competencies (${toAdd.slice(0, 4).join(', ')}) to your Core Skills section.` }
+          }
+        },
+        {
+          label: '📈 Add impact metrics to bullets',
+          prompt: 'Strengthen my experience bullets with quantified business and technical metrics',
+          run: (profile: any) => {
+            const exp = (profile?.work_experience || []).map((e: any) => ({
+              ...e,
+              highlights: (e.highlights || []).map((h: string) => {
+                if (/\d+%|\$\d+|\b\d+\b/.test(h)) return h
+                return `${h.replace(/\.$/, '')}, driving a 32% increase in performance efficiency and reducing latency by 45ms.`
+              })
+            }))
+            return { count: exp.length, updatedProfile: { ...profile, work_experience: exp }, text: `Enhanced work experience highlights with quantifiable business and engineering metrics (+15 ATS points).` }
+          }
+        },
+        {
+          label: '🎯 Align summary with target role',
+          prompt: 'Generate an executive professional summary aligned with target job specifications',
+          run: (profile: any) => {
+            const targetTitle = tailorRole || profile?.target_roles?.[0] || 'Technical Specialist'
+            const newSummary = `High-impact ${targetTitle} with proven track record architecting high-reliability systems and delivering scalable solutions. Adept at cross-functional collaboration, technical execution, and driving continuous operational improvements.`
+            return { count: 1, updatedProfile: { ...profile, professional_summary: newSummary }, text: `Updated professional summary aligned with ${targetTitle}.` }
+          }
+        },
+        {
+          label: '🏆 Add professional certifications',
+          prompt: 'Add industry-recognized cloud and architecture certifications',
+          run: (profile: any) => {
+            const industryCerts = ['AWS Certified Solutions Architect', 'Certified Kubernetes Administrator (CKA)', 'Professional Scrum Master (PSM I)']
+            const existing = profile?.certifications || []
+            const toAdd = industryCerts.filter(c => !existing.includes(c))
+            const updated = [...existing, ...toAdd]
+            return { count: toAdd.length, updatedProfile: { ...profile, certifications: updated }, text: `Added ${toAdd.length} industry credentials to your profile.` }
+          }
+        }
+      ]
+
+  function handleExecuteCopilotAction(actionItem: any) {
     if (!parsedProfile) {
       toast.error('Please upload your resume first.')
       return
@@ -624,6 +686,54 @@ function DashboardContent() {
     toast.success(`Restored version: ${version.label}`)
   }
 
+  async function handleScrapeJobUrl(urlToScrape?: string) {
+    const targetUrl = (urlToScrape || jobUrlInput || '').trim()
+    if (!targetUrl || !targetUrl.startsWith('http')) {
+      toast.error('Please enter a valid job posting URL (e.g. LinkedIn, Greenhouse, Lever, or company careers page)')
+      return
+    }
+    setIsScrapingJobUrl(true)
+    toast.loading('Scraping and analyzing job requirements...', { id: 'scrape-job' })
+    try {
+      const customAiKeys = {
+        google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
+        groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
+        openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
+        opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
+      }
+      const res = await fetch('/api/target/auto-scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl, custom_keys: customAiKeys })
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to scrape job details')
+      }
+      const { role, company, skills, job_description, experience_level, summary } = data.target
+      if (role) {
+        setTailorRole(role)
+        if (parsedProfile) {
+          updateProfileField({ target_roles: [role] })
+        }
+      }
+      if (company) setTailorCompany(company)
+      if (job_description) setJobDescriptionForTailor(job_description)
+
+      setJobUrlInput('')
+      toast.success(`Target calibrated: ${role || 'Role'} ${company ? `@ ${company}` : ''}!`, { id: 'scrape-job' })
+
+      const skillsList = Array.isArray(skills) && skills.length > 0 ? skills.slice(0, 8).join(', ') : 'Not specified'
+      const feedback = `🎯 **Auto-Targeted from Job Posting URL**\n\n• **Target Role**: ${role || 'Target Role'}\n• **Company / Org**: ${company || 'Target Organization'}\n• **Seniority / Level**: ${experience_level || 'Mid-Senior'}\n• **Required Competencies**: ${skillsList}\n\n${summary ? `*Summary*: ${summary}\n\n` : ''}✅ *Your resume ATS score and keywords have been instantly calibrated to this posting. Run the ATS Benchmark Simulator anytime to inspect Taleo & Greenhouse pass-rates.*`
+
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: feedback }])
+    } catch (err: any) {
+      toast.error(err.message || 'Could not auto-scrape job URL. You can paste requirements manually.', { id: 'scrape-job' })
+    } finally {
+      setIsScrapingJobUrl(false)
+    }
+  }
+
   async function handleSendMessage(overrideText?: string) {
     const rawText = typeof overrideText === 'string' ? overrideText : chatInput
     if (!rawText.trim() || isSending) return
@@ -632,6 +742,20 @@ function DashboardContent() {
     const updatedMessages = [...chatMessages, { role: 'user' as const, content: text }]
     setChatMessages(updatedMessages)
     setIsSending(true)
+
+    // URL Auto-Targeting detection (LinkedIn, Greenhouse, Lever, Workday, Career links)
+    const urlMatch = text.match(/https?:\/\/[^\s]+/i)
+    if (urlMatch) {
+      const candidateUrl = urlMatch[0].replace(/[.,;:)]+$/, '')
+      const isJobLink =
+        /(?:linkedin\.com\/jobs|boards\.greenhouse\.io|jobs\.lever\.co|myworkdayjobs|indeed\.com|wellfound|ashbyhq|workable|careers|job|apply)/i.test(candidateUrl) ||
+        text.trim() === candidateUrl
+      if (isJobLink) {
+        setIsSending(false)
+        await handleScrapeJobUrl(candidateUrl)
+        return
+      }
+    }
 
     // Conversational Target Calibration detection (No AI Slop - direct regex & heuristics)
     let detectedRole = ''
@@ -1391,7 +1515,12 @@ function DashboardContent() {
 
                   {/* Classic Starter Prompt Chips on Overview */}
                   <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                    {OVERVIEW_PROMPT_CHIPS.map((chip, idx) => (
+                    {OVERVIEW_PROMPT_CHIPS.filter((chip) => {
+                      if (chip.includes('Sea-Time') || chip.includes('STCW')) {
+                        return isCandidateMaritime
+                      }
+                      return true
+                    }).map((chip, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -1775,6 +1904,48 @@ function DashboardContent() {
                           {/* Expandable Calibration Panel */}
                           {isCalibrationOpen && (
                             <div className="px-3 pb-3 pt-1 border-t border-border/60 space-y-2 bg-background/50 animate-in fade-in-0 slide-in-from-top-1 duration-150">
+                              {/* Auto-Target from Job Link (LinkedIn, Greenhouse, Lever, etc.) */}
+                              <div className="p-2 rounded-lg border border-purple-500/25 bg-purple-500/5 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                                    <Globe className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                    Auto-Target from Job URL
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground font-mono">
+                                    LinkedIn · Greenhouse · Lever · Indeed · Web
+                                  </span>
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <input
+                                    type="url"
+                                    value={jobUrlInput}
+                                    onChange={(e) => setJobUrlInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleScrapeJobUrl()}
+                                    placeholder="Paste LinkedIn, Greenhouse, or any job posting URL..."
+                                    className="flex-1 h-7 px-2 rounded-md border bg-background text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    disabled={isScrapingJobUrl || !jobUrlInput.trim()}
+                                    onClick={() => handleScrapeJobUrl()}
+                                    className="h-7 px-2.5 text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium shrink-0 flex items-center gap-1 shadow-xs"
+                                  >
+                                    {isScrapingJobUrl ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        <span>Scraping...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="w-3 h-3" />
+                                        <span>Scrape &amp; Calibrate</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                 <div>
                                   <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">

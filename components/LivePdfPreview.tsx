@@ -27,14 +27,34 @@ import {
   Edit3,
   CheckCircle2,
   Briefcase,
-  History
+  History,
+  ExternalLink,
+  Eye,
+  Globe,
+  Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { BulletWithActionVerbs } from "@/components/BulletWithActionVerbs";
+import { ProofAttachmentModal } from "@/components/ProofAttachmentModal";
 import type { ParsedCv } from "@/lib/cv_parser";
+import type { ProofAttachment } from "@/lib/heuristic_cv_parser";
 import type { WalrusResumeVersionItem } from "@/components/WalrusVersionDrawer";
+
+export function isMaritimeCandidate(profile: ParsedCv | null, tailorRole?: string): boolean {
+  if (!profile) return false;
+  const combined = [
+    tailorRole || "",
+    ...(profile.target_roles || []),
+    ...(profile.skills || []),
+    ...(profile.certifications || []),
+    ...(profile.work_experience?.map(w => `${w.role} ${w.company} ${(w.highlights || []).join(" ")}`) || []),
+    ...(profile.academic_history?.map(a => `${a.degree} ${a.field_of_study} ${a.institution}`) || []),
+  ].join(" ").toLowerCase();
+
+  return /\b(marine|maritime|naval|vessel|captain|deck\s+officer|chief\s+engineer|seafarer|seaman|ship|oicew|propulsion|offshore|subsea|stcw|solas|marpol)\b/i.test(combined);
+}
 
 export type AtsTemplateId = "ivy_league" | "modern_tech" | "senior_architect";
 
@@ -118,6 +138,22 @@ export function LivePdfPreview({
   const [newCertInput, setNewCertInput] = useState<string>("");
   const [showAddSkillInput, setShowAddSkillInput] = useState<boolean>(false);
   const [showAddCertInput, setShowAddCertInput] = useState<boolean>(false);
+  const [showAddLeadershipSection, setShowAddLeadershipSection] = useState<boolean>(false);
+  const [showAddConferencesSection, setShowAddConferencesSection] = useState<boolean>(false);
+
+  const [proofModalConfig, setProofModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    category: "work" | "certificate" | "leadership" | "project" | "other";
+    targetId?: string;
+    existingProof?: ProofAttachment | null;
+    onSave: (proof: ProofAttachment | null) => void;
+  }>({
+    isOpen: false,
+    title: "",
+    category: "work",
+    onSave: () => {},
+  });
 
   const printContainerRef = useRef<HTMLDivElement>(null);
 
@@ -308,6 +344,59 @@ export function LivePdfPreview({
     updateField({ certifications: updated });
   }
 
+  function handleUpdateLeadership(leadIdx: number, field: string, value: any) {
+    if (!profile?.leadership) return;
+    const copy = [...profile.leadership];
+    copy[leadIdx] = { ...copy[leadIdx], [field]: value };
+    updateField({ leadership: copy });
+  }
+
+  function handleAddLeadership() {
+    const current = profile?.leadership || [];
+    updateField({
+      leadership: [
+        ...current,
+        {
+          role: "Lead Volunteer / Coordinator",
+          organization: "Professional Society / Community",
+          duration: "2023 - Present",
+          highlights: ["Led cross-functional initiatives and spearheaded outreach programs."],
+        },
+      ],
+    });
+    toast.success("Added leadership & volunteer entry");
+  }
+
+  function handleRemoveLeadership(leadIdx: number) {
+    if (!profile?.leadership) return;
+    const updated = profile.leadership.filter((_, idx) => idx !== leadIdx);
+    updateField({ leadership: updated });
+    toast.success("Removed leadership entry");
+  }
+
+  function handleAddConference() {
+    const current = profile?.conferences || [];
+    updateField({
+      conferences: [
+        ...current,
+        {
+          name: "Technical Symposium / Industry Conference",
+          role_or_topic: "Delegate / Speaker",
+          year: "2024",
+          location: "Global",
+        },
+      ],
+    });
+    toast.success("Added conference & presentation entry");
+  }
+
+  function handleRemoveConference(confIdx: number) {
+    if (!profile?.conferences) return;
+    const updated = profile.conferences.filter((_, idx) => idx !== confIdx);
+    updateField({ conferences: updated });
+    toast.success("Removed conference entry");
+  }
+
   // Generate pristine vector HTML for high-fidelity PDF printing
   function handlePrintPdf() {
     if (!profile) return;
@@ -319,7 +408,7 @@ export function LivePdfPreview({
 
     const templateStyles = {
       ivy_league: `
-        @page { size: A4 portrait; margin: 14mm 16mm 14mm 16mm; }
+        @page { size: A4 portrait; margin: 12mm 16mm 12mm 16mm; }
         body { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; color: #111827; background: #ffffff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         h1 { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; font-size: 22pt; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin: 0 0 3pt 0; color: #0f172a; }
         .role-subtitle { text-align: center; font-size: 10pt; font-style: italic; text-transform: uppercase; letter-spacing: 1.5px; color: #334155; margin-bottom: 4pt; }
@@ -334,7 +423,7 @@ export function LivePdfPreview({
         .walrus-stamp img { width: 50pt; height: 50pt; border: 1pt solid #cbd5e1; }
       `,
       modern_tech: `
-        @page { size: A4 portrait; margin: 12mm 15mm 12mm 15mm; }
+        @page { size: A4 portrait; margin: 10mm 14mm 10mm 14mm; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #ffffff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         h1 { font-size: 21pt; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; margin: 0 0 2pt 0; color: #0f172a; }
         .role-subtitle { font-size: 9pt; font-weight: 700; font-family: monospace; color: #047857; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3pt; }
@@ -372,6 +461,7 @@ export function LivePdfPreview({
       (profile as any).location,
       profile.linkedin_url,
       profile.github_url,
+      profile.website_url,
     ].filter(Boolean).join("  •  ");
 
     const roleTitle = tailorRole || profile.target_roles?.[0] || "Systems Engineer";
@@ -391,7 +481,7 @@ export function LivePdfPreview({
         </div>
         <div class="job-sub">
           <span>${exp.company}</span>
-          <span style="font-size: 7.5pt;">Verified Record</span>
+          <span style="font-size: 7.5pt;">${exp.proofAttachment ? `✓ Proof Anchored on Walrus` : "Verified Record"}</span>
         </div>
         ${exp.highlights && exp.highlights.length > 0 ? `
           <ul>
@@ -413,6 +503,29 @@ export function LivePdfPreview({
     const certsHtml = (profile.certifications || []).length > 0
       ? `<div style="font-size: 8.5pt; color: #1e293b; margin-top: 3pt;">${profile.certifications.join("  •  ")}</div>`
       : "";
+
+    const leadershipHtml = (profile.leadership || []).map(lead => `
+      <div style="margin-bottom: 5pt;">
+        <div class="job-header">
+          <span>${lead.role} — <em>${lead.organization}</em></span>
+          <span style="font-weight: normal; font-size: 8.5pt;">${lead.duration || ""}</span>
+        </div>
+        ${lead.highlights && lead.highlights.length > 0 ? `
+          <ul>
+            ${lead.highlights.map(h => `<li>${h}</li>`).join("")}
+          </ul>
+        ` : ""}
+      </div>
+    `).join("");
+
+    const conferencesHtml = (profile.conferences || []).map(conf => `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 2.5pt; font-size: 8.5pt;">
+        <div>
+          <strong>${conf.name}</strong>${conf.role_or_topic ? ` — <em>${conf.role_or_topic}</em>` : ""}${conf.location ? ` (${conf.location})` : ""}
+        </div>
+        <span style="font-style: italic;">${conf.year || ""}</span>
+      </div>
+    `).join("");
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -453,6 +566,18 @@ export function LivePdfPreview({
               <div class="section-title">Certifications &amp; Professional Licenses</div>
               <div>${certsHtml}</div>
             ` : ""}
+
+            ${leadershipHtml ? `
+              <div class="section-title">Leadership &amp; Community Service</div>
+              <div>${leadershipHtml}</div>
+            ` : ""}
+
+            ${conferencesHtml ? `
+              <div class="section-title">Conferences &amp; Presentations</div>
+              <div>${conferencesHtml}</div>
+            ` : ""}
+
+
 
             <div class="walrus-stamp">
               <div style="display: flex; align-items: center; gap: 8pt;">
@@ -697,7 +822,7 @@ export function LivePdfPreview({
       </div>
 
       {/* ── PREVIEW & EDITOR CANVAS BODY ── */}
-      <div className="flex-1 bg-muted/40 p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[640px] max-h-[860px]">
+      <div className="flex-1 bg-muted/40 p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[700px]">
         {activeView === "uploaded_source" && sourcePdfUrl ? (
           <div className="w-full h-full min-h-[600px] rounded-xl overflow-hidden border border-border shadow-md bg-background">
             <iframe
@@ -770,35 +895,80 @@ export function LivePdfPreview({
                   )}
                 </div>
 
-                {/* Contact Line (Email, Phone, Location) */}
+                {/* Contact Line (Email, Phone, Location & Links with Unrestricted Sizing) */}
                 <div
-                  className={`flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 ${
-                    activeTemplate === "ivy_league" ? "justify-center text-[10.5px] text-slate-700" : ""
+                  className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5 text-xs text-slate-700 ${
+                    activeTemplate === "ivy_league" ? "justify-center text-[12px] text-slate-700" : ""
                   }`}
                 >
-                  <input
-                    type="text"
-                    value={contactEmail}
-                    onChange={(e) => updateField({ email: e.target.value, contact_email: e.target.value } as any)}
-                    placeholder="email@example.com"
-                    className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 max-w-[210px]"
-                  />
-                  <span className="text-slate-400">•</span>
-                  <input
-                    type="text"
-                    value={contactPhone}
-                    onChange={(e) => updateField({ phone: e.target.value, contact_phone: e.target.value } as any)}
-                    placeholder="+1 (555) 000-0000"
-                    className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 max-w-[150px]"
-                  />
-                  <span className="text-slate-400">•</span>
-                  <input
-                    type="text"
-                    value={contactLocation}
-                    onChange={(e) => updateField({ location: e.target.value } as any)}
-                    placeholder="City, Country"
-                    className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 max-w-[160px]"
-                  />
+                  <div className="inline-flex items-center gap-1 min-w-[190px] flex-1">
+                    <span className="text-slate-400 text-[10px] uppercase font-mono">Email:</span>
+                    <input
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => updateField({ email: e.target.value, contact_email: e.target.value } as any)}
+                      placeholder="candidate.email@example.com"
+                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800"
+                    />
+                  </div>
+                  <span className="text-slate-300 select-none hidden sm:inline">•</span>
+                  <div className="inline-flex items-center gap-1 min-w-[130px] flex-1 max-w-[210px]">
+                    <span className="text-slate-400 text-[10px] uppercase font-mono">Tel:</span>
+                    <input
+                      type="text"
+                      value={contactPhone}
+                      onChange={(e) => updateField({ phone: e.target.value, contact_phone: e.target.value } as any)}
+                      placeholder="+1 (555) 000-0000"
+                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800"
+                    />
+                  </div>
+                  <span className="text-slate-300 select-none hidden sm:inline">•</span>
+                  <div className="inline-flex items-center gap-1 min-w-[130px] flex-1 max-w-[220px]">
+                    <span className="text-slate-400 text-[10px] uppercase font-mono">Loc:</span>
+                    <input
+                      type="text"
+                      value={contactLocation}
+                      onChange={(e) => updateField({ location: e.target.value } as any)}
+                      placeholder="City, Country"
+                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800"
+                    />
+                  </div>
+
+                  {/* LinkedIn & GitHub & Portfolio Row */}
+                  <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5 text-[11px] text-slate-600 border-t border-slate-100">
+                    <div className="inline-flex items-center gap-1 flex-1 min-w-[170px]">
+                      <span className="text-blue-600 font-bold text-[10px] font-mono">in/</span>
+                      <input
+                        type="text"
+                        value={profile.linkedin_url || ""}
+                        onChange={(e) => updateField({ linkedin_url: e.target.value })}
+                        placeholder="linkedin.com/in/username"
+                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700"
+                      />
+                    </div>
+                    <span className="text-slate-300 select-none hidden sm:inline">•</span>
+                    <div className="inline-flex items-center gap-1 flex-1 min-w-[170px]">
+                      <span className="text-slate-800 font-bold text-[10px] font-mono">gh/</span>
+                      <input
+                        type="text"
+                        value={profile.github_url || ""}
+                        onChange={(e) => updateField({ github_url: e.target.value })}
+                        placeholder="github.com/username"
+                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700"
+                      />
+                    </div>
+                    <span className="text-slate-300 select-none hidden sm:inline">•</span>
+                    <div className="inline-flex items-center gap-1 flex-1 min-w-[170px]">
+                      <span className="text-emerald-700 font-bold text-[10px] font-mono">web/</span>
+                      <input
+                        type="text"
+                        value={profile.website_url || ""}
+                        onChange={(e) => updateField({ website_url: e.target.value })}
+                        placeholder="portfolio or personal site"
+                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -996,7 +1166,7 @@ export function LivePdfPreview({
                           )}
 
                           {/* Add Bullet Button */}
-                          <div className="no-print pt-1 pl-3">
+                          <div className="no-print pt-1 pl-3 flex items-center justify-between flex-wrap gap-2">
                             <button
                               type="button"
                               onClick={() => handleAddBullet(expIdx)}
@@ -1004,6 +1174,56 @@ export function LivePdfPreview({
                             >
                               <Plus className="w-3 h-3" /> Add Accomplishment Bullet
                             </button>
+
+                            {/* Walrus Proof of Experience Attachment */}
+                            {exp.proofAttachment ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setProofModalConfig({
+                                    isOpen: true,
+                                    title: `Verified Proof: ${exp.role} at ${exp.company}`,
+                                    category: "work",
+                                    targetId: `exp-${expIdx}`,
+                                    existingProof: exp.proofAttachment,
+                                    onSave: (proof) => {
+                                      const copy = [...(profile.work_experience || [])];
+                                      copy[expIdx] = { ...copy[expIdx], proofAttachment: proof || undefined };
+                                      updateField({ work_experience: copy });
+                                    },
+                                  })
+                                }
+                                className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors shadow-2xs"
+                                title="Click to view verified decentralized proof on Walrus"
+                              >
+                                <ShieldCheck className="w-3 h-3 text-purple-600" />
+                                <span>{exp.proofAttachment.title || "Walrus Proof Verified"}</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setProofModalConfig({
+                                    isOpen: true,
+                                    title: `Attach Proof: ${exp.role} at ${exp.company}`,
+                                    category: "work",
+                                    targetId: `exp-${expIdx}`,
+                                    existingProof: null,
+                                    onSave: (proof) => {
+                                      if (!proof) return;
+                                      const copy = [...(profile.work_experience || [])];
+                                      copy[expIdx] = { ...copy[expIdx], proofAttachment: proof };
+                                      updateField({ work_experience: copy });
+                                    },
+                                  })
+                                }
+                                className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-500 hover:text-purple-600 transition-colors"
+                                title="Attach certificate scan, sea-time slip, or Google Drive link"
+                              >
+                                <Database className="w-3 h-3 text-slate-400 group-hover:text-purple-500" />
+                                <span>+ Attach Proof (Walrus/Drive)</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1101,6 +1321,17 @@ export function LivePdfPreview({
                 </div>
               </div>
 
+              {/* ── VISUAL A4 PAGE 1 / PAGE 2 FLOW GUIDE (Clean visual indicator) ── */}
+              <div className="no-print relative my-6 py-2 flex items-center justify-center select-none">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t-2 border-dashed border-slate-300" />
+                </div>
+                <div className="relative bg-slate-100 text-slate-600 text-[10px] font-mono font-bold px-3 py-0.5 rounded-full border border-slate-300 shadow-2xs flex items-center gap-1.5 uppercase tracking-wider">
+                  <FileText className="w-3 h-3 text-purple-600" />
+                  <span>A4 Multi-Page Flow · Page 1 / Page 2 Break Guide</span>
+                </div>
+              </div>
+
               {/* ────────── CERTIFICATIONS & WALRUS MARITIME CREDENTIALS ────────── */}
               <div className="space-y-2 pt-2 border-t border-slate-300">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-1">
@@ -1116,8 +1347,9 @@ export function LivePdfPreview({
                     Certifications &amp; Professional Licenses ({profile.certifications?.length || 0})
                   </h2>
 
+                  {/* STCW Verifier: ONLY renders if candidate has verified Marine / Maritime competencies */}
                   <div className="no-print flex items-center gap-2">
-                    {onOpenMaritimeVerifier && (
+                    {isMaritimeCandidate(profile, tailorRole) && onOpenMaritimeVerifier && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1197,6 +1429,209 @@ export function LivePdfPreview({
                 </div>
               </div>
 
+              {/* ────────── LEADERSHIP & COMMUNITY SERVICE ────────── */}
+              {((profile.leadership && profile.leadership.length > 0) || showAddLeadershipSection) && (
+                <div className="space-y-3 pt-2 border-t border-slate-300">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <h2
+                      className={
+                        activeTemplate === "ivy_league"
+                          ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 m-0"
+                          : activeTemplate === "senior_architect"
+                          ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                          : "text-xs font-black uppercase tracking-wider text-slate-900 m-0"
+                      }
+                    >
+                      Leadership &amp; Community Service ({profile.leadership?.length || 0})
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleAddLeadership}
+                      className="no-print text-xs text-emerald-700 hover:bg-emerald-50 h-7 px-2 gap-1 shrink-0 font-medium"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Leadership
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(profile.leadership || []).map((lead, lIdx) => (
+                      <div
+                        key={lIdx}
+                        className="group/lead space-y-1 p-2.5 rounded-lg border border-slate-200/80 bg-slate-50/30 relative"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLeadership(lIdx)}
+                          className="no-print absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-20 group-hover/lead:opacity-100 transition-opacity p-0.5"
+                          title="Remove leadership position"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pr-6">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <input
+                              type="text"
+                              value={lead.role || ""}
+                              onChange={(e) => handleUpdateLeadership(lIdx, "role", e.target.value)}
+                              placeholder="Role / Title"
+                              className="font-bold text-xs text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1"
+                            />
+                            <span className="text-slate-400 text-xs">at</span>
+                            <input
+                              type="text"
+                              value={lead.organization || ""}
+                              onChange={(e) => handleUpdateLeadership(lIdx, "organization", e.target.value)}
+                              placeholder="Organization / Initiative"
+                              className="font-semibold text-xs text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1"
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={lead.duration || ""}
+                            onChange={(e) => handleUpdateLeadership(lIdx, "duration", e.target.value)}
+                            placeholder="2023 - Present"
+                            className="text-slate-500 text-xs font-mono bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none text-right px-1 w-28"
+                          />
+                        </div>
+
+                        {lead.highlights && lead.highlights.length > 0 && (
+                          <ul className="list-disc pl-4 space-y-0.5 text-xs text-slate-700 pt-1">
+                            {lead.highlights.map((h, hIdx) => (
+                              <li key={hIdx}>
+                                <input
+                                  type="text"
+                                  value={h}
+                                  onChange={(e) => {
+                                    const newHighlights = [...(lead.highlights || [])];
+                                    newHighlights[hIdx] = e.target.value;
+                                    handleUpdateLeadership(lIdx, "highlights", newHighlights);
+                                  }}
+                                  className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none text-xs"
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Toggle to Add Leadership if not yet present */}
+              {!profile.leadership?.length && !showAddLeadershipSection && (
+                <div className="no-print pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddLeadershipSection(true);
+                      handleAddLeadership();
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" /> Add Leadership &amp; Volunteer Section
+                  </button>
+                </div>
+              )}
+
+              {/* ────────── CONFERENCES & PRESENTATIONS ────────── */}
+              {((profile.conferences && profile.conferences.length > 0) || showAddConferencesSection) && (
+                <div className="space-y-2 pt-2 border-t border-slate-300">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                    <h2
+                      className={
+                        activeTemplate === "ivy_league"
+                          ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 m-0"
+                          : activeTemplate === "senior_architect"
+                          ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                          : "text-xs font-black uppercase tracking-wider text-slate-900 m-0"
+                      }
+                    >
+                      Conferences, Seminars &amp; Keynotes ({profile.conferences?.length || 0})
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleAddConference}
+                      className="no-print text-xs text-emerald-700 hover:bg-emerald-50 h-7 px-2 gap-1 shrink-0 font-medium"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Conference
+                    </Button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {(profile.conferences || []).map((conf, cIdx) => (
+                      <div
+                        key={cIdx}
+                        className="group/conf flex items-baseline justify-between gap-2 p-1.5 rounded hover:bg-slate-50 text-xs"
+                      >
+                        <div className="flex items-center gap-1.5 flex-wrap flex-1">
+                          <span className="font-bold text-slate-900">{conf.name}</span>
+                          {conf.role_or_topic && (
+                            <span className="text-slate-600 italic">— {conf.role_or_topic}</span>
+                          )}
+                          {conf.location && (
+                            <span className="text-slate-400 text-[11px]">({conf.location})</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-slate-500 font-mono text-[11px]">{conf.year || ""}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveConference(cIdx)}
+                            className="no-print text-slate-400 hover:text-red-500 opacity-20 group-hover/conf:opacity-100 transition-opacity p-0.5"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Toggle to Add Conferences if not yet present */}
+              {!profile.conferences?.length && !showAddConferencesSection && (
+                <div className="no-print pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddConferencesSection(true);
+                      handleAddConference();
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-emerald-700 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" /> Add Conferences &amp; Seminars Section
+                  </button>
+                </div>
+              )}
+
+              {/* ────────── SUPPORTING ATTACHMENTS & WALRUS PROOFS ────────── */}
+              {profile.attachments && profile.attachments.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-300">
+                  <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 m-0">
+                    Verified Supporting Proofs &amp; Attachments ({profile.attachments.length})
+                  </h2>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {profile.attachments.map((att, aIdx) => (
+                      <a
+                        key={aIdx}
+                        href={att.previewUrl || att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 text-xs transition-colors"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                        <span className="font-semibold">{att.title}</span>
+                        <ExternalLink className="w-3 h-3 text-purple-400" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* ────────── WALRUS VERIFIABLE CREDENTIAL QR STAMP ────────── */}
               <div className="walrus-stamp mt-8 pt-4 border-t border-slate-300 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -1252,6 +1687,19 @@ export function LivePdfPreview({
           </span>
         </span>
       </div>
+
+      {/* ── PROOF OF EXPERIENCE ATTACHMENT MODAL (Walrus & Drive) ── */}
+      <ProofAttachmentModal
+        isOpen={proofModalConfig.isOpen}
+        onClose={() => setProofModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        title={proofModalConfig.title}
+        category={proofModalConfig.category}
+        targetId={proofModalConfig.targetId}
+        existingProof={proofModalConfig.existingProof}
+        onSaveProof={(proof) => {
+          proofModalConfig.onSave(proof);
+        }}
+      />
     </div>
   );
 }

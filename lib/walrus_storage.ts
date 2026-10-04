@@ -152,3 +152,62 @@ export async function fetchAndDecryptResumeFromWalrus(
   const encryptedBuffer = Buffer.from(arrayBuffer);
   return decryptDocument(encryptedBuffer, candidateAddress);
 }
+
+/**
+ * Uploads a public credential or proof attachment (certificate image, PDF, or screenshot) to Walrus.
+ * These can be verified directly by hiring managers via Walrus aggregator.
+ */
+export async function uploadPublicProofToWalrus(
+  fileBuffer: Buffer,
+  fileName: string,
+  contentType: string = "image/png",
+  epochs: number = DEFAULT_EPOCHS
+): Promise<WalrusBlobUploadResult> {
+  const sha256Digest = crypto.createHash("sha256").update(fileBuffer).digest("hex");
+  const publisherUrl = `${WALRUS_TESTNET_PUBLISHER}/v1/blobs?epochs=${epochs}`;
+
+  const response = await fetch(publisherUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": contentType || "application/octet-stream",
+      "X-File-Name": encodeURIComponent(fileName),
+    },
+    body: new Uint8Array(fileBuffer),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `Walrus proof upload failed (${response.status} ${response.statusText}): ${errorText || "Could not publish blob"}`
+    );
+  }
+
+  const data = await response.json();
+  let blobId = "";
+  let suiObjectId = "";
+
+  if (data.newlyCreated) {
+    blobId = data.newlyCreated.blobObject?.blobId || data.newlyCreated.blobId;
+    suiObjectId = data.newlyCreated.blobObject?.id || "";
+  } else if (data.alreadyCertified) {
+    blobId = data.alreadyCertified.blobId;
+    suiObjectId = data.alreadyCertified.event?.txDigest || "";
+  } else if (data.blobId) {
+    blobId = data.blobId;
+  }
+
+  if (!blobId) {
+    throw new Error("Walrus publisher returned response without blobId");
+  }
+
+  const walrusUrl = `${WALRUS_TESTNET_AGGREGATOR}/v1/blobs/${blobId}`;
+
+  return {
+    blobId,
+    suiObjectId,
+    epochs,
+    encrypted: false,
+    walrusUrl,
+    sha256Digest,
+  };
+}

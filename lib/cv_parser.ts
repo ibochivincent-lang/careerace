@@ -45,7 +45,9 @@ CRITICAL EXTRACTION REQUIREMENTS:
    - "graduation_year": Year or date range
    - "achievements": Honors, awards, or key coursework
 6. "certifications": Any professional certificates or licenses.
-7. "target_roles": Inferred or stated job positions this candidate qualifies for (e.g. "Marine Engineer", "Naval Architect", "Mechanical Engineer", "Software Engineer").
+7. "leadership": Extract any leadership, community volunteer, committee, or extracurricular service roles.
+8. "conferences": Extract conferences, seminars, symposiums, or presentations attended/delivered.
+9. "target_roles": Inferred or stated job positions this candidate qualifies for (e.g. "Marine Engineer", "Naval Architect", "Mechanical Engineer", "Software Engineer").
 
 Strict Output JSON Schema:
 {
@@ -54,6 +56,7 @@ Strict Output JSON Schema:
   "phone": string,
   "github_url": string,
   "linkedin_url": string,
+  "website_url": string,
   "skills": string[],
   "work_experience": [
     {
@@ -73,6 +76,22 @@ Strict Output JSON Schema:
     }
   ],
   "certifications": string[],
+  "leadership": [
+    {
+      "role": string,
+      "organization": string,
+      "duration": string,
+      "highlights": string[]
+    }
+  ],
+  "conferences": [
+    {
+      "name": string,
+      "role_or_topic": string,
+      "year": string,
+      "location": string
+    }
+  ],
   "target_roles": string[]
 }
 Extract ONLY factual data present in the text. Return raw JSON only.`;
@@ -121,12 +140,23 @@ Extract ONLY factual data present in the text. Return raw JSON only.`;
           ? [resolvedWorkExp[0].role]
           : ["Engineer"];
 
+      const resolvedLeadership =
+        Array.isArray(aiParsed.leadership) && aiParsed.leadership.length > 0
+          ? aiParsed.leadership
+          : fallback.leadership;
+
+      const resolvedConferences =
+        Array.isArray(aiParsed.conferences) && aiParsed.conferences.length > 0
+          ? aiParsed.conferences
+          : fallback.conferences;
+
       return {
         applicant_name: resolvedName,
         email: aiParsed.email || fallback.email,
         phone: aiParsed.phone || fallback.phone,
         github_url: aiParsed.github_url || fallback.github_url,
         linkedin_url: aiParsed.linkedin_url || fallback.linkedin_url,
+        website_url: aiParsed.website_url || fallback.website_url,
         skills: combinedSkills.length > 0 ? combinedSkills : fallback.skills,
         work_experience: resolvedWorkExp,
         academic_history: resolvedAcademic,
@@ -136,6 +166,9 @@ Extract ONLY factual data present in the text. Return raw JSON only.`;
             : fallback.certifications,
         target_roles: resolvedTargetRoles,
         custom_achievements: fallback.custom_achievements || [],
+        leadership: resolvedLeadership,
+        conferences: resolvedConferences,
+        attachments: fallback.attachments,
       };
     }
   } catch (err) {

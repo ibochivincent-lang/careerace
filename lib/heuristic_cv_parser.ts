@@ -5,6 +5,20 @@
  * academic background, certifications, and target roles directly from text.
  */
 
+export interface ProofAttachment {
+  id: string;
+  title: string;
+  category: "work" | "certificate" | "leadership" | "project" | "other";
+  targetId?: string;
+  url?: string;
+  blobId?: string;
+  walrusUrl?: string;
+  previewUrl?: string;
+  fileType?: string;
+  uploadedAt: string;
+  isExternal?: boolean;
+}
+
 export interface ParsedCv {
   applicant_name: string;
   email: string;
@@ -12,12 +26,14 @@ export interface ParsedCv {
   github_url?: string;
   linkedin_url?: string;
   location?: string;
+  website_url?: string;
   skills: string[];
   work_experience: Array<{
     company: string;
     role: string;
     duration: string;
     highlights: string[];
+    proofAttachment?: ProofAttachment;
   }>;
   academic_history: Array<{
     institution: string;
@@ -30,6 +46,20 @@ export interface ParsedCv {
   target_roles: string[];
   custom_achievements?: string[];
   summary?: string;
+  leadership?: Array<{
+    role: string;
+    organization: string;
+    duration?: string;
+    highlights?: string[];
+    proofAttachment?: ProofAttachment;
+  }>;
+  conferences?: Array<{
+    name: string;
+    role_or_topic?: string;
+    year?: string;
+    location?: string;
+  }>;
+  attachments?: ProofAttachment[];
 }
 
 export const EXTENSIVE_SKILLS_DICTIONARY = [
@@ -173,6 +203,9 @@ export const SECTION_HEADERS = {
   certifications: /^(?:#{0,3}\s*)?(?:certifications?|certificates?|professional\s+certifications?|licenses?|credentials?|accreditations?|courses?|awards?)\b/i,
   projects: /^(?:#{0,3}\s*)?(?:projects?|personal\s+projects?|side\s+projects?|portfolio|key\s+projects?|notable\s+projects?)\b/i,
   summary: /^(?:#{0,3}\s*)?(?:summary|profile|objective|about\s+me|professional\s+summary|career\s+objective|introduction|executive\s+summary)\b/i,
+  leadership: /^(?:#{0,3}\s*)?(?:leadership|volunteer|volunteering|community|extracurricular|civic|leadership\s*(?:&|and)\s*(?:service|volunteering|experience|activities))\b/i,
+  conferences: /^(?:#{0,3}\s*)?(?:conferences?|seminars?|symposiums?|presentations?|speaking\s+engagements?|publications?\s*(?:&|and)\s*conferences?)\b/i,
+  attachments: /^(?:#{0,3}\s*)?(?:attachments?|supporting\s+documents?|credentials?\s+proof|portfolio\s+links?|appendices|proofs?)\b/i,
 };
 
 export function parseCvText(rawText: string): ParsedCv {
@@ -185,6 +218,7 @@ export function parseCvText(rawText: string): ParsedCv {
   let github_url = "";
   let linkedin_url = "";
   let location = "";
+  let website_url = "";
   let summary = "";
 
   // 1. Contact Info & Name Extraction
@@ -217,6 +251,10 @@ export function parseCvText(rawText: string): ParsedCv {
         /https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i
       );
       linkedin_url = linkedMatch ? linkedMatch[0] : "";
+    }
+    if (!website_url && /(?:portfolio|website|site)[\s:]*(https?:\/\/[^\s]+)/i.test(line)) {
+      const siteMatch = line.match(/(?:portfolio|website|site)[\s:]*(https?:\/\/[^\s]+)/i);
+      if (siteMatch) website_url = siteMatch[1].trim();
     }
     if (!location && /(?:location|address|based\s+in)[\s:]*([a-zA-Z0-9\s,.-]{4,40})/i.test(line)) {
       const locMatch = line.match(/(?:location|address|based\s+in)[\s:]*([a-zA-Z0-9\s,.-]{4,40})/i);
@@ -598,7 +636,129 @@ export function parseCvText(rawText: string): ParsedCv {
 
   const certifications = Array.from(certificationsSet);
 
-  // 6. Target Roles
+  // 6. Leadership & Volunteer Experience
+  const leadership: ParsedCv["leadership"] = [];
+  const leadIdx = lines.findIndex((l) => SECTION_HEADERS.leadership.test(l));
+  if (leadIdx !== -1) {
+    const endIdx = lines.findIndex(
+      (l, i) =>
+        i > leadIdx &&
+        (SECTION_HEADERS.experience.test(l) ||
+          SECTION_HEADERS.education.test(l) ||
+          SECTION_HEADERS.skills.test(l) ||
+          SECTION_HEADERS.certifications.test(l) ||
+          SECTION_HEADERS.conferences.test(l) ||
+          SECTION_HEADERS.projects.test(l))
+    );
+    const leadEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, leadIdx + 20);
+    const leadLines = lines.slice(leadIdx + 1, leadEnd);
+
+    let curRole = "";
+    let curOrg = "";
+    let curDur = "";
+    let curHighlights: string[] = [];
+
+    const flushLead = () => {
+      if (curRole || curOrg) {
+        leadership.push({
+          role: curRole || "Lead Volunteer",
+          organization: curOrg || "Community Initiative",
+          duration: curDur || undefined,
+          highlights: curHighlights.length > 0 ? curHighlights : undefined,
+        });
+      }
+      curRole = "";
+      curOrg = "";
+      curDur = "";
+      curHighlights = [];
+    };
+
+    for (const line of leadLines) {
+      const isBullet = /^[-*\u2022\u00b7>]/.test(line);
+      if (isBullet) {
+        curHighlights.push(line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim());
+      } else {
+        const dateMatch = line.match(/\b((?:20|19)\d{2}(?:\s*[-–—]\s*(?:present|current|now|(?:20|19)\d{2}))?)\b/i);
+        const sepMatch = line.match(/(.*?)\s+(?:at|@|—|–|-|\|)\s+(.*)/i);
+        if (sepMatch) {
+          if (curRole || curOrg) flushLead();
+          curRole = sepMatch[1].replace(/^[#*\-\s]+/, "").trim();
+          curOrg = sepMatch[2].replace(/^[#*\-\s]+/, "").trim();
+          if (dateMatch) curDur = dateMatch[0];
+        } else if (!curRole) {
+          curRole = line.replace(/^[#*\-\s]+/, "").trim();
+          if (dateMatch) curDur = dateMatch[0];
+        } else if (!curOrg) {
+          curOrg = line.replace(/^[#*\-\s]+/, "").trim();
+        } else if (line.length > 15) {
+          curHighlights.push(line.trim());
+        }
+      }
+    }
+    flushLead();
+  }
+
+  // 7. Conferences & Seminars
+  const conferences: ParsedCv["conferences"] = [];
+  const confIdx = lines.findIndex((l) => SECTION_HEADERS.conferences.test(l));
+  if (confIdx !== -1) {
+    const endIdx = lines.findIndex(
+      (l, i) =>
+        i > confIdx &&
+        (SECTION_HEADERS.experience.test(l) ||
+          SECTION_HEADERS.education.test(l) ||
+          SECTION_HEADERS.skills.test(l) ||
+          SECTION_HEADERS.certifications.test(l) ||
+          SECTION_HEADERS.leadership.test(l) ||
+          SECTION_HEADERS.projects.test(l))
+    );
+    const confEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, confIdx + 15);
+    const confLines = lines.slice(confIdx + 1, confEnd);
+
+    for (const line of confLines) {
+      const clean = line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim();
+      if (clean.length > 5) {
+        const yearMatch = clean.match(/\b(20\d{2}|19\d{2})\b/);
+        const parts = clean.split(/[–—|,\-]/).map((p) => p.trim());
+        conferences.push({
+          name: parts[0] || clean,
+          role_or_topic: parts[1] || undefined,
+          year: yearMatch ? yearMatch[0] : undefined,
+          location: parts[2] || undefined,
+        });
+      }
+    }
+  }
+
+  // 8. Attachments & Supporting Proofs from text (Drive links, Walrus hashes, Credential links)
+  const attachments: ParsedCv["attachments"] = [];
+  for (const line of lines) {
+    const driveMatch = line.match(/https?:\/\/(?:drive\.google\.com|docs\.google\.com)\/[^\s)]+/i);
+    const proofUrlMatch = line.match(/https?:\/\/[^\s)]+(?:certificate|credential|badge|verify|proof)[^\s)]*/i);
+    if (driveMatch) {
+      attachments.push({
+        id: "att-" + Math.random().toString(36).substring(2, 9),
+        title: "Verified Document / Credential (Google Drive)",
+        category: "other",
+        url: driveMatch[0],
+        previewUrl: driveMatch[0],
+        uploadedAt: new Date().toISOString(),
+        isExternal: true,
+      });
+    } else if (proofUrlMatch && !proofUrlMatch[0].includes("github.com") && !proofUrlMatch[0].includes("linkedin.com")) {
+      attachments.push({
+        id: "att-" + Math.random().toString(36).substring(2, 9),
+        title: "Credential Verification Link",
+        category: "certificate",
+        url: proofUrlMatch[0],
+        previewUrl: proofUrlMatch[0],
+        uploadedAt: new Date().toISOString(),
+        isExternal: true,
+      });
+    }
+  }
+
+  // 9. Target Roles
   const target_roles: string[] = [];
   if (work_experience.length > 0 && work_experience[0].role && work_experience[0].role !== "Role" && work_experience[0].role !== "Professional") {
     target_roles.push(work_experience[0].role);
@@ -623,6 +783,7 @@ export function parseCvText(rawText: string): ParsedCv {
     phone: phone || undefined,
     github_url: github_url || undefined,
     linkedin_url: linkedin_url || undefined,
+    website_url: website_url || undefined,
     location: location || undefined,
     skills,
     work_experience,
@@ -630,5 +791,8 @@ export function parseCvText(rawText: string): ParsedCv {
     certifications,
     target_roles: target_roles.length > 0 ? target_roles : ["Engineer"],
     summary: summary || undefined,
+    leadership: leadership.length > 0 ? leadership : undefined,
+    conferences: conferences.length > 0 ? conferences : undefined,
+    attachments: attachments.length > 0 ? attachments : undefined,
   };
 }
