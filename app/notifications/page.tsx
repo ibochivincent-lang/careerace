@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { AppShell } from '@/components/AppShell'
 import { EmptyState } from '@/components/EmptyState'
 import {
-  Bell, CheckCheck, X, BookOpen, Zap, Calendar, TrendingUp, Brain, Clock
+  Bell, CheckCheck, X, BookOpen, Zap, Calendar, TrendingUp, Brain, Clock, Mail, Phone
 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   getStoredNotifications,
   markNotificationRead,
@@ -98,10 +99,36 @@ export default function NotificationsPage() {
   const [stored, setStored]   = useState<AppNotification[]>([])
   const [dynamic, setDynamic] = useState<AppNotification[]>([])
 
+  // Application & Interview Reminders State
+  const [remindersEnabled, setRemindersEnabled] = useState(true)
+  const [reminderChannel, setReminderChannel] = useState<'email' | 'phone'>('email')
+  const [reminderDestination, setReminderDestination] = useState('')
+
   useEffect(() => {
     setStored(getStoredNotifications())
     setDynamic(buildDynamicNotifications())
+
+    try {
+      const storedPref = localStorage.getItem('careerace_reminder_pref')
+      if (storedPref) {
+        const p = JSON.parse(storedPref)
+        setRemindersEnabled(p.enabled ?? true)
+        setReminderChannel(p.channel ?? 'email')
+        setReminderDestination(p.destination ?? '')
+      }
+    } catch {}
   }, [])
+
+  function handleSaveReminders() {
+    const pref = {
+      enabled: remindersEnabled,
+      channel: reminderChannel,
+      destination: reminderDestination.trim(),
+      updatedAt: new Date().toISOString()
+    }
+    localStorage.setItem('careerace_reminder_pref', JSON.stringify(pref))
+    toast.success(`Reminders configured for ${reminderChannel === 'phone' ? 'Phone SMS/Push' : 'Email'}.`)
+  }
 
   // Merge: dynamic notifications first, then stored ones
   const all = [
@@ -206,30 +233,121 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        {/* Reminder section */}
-        <Card className="mt-6 p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-2">Browser Reminders</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Allow browser notifications to get career alerts and interview reminders even when Career Ace is closed.
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              if ('Notification' in window) {
-                const perm = await Notification.requestPermission()
-                if (perm === 'granted') {
-                  new Notification('Career Ace Alerts Enabled', {
-                    body: 'You\'ll receive career opportunities and interview reminders here.',
-                    icon: '/favicon.ico',
-                  })
-                }
-              }
-            }}
-          >
-            <Bell className="w-3.5 h-3.5" />
-            Enable reminders
-          </Button>
+        {/* Application & Interview Reminders Card */}
+        <Card className="mt-8 p-6 border bg-card/80 rounded-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-foreground">Application &amp; Interview Reminders</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Receive proactive alerts for interview practice rounds, status updates, and newly matched roles.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRemindersEnabled(!remindersEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  remindersEnabled ? 'bg-primary' : 'bg-muted'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                    remindersEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className="text-xs font-medium text-foreground">
+                {remindersEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+          </div>
+
+          {remindersEnabled && (
+            <div className="space-y-4 pt-1">
+              <div className="grid sm:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1.5">Reminder Channel</label>
+                  <div className="flex rounded-md border p-1 bg-muted/30">
+                    <button
+                      type="button"
+                      onClick={() => setReminderChannel('email')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md font-medium transition-colors ${
+                        reminderChannel === 'email' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Mail className="w-3.5 h-3.5" /> Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReminderChannel('phone')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md font-medium transition-colors ${
+                        reminderChannel === 'phone' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <Phone className="w-3.5 h-3.5" /> Phone / Push
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1.5">
+                    {reminderChannel === 'phone' ? 'Phone Number (SMS / Alerts)' : 'Notification Email Address'}
+                  </label>
+                  <input
+                    type={reminderChannel === 'phone' ? 'tel' : 'email'}
+                    placeholder={reminderChannel === 'phone' ? '+1 (555) 000-0000' : 'candidate@example.com'}
+                    value={reminderDestination}
+                    onChange={(e) => setReminderDestination(e.target.value)}
+                    className="w-full text-xs rounded-md border bg-background px-3 py-2"
+                  />
+                </div>
+
+                <div>
+                  <Button size="sm" onClick={handleSaveReminders} className="w-full text-xs font-semibold">
+                    Save Notification Preferences
+                  </Button>
+                </div>
+              </div>
+
+              {/* Browser Push Permission Toggle */}
+              <div className="pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 p-3.5 rounded-xl">
+                <div>
+                  <span className="text-xs font-semibold text-foreground">Direct Browser Notifications</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    Enable browser notification push to get immediate popups for scheduled interview sessions.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs shrink-0"
+                  onClick={async () => {
+                    if ('Notification' in window) {
+                      const perm = await Notification.requestPermission()
+                      if (perm === 'granted') {
+                        new Notification('Career Ace Alerts Enabled', {
+                          body: 'You will receive career opportunities and interview reminders here.',
+                          icon: '/favicon.ico',
+                        })
+                        toast.success('Browser notifications permitted!')
+                      } else {
+                        toast.error('Browser notification permission was denied.')
+                      }
+                    }
+                  }}
+                >
+                  <Bell className="w-3.5 h-3.5 mr-1.5" />
+                  Enable Browser Push
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </AppShell>

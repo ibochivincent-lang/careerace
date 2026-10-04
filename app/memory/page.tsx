@@ -1,45 +1,11 @@
 import { redirect } from 'next/navigation'
-import { AlertTriangle, RotateCcw, Trash2, CornerDownRight, Database, Lock } from 'lucide-react'
+import { Database, ShieldCheck, Lock } from 'lucide-react'
 import { getOwnerAddress } from '@/lib/session.ts'
 import { listMemory } from '@/app/actions/memory'
 import { AppShell } from '@/components/AppShell'
-import { ForgetButton } from '@/components/ForgetButton'
-import { MemoryPlayground } from '@/components/MemoryPlayground'
+import { ResetVaultButton } from '@/components/ResetVaultButton'
 
 export const dynamic = 'force-dynamic'
-
-type Row = { date: string; kind: string; claim: string; distance: number; blobId?: string }
-
-function toRows(facts: { text: string; distance: number; blobId?: string }[]): Row[] {
-  return facts.map((f) => {
-    const [date, kind, body] = f.text.split('|').map((p) => p.trim())
-    return {
-      date: date ?? '',
-      kind: kind ?? 'fact',
-      claim: (body ?? f.text).split(' - SUPERSEDES:')[0].trim(),
-      distance: f.distance,
-      blobId: f.blobId,
-    }
-  })
-}
-
-const KIND_COLOR: Record<string, string> = {
-  experience: 'var(--primary)',
-  education: '#38bdf8',
-  skill: '#34d399',
-  target_role: '#a78bfa',
-  tailored_cv: '#f472b6',
-  application: '#fbbf24',
-  interview_feedback: 'var(--reward)',
-  preference: 'var(--muted-foreground)',
-  clearance: '#94a3b8',
-  // legacy fallbacks
-  misconception: 'var(--destructive)',
-  weakness: 'var(--reward)',
-  error_pattern: 'var(--reward)',
-  mastery: 'var(--primary)',
-  goal: '#a78bfa',
-}
 
 export default async function MemoryPage() {
   const address = await getOwnerAddress()
@@ -48,146 +14,74 @@ export default async function MemoryPage() {
   const empty = { active: [], superseded: [], retracted: [] }
   const { profile, feedback } = await listMemory().catch(() => ({ profile: empty, feedback: empty }))
 
-  const active = [...toRows(profile.active), ...toRows(feedback.active)]
-  const superseded = [...toRows(profile.superseded), ...toRows(feedback.superseded)]
-  const retracted = [...toRows(profile.retracted), ...toRows(feedback.retracted)]
+  const activeCount = (profile.active?.length || 0) + (feedback.active?.length || 0)
+  const supersededCount = (profile.superseded?.length || 0) + (feedback.superseded?.length || 0)
+  const retractedCount = (profile.retracted?.length || 0) + (feedback.retracted?.length || 0)
 
   return (
     <AppShell>
       <div className="flex min-h-screen flex-col">
-        <div className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-10">
-          <div className="flex flex-wrap items-end justify-between gap-8">
+        <div className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-8 space-y-8">
+          {/* Header */}
+          <div className="flex flex-wrap items-end justify-between gap-6 pb-6 border-b border-border/80">
             <div>
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                  Walrus Memory
+                  Walrus Sovereign Protocol
                 </span>
-                <span className="font-mono text-xs text-muted-foreground">careerace:profile</span>
+                <span className="font-mono text-xs text-muted-foreground">careerace:vault</span>
               </div>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight">Your Sovereign Career Vault</h1>
-              <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-muted-foreground">
-                Verified work history, competencies, tailored CV versions, and STAR+R interview coach records
-                persisted on Walrus decentralized storage. Every entry is cryptographically sealed under your Sui zkLogin identity.
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
+                Your Sovereign Career Vault
+              </h1>
+              <p className="mt-2 max-w-[65ch] text-xs md:text-sm leading-relaxed text-muted-foreground">
+                Verified work history, technical competencies, tailored CV versions, and interview performance records
+                anchored to decentralized Walrus storage under your Sui zkLogin identity.
               </p>
             </div>
-            <dl className="flex gap-7 pb-1">
+
+            <dl className="flex gap-6 pb-1">
               <div>
-                <dd className="font-mono text-2xl tabular-nums">{active.length}</dd>
-                <dt className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Active</dt>
+                <dd className="font-mono text-2xl font-bold tabular-nums text-foreground">{activeCount}</dd>
+                <dt className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Anchored</dt>
               </div>
               <div>
-                <dd className="font-mono text-2xl tabular-nums text-reward">{superseded.length}</dd>
-                <dt className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Superseded</dt>
+                <dd className="font-mono text-2xl font-bold tabular-nums text-emerald-500">{supersededCount}</dd>
+                <dt className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Versions</dt>
               </div>
               <div>
-                <dd className="font-mono text-2xl tabular-nums text-destructive">{retracted.length}</dd>
-                <dt className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Retracted</dt>
+                <dd className="font-mono text-2xl font-bold tabular-nums text-destructive">{retractedCount}</dd>
+                <dt className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Retracted</dt>
               </div>
             </dl>
           </div>
 
-          {/* Hackathon Interactive Semantic Memory Playground */}
-          <MemoryPlayground />
-
-          {/* the ledger */}
-          <div className="mt-7 overflow-hidden rounded-xl border bg-card">
-            <div className="grid grid-cols-[104px_140px_minmax(0,1fr)_88px_76px] gap-4 border-b bg-muted/40 px-4 py-2.5">
-              {['Date', 'Kind', 'Career Record', 'Distance', ''].map((h, i) => (
-                <span key={i} className="text-[10px] uppercase tracking-wider text-muted-foreground">{h}</span>
-              ))}
+          {/* Sovereign Vault Information Card */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>Client-Side Threshold Encryption</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                All resume documents and sensitive career accomplishments are encrypted with AES-256-GCM before transmission. Only your sovereign key can unlock your records.
+              </p>
             </div>
 
-            {active.length === 0 && superseded.length === 0 && retracted.length === 0 ? (
-              <div className="px-4 py-14 text-center">
-                <p className="text-sm font-medium">Nothing stored in your Career Vault yet.</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Upload your CV on the Job Engine or practice in the Interview Room to index your verified credentials on Walrus.
-                </p>
+            <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                <Database className="w-4 h-4 text-purple-500" />
+                <span>Decentralized Walrus Availability</span>
               </div>
-            ) : (
-              <>
-                {active.map((r, i) => (
-                  <div
-                    key={`${r.date}-${r.claim}-${i}`}
-                    className="grid grid-cols-[104px_140px_minmax(0,1fr)_88px_76px] items-center gap-4 border-b px-4 py-3.5 last:border-b-0"
-                  >
-                    <span className="font-mono text-xs text-muted-foreground">{r.date}</span>
-                    <span
-                      className="font-mono text-[10px] uppercase tracking-wider"
-                      style={{ color: KIND_COLOR[r.kind] ?? 'var(--muted-foreground)' }}
-                    >
-                      {r.kind.replace(/_/g, ' ')}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="break-words text-[13px]">{r.claim}</div>
-                      {r.blobId && (
-                        <div className="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
-                          <Database className="w-2.5 h-2.5 text-cyan-400" />
-                          <span>Walrus Blob:</span>
-                          <span className="text-foreground/80">{r.blobId.slice(0, 10)}...{r.blobId.slice(-6)}</span>
-                          <span className="ml-1 text-primary">· Seal Encrypted</span>
-                        </div>
-                      )}
-                    </div>
-                    <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                      {r.distance.toFixed(3)}
-                    </span>
-                    <ForgetButton claim={r.claim} />
-                  </div>
-                ))}
-
-                {superseded.map((r, i) => (
-                  <div key={`s-${r.date}-${r.claim}-${i}`} className="flex items-center gap-3 px-4 py-2.5 pl-[124px]">
-                    <CornerDownRight className="size-3.5 shrink-0 text-reward" />
-                    <span className="text-[13px] text-muted-foreground line-through">{r.claim}</span>
-                    <span className="font-mono text-[11px] text-muted-foreground">{r.date} · superseded</span>
-                  </div>
-                ))}
-
-                {retracted.map((r, i) => (
-                  <div key={`r-${r.date}-${r.claim}-${i}`} className="flex items-center gap-3 px-4 py-2.5 pl-[124px]">
-                    <Trash2 className="size-3.5 shrink-0 text-destructive" />
-                    <span className="text-[13px] text-muted-foreground line-through">{r.claim}</span>
-                    <span className="font-mono text-[11px] text-muted-foreground">
-                      {r.date} · retracted, never read again
-                    </span>
-                  </div>
-                ))}
-              </>
-            )}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Stored as high-reliability erasure-coded blobs across Mysten Labs Walrus storage nodes, guaranteeing data permanence and censorship resistance.
+              </p>
+            </div>
           </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <section className="rounded-xl border border-reward/50 bg-reward/5 px-5 py-4">
-              <h2 className="mb-2.5 flex items-center gap-2.5 text-sm font-medium">
-                <AlertTriangle className="size-4 text-reward" />
-                About Sovereign Retractions
-              </h2>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Forgetting writes an onchain retraction tombstone that outranks the fact, ensuring nothing can recall it
-                again — not this app, not any external AI agent holding your delegate key. It is not deletion: there is
-                no delete in Walrus Memory. The encrypted entry stays on Walrus, under keys only
-                you hold, until its storage period expires.
-              </p>
-            </section>
-
-            <section className="rounded-xl border border-destructive/40 px-5 py-4">
-              <h2 className="mb-2.5 flex items-center gap-2.5 text-sm font-medium">
-                <RotateCcw className="size-4 text-destructive" />
-                Revoke App Access
-              </h2>
-              <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-                Removes this app&apos;s delegate key from your Sui account onchain. Revocation is forward-only:
-                the key stops reading anything saved after you revoke it, while previously saved entries remain readable
-                to that key until re-encrypted. If you need older entries closed off, retract them above.
-              </p>
-              <button
-                type="button"
-                className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/10"
-              >
-                Revoke delegate key
-              </button>
-            </section>
+          {/* Vault Management: Reset Vault Only */}
+          <div className="pt-2">
+            <ResetVaultButton />
           </div>
         </div>
       </div>
