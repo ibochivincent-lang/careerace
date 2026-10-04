@@ -24,6 +24,7 @@ import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
 import { LivePdfPreview } from '@/components/LivePdfPreview'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
+import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -1425,6 +1426,11 @@ function DashboardContent() {
                       tailorRole={tailorRole || parsedProfile?.target_roles?.[0] || 'Target Role'}
                       tailorCompany={tailorCompany || 'Target Organization'}
                       atsScore={atsScorecard?.overall_score ?? null}
+                      walrusBlobId={
+                        activeVersionId
+                          ? (walrusVersions.find(v => v.id === activeVersionId)?.blobId || walrusVersions[0]?.blobId)
+                          : walrusVersions[0]?.blobId
+                      }
                       onCommitWalrusVersion={handleCommitWalrusVersion}
                       isSavingVersion={isSavingWalrusVersion}
                     />
@@ -1634,23 +1640,13 @@ function DashboardContent() {
                                 {/* Highlights Bullets */}
                                 <div className="space-y-1.5 pl-2">
                                   {(exp.highlights || []).map((bullet: string, bIdx: number) => (
-                                    <div key={bIdx} className="flex items-start gap-2 group/bullet">
-                                      <span className="text-muted-foreground text-xs select-none mt-1">•</span>
-                                      <textarea
-                                        rows={2}
-                                        value={bullet}
-                                        onChange={(e) => handleEditBullet(expIdx, bIdx, e.target.value)}
-                                        className="flex-1 text-xs leading-relaxed bg-transparent text-foreground border-b border-transparent hover:border-border/60 focus:border-emerald-500 focus:outline-none resize-none p-1 rounded"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveBullet(expIdx, bIdx)}
-                                        className="text-muted-foreground hover:text-red-500 opacity-30 group-hover/bullet:opacity-100 transition-opacity p-1 mt-0.5"
-                                        title="Delete bullet"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </div>
+                                    <BulletWithActionVerbs
+                                      key={bIdx}
+                                      bullet={bullet}
+                                      index={bIdx}
+                                      onUpdate={(newBullet) => handleEditBullet(expIdx, bIdx, newBullet)}
+                                      onDelete={() => handleRemoveBullet(expIdx, bIdx)}
+                                    />
                                   ))}
 
                                   <Button
