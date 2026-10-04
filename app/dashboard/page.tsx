@@ -32,6 +32,8 @@ import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/
 import { SaveWalrusSnapshotModal } from '@/components/SaveWalrusSnapshotModal'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime, type RealtimeSyncEvent } from '@/lib/cloud_sync'
+import { cn } from '@/components/ui/utils'
+import { getClientSessionAddress } from '@/lib/client_auth'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -194,17 +196,33 @@ function DashboardContent() {
   }, [isDraggingSplit])
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.address) {
-          setSessionAddress(data.address)
-        } else {
-          const stored = localStorage.getItem('careerace_session_address')
-          if (stored) setSessionAddress(stored)
-        }
-      })
-      .catch(() => {})
+    function resolveSession() {
+      fetch('/api/auth/session')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.address) {
+            setSessionAddress(data.address)
+          } else {
+            const stored = getClientSessionAddress()
+            if (stored) setSessionAddress(stored)
+            else setSessionAddress('')
+          }
+        })
+        .catch(() => {})
+    }
+
+    resolveSession()
+
+    const handleAuthChange = () => {
+      resolveSession()
+    }
+    window.addEventListener('careerace_auth_changed', handleAuthChange)
+    window.addEventListener('storage', handleAuthChange)
+
+    return () => {
+      window.removeEventListener('careerace_auth_changed', handleAuthChange)
+      window.removeEventListener('storage', handleAuthChange)
+    }
   }, [])
 
   // 1. Career Ace Centralized Overview Chatbot state (Grounded in Walrus Sovereign Memory)
@@ -237,6 +255,7 @@ function DashboardContent() {
   const [isTailoringResume, setIsTailoringResume] = useState(false)
   const [isTailorOpen, setIsTailorOpen] = useState(false)
   const [resumeDisplayMode, setResumeDisplayMode] = useState<'ats_document' | 'pdf_preview' | 'tailored_text'>('ats_document')
+  const [mobileResumeView, setMobileResumeView] = useState<'canvas' | 'copilot'>('canvas')
   const [newSkillInput, setNewSkillInput] = useState('')
   const [jobUrlInput, setJobUrlInput] = useState('')
   const [isScrapingJobUrl, setIsScrapingJobUrl] = useState(false)
@@ -2075,6 +2094,36 @@ function DashboardContent() {
                     </div>
                   </div>
 
+                  {/* Mobile Segment Switcher for dual-pane views (< lg) */}
+                  <div className="flex lg:hidden items-center p-1 rounded-xl bg-muted/80 border border-border/80 w-full mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setMobileResumeView('canvas')}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all min-h-[40px]',
+                        mobileResumeView === 'canvas'
+                          ? 'bg-background text-foreground shadow-xs border border-border/70 font-bold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Resume Canvas</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileResumeView('copilot')}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all min-h-[40px]',
+                        mobileResumeView === 'copilot'
+                          ? 'bg-background text-foreground shadow-xs border border-border/70 font-bold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <Bot className="w-3.5 h-3.5" />
+                      <span>AI Copilot</span>
+                    </button>
+                  </div>
+
                   {/* ── TWO-COLUMN RESUME WORKSPACE: RESUME CANVAS (LEFT) + COPILOT CHATBOT (RIGHT) ── */}
                   <div
                     ref={splitContainerRef}
@@ -2085,7 +2134,10 @@ function DashboardContent() {
                       style={{
                         width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${splitRatio}%` : '100%',
                       }}
-                      className="w-full lg:pr-3 space-y-6 shrink-0 transition-none"
+                      className={cn(
+                        'w-full lg:pr-3 space-y-6 shrink-0 transition-none',
+                        mobileResumeView === 'canvas' ? 'block' : 'hidden lg:block'
+                      )}
                     >
                       <LivePdfPreview
                         profile={parsedProfile}
@@ -2160,7 +2212,10 @@ function DashboardContent() {
                       style={{
                         width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${100 - splitRatio}%` : '100%',
                       }}
-                      className="w-full lg:pl-3 sticky top-6 shrink-0 transition-none"
+                      className={cn(
+                        'w-full lg:pl-3 sticky top-6 shrink-0 transition-none',
+                        mobileResumeView === 'copilot' ? 'block' : 'hidden lg:block'
+                      )}
                     >
                       <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[760px] lg:h-[calc(100vh-140px)] min-h-[640px]">
                         {/* Status Bar */}

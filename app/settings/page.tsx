@@ -19,6 +19,7 @@ import {
   Check
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { signOutClient } from '@/lib/client_auth'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -59,10 +60,8 @@ export default function SettingsPage() {
 
   async function handleLogout() {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      setSessionAddress(null)
-      toast.success('Disconnected zkLogin session.')
-      router.push('/')
+      toast.success('Disconnecting session…')
+      await signOutClient('/signin')
     } catch {
       toast.error('Failed to log out.')
     }

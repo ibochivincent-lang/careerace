@@ -1,25 +1,68 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { getClientSessionAddress, signOutClient } from '@/lib/client_auth'
+import { ShieldCheck, Settings, LogOut, Copy, Check, ArrowRight } from 'lucide-react'
 
 function short(address: string) {
   if (!address) return ''
   return address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address
 }
 
-export function AccountChip({ address }: { address: string }) {
+interface AccountChipProps {
+  address?: string | null
+  className?: string
+}
+
+export function AccountChip({ address: propAddress, className }: AccountChipProps) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [currentAddress, setCurrentAddress] = useState<string | null>(propAddress || null)
   const [username, setUsername] = useState<string | null>(null)
 
+  // Resolve session address from prop, client cache or API
   useEffect(() => {
-    // 1. Check local storage cache
-    const stored = localStorage.getItem('careerace_candidate_name')
-    if (stored && stored.trim()) {
-      setUsername(stored.trim())
+    function resolveSession() {
+      const active = propAddress || getClientSessionAddress()
+      if (active) {
+        setCurrentAddress(active)
+      } else {
+        fetch('/api/auth/session')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.authenticated && data.address) {
+              setCurrentAddress(data.address)
+            } else {
+              setCurrentAddress(null)
+            }
+          })
+          .catch(() => {})
+      }
+
+      // Check stored username
+      const storedName = localStorage.getItem('careerace_candidate_name')
+      if (storedName && storedName.trim()) {
+        setUsername(storedName.trim())
+      }
     }
 
-    // 2. Fetch official profile from server
+    resolveSession()
+
+    // Listen for cross-tab or component auth changes
+    window.addEventListener('careerace_auth_changed', resolveSession)
+    window.addEventListener('storage', resolveSession)
+
+    return () => {
+      window.removeEventListener('careerace_auth_changed', resolveSession)
+      window.removeEventListener('storage', resolveSession)
+    }
+  }, [propAddress])
+
+  // Fetch verified username once address is confirmed
+  useEffect(() => {
+    if (!currentAddress) return
     fetch('/api/candidate/me')
       .then((res) => res.json())
       .then((data) => {
@@ -29,56 +72,114 @@ export function AccountChip({ address }: { address: string }) {
         }
       })
       .catch(() => {})
-  }, [address])
+  }, [currentAddress])
 
-  async function signOut() {
+  async function handleSignOut() {
     setBusy(true)
-    await fetch('/api/auth/logout', { method: 'POST' })
-    localStorage.removeItem('careerace_session_address')
-    window.location.href = '/'
+    try {
+      await signOutClient('/signin')
+    } catch {
+      setBusy(false)
+    }
   }
 
+  function handleCopyAddress() {
+    if (!currentAddress) return
+    navigator.clipboard.writeText(currentAddress)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (!currentAddress) {
+    return (
+      <Link
+        href="/signin"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-xs"
+      >
+        <span>Sign In</span>
+        <ArrowRight className="w-3 h-3" />
+      </Link>
+    )
+  }
+
+  const initial = username ? username[0].toUpperCase() : currentAddress.slice(2, 3).toUpperCase() || 'U'
+
   return (
-    <div className="relative">
+    <div className={`relative ${className || ''}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/80 py-1.5 pl-2 pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-sm"
+        className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-border/80 bg-card/90 py-1 pl-1.5 pr-2.5 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs"
       >
-        <span aria-hidden className="size-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
-          {username ? username[0].toUpperCase() : address.slice(2, 3).toUpperCase() || 'U'}
+        <span aria-hidden className="size-5 sm:size-5.5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
+          {initial}
         </span>
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="flex items-center gap-1 text-xs">
           {username && (
-            <span className="font-semibold text-foreground tracking-tight max-w-[120px] truncate">
+            <span className="font-semibold text-foreground tracking-tight max-w-[85px] sm:max-w-[120px] truncate">
               {username}
             </span>
           )}
-          <span className="font-mono text-[11px] text-muted-foreground">
-            ({short(address)})
+          <span className="font-mono text-[10px] sm:text-[11px] text-muted-foreground">
+            ({short(currentAddress)})
           </span>
         </div>
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-64 overflow-hidden rounded-xl border border-border/80 bg-popover shadow-xl backdrop-blur-md">
-          <div className="border-b border-border/70 px-4 py-3.5 bg-muted/30">
-            <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Signed in as</p>
-            {username && (
-              <p className="mt-1 font-bold text-sm text-foreground">{username}</p>
-            )}
-            <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground/90">{address}</p>
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-72 overflow-hidden rounded-2xl border border-border/80 bg-popover shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+            <div className="border-b border-border/70 p-3.5 bg-muted/40">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-500" /> Sovereign Vault
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyAddress}
+                  className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/60 hover:bg-background"
+                  title="Copy address"
+                >
+                  {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                  <span>{copied ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+
+              {username && (
+                <p className="mt-1 font-bold text-sm text-foreground truncate">{username}</p>
+              )}
+              <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground/90 bg-background/50 p-1.5 rounded-md border border-border/40">
+                {currentAddress}
+              </p>
+            </div>
+
+            <div className="p-1 space-y-0.5">
+              <Link
+                href="/settings"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-medium text-foreground rounded-lg hover:bg-accent transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Account & Vault Settings</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={busy}
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-semibold text-destructive rounded-lg hover:bg-destructive/10 transition-colors disabled:opacity-50 text-left"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{busy ? 'Signing out…' : 'Sign Out'}</span>
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={signOut}
-            disabled={busy}
-            className="w-full px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-          >
-            {busy ? 'Signing out…' : 'Sign out'}
-          </button>
-        </div>
+        </>
       )}
     </div>
   )

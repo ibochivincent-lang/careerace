@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { initiateGoogleZkLogin, completeGoogleZkLogin } from '@/lib/zklogin'
 import { restoreCandidateDataFromCloud } from '@/lib/cloud_sync'
+import { setClientSession, signOutClient, getClientSessionAddress } from '@/lib/client_auth'
 import {
   Eye, EyeOff, Mail, Lock, User, ArrowRight, ShieldCheck,
   ArrowLeft, RefreshCw, CheckCircle2, KeyRound, RotateCcw
@@ -140,6 +141,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       const data = await res.json()
       if (data.success && data.address) {
         setCurrentAddress(data.address)
+        setClientSession(data.address, data.user?.username || data.username)
         setStatusMessage('Email verified! Opening workspace\u2026')
         window.history.replaceState(null, '', window.location.pathname)
         const sp = new URLSearchParams(window.location.search)
@@ -159,6 +161,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
     try {
       const { address } = await completeGoogleZkLogin(idToken)
       setCurrentAddress(address)
+      setClientSession(address)
       setStatusMessage('Authentication successful! Restoring sovereign workspace\u2026')
       await restoreCandidateDataFromCloud()
       window.history.replaceState(null, '', window.location.pathname)
@@ -174,7 +177,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   async function handleSignOut() {
     setBusy(true)
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await signOutClient()
       setCurrentAddress(null)
     } catch (e) {
       console.error('Logout error:', e)
@@ -229,6 +232,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       if (!res.ok) throw new Error((await res.text()) || 'Invalid or expired verification code.')
       const data = await res.json()
       setCurrentAddress(data.address)
+      setClientSession(data.address, data.user?.username || username.trim())
       setStatusMessage('Email verified! Opening workspace\u2026')
       const sp = new URLSearchParams(window.location.search)
       window.location.href = sp.get('callbackUrl') || '/dashboard'
@@ -256,6 +260,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       if (!res.ok) throw new Error((await res.text()) || 'Invalid login credentials.')
       const data = await res.json()
       setCurrentAddress(data.address)
+      setClientSession(data.address, data.user?.username || loginIdentifier.trim())
       setStatusMessage('Welcome back! Restoring sovereign workspace\u2026')
       await restoreCandidateDataFromCloud()
       const sp = new URLSearchParams(window.location.search)
@@ -308,6 +313,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
       if (!res.ok) throw new Error((await res.text()) || 'Invalid or expired code.')
       const data = await res.json()
       setCurrentAddress(data.address)
+      setClientSession(data.address, data.user?.username || loginIdentifier.trim())
       setStatusMessage('Welcome back! Restoring sovereign workspace\u2026')
       await restoreCandidateDataFromCloud()
       const sp = new URLSearchParams(window.location.search)

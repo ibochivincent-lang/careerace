@@ -24,13 +24,16 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (cachedClient) return cachedClient;
 
   const url = getSanitizedSupabaseUrl();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY;
 
-  if (!url || !anonKey) {
+  if (!url || !key) {
     return null;
   }
 
-  cachedClient = createClient(url, anonKey, {
+  cachedClient = createClient(url, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -104,26 +107,31 @@ export class SupabaseDatabaseService {
    */
   public async upsertCandidate(candidate: SupabaseCandidate) {
     if (!this.client) return null;
-    const { data, error } = await this.client
-      .from("candidates")
-      .upsert(
-        {
-          wallet_address: candidate.wallet_address.toLowerCase().trim(),
-          name: candidate.name,
-          target_role: candidate.target_role,
-          namespace: candidate.namespace,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "wallet_address" }
-      )
-      .select()
-      .single();
+    try {
+      const { data, error } = await this.client
+        .from("candidates")
+        .upsert(
+          {
+            wallet_address: candidate.wallet_address.toLowerCase().trim(),
+            name: candidate.name,
+            target_role: candidate.target_role,
+            namespace: candidate.namespace,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "wallet_address" }
+        )
+        .select()
+        .maybeSingle();
 
-    if (error) {
-      console.error("[supabase] upsertCandidate error:", error.message);
-      return null;
+      if (error) {
+        console.warn("[supabase] upsertCandidate notice:", error.message);
+        return candidate;
+      }
+      return data || candidate;
+    } catch (err: any) {
+      console.warn("[supabase] upsertCandidate catch notice:", err?.message || err);
+      return candidate;
     }
-    return data;
   }
 
   /**

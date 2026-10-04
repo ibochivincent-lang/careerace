@@ -743,10 +743,10 @@ export function LivePdfPreview({
             }}
             className={`w-full max-w-[840px] bg-white text-slate-900 rounded-sm shadow-2xl border border-slate-300 transition-all select-text print:shadow-none print:border-none print:p-0 ${
               activeTemplate === "ivy_league"
-                ? "p-8 md:p-14 font-serif"
+                ? "p-4 sm:p-8 md:p-14 font-serif"
                 : activeTemplate === "senior_architect"
-                ? "p-6 md:p-8 font-sans"
-                : "p-8 md:p-12 font-sans"
+                ? "p-3.5 sm:p-6 md:p-8 font-sans"
+                : "p-4 sm:p-8 md:p-12 font-sans"
             }`}
           >
             <div ref={printContainerRef} className="text-left space-y-5">
@@ -803,7 +803,7 @@ export function LivePdfPreview({
                     activeTemplate === "ivy_league" ? "justify-center text-[12px] text-slate-700" : ""
                   }`}
                 >
-                  <div className="inline-flex items-center gap-1 min-w-[190px] flex-1">
+                  <div className="inline-flex items-center gap-1 min-w-[140px] sm:min-w-[180px] flex-1">
                     <span className="text-slate-400 text-[10px] uppercase font-mono">Email:</span>
                     <input
                       type="email"
@@ -814,7 +814,7 @@ export function LivePdfPreview({
                     />
                   </div>
                   <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                  <div className="inline-flex items-center gap-1 min-w-[130px] flex-1 max-w-[210px]">
+                  <div className="inline-flex items-center gap-1 min-w-[110px] sm:min-w-[130px] flex-1 max-w-[210px]">
                     <span className="text-slate-400 text-[10px] uppercase font-mono">Tel:</span>
                     <input
                       type="text"
@@ -825,7 +825,7 @@ export function LivePdfPreview({
                     />
                   </div>
                   <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                  <div className="inline-flex items-center gap-1 min-w-[130px] flex-1 max-w-[220px]">
+                  <div className="inline-flex items-center gap-1 min-w-[110px] sm:min-w-[130px] flex-1 max-w-[220px]">
                     <span className="text-slate-400 text-[10px] uppercase font-mono">Loc:</span>
                     <input
                       type="text"
@@ -838,7 +838,7 @@ export function LivePdfPreview({
 
                   {/* LinkedIn & GitHub & Portfolio Row */}
                   <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5 text-[11px] text-slate-600 border-t border-slate-100">
-                    <div className="inline-flex items-center gap-1 flex-1 min-w-[170px]">
+                    <div className="inline-flex items-center gap-1 flex-1 min-w-[130px] sm:min-w-[160px]">
                       <span className="text-blue-600 font-bold text-[10px] font-mono">in/</span>
                       <input
                         type="text"
@@ -849,7 +849,7 @@ export function LivePdfPreview({
                       />
                     </div>
                     <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                    <div className="inline-flex items-center gap-1 flex-1 min-w-[170px]">
+                    <div className="inline-flex items-center gap-1 flex-1 min-w-[130px] sm:min-w-[160px]">
                       <span className="text-slate-800 font-bold text-[10px] font-mono">gh/</span>
                       <input
                         type="text"
@@ -860,7 +860,7 @@ export function LivePdfPreview({
                       />
                     </div>
                     <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                    <div className="inline-flex items-center gap-1 flex-1 min-w-[170px]">
+                    <div className="inline-flex items-center gap-1 flex-1 min-w-[130px] sm:min-w-[160px]">
                       <span className="text-emerald-700 font-bold text-[10px] font-mono">web/</span>
                       <input
                         type="text"
