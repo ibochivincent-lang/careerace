@@ -146,10 +146,6 @@ export const EXTENSIVE_SKILLS_DICTIONARY = [
 ];
 
 export const ROLE_PATTERNS = [
-  // Marine, Mechanical & Energy
-  "marine engineer", "naval architect", "subsea engineer", "offshore engineer",
-  "propulsion engineer", "vessel superintendent", "cad engineer", "mechanical engineer",
-  "design engineer", "project engineer", "plant engineer", "maintenance engineer",
   // Tech & Engineering
   "software engineer", "software developer", "web developer",
   "frontend developer", "frontend engineer", "front-end developer",
@@ -165,13 +161,42 @@ export const ROLE_PATTERNS = [
   "cloud engineer", "cloud architect", "solutions architect",
   "qa engineer", "test engineer", "automation engineer",
   "security engineer", "blockchain developer", "systems analyst",
-  // Product & Project Management
+  "systems engineer", "network engineer", "database administrator",
+  // Healthcare, Medicine & Clinical
+  "physician", "doctor", "registered nurse", "nurse practitioner",
+  "clinical specialist", "pharmacist", "medical director", "surgeon",
+  "physical therapist", "radiologist", "anesthesiologist", "biomedical engineer",
+  "clinical researcher", "healthcare administrator", "medical laboratory scientist",
+  // Finance, Banking & Accounting
+  "financial analyst", "investment banker", "portfolio manager", "accountant",
+  "auditor", "chief financial officer", "cfo", "finance director",
+  "controller", "tax consultant", "actuary", "risk analyst", "credit analyst",
+  "wealth manager", "equity research analyst", "bookkeeper",
+  // Mechanical, Civil, Electrical & Industrial Engineering
+  "mechanical engineer", "civil engineer", "electrical engineer", "structural engineer",
+  "chemical engineer", "industrial engineer", "petroleum engineer", "process engineer",
+  "marine engineer", "naval architect", "subsea engineer", "offshore engineer",
+  "propulsion engineer", "vessel superintendent", "cad engineer",
+  "design engineer", "project engineer", "plant engineer", "maintenance engineer",
+  // Product, Design & Creative
   "product manager", "product owner", "scrum master",
-  "project manager", "program manager", "delivery manager",
+  "ui/ux designer", "ux designer", "ui designer", "product designer",
+  "graphic designer", "art director", "creative director", "brand designer",
+  "copywriter", "content strategist", "technical writer",
+  // Marketing & Sales
+  "marketing manager", "digital marketer", "growth lead", "growth marketer",
+  "seo specialist", "content marketer", "social media manager", "performance marketer",
+  "account executive", "sales development representative", "sdr", "sales director",
+  "business development manager", "customer success manager", "account manager",
+  // Human Resources & Legal
+  "hr manager", "human resources director", "talent acquisition specialist",
+  "recruiter", "people operations manager", "hr business partner",
+  "general counsel", "attorney", "lawyer", "legal counsel", "paralegal", "compliance officer",
   // Operations & Business
   "operations manager", "operations lead", "operations coordinator",
   "operations specialist", "director of operations", "head of operations",
-  "business analyst", "business development manager", "management consultant",
+  "chief operating officer", "coo", "general manager",
+  "business analyst", "management consultant", "strategy consultant",
   "supply chain manager", "logistics coordinator", "procurement specialist"
 ];
 
@@ -426,7 +451,7 @@ export function parseCvText(rawText: string): ParsedCv {
     for (const line of expLines) {
       const isBullet = /^[-*\u2022\u00b7>]/.test(line);
       const dateMatch = line.match(
-        /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4}\s*[-\u2013—]\s*(?:present|current|now|to date|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4})|(?:20|19)\d{2}\s*[-\u2013—]\s*(?:present|current|now|to date)|(?:20|19)\d{2}\s*[-\u2013—]\s*(?:20|19)\d{2}|\b(?:20|19)\d{2}\b)/i
+        /((?:\d{1,2}\/\d{4}\s*[-\u2013—to\s]+\s*(?:\d{1,2}\/\d{4}|present|current|now))|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4}\s*[-\u2013—to\s]+\s*(?:present|current|now|to date|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4})|(?:20|19)\d{2}\s*[-\u2013—to\s]+\s*(?:present|current|now|to date)|(?:20|19)\d{2}\s*[-\u2013—]\s*(?:20|19)\d{2}|\b(?:20|19)\d{2}\b)/i
       );
 
       if (isBullet) {
@@ -470,10 +495,20 @@ export function parseCvText(rawText: string): ParsedCv {
         } else if (!currentCompany) {
           currentCompany = line.replace(/^[#*\-\s]+/, "").trim();
         } else if (line.length > 20) {
-          currentHighlights.push(line.trim());
+          const sentences = line.split(/(?<=[.!?])\s+(?=[A-Z])/).map((s) => s.trim()).filter((s) => s.length > 15);
+          if (sentences.length > 1) {
+            currentHighlights.push(...sentences);
+          } else {
+            currentHighlights.push(line.trim());
+          }
         }
       } else if (line.length > 20 && !isBullet) {
-        currentHighlights.push(line.trim());
+        const sentences = line.split(/(?<=[.!?])\s+(?=[A-Z])/).map((s) => s.trim()).filter((s) => s.length > 15);
+        if (sentences.length > 1) {
+          currentHighlights.push(...sentences);
+        } else {
+          currentHighlights.push(line.trim());
+        }
       }
     }
     flushEntry();
@@ -494,7 +529,7 @@ export function parseCvText(rawText: string): ParsedCv {
 
     const bscMatch = line.match(/\b(bachelor(?:'s)?(?:\s+of\s+\w+)?|b\.?s\.?c\b|b\.?eng\b|b\.?a\b|b\.?tech\b|undergraduate)\b/i);
     const mscMatch = line.match(/\b(master(?:'s)?(?:\s+of\s+\w+)?|m\.?s\.?c\b|m\.?eng\b|m\.?a\b|mba|postgraduate)\b/i);
-    const phdMatch = line.match(/\b(ph\.?d|doctorate)\b/i);
+    const phdMatch = line.match(/\b(doctor\s+of\s+medicine|m\.?d\b|ph\.?d|doctorate)\b/i);
     const diplomaMatch = line.match(/\b(diploma|associate|hnd|ond|certificate)\b/i);
 
     if (bscMatch) {
@@ -502,7 +537,7 @@ export function parseCvText(rawText: string): ParsedCv {
     } else if (mscMatch) {
       degree = "Master's Degree (" + mscMatch[0].trim() + ")";
     } else if (phdMatch) {
-      degree = "Doctorate (PhD)";
+      degree = /m\.?d\b|medicine/i.test(phdMatch[0]) ? "Doctor of Medicine (M.D.)" : "Doctorate (PhD)";
     } else if (diplomaMatch) {
       degree = diplomaMatch[0].charAt(0).toUpperCase() + diplomaMatch[0].slice(1);
     }
@@ -540,10 +575,19 @@ export function parseCvText(rawText: string): ParsedCv {
 
     const flushEdu = () => {
       if (currentInstitution || currentDegree) {
+        let derivedField = currentField;
+        if (!derivedField || derivedField.toLowerCase() === "field of study") {
+          if (/medicine|medical|surgeon|doctor/i.test(currentDegree)) derivedField = "Medicine";
+          else if (/nursing/i.test(currentDegree)) derivedField = "Nursing";
+          else if (/law|juris/i.test(currentDegree)) derivedField = "Law";
+          else if (/finance|accounting/i.test(currentDegree)) derivedField = "Finance";
+          else if (/computer|software|tech/i.test(currentDegree)) derivedField = "Computer Science";
+          else derivedField = "Field of Study";
+        }
         academic_history.push({
           institution: currentInstitution || "University / College",
-          degree: currentDegree || "Bachelor's Degree",
-          field_of_study: currentField || "Engineering / Science",
+          degree: currentDegree || "Degree",
+          field_of_study: derivedField,
           graduation_year: currentYear || "",
           achievements: currentAchievements,
         });
@@ -596,7 +640,7 @@ export function parseCvText(rawText: string): ParsedCv {
         academic_history.push({
           institution: parsed.institution || "Higher Institution",
           degree: parsed.degree || "Bachelor's Degree",
-          field_of_study: parsed.field || "Marine Engineering / Science",
+          field_of_study: parsed.field || "Field of Study",
           graduation_year: parsed.year || "",
           achievements: [],
         });
@@ -789,7 +833,7 @@ export function parseCvText(rawText: string): ParsedCv {
     work_experience,
     academic_history,
     certifications,
-    target_roles: target_roles.length > 0 ? target_roles : ["Engineer"],
+    target_roles: target_roles.length > 0 ? target_roles : ["Professional"],
     summary: summary || undefined,
     leadership: leadership.length > 0 ? leadership : undefined,
     conferences: conferences.length > 0 ? conferences : undefined,

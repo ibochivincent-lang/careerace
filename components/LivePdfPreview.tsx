@@ -108,7 +108,6 @@ interface LivePdfPreviewProps {
   onOpenWalrusHistory?: () => void;
   isSavingVersion?: boolean;
   onUpdateProfile?: (updated: Partial<ParsedCv>) => void;
-  onOpenMaritimeVerifier?: () => void;
 }
 
 export function LivePdfPreview({
@@ -125,7 +124,6 @@ export function LivePdfPreview({
   onOpenWalrusHistory,
   isSavingVersion = false,
   onUpdateProfile,
-  onOpenMaritimeVerifier,
 }: LivePdfPreviewProps) {
   const [activeTemplate, setActiveTemplate] = useState<AtsTemplateId>(initialTemplate);
   const [activeView, setActiveView] = useState<"ats_live" | "uploaded_source">("ats_live");
@@ -639,185 +637,89 @@ export function LivePdfPreview({
         isFullscreen ? "fixed inset-4 z-50 bg-background/95 backdrop-blur-md shadow-2xl" : "w-full"
       }`}
     >
-      {/* ── TOP UNIFIED TOOLBAR: MULTI-TEMPLATE ATS GALLERY, ZOOM, EXPORT ── */}
-      <div className="flex flex-col gap-2.5 px-4 py-3 border-b border-border/70 bg-muted/30">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          {/* View Toggle (Live ATS Canvas vs Original Upload) */}
-          <div className="flex items-center p-0.5 rounded-lg bg-background border border-border/70 text-xs font-medium">
+      {/* ── TOP UNIFIED TOOLBAR: COMPACT SINGLE-LINE (Editable ATS Canvas, Print/Save, Walrus Save, History) ── */}
+      <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/70 bg-muted/20 gap-2 flex-wrap sm:flex-nowrap">
+        {/* Left: View Toggle */}
+        <div className="flex items-center p-0.5 rounded-lg bg-background border border-border/70 text-xs font-medium shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveView("ats_live")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors ${
+              activeView === "ats_live"
+                ? "bg-emerald-600 text-white shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FileCheck className="w-3.5 h-3.5" />
+            Editable ATS Canvas
+          </button>
+          {sourcePdfUrl && (
             <button
               type="button"
-              onClick={() => setActiveView("ats_live")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors ${
-                activeView === "ats_live"
+              onClick={() => setActiveView("uploaded_source")}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors ${
+                activeView === "uploaded_source"
                   ? "bg-emerald-600 text-white shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <FileCheck className="w-3.5 h-3.5" />
-              Editable ATS Canvas
+              <Layers className="w-3.5 h-3.5" />
+              Original Uploaded PDF
             </button>
-            {sourcePdfUrl && (
-              <button
-                type="button"
-                onClick={() => setActiveView("uploaded_source")}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors ${
-                  activeView === "uploaded_source"
-                    ? "bg-emerald-600 text-white shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                Original Uploaded PDF
-              </button>
-            )}
-          </div>
-
-          {/* ATS Score Indicator */}
-          {atsScore !== null && atsScore !== undefined && (
-            <Badge
-              variant="outline"
-              className={`text-[11px] font-semibold border ${
-                atsScore >= 70
-                  ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                  : atsScore >= 45
-                  ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10"
-                  : "border-red-500/30 text-red-600 dark:text-red-400 bg-red-500/10"
-              }`}
-            >
-              ATS Score: {atsScore}/100
-            </Badge>
           )}
-
-          {/* Action Controls */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {activeView === "ats_live" && (
-              <div className="flex items-center gap-0.5 bg-background border border-border/70 rounded-lg p-0.5 text-xs mr-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  onClick={() => handleZoom(-10)}
-                  title="Zoom Out"
-                >
-                  <ZoomOut className="w-3.5 h-3.5" />
-                </Button>
-                <span className="text-[11px] font-mono px-1.5 text-muted-foreground select-none">
-                  {zoomLevel}%
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  onClick={() => handleZoom(10)}
-                  title="Zoom In"
-                >
-                  <ZoomIn className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  onClick={() => setZoomLevel(100)}
-                  title="Reset Zoom"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                </Button>
-              </div>
-            )}
-
-            {/* Print / Save PDF */}
-            <Button
-              size="sm"
-              onClick={handlePrintPdf}
-              className="h-7 px-3 text-xs font-semibold gap-1.5 bg-foreground text-background hover:bg-foreground/90 rounded-lg shadow-xs"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              Print / Save PDF
-            </Button>
-
-            {/* Walrus Save Action */}
-            {onCommitWalrusVersion && (
-              <Button
-                size="sm"
-                onClick={onCommitWalrusVersion}
-                disabled={isSavingVersion}
-                className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-xs"
-                title="Save current version as immutable snapshot to Walrus Protocol"
-              >
-                <Database className="w-3.5 h-3.5" />
-                {isSavingVersion ? "Uploading..." : "Save to Walrus"}
-              </Button>
-            )}
-
-            {/* Walrus Version History On-Demand Modal Trigger */}
-            {walrusVersions && walrusVersions.length > 0 && onOpenWalrusHistory && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onOpenWalrusHistory}
-                className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-purple-500/40 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10 rounded-lg shadow-xs"
-                title="View immutable Walrus snapshots"
-              >
-                <History className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-                <span>History ({walrusVersions.length})</span>
-              </Button>
-            )}
-
-            {/* Fullscreen Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Preview"}
-            >
-              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            </Button>
-          </div>
         </div>
 
-        {/* ── MULTI-TEMPLATE ATS GALLERY SELECTOR ── */}
-        <div className="flex items-center gap-2 pt-1 border-t border-border/50 overflow-x-auto pb-0.5">
-          <span className="text-[11px] font-semibold text-muted-foreground shrink-0 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-emerald-500" />
-            ATS Layout:
-          </span>
-          <div className="flex items-center gap-1.5">
-            {ATS_TEMPLATES.map((tmpl) => {
-              const Icon = tmpl.icon;
-              const isActive = activeTemplate === tmpl.id;
-              return (
-                <button
-                  key={tmpl.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveTemplate(tmpl.id);
-                    toast.success(`Switched to ${tmpl.name} layout`);
-                  }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-xs font-bold ring-1 ring-primary/40"
-                      : "bg-background border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  }`}
-                  title={`${tmpl.description} (${tmpl.badge})`}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{tmpl.name}</span>
-                  <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
-                      isActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {tmpl.id === "ivy_league"
-                      ? "Serif"
-                      : tmpl.id === "modern_tech"
-                      ? "Sans"
-                      : "Dense"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Right: Actions on the same single line */}
+        <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap ml-auto">
+          {/* Print / Save PDF */}
+          <Button
+            size="sm"
+            onClick={handlePrintPdf}
+            className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-foreground text-background hover:bg-foreground/90 rounded-lg shadow-xs"
+            title="Print or export as vector PDF"
+          >
+            <Printer className="w-3 h-3" />
+            Print / Save PDF
+          </Button>
+
+          {/* Walrus Save Action */}
+          {onCommitWalrusVersion && (
+            <Button
+              size="sm"
+              onClick={onCommitWalrusVersion}
+              disabled={isSavingVersion}
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-xs"
+              title="Save current version as immutable snapshot to Walrus Protocol"
+            >
+              <Database className="w-3 h-3" />
+              {isSavingVersion ? "Saving..." : "Save to Walrus"}
+            </Button>
+          )}
+
+          {/* Walrus Version History On-Demand Modal Trigger */}
+          {walrusVersions && walrusVersions.length > 0 && onOpenWalrusHistory && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenWalrusHistory}
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-purple-500/40 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10 rounded-lg shadow-xs"
+              title="View immutable Walrus snapshots"
+            >
+              <History className="w-3 h-3 text-purple-500" />
+              <span>History ({walrusVersions.length})</span>
+            </Button>
+          )}
+
+          {/* Fullscreen Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Preview"}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </Button>
         </div>
       </div>
 
@@ -1157,6 +1059,8 @@ export function LivePdfPreview({
                                 bullet={bullet}
                                 index={bIdx}
                                 fontFamily={activeTemplateConfig.fontFamily}
+                                targetRole={tailorRole || profile.target_roles?.[0]}
+                                allKeywords={profile.skills || []}
                                 onUpdate={(newBullet) => handleUpdateBullet(expIdx, bIdx, newBullet)}
                                 onDelete={() => handleDeleteBullet(expIdx, bIdx)}
                               />
@@ -1347,41 +1251,120 @@ export function LivePdfPreview({
                     Certifications &amp; Professional Licenses ({profile.certifications?.length || 0})
                   </h2>
 
-                  {/* STCW Verifier: ONLY renders if candidate has verified Marine / Maritime competencies */}
+                  {/* Universal Certification & License Proof Attachment */}
                   <div className="no-print flex items-center gap-2">
-                    {isMaritimeCandidate(profile, tailorRole) && onOpenMaritimeVerifier && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={onOpenMaritimeVerifier}
-                        className="text-[11px] h-7 gap-1 border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
-                        title="Autonomous OCR validator for Seaman's Book & STCW certificates"
-                      >
-                        <Anchor className="w-3 h-3" />
-                        <span>STCW Verifier</span>
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setProofModalConfig({
+                          isOpen: true,
+                          title: "Attach License or Certificate Proof",
+                          category: "certificate",
+                          targetId: `cert-global-${Date.now()}`,
+                          existingProof: null,
+                          onSave: (proof) => {
+                            if (!proof) return;
+                            const currentAtts = profile.attachments || [];
+                            const certs = [...(profile.certifications || [])];
+                            if (proof.title && !certs.includes(proof.title)) {
+                              certs.push(proof.title);
+                            }
+                            updateField({
+                              certifications: certs,
+                              attachments: [...currentAtts, proof],
+                            });
+                            toast.success("Attached proof of certification!");
+                          },
+                        })
+                      }
+                      className="text-[11px] h-6 px-2 gap-1 border-purple-500/40 text-purple-700 dark:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20"
+                      title="Attach Walrus scan, Google Drive link, or credential proof"
+                    >
+                      <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                      <span>Attach Proof (Walrus / Drive)</span>
+                    </Button>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  {(profile.certifications || []).map((cert, cIdx) => (
-                    <span
-                      key={cIdx}
-                      className="group/cert inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200"
-                    >
-                      <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
-                      <span>{cert}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCertification(cIdx)}
-                        className="no-print text-emerald-500 hover:text-red-500 opacity-40 group-hover/cert:opacity-100 transition-opacity ml-0.5"
-                        title="Remove certification"
+                  {(profile.certifications || []).map((cert, cIdx) => {
+                    const certProof = (profile.attachments || []).find(
+                      (a) =>
+                        a.targetId === `cert-${cIdx}` ||
+                        (a.title && a.title.toLowerCase() === cert.toLowerCase()) ||
+                        (a.category === "certificate" && a.targetId === `cert-${cIdx}`)
+                    );
+
+                    return (
+                      <span
+                        key={cIdx}
+                        className="group/cert inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                       >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>{cert}</span>
+
+                        {certProof ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProofModalConfig({
+                                isOpen: true,
+                                title: `Verified Proof: ${cert}`,
+                                category: "certificate",
+                                targetId: `cert-${cIdx}`,
+                                existingProof: certProof,
+                                onSave: (updatedProof) => {
+                                  let atts = [...(profile.attachments || [])].filter(
+                                    (a) => a.targetId !== `cert-${cIdx}` && a.id !== certProof.id
+                                  );
+                                  if (updatedProof) atts.push(updatedProof);
+                                  updateField({ attachments: atts });
+                                },
+                              })
+                            }
+                            className="no-print inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-600/15 text-purple-700 dark:text-purple-300 hover:bg-purple-600/25 ml-1 transition-colors"
+                            title="Click to view verified proof on Walrus or Drive"
+                          >
+                            <span>✓ Proof</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProofModalConfig({
+                                isOpen: true,
+                                title: `Attach Proof: ${cert}`,
+                                category: "certificate",
+                                targetId: `cert-${cIdx}`,
+                                existingProof: null,
+                                onSave: (proof) => {
+                                  if (!proof) return;
+                                  const atts = [...(profile.attachments || [])];
+                                  atts.push(proof);
+                                  updateField({ attachments: atts });
+                                  toast.success(`Attached proof to ${cert}!`);
+                                },
+                              })
+                            }
+                            className="no-print opacity-40 group-hover/cert:opacity-100 text-[9px] text-purple-600 dark:text-purple-400 hover:underline ml-1 transition-opacity"
+                            title="Attach proof document or Walrus scan to this certification"
+                          >
+                            + Proof
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCertification(cIdx)}
+                          className="no-print text-emerald-500 hover:text-red-500 opacity-40 group-hover/cert:opacity-100 transition-opacity ml-0.5"
+                          title="Remove certification"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
 
                   {/* Inline Add Certification Input */}
                   {showAddCertInput ? (
@@ -1399,8 +1382,8 @@ export function LivePdfPreview({
                             setShowAddCertInput(false);
                           }
                         }}
-                        placeholder="e.g. STCW Certificate of Competency..."
-                        className="h-6 px-2 text-xs border border-emerald-500 rounded bg-white text-slate-900 focus:outline-none"
+                        placeholder="e.g. PMP, CFA, AWS Solutions Architect..."
+                        className="h-6 px-2 text-xs border border-emerald-500 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none"
                       />
                       <Button
                         size="sm"
@@ -1421,7 +1404,7 @@ export function LivePdfPreview({
                     <button
                       type="button"
                       onClick={() => setShowAddCertInput(true)}
-                      className="no-print inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded border border-dashed border-slate-300 text-slate-600 hover:border-emerald-500 hover:text-emerald-700 transition-colors"
+                      className="no-print inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
                     >
                       <Plus className="w-3 h-3" /> Add Certification
                     </button>

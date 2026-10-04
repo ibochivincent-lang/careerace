@@ -36,41 +36,55 @@ export async function extractPdfTextInBrowser(file: File): Promise<string> {
     const page = await pdf.getPage(pageNum)
     const textContent = await page.getTextContent()
 
-    // Build text from items, respecting line breaks via Y-position changes
+    // Filter valid text items
+    const rawItems = (textContent.items as any[]).filter((i) => typeof i?.str === 'string')
+
+    // Sort items into natural visual reading order:
+    // Top-to-bottom (Y descending), then left-to-right (X ascending) with a vertical tolerance
+    rawItems.sort((a, b) => {
+      const aY = a.transform?.[5] ?? 0
+      const bY = b.transform?.[5] ?? 0
+      if (Math.abs(aY - bY) > 3.5) {
+        return bY - aY // Higher Y is higher on page
+      }
+      const aX = a.transform?.[4] ?? 0
+      const bX = b.transform?.[4] ?? 0
+      return aX - bX // Left to right
+    })
+
+    // Group items into coherent lines
     let lastY: number | null = null
     let lineText = ''
 
-    for (const item of textContent.items) {
-      if ('str' in item && item.str) {
-        const currentY = 'transform' in item ? (item.transform as number[])[5] : null
+    for (const item of rawItems) {
+      const currentY = item.transform?.[5] ?? null
 
-        if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 2) {
-          // New line detected via Y-position change
-          if (lineText.trim()) {
-            pageTexts.push(lineText.trim())
-          }
-          lineText = item.str
-        } else {
-          // Same line, append with appropriate spacing
-          if (item.str === ' ' || lineText.endsWith(' ')) {
-            lineText += item.str
-          } else if (lineText && item.str.trim()) {
-            // Check if there's a gap suggesting a space
-            lineText += ' ' + item.str
-          } else {
-            lineText += item.str
-          }
+      if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 3.5) {
+        // Line break detected
+        if (lineText.trim()) {
+          pageTexts.push(lineText.trim())
         }
-
-        lastY = currentY
+        lineText = item.str
+      } else {
+        // Same line: join with space if appropriate
+        if (!lineText) {
+          lineText = item.str
+        } else if (item.str === ' ' || lineText.endsWith(' ')) {
+          lineText += item.str
+        } else if (item.str.trim()) {
+          lineText += ' ' + item.str
+        } else {
+          lineText += item.str
+        }
       }
+
+      lastY = currentY
     }
 
     if (lineText.trim()) {
       pageTexts.push(lineText.trim())
     }
 
-    // Add page separator
     if (pageNum < pdf.numPages) {
       pageTexts.push('')
     }

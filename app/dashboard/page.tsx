@@ -21,18 +21,15 @@ import {
   Globe, Loader2
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
-import { AtsBenchmarkSimulatorModal } from '@/components/AtsBenchmarkSimulatorModal'
-import { runAtsBenchmarkSimulator, type AtsBenchmarkReport } from '@/lib/ats_benchmark_simulator'
 import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
 import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
 import { parseCvText } from '@/lib/heuristic_cv_parser'
-import { LivePdfPreview, isMaritimeCandidate } from '@/components/LivePdfPreview'
+import { LivePdfPreview } from '@/components/LivePdfPreview'
 import { WalrusVersionModal } from '@/components/WalrusVersionModal'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
-import { MaritimeStcwVerifierModal } from '@/components/MaritimeStcwVerifierModal'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -46,28 +43,9 @@ const OVERVIEW_PROMPT_CHIPS = [
   'What did I study?',
   'Where did I work?',
   'What are my skills?',
-  'Highlight my Sea-Time & STCW',
+  'Highlight my Certifications & Licenses',
   'Suggest High-Impact Action Verbs'
 ]
-
-function getBenchmarkJobDescription(targetRole: string, skills: string[] = []): string {
-  const roleLower = (targetRole || '').toLowerCase()
-  const isMarine =
-    roleLower.includes('marine') ||
-    roleLower.includes('naval') ||
-    roleLower.includes('vessel') ||
-    roleLower.includes('propulsion') ||
-    roleLower.includes('offshore') ||
-    roleLower.includes('subsea') ||
-    roleLower.includes('ship') ||
-    skills.some((s) => /marine|cad|stcw|naval|propulsion|power plant|ship/i.test(s))
-
-  if (isMarine) {
-    return `Seeking an experienced Marine Systems Engineer / Officer to oversee maritime vessel operations, propulsion machinery, auxiliary systems, and marine power plants. Key responsibilities include mechanical inspections, piping diagrams, hydraulic control systems, thermodynamics, fluid mechanics, CAD modeling (AutoCAD, SolidWorks, MATLAB), STCW safety compliance, and planned maintenance systems (PMS). Must possess strong troubleshooting capabilities, cross-functional communication, maritime safety certifications (SOLAS, MARPOL), and proven technical problem-solving on commercial or offshore vessels.`
-  }
-
-  return `Seeking a Software Engineer to design, architect, and ship high-reliability applications and cloud infrastructure. Responsibilities include developing responsive web interfaces, scalable backend REST/GraphQL APIs, microservices architectures, database schema design, and CI/CD automation pipelines. Proficiency required in modern languages (TypeScript, JavaScript, Python, Go, or Rust), modern frameworks (React, Next.js, Node.js), relational and distributed databases (PostgreSQL, Redis), Docker containerization, Git version control, and performance optimization.`
-}
 
 const FRESH_WELCOME_MESSAGE = {
   role: 'assistant' as const,
@@ -106,32 +84,6 @@ function DashboardContent() {
   // ATS X-Ray Full Diagnostic Dialog state
   const [isAtsXRayOpen, setIsAtsXRayOpen] = useState(false)
 
-  // Automated Live ATS Benchmark Simulator state
-  const [isBenchmarkModalOpen, setIsBenchmarkModalOpen] = useState(false)
-  const [benchmarkReport, setBenchmarkReport] = useState<AtsBenchmarkReport | null>(null)
-
-  function handleRunAtsBenchmark() {
-    if (!parsedProfile) {
-      toast.error('Please upload or initialize your resume first.')
-      return
-    }
-    const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Systems Engineer'
-    const effectiveJd = (jobDescriptionForTailor && jobDescriptionForTailor.trim().length > 30)
-      ? jobDescriptionForTailor
-      : getBenchmarkJobDescription(effectiveRole, parsedProfile.skills)
-
-    const report = runAtsBenchmarkSimulator({
-      profile: parsedProfile,
-      jobTitle: effectiveRole,
-      jobCompany: tailorCompany || 'Target Organization',
-      jobDescription: effectiveJd,
-    })
-    setBenchmarkReport(report)
-    setIsBenchmarkModalOpen(true)
-  }
-
-  // Autonomous Maritime STCW & Sea-Time Verifier modal state
-  const [isMaritimeModalOpen, setIsMaritimeModalOpen] = useState(false)
   const [isWalrusHistoryModalOpen, setIsWalrusHistoryModalOpen] = useState(false)
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false)
 
@@ -265,10 +217,10 @@ function DashboardContent() {
         .map((a: any) => `${a.degree} at ${a.institution}`)
         .join(' ')
       
-      const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Engineer'
+      const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Professional'
       const effectiveJd = (jobDescriptionForTailor && jobDescriptionForTailor.trim().length > 30)
         ? jobDescriptionForTailor
-        : getBenchmarkJobDescription(effectiveRole, parsedProfile.skills)
+        : `${effectiveRole} position requiring expertise in ${(parsedProfile.skills || []).slice(0, 6).join(', ')}, technical execution, problem solving, and professional communication.`
 
       const score = analyzeAtsMatch({
         jobTitle: effectiveRole,
@@ -360,135 +312,60 @@ function DashboardContent() {
     })
   }
 
-  const isCandidateMaritime = isMaritimeCandidate(parsedProfile, tailorRole)
-
-  const SUGGESTED_COPILOT_ACTIONS = isCandidateMaritime
-    ? [
-        {
-          label: '✨ Refine marine technical skills',
-          prompt: 'Refine my technical skills with industry-standard marine engineering competencies',
-          run: (profile: any) => {
-            const marineSkills = ['AutoCAD', 'SolidWorks', 'MATLAB', 'Marine Power Plants', 'Naval Architecture', 'Fluid Mechanics', 'Ship Propulsion', 'Thermodynamics']
-            const existing = profile?.skills || []
-            const toAdd = marineSkills.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
-            if (toAdd.length === 0) return { count: 0, text: 'Your technical skills already include core engineering proficiencies.' }
-            const updated = [...existing, ...toAdd]
-            return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Added ${toAdd.length} verified competencies (${toAdd.slice(0, 4).join(', ')}) to your Core Skills section.` }
-          }
-        },
-        {
-          label: '🚢 Add Marine Engineering specializations',
-          prompt: 'Add Marine Engineering and Naval Architecture skills',
-          run: (profile: any) => {
-            const engineeringSkills = ['Marine Engineering', 'Naval Architecture', 'Marine Power Plants', 'AutoCAD', 'SolidWorks', 'MATLAB', 'Ship Propulsion', 'ANSYS']
-            const existing = profile?.skills || []
-            const toAdd = engineeringSkills.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
-            const updated = [...existing, ...toAdd]
-            return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Integrated ${toAdd.length} marine engineering specializations into your profile canvas.` }
-          }
-        },
-        {
-          label: '📈 Add impact metrics to bullets',
-          prompt: 'Strengthen my experience bullets with quantified impact metrics',
-          run: (profile: any) => {
-            const exp = (profile?.work_experience || []).map((e: any) => ({
-              ...e,
-              highlights: (e.highlights || []).map((h: string) => {
-                if (/\d+%|\$\d+|\b\d+\b/.test(h)) return h
-                return `${h.replace(/\.$/, '')}, achieving a 24% operational efficiency gain and zero safety incidents.`
-              })
-            }))
-            return { count: exp.length, updatedProfile: { ...profile, work_experience: exp }, text: `Enhanced work experience highlights with quantifiable metrics (+15 ATS points).` }
-          }
-        },
-        {
-          label: '🎓 Add Nigeria Maritime University',
-          prompt: 'Ensure my Nigeria Maritime University degree is recorded',
-          run: (profile: any) => {
-            const existing = profile?.academic_history || []
-            const hasNMU = existing.some((a: any) => /maritime/i.test(a.institution || ''))
-            if (hasNMU) return { count: 0, text: 'Nigeria Maritime University is already registered in your education history.' }
-            const updated = [
-              ...existing,
-              {
-                institution: 'Nigeria Maritime University',
-                degree: "Bachelor's Degree (B.Eng)",
-                field_of_study: 'Marine Engineering',
-                graduation_year: '2023',
-                achievements: ['Naval Architecture & Marine Power Plant Systems']
-              }
-            ]
-            return { count: 1, updatedProfile: { ...profile, academic_history: updated }, text: `Added B.Eng in Marine Engineering from Nigeria Maritime University to Education.` }
-          }
-        },
-        {
-          label: '🏆 Add STCW & Marine certifications',
-          prompt: 'Add STCW and Marine safety certifications',
-          run: (profile: any) => {
-            const certs = ['STCW Certificate of Competency', 'AutoCAD Certified Professional', 'Marine Safety & Environmental Compliance (MARPOL)']
-            const existing = profile?.certifications || []
-            const toAdd = certs.filter(c => !existing.includes(c))
-            const updated = [...existing, ...toAdd]
-            return { count: toAdd.length, updatedProfile: { ...profile, certifications: updated }, text: `Added ${toAdd.length} professional maritime certifications to your resume.` }
-          }
+  const SUGGESTED_COPILOT_ACTIONS = [
+    {
+      label: '✨ Align core competencies',
+      prompt: 'Refine my core competencies and skills for target role standards',
+      run: (profile: any) => {
+        const targetRoleLower = (tailorRole || profile?.target_roles?.[0] || '').toLowerCase()
+        let skillsToAdd: string[] = []
+        if (targetRoleLower.includes('frontend') || targetRoleLower.includes('react') || targetRoleLower.includes('ui')) {
+          skillsToAdd = ['TypeScript', 'React.js', 'Next.js', 'Tailwind CSS', 'State Management', 'Web Performance', 'REST & GraphQL APIs']
+        } else if (targetRoleLower.includes('data') || targetRoleLower.includes('ml') || targetRoleLower.includes('ai')) {
+          skillsToAdd = ['Python', 'SQL', 'Pandas & NumPy', 'PyTorch', 'Data Pipelines', 'ETL Architecture', 'MLOps']
+        } else if (targetRoleLower.includes('marine') || targetRoleLower.includes('naval') || targetRoleLower.includes('vessel')) {
+          skillsToAdd = ['Marine Engineering', 'Naval Architecture', 'Marine Power Plants', 'AutoCAD', 'SolidWorks', 'MATLAB', 'Ship Propulsion']
+        } else if (targetRoleLower.includes('mechanical') || targetRoleLower.includes('cad')) {
+          skillsToAdd = ['Mechanical Design', 'SolidWorks', 'AutoCAD', 'FEA Analysis', 'Thermodynamics', 'Fluid Mechanics', 'GD&T']
+        } else if (targetRoleLower.includes('finance') || targetRoleLower.includes('account')) {
+          skillsToAdd = ['Financial Modeling', 'Financial Reporting', 'GAAP', 'Variance Analysis', 'Forecasting', 'Excel Advanced', 'Risk Management']
+        } else if (targetRoleLower.includes('health') || targetRoleLower.includes('nurse') || targetRoleLower.includes('clinic')) {
+          skillsToAdd = ['Patient Care', 'Clinical Documentation', 'Electronic Health Records (EHR)', 'Patient Assessment', 'Healthcare Quality & Safety']
+        } else {
+          skillsToAdd = ['System Architecture', 'Technical Strategy', 'Project Management', 'Quality Assurance', 'Process Optimization', 'Cross-Functional Collaboration']
         }
-      ]
-    : [
-        {
-          label: '✨ Refine technical core skills',
-          prompt: 'Refine my technical competencies for high-demand industry standards',
-          run: (profile: any) => {
-            const targetRoleLower = (tailorRole || profile?.target_roles?.[0] || '').toLowerCase()
-            let skillsToAdd: string[] = []
-            if (targetRoleLower.includes('frontend') || targetRoleLower.includes('react') || targetRoleLower.includes('ui')) {
-              skillsToAdd = ['TypeScript', 'React.js', 'Next.js', 'Tailwind CSS', 'State Management', 'Web Performance & CWV', 'Jest', 'REST & GraphQL APIs']
-            } else if (targetRoleLower.includes('data') || targetRoleLower.includes('ml') || targetRoleLower.includes('ai')) {
-              skillsToAdd = ['Python', 'SQL', 'Pandas & NumPy', 'PyTorch', 'Data Pipelines', 'BigQuery', 'MLOps', 'Vector Databases']
-            } else {
-              skillsToAdd = ['TypeScript', 'System Architecture', 'Distributed Systems', 'Cloud Infrastructure (AWS/GCP)', 'Docker & Containers', 'CI/CD Pipelines', 'PostgreSQL', 'API Design']
-            }
-            const existing = profile?.skills || []
-            const toAdd = skillsToAdd.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
-            if (toAdd.length === 0) return { count: 0, text: 'Your technical skills already include core engineering proficiencies.' }
-            const updated = [...existing, ...toAdd]
-            return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Added ${toAdd.length} verified competencies (${toAdd.slice(0, 4).join(', ')}) to your Core Skills section.` }
-          }
-        },
-        {
-          label: '📈 Add impact metrics to bullets',
-          prompt: 'Strengthen my experience bullets with quantified business and technical metrics',
-          run: (profile: any) => {
-            const exp = (profile?.work_experience || []).map((e: any) => ({
-              ...e,
-              highlights: (e.highlights || []).map((h: string) => {
-                if (/\d+%|\$\d+|\b\d+\b/.test(h)) return h
-                return `${h.replace(/\.$/, '')}, driving a 32% increase in performance efficiency and reducing latency by 45ms.`
-              })
-            }))
-            return { count: exp.length, updatedProfile: { ...profile, work_experience: exp }, text: `Enhanced work experience highlights with quantifiable business and engineering metrics (+15 ATS points).` }
-          }
-        },
-        {
-          label: '🎯 Align summary with target role',
-          prompt: 'Generate an executive professional summary aligned with target job specifications',
-          run: (profile: any) => {
-            const targetTitle = tailorRole || profile?.target_roles?.[0] || 'Technical Specialist'
-            const newSummary = `High-impact ${targetTitle} with proven track record architecting high-reliability systems and delivering scalable solutions. Adept at cross-functional collaboration, technical execution, and driving continuous operational improvements.`
-            return { count: 1, updatedProfile: { ...profile, professional_summary: newSummary }, text: `Updated professional summary aligned with ${targetTitle}.` }
-          }
-        },
-        {
-          label: '🏆 Add professional certifications',
-          prompt: 'Add industry-recognized cloud and architecture certifications',
-          run: (profile: any) => {
-            const industryCerts = ['AWS Certified Solutions Architect', 'Certified Kubernetes Administrator (CKA)', 'Professional Scrum Master (PSM I)']
-            const existing = profile?.certifications || []
-            const toAdd = industryCerts.filter(c => !existing.includes(c))
-            const updated = [...existing, ...toAdd]
-            return { count: toAdd.length, updatedProfile: { ...profile, certifications: updated }, text: `Added ${toAdd.length} industry credentials to your profile.` }
-          }
-        }
-      ]
+        const existing = profile?.skills || []
+        const toAdd = skillsToAdd.filter(s => !existing.some((e: string) => e.toLowerCase() === s.toLowerCase()))
+        if (toAdd.length === 0) return { count: 0, text: 'Your skills already align with target competencies.' }
+        const updated = [...existing, ...toAdd]
+        return { count: toAdd.length, updatedProfile: { ...profile, skills: updated }, text: `Added ${toAdd.length} verified competencies (${toAdd.slice(0, 4).join(', ')}) to your Core Skills section.` }
+      }
+    },
+    {
+      label: '📈 Quantify achievement bullets',
+      prompt: 'Strengthen my experience bullets with clear, measurable outcomes',
+      run: (profile: any) => {
+        const exp = (profile?.work_experience || []).map((e: any) => ({
+          ...e,
+          highlights: (e.highlights || []).map((h: string) => {
+            if (/\d+%|\$\d+|\b\d+\b/.test(h)) return h
+            return `${h.replace(/\.$/, '')}, yielding measurable improvements in delivery cycle time and operational reliability.`
+          })
+        }))
+        return { count: exp.length, updatedProfile: { ...profile, work_experience: exp }, text: `Updated experience highlights with outcome-oriented results.` }
+      }
+    },
+    {
+      label: '🎯 Align executive summary',
+      prompt: 'Generate an executive professional summary aligned with my target role',
+      run: (profile: any) => {
+        const targetTitle = tailorRole || profile?.target_roles?.[0] || 'Professional'
+        const existingSkills = (profile?.skills || []).slice(0, 4).join(', ')
+        const newSummary = `Results-oriented ${targetTitle} with proven expertise in ${existingSkills || 'technical execution and strategic problem solving'}. Demonstrated history delivering complex projects, improving operational workflows, and collaborating effectively across multidisciplinary teams.`
+        return { count: 1, updatedProfile: { ...profile, summary: newSummary }, text: `Aligned professional summary with ${targetTitle}.` }
+      }
+    }
+  ]
 
   function handleExecuteCopilotAction(actionItem: any) {
     if (!parsedProfile) {
@@ -718,13 +595,16 @@ function DashboardContent() {
         }
       }
       if (company) setTailorCompany(company)
-      if (job_description) setJobDescriptionForTailor(job_description)
+      if (job_description) {
+        setJobDescriptionForTailor(job_description)
+        setKeyProblemsSolved(job_description)
+      }
 
       setJobUrlInput('')
       toast.success(`Target calibrated: ${role || 'Role'} ${company ? `@ ${company}` : ''}!`, { id: 'scrape-job' })
 
       const skillsList = Array.isArray(skills) && skills.length > 0 ? skills.slice(0, 8).join(', ') : 'Not specified'
-      const feedback = `🎯 **Auto-Targeted from Job Posting URL**\n\n• **Target Role**: ${role || 'Target Role'}\n• **Company / Org**: ${company || 'Target Organization'}\n• **Seniority / Level**: ${experience_level || 'Mid-Senior'}\n• **Required Competencies**: ${skillsList}\n\n${summary ? `*Summary*: ${summary}\n\n` : ''}✅ *Your resume ATS score and keywords have been instantly calibrated to this posting. Run the ATS Benchmark Simulator anytime to inspect Taleo & Greenhouse pass-rates.*`
+      const feedback = `🎯 **Auto-Targeted from Job Posting URL**\n\n• **Target Role**: ${role || 'Target Role'}\n• **Company / Org**: ${company || 'Target Organization'}\n• **Seniority / Level**: ${experience_level || 'Mid-Senior'}\n• **Required Competencies**: ${skillsList}\n\n${summary ? `*Summary*: ${summary}\n\n` : ''}✅ *Target parameters populated for Cover Letter Studio and keyword suggestions.*`
 
       setChatMessages((prev) => [...prev, { role: 'assistant', content: feedback }])
     } catch (err: any) {
@@ -1263,17 +1143,7 @@ function DashboardContent() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {parsedProfile && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleRunAtsBenchmark}
-                          className="text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 min-h-[38px] shadow-xs"
-                        >
-                          <Cpu className="w-3.5 h-3.5 text-primary" />
-                          <span>Benchmark ATS</span>
-                        </Button>
-                      )}
+
                       <Button
                         size="sm"
                         onClick={() => router.push('/dashboard?tab=resumes')}
@@ -1515,12 +1385,7 @@ function DashboardContent() {
 
                   {/* Classic Starter Prompt Chips on Overview */}
                   <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                    {OVERVIEW_PROMPT_CHIPS.filter((chip) => {
-                      if (chip.includes('Sea-Time') || chip.includes('STCW')) {
-                        return isCandidateMaritime
-                      }
-                      return true
-                    }).map((chip, idx) => (
+                    {OVERVIEW_PROMPT_CHIPS.map((chip, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -1774,7 +1639,6 @@ function DashboardContent() {
                         onCommitWalrusVersion={handleCommitWalrusVersion}
                         isSavingVersion={isSavingWalrusVersion}
                         onUpdateProfile={updateProfileField}
-                        onOpenMaritimeVerifier={() => setIsMaritimeModalOpen(true)}
                       />
                     </div>
 
@@ -1851,177 +1715,16 @@ function DashboardContent() {
                                 </Badge>
                               </div>
                               <p className="text-[10px] text-muted-foreground">
-                                Active Resume Assistant &amp; Target Calibration
+                                Real-time suggestions &amp; tailoring assistant
                               </p>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-1.5">
-                            {atsScorecard && (
-                              <Badge variant="outline" className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-                                {atsScorecard.overall_score}/100 ATS
-                              </Badge>
-                            )}
                             <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
                               <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin
                             </Badge>
                           </div>
-                        </div>
-
-                        {/* Unified Target Role & JD Calibration Strip / Dropdown */}
-                        <div className="border-b border-border/70 bg-muted/15 transition-all">
-                          <div className="px-3 py-2 flex items-center justify-between gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setIsCalibrationOpen(!isCalibrationOpen)}
-                              className="flex-1 flex items-center gap-2 text-left group min-w-0"
-                            >
-                              <div className="p-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:bg-purple-500/20 transition-colors shrink-0">
-                                <Target className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-bold text-foreground truncate">
-                                    {tailorRole || 'Set Target Role'}
-                                  </span>
-                                  {tailorCompany && (
-                                    <span className="text-[11px] text-muted-foreground truncate">
-                                      @ {tailorCompany}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[10px] text-muted-foreground truncate">
-                                  {jobDescriptionForTailor ? 'Custom Job Description Calibrated' : 'Calibrate role, target company, or paste JD'}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 shrink-0">
-                                <span>{isCalibrationOpen ? 'Collapse' : 'Calibrate'}</span>
-                                {isCalibrationOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                              </div>
-                            </button>
-                          </div>
-
-                          {/* Expandable Calibration Panel */}
-                          {isCalibrationOpen && (
-                            <div className="px-3 pb-3 pt-1 border-t border-border/60 space-y-2 bg-background/50 animate-in fade-in-0 slide-in-from-top-1 duration-150">
-                              {/* Auto-Target from Job Link (LinkedIn, Greenhouse, Lever, etc.) */}
-                              <div className="p-2 rounded-lg border border-purple-500/25 bg-purple-500/5 space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                    <Globe className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                                    Auto-Target from Job URL
-                                  </span>
-                                  <span className="text-[9px] text-muted-foreground font-mono">
-                                    LinkedIn · Greenhouse · Lever · Indeed · Web
-                                  </span>
-                                </div>
-                                <div className="flex gap-1.5">
-                                  <input
-                                    type="url"
-                                    value={jobUrlInput}
-                                    onChange={(e) => setJobUrlInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleScrapeJobUrl()}
-                                    placeholder="Paste LinkedIn, Greenhouse, or any job posting URL..."
-                                    className="flex-1 h-7 px-2 rounded-md border bg-background text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                                  />
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    disabled={isScrapingJobUrl || !jobUrlInput.trim()}
-                                    onClick={() => handleScrapeJobUrl()}
-                                    className="h-7 px-2.5 text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium shrink-0 flex items-center gap-1 shadow-xs"
-                                  >
-                                    {isScrapingJobUrl ? (
-                                      <>
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        <span>Scraping...</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Sparkles className="w-3 h-3" />
-                                        <span>Scrape &amp; Calibrate</span>
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                <div>
-                                  <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">
-                                    Target Role Title
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={tailorRole}
-                                    onChange={(e) => {
-                                      setTailorRole(e.target.value)
-                                      if (parsedProfile) updateProfileField({ target_roles: [e.target.value] })
-                                    }}
-                                    placeholder="e.g. Marine Systems Engineer"
-                                    className="w-full h-7 px-2 rounded-md border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">
-                                    Target Organization (Optional)
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={tailorCompany}
-                                    onChange={(e) => setTailorCompany(e.target.value)}
-                                    placeholder="e.g. Maersk, Stripe, Bourbon"
-                                    className="w-full h-7 px-2 rounded-md border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                                  />
-                                </div>
-                              </div>
-
-                              <div>
-                                <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">
-                                  Job Description Keywords (Paste requirements to match)
-                                </label>
-                                <textarea
-                                  rows={2}
-                                  value={jobDescriptionForTailor}
-                                  onChange={(e) => setJobDescriptionForTailor(e.target.value)}
-                                  placeholder="Paste JD requirements to run custom ATS keyword matching..."
-                                  className="w-full p-1.5 rounded-md border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-snug"
-                                />
-                              </div>
-
-                              {/* Keyword Match Tags & Simulator Trigger */}
-                              {atsScorecard && atsScorecard.keyword_diff.length > 0 && (
-                                <div className="pt-1.5 border-t border-border/60">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] font-semibold text-muted-foreground">
-                                      Keyword Alignment ({atsScorecard.keyword_coverage_pct}% Match)
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={handleRunAtsBenchmark}
-                                      className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-1"
-                                    >
-                                      <Cpu className="w-3 h-3" /> Taleo &amp; GH Simulator
-                                    </button>
-                                  </div>
-                                  <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
-                                    {atsScorecard.keyword_diff.slice(0, 14).map((item, i) => (
-                                      <span
-                                        key={i}
-                                        className={`text-[9px] px-1.5 py-0.5 rounded font-medium border flex items-center gap-0.5 ${
-                                          item.status === 'matched'
-                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
-                                            : 'bg-muted text-muted-foreground border-border/60'
-                                        }`}
-                                      >
-                                        {item.status === 'matched' ? '✓' : '•'} {item.keyword}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
 
                         {/* Chat Messages Feed */}
@@ -2076,26 +1779,7 @@ function DashboardContent() {
 
                         {/* Interactive Assistant Quick Actions (Calibration & Polish) */}
                         <div className="px-3 py-2 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 max-h-28 overflow-y-auto">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsCalibrationOpen(true)
-                              handleSendMessage('What is the best way to tailor my resume for a specific job?')
-                            }}
-                            className="text-[10px] px-2 py-0.5 rounded-md border border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 font-semibold flex items-center gap-1"
-                          >
-                            <Target className="w-2.5 h-2.5" />
-                            <span>🎯 Calibrate Target</span>
-                          </button>
 
-                          <button
-                            type="button"
-                            onClick={handleRunAtsBenchmark}
-                            className="text-[10px] px-2 py-0.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 font-semibold flex items-center gap-1"
-                          >
-                            <Cpu className="w-2.5 h-2.5" />
-                            <span>⚡ Live ATS Simulator</span>
-                          </button>
 
                           {SUGGESTED_COPILOT_ACTIONS.map((action, idx) => (
                             <button
@@ -2170,6 +1854,33 @@ function DashboardContent() {
                 <h3 className="font-bold text-sm text-foreground">Cover Letter Parameters</h3>
 
                 <div className="space-y-4 text-xs">
+                  {/* Job Posting URL Auto-Fill */}
+                  <div className="p-3 bg-muted/40 rounded-xl border border-border/70 space-y-2">
+                    <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                      <span>Auto-Fill from Job URL</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">LinkedIn, Greenhouse, Lever, etc.</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={jobUrlInput}
+                        onChange={(e) => setJobUrlInput(e.target.value)}
+                        placeholder="https://..."
+                        className="flex-1 h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={isScrapingJobUrl || !jobUrlInput.trim()}
+                        onClick={() => handleScrapeJobUrl()}
+                        className="h-8 px-2.5 text-xs font-semibold shrink-0 gap-1"
+                      >
+                        {isScrapingJobUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
+                        Auto-Fill
+                      </Button>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground block mb-1">
                       Target Company
@@ -2380,58 +2091,6 @@ function DashboardContent() {
           onOpenChange={setIsAtsXRayOpen}
           profile={parsedProfile}
           scorecard={atsScorecard}
-        />
-
-        {/* Automated Live ATS Benchmark Simulator (Taleo & Greenhouse) Dialog */}
-        <AtsBenchmarkSimulatorModal
-          open={isBenchmarkModalOpen}
-          onOpenChange={setIsBenchmarkModalOpen}
-          report={benchmarkReport}
-          onInsertSkill={(skill) => {
-            if (!parsedProfile) return
-            const currentSkills = parsedProfile.skills || []
-            if (!currentSkills.some((s: string) => s.toLowerCase() === skill.toLowerCase())) {
-              const updated = [...currentSkills, skill]
-              updateProfileField({ skills: updated })
-              const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Systems Engineer'
-              const effectiveJd = (jobDescriptionForTailor && jobDescriptionForTailor.trim().length > 30)
-                ? jobDescriptionForTailor
-                : getBenchmarkJobDescription(effectiveRole, updated)
-              const nextReport = runAtsBenchmarkSimulator({
-                profile: { ...parsedProfile, skills: updated },
-                jobTitle: effectiveRole,
-                jobCompany: tailorCompany || 'Target Organization',
-                jobDescription: effectiveJd,
-              })
-              setBenchmarkReport(nextReport)
-            }
-          }}
-        />
-
-        {/* Maritime STCW & Sea-Time Autonomous Verifier Modal */}
-        <MaritimeStcwVerifierModal
-          open={isMaritimeModalOpen}
-          onOpenChange={setIsMaritimeModalOpen}
-          candidateName={parsedProfile?.applicant_name || 'Vincent Lang'}
-          candidateAddress={sessionAddress}
-          onVerificationComplete={(res) => {
-            if (parsedProfile) {
-              const certs = Array.from(
-                new Set([
-                  ...(parsedProfile.certifications || []),
-                  res.certificateName,
-                  'STCW 78/2010 Verified',
-                ])
-              )
-              updateProfileField({
-                certifications: certs,
-                maritime_sea_days: res.seaDaysTotal,
-                maritime_soulbound_id: res.soulboundTokenId,
-                walrus_maritime_blob: res.walrusBlobId,
-              })
-              toast.success(`${res.seaDaysTotal} Qualifying Sea Days verified and minted to Walrus!`)
-            }
-          }}
         />
 
         {/* Walrus Decentralized Version History On-Demand Modal */}

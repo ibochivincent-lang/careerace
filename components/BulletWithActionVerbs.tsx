@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Sparkles, X, Check, Zap } from "lucide-react";
+import { Sparkles, X, Check, Zap, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   analyzeBulletActionVerbs,
   replaceBulletActionVerb,
+  integrateKeywordIntoBullet,
   type VerbSuggestion
 } from "@/lib/action_verbs";
 
@@ -17,6 +18,8 @@ interface BulletWithActionVerbsProps {
   index: number;
   fontFamily?: string;
   className?: string;
+  targetRole?: string;
+  allKeywords?: string[];
 }
 
 export function BulletWithActionVerbs({
@@ -26,12 +29,43 @@ export function BulletWithActionVerbs({
   index,
   fontFamily,
   className = "",
+  targetRole,
+  allKeywords = [],
 }: BulletWithActionVerbsProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Analyze the bullet text for action verbs & ATS optimization
-  const analysis = useMemo(() => analyzeBulletActionVerbs(bullet), [bullet]);
+  // Role-tailored action verbs analysis
+  const analysis = useMemo(
+    () => analyzeBulletActionVerbs(bullet, targetRole),
+    [bullet, targetRole]
+  );
+
+  // Detect matched ATS keywords within this specific bullet
+  const matchedKeywords = useMemo(() => {
+    if (!allKeywords || allKeywords.length === 0 || !bullet.trim()) return [];
+    const lowerBullet = bullet.toLowerCase();
+    return allKeywords
+      .filter((kw) => {
+        if (!kw || kw.trim().length < 2) return false;
+        const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`\\b${escaped}\\b`, "i").test(lowerBullet);
+      })
+      .slice(0, 5);
+  }, [allKeywords, bullet]);
+
+  // Find suggested missing keywords from candidate skills / JD not yet in this bullet
+  const suggestedMissingKeywords = useMemo(() => {
+    if (!allKeywords || allKeywords.length === 0) return [];
+    const lowerBullet = bullet.toLowerCase();
+    return allKeywords
+      .filter((kw) => {
+        if (!kw || kw.trim().length < 2) return false;
+        const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return !new RegExp(`\\b${escaped}\\b`, "i").test(lowerBullet);
+      })
+      .slice(0, 3);
+  }, [allKeywords, bullet]);
 
   function handleSelectVerb(suggestion: VerbSuggestion) {
     const replaced = replaceBulletActionVerb(bullet, suggestion.verb);
@@ -42,13 +76,19 @@ export function BulletWithActionVerbs({
     );
   }
 
+  function handleIntegrateKeyword(keyword: string) {
+    const integrated = integrateKeywordIntoBullet(bullet, keyword);
+    onUpdate(integrated);
+    toast.success(`Integrated "${keyword}" into bullet!`);
+  }
+
   const showSuggestions = isFocused || isHovered;
 
   return (
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group/bullet relative space-y-1 rounded-md p-1.5 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 border border-transparent hover:border-slate-200/60 dark:hover:border-slate-700/60 ${className}`}
+      className={`group/bullet relative space-y-1.5 rounded-lg p-2 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/30 border border-transparent hover:border-slate-200/70 dark:hover:border-slate-700/70 ${className}`}
     >
       <div className="flex items-start gap-2">
         <span className="text-slate-400 select-none mt-1 font-bold text-xs leading-none">•</span>
@@ -63,7 +103,7 @@ export function BulletWithActionVerbs({
           }}
           onChange={(e) => onUpdate(e.target.value)}
           placeholder="Spearheaded technical initiative resulting in 35% latency reduction..."
-          className="flex-1 text-xs leading-relaxed bg-transparent text-slate-800 border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none resize-none p-1 rounded transition-colors"
+          className="flex-1 text-xs leading-relaxed bg-transparent text-slate-800 dark:text-slate-200 border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none resize-none p-1 rounded transition-colors"
         />
         <button
           type="button"
@@ -75,17 +115,65 @@ export function BulletWithActionVerbs({
         </button>
       </div>
 
-      {/* INLINE AI ACTION-VERB SUGGESTION CHIP (Like open-resume) */}
+      {/* ── ATS KEYWORD HIGHLIGHTS & INLINE INTEGRATE PILLS ── */}
+      {(matchedKeywords.length > 0 || (suggestedMissingKeywords.length > 0 && showSuggestions)) && (
+        <div className="no-print flex flex-wrap items-center gap-1.5 pl-4 pt-0.5 text-[10px]">
+          {/* Matched ATS Keywords in Subtle Emerald */}
+          {matchedKeywords.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-muted-foreground font-semibold text-[9px] uppercase tracking-wider mr-0.5">
+                Matched ATS:
+              </span>
+              {matchedKeywords.map((kw, kIdx) => (
+                <span
+                  key={kIdx}
+                  className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-700/60 shadow-2xs"
+                  title="Matched ATS keyword found in bullet"
+                >
+                  <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{kw}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Single-Click "Integrate" Pill for Missing Keywords */}
+          {showSuggestions && suggestedMissingKeywords.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-muted-foreground font-semibold text-[9px] uppercase tracking-wider ml-1 mr-0.5">
+                Suggest:
+              </span>
+              {suggestedMissingKeywords.map((kw, mIdx) => (
+                <button
+                  key={mIdx}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleIntegrateKeyword(kw);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-400/40 hover:bg-emerald-500/15 hover:text-emerald-700 hover:border-emerald-500/60 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                  title={`Click to integrate "${kw}" smoothly into this bullet`}
+                >
+                  <PlusCircle className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                  <span>Integrate "{kw}"</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ROLE-AWARE POWER VERBS SUGGESTION CHIPS ── */}
       {showSuggestions && (
-        <div className="no-print flex flex-wrap items-center gap-1.5 pl-5 pt-0.5 animate-in fade-in duration-200">
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-            <Sparkles className="w-2.5 h-2.5" />
+        <div className="no-print flex flex-wrap items-center gap-1.5 pl-4 pt-1 animate-in fade-in duration-200">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/25">
+            <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
             <span>
               {analysis.weakPhrase
-                ? `Boost ATS Impact (replaces "${analysis.weakPhrase}"):`
+                ? `Boost Impact (replaces "${analysis.weakPhrase}"):`
                 : analysis.isStrongAlready
-                ? "Strong Verb Active! Alternatives:"
-                : "Power Verbs (+10-15 ATS pts):"}
+                ? "Active Verb! Role Alternatives:"
+                : "Power Verbs:"}
             </span>
           </div>
 
@@ -94,12 +182,11 @@ export function BulletWithActionVerbs({
               key={sIdx}
               type="button"
               onMouseDown={(e) => {
-                // Prevent onBlur from hiding before click registers
                 e.preventDefault();
                 handleSelectVerb(sugg);
               }}
               className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-md bg-background border border-border/80 text-foreground hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 shadow-2xs transition-all active:scale-95 cursor-pointer"
-              title={`Click to substitute with '${sugg.verb}' for +${sugg.points} estimated ATS score impact`}
+              title={`Click to substitute with '${sugg.verb}'`}
             >
               <Zap className="w-2.5 h-2.5 text-amber-500" />
               <span className="font-semibold">{sugg.verb}</span>
