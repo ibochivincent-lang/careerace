@@ -14,7 +14,7 @@ export interface TailoredPackage {
 
 const ACTION_VERBS = [
   "Architected", "Engineered", "Spearheaded", "Orchestrated", "Automated",
-  "Optimized", "Delivered", "Pioneered", "Streamlined", "Accelerated"
+  "Optimized", "Delivered", "Pioneered", "Scaled", "Accelerated"
 ];
 
 /**
@@ -40,7 +40,7 @@ export function enforceGoogleXyzFormula(highlight: string, contextSkill?: string
   const hasQuantifiableMetric = /\d+%|\b\d+x\b|\$\d+|\bms\b|\bsec\b|\bhours\b/i.test(refined);
   if (!hasQuantifiableMetric) {
     if (contextSkill) {
-      refined = `${refined}, improving delivery throughput and reliability utilizing ${contextSkill}.`;
+      refined = `${refined}, improving delivery throughput and reliability applying ${contextSkill}.`;
     } else {
       refined = `${refined}, driving measurable performance gains and operational reliability.`;
     }
@@ -54,7 +54,7 @@ export function generateTailoredCvAndCoverLetter(job: NormalizedJob, cv: ParsedC
   const matchingSkills = (cv.skills || []).filter(s => jobKeywords.includes(s.toLowerCase()));
   const skillsToFeature = matchingSkills.length > 0 ? matchingSkills : (cv.skills || []).slice(0, 4);
 
-  const tailored_summary = `Results-driven engineer with verified expertise in ${skillsToFeature.slice(0, 4).join(", ")}, specializing in high-performance production systems. Profile aligned for ${job.title} at ${job.company}.`;
+  const tailored_summary = `Engineer with verified competencies in ${skillsToFeature.slice(0, 4).join(", ")}, specializing in high-performance production systems. Profile aligned for ${job.title} at ${job.company}.`;
 
   const aligned_highlights: string[] = [];
   const xyz_bullets: string[] = [];

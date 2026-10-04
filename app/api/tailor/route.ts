@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { callFreeLlm } from "@/lib/free_llm";
 import { analyzeAtsMatch } from "@/lib/ats_engine";
 import { generateTailoredCvAndCoverLetter, enforceGoogleXyzFormula } from "@/lib/resume_tailor";
+import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "@/lib/no_slop";
 import type { ParsedCv } from "@/lib/cv_parser";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +34,13 @@ export async function POST(req: NextRequest) {
     let aiSuccess = false;
     if (hasJobDescription) {
       try {
-        const systemPrompt = `You are a world-class Executive ATS Career Strategist.
+        const systemPrompt = `You are an elite Executive ATS Career Strategist.
 Your goal is to tailor the candidate's real resume for the target job description to achieve maximum ATS score (90%+) on Taleo, Greenhouse, and Workday without hallucinating false credentials.
+
+${NO_SLOP_PROMPT_DIRECTIVE}
+
 Guidelines:
-1. Re-write the professional summary in 2-3 crisp, high-impact sentences highlighting exact keywords from the JD.
+1. Re-write the professional summary in 2-3 crisp, high-impact sentences highlighting exact keywords from the JD. Never use generic buzzwords ("results-driven", "synergies", "seasoned").
 2. Optimize each work experience bullet point into Google XYZ formula: "Accomplished [X] as measured by [Y], by doing [Z]".
 3. Incorporate critical hard technical keywords from the job description naturally into the accomplishments.
 4. Output STRICT JSON only. Format:
@@ -79,9 +83,14 @@ Tailor the candidate's real experience specifically for this role. Output valid 
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
           if (parsed.summary && Array.isArray(parsed.work_experience)) {
-            tailoredSummary = parsed.summary;
-            tailoredWorkExperience = parsed.work_experience;
-            coverLetterText = parsed.cover_letter || "";
+            tailoredSummary = sanitizeAntiSlop(parsed.summary);
+            tailoredWorkExperience = parsed.work_experience.map((exp: any) => ({
+              ...exp,
+              highlights: Array.isArray(exp.highlights)
+                ? exp.highlights.map((h: string) => sanitizeAntiSlop(h))
+                : [],
+            }));
+            coverLetterText = sanitizeAntiSlop(parsed.cover_letter || "");
             aiSuccess = true;
           }
         }

@@ -10,6 +10,7 @@ import {
   type FactKind,
 } from "@/lib/memory_contract.ts";
 import { callFreeLlm } from "@/lib/free_llm.ts";
+import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "@/lib/no_slop.ts";
 
 export const maxDuration = 60;
 
@@ -363,7 +364,9 @@ export async function POST(req: Request) {
             .join("\n• ")
         : String(profileExperience || "None indexed yet");
 
-      const systemPrompt = `You are Career Ace AI Copilot, a world-class autonomous career profiler, resume builder, and job matcher powered by Walrus Sovereign Memory.
+      const systemPrompt = `You are Career Ace AI Copilot, a direct, highly effective career strategist, resume builder, and job matcher powered by Walrus Sovereign Memory.
+
+${NO_SLOP_PROMPT_DIRECTIVE}
 
 CANDIDATE VERIFIED CV DETAILS:
 Candidate Name: ${currentName || "Candidate"}
@@ -379,7 +382,7 @@ ${memoryFactsList || "Profile newly initialized on Walrus."}
 RULES:
 1. Always ground your answers in the candidate's actual CV details and Walrus Memory above.
 2. If the user asks about what they studied, where they worked, what their skills are, or asks "Can you read my CV?", answer directly and affirmatively using their exact background details above.
-3. Be professional, highly encouraging, and concise (under 140 words). Never invent unverified companies or credentials.`;
+3. Be professional, direct, concise (under 140 words). Never use filler phrases or AI buzzwords. Never invent unverified companies or credentials.`;
 
       reply = await callFreeLlm({
         prompt: latest,
@@ -388,6 +391,10 @@ RULES:
         max_tokens: 450,
         custom_keys: body.custom_keys,
       });
+
+      if (reply) {
+        reply = sanitizeAntiSlop(reply);
+      }
     }
 
     return NextResponse.json({

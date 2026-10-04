@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callFreeLlm } from "@/lib/free_llm.ts";
+import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "@/lib/no_slop.ts";
 
 export const maxDuration = 60;
 
@@ -22,20 +23,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const systemPrompt = `You are an elite executive career strategist and recruiter.
-Write two high-converting, professional follow-up messages for a candidate following up on a job application submitted 7 days ago.
+    const systemPrompt = `You are a direct, articulate career strategist.
+Write two high-converting, professional follow-up messages for a candidate checking on a job application submitted 7 days ago.
+
+${NO_SLOP_PROMPT_DIRECTIVE}
 
 1. LinkedIn Direct Message (InMail / Connection note):
-- Maximum 350 characters.
-- Tone: Respectful, articulate, confident.
-- Clearly states the position applied for at ${company}, references the timeline, and expresses high motivation.
+- Maximum 300 characters.
+- Tone: Direct, confident, respectful.
+- Immediately cites the ${jobTitle} role at ${company} applied for on ${appliedDate || "last week"} and requests a quick status update.
 
 2. Executive Email:
-- Includes a crisp, high-open-rate subject line.
-- 3 short, punchy paragraphs:
-  * Paragraph 1: Friendly greeting, polite check-in on the status of the application for ${jobTitle} submitted on ${appliedDate || "last week"}.
-  * Paragraph 2: Reiterate 1-2 core value drivers and verified accomplishments (e.g., modern technical or marine propulsion telemetry, verifiable STCW credentials, sovereign competence).
-  * Paragraph 3: Reaffirm enthusiasm, offer additional portfolio / Walrus-verified documentation if needed, and thank them for their time.
+- Crisp, high-open-rate subject line.
+- 3 short paragraphs:
+  * Paragraph 1: Direct opening stating follow-up on the ${jobTitle} application submitted on ${appliedDate || "last week"}. Zero throat-clearing openers.
+  * Paragraph 2: Mention 1-2 concrete, verifiable capabilities (e.g., distributed architectures, high-reliability engineering, verified credentials).
+  * Paragraph 3: Direct invitation to connect or provide additional portfolio details.
 
 Respond strictly in valid JSON format:
 {
@@ -65,12 +68,25 @@ Contact/Hiring Lead: ${contactName || "Hiring Manager"}`;
         .replace(/```/g, "")
         .trim();
       parsedResult = JSON.parse(cleanJson);
+
+      // Enforce anti-slop post-processing
+      if (parsedResult) {
+        if (parsedResult.linkedinMessage) {
+          parsedResult.linkedinMessage = sanitizeAntiSlop(parsedResult.linkedinMessage);
+        }
+        if (parsedResult.emailSubject) {
+          parsedResult.emailSubject = sanitizeAntiSlop(parsedResult.emailSubject);
+        }
+        if (parsedResult.emailBody) {
+          parsedResult.emailBody = sanitizeAntiSlop(parsedResult.emailBody);
+        }
+      }
     } catch (_err) {
-      // High-quality fallback if LLM parser has issues
+      // High-quality human fallback with zero AI slop
       parsedResult = {
-        linkedinMessage: `Hi ${contactName || "there"}, following up on my application for the ${jobTitle} role at ${company} submitted last week. My background in high-reliability systems and verifiable track record aligns closely with your team's objectives. I would welcome the opportunity to connect and discuss how I can contribute. Best regards, ${candidateName}.`,
-        emailSubject: `Following up on ${jobTitle} Application – ${candidateName}`,
-        emailBody: `Dear ${contactName || "Hiring Team at " + company},\n\nI hope this week is treating you well. I am following up on my application for the ${jobTitle} position at ${company}, which I submitted on ${appliedDate || "last week"}.\n\nGiven ${company}'s current trajectory and engineering standards, I remain very enthusiastic about the opportunity to contribute. My background in critical operational systems, problem solving, and disciplined execution aligns directly with the requirements of this opening.\n\nI would be delighted to provide any additional materials, references, or Walrus-verified credentials if helpful. Thank you for your consideration, and I look forward to hearing about next steps.\n\nWarm regards,\n${candidateName}`,
+        linkedinMessage: `Hi ${contactName || "there"}, following up on my application for the ${jobTitle} position at ${company}. My verified technical background and engineering track record match your opening. Let me know if you would like to review my verified portfolio or connect this week. Best, ${candidateName}.`,
+        emailSubject: `Application Follow-up: ${jobTitle} – ${candidateName}`,
+        emailBody: `Dear ${contactName || "Hiring Team at " + company},\n\nI am following up on my application for the ${jobTitle} role at ${company}, submitted on ${appliedDate || "last week"}.\n\nGiven ${company}'s current technical roadmap and focus on high-availability engineering, my background in resilient systems and verifiable execution directly addresses the demands of this position.\n\nI would be glad to share any additional details or credential records whenever convenient. Thank you for your time, and I look forward to your update.\n\nBest regards,\n${candidateName}`,
         actionTip: "Best sent on Tuesday or Wednesday morning between 8:30 AM - 10:30 AM in the recipient's local time zone.",
       };
     }

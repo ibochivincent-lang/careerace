@@ -90,11 +90,11 @@ export function ApplicationFollowUpModal({
         }
       })
       .catch(() => {
-        // Fallback default
+        // Fallback default (clean human copy, zero AI slop)
         setFollowUpData({
-          linkedinMessage: `Hi ${contactName || 'there'}, following up on my application for the ${jobTitle} role at ${company} submitted last week. My verified background aligns closely with your team's objectives. I would welcome the opportunity to connect and discuss how I can contribute. Best regards, ${candidateName}.`,
-          emailSubject: `Following up on ${jobTitle} Application – ${candidateName}`,
-          emailBody: `Dear ${contactName || 'Hiring Team at ' + company},\n\nI hope your week is off to a great start. I am checking in regarding my application for the ${jobTitle} position at ${company}, submitted on ${appliedDate}.\n\nGiven ${company}'s current trajectory and engineering standards, I remain very excited about this role. My background in high-reliability systems and disciplined operational execution matches your technical requirements directly.\n\nI would be delighted to provide any additional materials, portfolio samples, or Walrus-verified credentials if helpful. Thank you for your time, and I look forward to hearing about next steps.\n\nWarm regards,\n${candidateName}`,
+          linkedinMessage: `Hi ${contactName || 'there'}, following up on my application for the ${jobTitle} position at ${company}. My verified technical background and engineering track record match your opening. Let me know if you would like to review my verified portfolio or connect this week. Best, ${candidateName}.`,
+          emailSubject: `Application Follow-up: ${jobTitle} – ${candidateName}`,
+          emailBody: `Dear ${contactName || 'Hiring Team at ' + company},\n\nI am following up on my application for the ${jobTitle} role at ${company}, submitted on ${appliedDate}.\n\nGiven ${company}'s current technical roadmap and focus on high-availability engineering, my background in resilient systems and verifiable execution directly addresses the demands of this position.\n\nI would be glad to share any additional details or credential records whenever convenient. Thank you for your time, and I look forward to your update.\n\nBest regards,\n${candidateName}`,
           actionTip: "Best sent on Tuesday or Wednesday morning between 8:30 AM - 10:30 AM in the recipient's local time zone.",
         })
       })
@@ -139,32 +139,36 @@ export function ApplicationFollowUpModal({
           </DialogDescription>
         </div>
 
-        {/* Channel Switcher */}
+        {/* Channel Switcher with accessible 44px min touch targets */}
         <div className="px-6 pt-4">
-          <div className="flex items-center gap-2 p-1 rounded-xl bg-muted/60 border border-border/80 w-fit text-xs">
+          <div className="flex items-center gap-2 p-1 rounded-xl bg-muted/60 border border-border/80 w-fit text-xs" role="tablist" aria-label="Communication channel">
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'linkedin'}
               onClick={() => setActiveTab('linkedin')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                 activeTab === 'linkedin'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <LinkedInIcon className="w-3.5 h-3.5 text-[#0A66C2]" />
+              <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
               <span>LinkedIn InMail / DM</span>
             </button>
 
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === 'email'}
               onClick={() => setActiveTab('email')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                 activeTab === 'email'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Mail className="w-3.5 h-3.5 text-emerald-500" />
+              <Mail className="w-4 h-4 text-emerald-500" />
               <span>Executive Email</span>
             </button>
           </div>

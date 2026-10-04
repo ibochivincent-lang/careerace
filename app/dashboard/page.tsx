@@ -1587,21 +1587,46 @@ function DashboardContent() {
                       />
                     </div>
 
-                    {/* Draggable Divider Handle between Editor and Copilot */}
+                    {/* Draggable Divider Handle between Editor and Copilot (Accessible & Touch Optimized) */}
                     <div
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-valuenow={splitRatio}
+                      aria-valuemin={45}
+                      aria-valuemax={80}
+                      aria-label="Resize Resume Editor and Copilot split"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') {
+                          e.preventDefault()
+                          setSplitRatio((prev) => Math.max(prev - 5, 45))
+                        } else if (e.key === 'ArrowRight') {
+                          e.preventDefault()
+                          setSplitRatio((prev) => Math.min(prev + 5, 80))
+                        } else if (e.key === 'Home') {
+                          e.preventDefault()
+                          setSplitRatio(50)
+                        } else if (e.key === 'End') {
+                          e.preventDefault()
+                          setSplitRatio(70)
+                        } else if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSplitRatio(65)
+                        }
+                      }}
                       onMouseDown={(e) => {
                         e.preventDefault()
                         setIsDraggingSplit(true)
                       }}
                       onDoubleClick={() => setSplitRatio(65)}
-                      title="Drag to resize · Double-click to reset (65/35)"
-                      className={`hidden lg:flex flex-col items-center justify-center w-5 -mx-2.5 h-full min-h-[680px] cursor-col-resize z-20 group relative transition-colors ${
+                      title="Drag or use Left/Right arrows to resize · Double-click to reset (65/35)"
+                      className={`hidden lg:flex flex-col items-center justify-center w-6 -mx-3 h-full min-h-[680px] cursor-col-resize z-20 group relative transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg ${
                         isDraggingSplit ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'
                       }`}
                     >
                       <div
-                        className={`w-1 h-14 rounded-full transition-all flex flex-col items-center justify-center gap-1 ${
-                          isDraggingSplit ? 'bg-emerald-500 scale-y-125 shadow-xs' : 'bg-border/90 group-hover:bg-emerald-500/80'
+                        className={`w-1.5 h-16 rounded-full transition-all flex flex-col items-center justify-center gap-1.5 ${
+                          isDraggingSplit ? 'bg-emerald-500 scale-y-125 shadow-md' : 'bg-border/90 group-hover:bg-emerald-500/80 group-focus-visible:bg-emerald-500'
                         }`}
                       >
                         <span className="w-0.5 h-0.5 rounded-full bg-background" />
