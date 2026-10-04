@@ -15,13 +15,15 @@ import {
   ShieldCheck, Mail, ExternalLink,
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
   Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database,
-  TrendingUp, Target, AlertTriangle
+  TrendingUp, Target, AlertTriangle, FileCheck
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
 import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
+import { LivePdfPreview } from '@/components/LivePdfPreview'
+import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -87,8 +89,13 @@ function DashboardContent() {
   const [jobDescriptionForTailor, setJobDescriptionForTailor] = useState('')
   const [isTailoringResume, setIsTailoringResume] = useState(false)
   const [isTailorOpen, setIsTailorOpen] = useState(false)
-  const [resumeDisplayMode, setResumeDisplayMode] = useState<'ats_document' | 'tailored_text'>('ats_document')
+  const [resumeDisplayMode, setResumeDisplayMode] = useState<'ats_document' | 'pdf_preview' | 'tailored_text'>('ats_document')
   const [newSkillInput, setNewSkillInput] = useState('')
+
+  // Walrus Resume Versioning state
+  const [walrusVersions, setWalrusVersions] = useState<WalrusResumeVersionItem[]>([])
+  const [isSavingWalrusVersion, setIsSavingWalrusVersion] = useState(false)
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null)
 
   // Profiles State
   const [githubUsername, setGithubUsername] = useState('')
@@ -108,6 +115,16 @@ function DashboardContent() {
   useEffect(() => {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, isSending])
+
+  // Load stored profile and Walrus version snapshots
+  useEffect(() => {
+    try {
+      const storedVersions = localStorage.getItem('careerace_walrus_versions')
+      if (storedVersions) {
+        setWalrusVersions(JSON.parse(storedVersions))
+      }
+    } catch {}
+  }, [])
 
   // Load stored profile strictly if valid
   useEffect(() => {
@@ -233,24 +250,40 @@ function DashboardContent() {
     setIsTailoringResume(true)
     const toastId = toast.loading('Tailoring resume for ATS alignment...')
     try {
+      const custom_keys = {
+        groq: localStorage.getItem('careerace_groq_key') || '',
+        google: localStorage.getItem('careerace_gemini_key') || '',
+        openrouter: localStorage.getItem('careerace_openrouter_key') || '',
+        opencode: localStorage.getItem('careerace_opencode_key') || '',
+      }
+
       const res = await fetch('/api/tailor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          company: tailorCompany,
+          company: tailorCompany || 'Target Organization',
           role: tailorRole || parsedProfile.target_roles?.[0] || 'Target Role',
           job_description: jobDescriptionForTailor,
-          profile: parsedProfile
+          profile: parsedProfile,
+          custom_keys
         })
       })
       const data = await res.json()
       if (res.ok && data.tailored_resume) {
         setTailoredResumeText(data.tailored_resume)
-        toast.success('Tailored resume compiled with quantified ATS metrics!', { id: toastId })
+        if (data.tailored_profile) {
+          updateProfileField(data.tailored_profile)
+        }
+        if (data.ats_scorecard) {
+          setAtsScorecard(data.ats_scorecard)
+        }
+        setResumeDisplayMode('pdf_preview')
+        toast.success(`Tailored resume compiled! ATS Score: ${data.ats_scorecard?.overall_score || 85}/100`, { id: toastId })
       } else {
         const bullets = (parsedProfile.work_experience || []).flatMap((e: any) => e.highlights || [])
         const tailored = `${parsedProfile.applicant_name || 'Candidate'}\n${parsedProfile.contact_email || ''} · ${parsedProfile.contact_phone || ''} · ${parsedProfile.location || ''}\n\nTARGET: ${tailorRole || 'Specialist'} at ${tailorCompany || 'Target Organization'}\n\nPROFESSIONAL SUMMARY\nResults-driven professional with deep expertise in ${(parsedProfile.skills || []).slice(0, 8).join(', ')}. Demonstrated success delivering high-reliability solutions aligned with organizational goals.\n\nCORE COMPETENCIES\n${(parsedProfile.skills || []).join(' · ')}\n\nEXPERIENCE HIGHLIGHTS\n${bullets.slice(0, 8).map((b: string) => `• ${b}`).join('\n')}`
         setTailoredResumeText(tailored)
+        setResumeDisplayMode('pdf_preview')
         toast.success('Tailored resume generated!', { id: toastId })
       }
     } catch {
@@ -258,6 +291,73 @@ function DashboardContent() {
     } finally {
       setIsTailoringResume(false)
     }
+  }
+
+  async function handleCommitWalrusVersion() {
+    if (!parsedProfile) {
+      toast.error('Please upload or load a resume first.')
+      return
+    }
+    setIsSavingWalrusVersion(true)
+    const toastId = toast.loading('Committing encrypted snapshot to Walrus Protocol...')
+    try {
+      const res = await fetch('/api/resume/version', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: sessionAddress,
+          company: tailorCompany || 'Target Organization',
+          role: tailorRole || parsedProfile.target_roles?.[0] || 'Target Role',
+          atsScore: atsScorecard?.overall_score || 0,
+          profile: parsedProfile,
+          tailoredText: tailoredResumeText,
+          customSummary: (parsedProfile as any).summary || ''
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to commit version')
+
+      const newVersion: WalrusResumeVersionItem = {
+        id: data.version_id,
+        versionNumber: walrusVersions.length + 1,
+        label: `v${walrusVersions.length + 1} · ${data.role} @ ${data.company}`,
+        company: data.company,
+        role: data.role,
+        atsScore: data.ats_score,
+        blobId: data.blob_id,
+        walrusUrl: data.walrus_url,
+        createdAt: data.timestamp,
+        profileSnapshot: parsedProfile,
+        tailoredText: tailoredResumeText,
+        encrypted: data.encrypted
+      }
+
+      const updated = [newVersion, ...walrusVersions]
+      setWalrusVersions(updated)
+      setActiveVersionId(newVersion.id)
+      localStorage.setItem('careerace_walrus_versions', JSON.stringify(updated))
+
+      toast.success(`Anchored to Walrus! Blob: ${data.blob_id.slice(0, 10)}...`, { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Walrus version upload failed', { id: toastId })
+    } finally {
+      setIsSavingWalrusVersion(false)
+    }
+  }
+
+  function handleRestoreWalrusVersion(version: WalrusResumeVersionItem) {
+    if (version.profileSnapshot) {
+      setParsedProfile(version.profileSnapshot)
+      localStorage.setItem('careerace_sovereign_profile', JSON.stringify(version.profileSnapshot))
+      localStorage.setItem('careerace_parsed_profile', JSON.stringify(version.profileSnapshot))
+    }
+    if (version.tailoredText) {
+      setTailoredResumeText(version.tailoredText)
+    }
+    if (version.company) setTailorCompany(version.company)
+    if (version.role) setTailorRole(version.role)
+    setActiveVersionId(version.id)
+    toast.success(`Restored version: ${version.label}`)
   }
 
   async function handleSendMessage() {
@@ -1069,6 +1169,16 @@ function DashboardContent() {
                     {/* Primary Actions */}
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
+                        size="sm"
+                        onClick={handleCommitWalrusVersion}
+                        disabled={isSavingWalrusVersion || !parsedProfile}
+                        className="text-xs h-8 gap-1.5 bg-purple-600 hover:bg-purple-500 text-white shadow-xs font-semibold"
+                        title="Save current resume state as an encrypted version to Walrus Protocol"
+                      >
+                        <Database className="w-3.5 h-3.5" />
+                        {isSavingWalrusVersion ? 'Anchoring...' : 'Save to Walrus'}
+                      </Button>
+                      <Button
                         variant={isTailorOpen ? "default" : "outline"}
                         size="sm"
                         onClick={() => setIsTailorOpen(!isTailorOpen)}
@@ -1183,19 +1293,31 @@ function DashboardContent() {
 
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
                             <div className="flex items-center gap-2">
-                              {tailoredResumeText && (
-                                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-background border text-xs">
-                                  <button
-                                    type="button"
-                                    onClick={() => setResumeDisplayMode('ats_document')}
-                                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                                      resumeDisplayMode === 'ats_document'
-                                        ? 'bg-muted text-foreground font-semibold'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                  >
-                                    Modern ATS Editor
-                                  </button>
+                              <div className="flex items-center gap-1.5 p-1 rounded-lg bg-background border text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => setResumeDisplayMode('ats_document')}
+                                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                                    resumeDisplayMode === 'ats_document'
+                                      ? 'bg-muted text-foreground font-semibold'
+                                      : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                >
+                                  Modern ATS Editor
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setResumeDisplayMode('pdf_preview')}
+                                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                                    resumeDisplayMode === 'pdf_preview'
+                                      ? 'bg-emerald-600 text-white font-semibold shadow-xs'
+                                      : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                >
+                                  <FileCheck className="w-3.5 h-3.5" />
+                                  Live PDF Preview
+                                </button>
+                                {tailoredResumeText && (
                                   <button
                                     type="button"
                                     onClick={() => setResumeDisplayMode('tailored_text')}
@@ -1205,10 +1327,10 @@ function DashboardContent() {
                                         : 'text-muted-foreground hover:text-foreground'
                                     }`}
                                   >
-                                    Tailored Text Output
+                                    Tailored Text
                                   </button>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
 
                             <Button
@@ -1280,8 +1402,34 @@ function DashboardContent() {
                     )}
                   </AnimatePresence>
 
-                  {/* DISPLAY MODE 1: TAILORED PLAINTEXT VIEW */}
-                  {resumeDisplayMode === 'tailored_text' && tailoredResumeText ? (
+                  {/* WALRUS VERSION HISTORY DRAWER */}
+                  {walrusVersions.length > 0 && (
+                    <WalrusVersionDrawer
+                      versions={walrusVersions}
+                      activeVersionId={activeVersionId}
+                      onRestoreVersion={handleRestoreWalrusVersion}
+                      onClearHistory={() => {
+                        setWalrusVersions([])
+                        localStorage.removeItem('careerace_walrus_versions')
+                        toast.success('Walrus version cache cleared.')
+                      }}
+                    />
+                  )}
+
+                  {/* DISPLAY MODE 1: LIVE PDF PREVIEW GENERATOR */}
+                  {resumeDisplayMode === 'pdf_preview' ? (
+                    <LivePdfPreview
+                      profile={parsedProfile}
+                      tailoredText={tailoredResumeText}
+                      sourceFile={selectedFile}
+                      tailorRole={tailorRole || parsedProfile?.target_roles?.[0] || 'Target Role'}
+                      tailorCompany={tailorCompany || 'Target Organization'}
+                      atsScore={atsScorecard?.overall_score ?? null}
+                      onCommitWalrusVersion={handleCommitWalrusVersion}
+                      isSavingVersion={isSavingWalrusVersion}
+                    />
+                  ) : resumeDisplayMode === 'tailored_text' && tailoredResumeText ? (
+                    /* DISPLAY MODE 2: TAILORED PLAINTEXT VIEW */
                     <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
                       <div className="flex items-center justify-between pb-3 border-b">
                         <div className="flex items-center gap-2">
@@ -1292,10 +1440,19 @@ function DashboardContent() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => setResumeDisplayMode('pdf_preview')}
+                            className="text-xs h-7 gap-1"
+                          >
+                            <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
+                            Live PDF Preview
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setResumeDisplayMode('ats_document')}
                             className="text-xs h-7 gap-1"
                           >
-                            Switch to ATS Document Editor
+                            Switch to ATS Editor
                           </Button>
                           <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
                             Ready for Submission
@@ -1326,6 +1483,14 @@ function DashboardContent() {
                           className="flex-1 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
                         >
                           <Download className="w-3.5 h-3.5" /> Download Tailored .docx
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleCommitWalrusVersion}
+                          disabled={isSavingWalrusVersion}
+                          className="text-xs gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
+                        >
+                          <Database className="w-3.5 h-3.5" /> Save to Walrus
                         </Button>
                       </div>
                     </Card>

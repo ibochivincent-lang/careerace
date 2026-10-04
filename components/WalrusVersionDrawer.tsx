@@ -1,0 +1,201 @@
+"use client";
+
+import React, { useState } from "react";
+import {
+  Database,
+  History,
+  ExternalLink,
+  Copy,
+  RotateCcw,
+  Check,
+  ShieldCheck,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Trash2
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import type { ParsedCv } from "@/lib/cv_parser";
+
+export interface WalrusResumeVersionItem {
+  id: string;
+  versionNumber: number;
+  label: string;
+  company: string;
+  role: string;
+  atsScore: number;
+  blobId: string;
+  walrusUrl: string;
+  createdAt: string;
+  profileSnapshot: ParsedCv;
+  tailoredText?: string;
+  encrypted?: boolean;
+}
+
+interface WalrusVersionDrawerProps {
+  versions: WalrusResumeVersionItem[];
+  activeVersionId?: string | null;
+  onRestoreVersion: (version: WalrusResumeVersionItem) => void;
+  onClearHistory?: () => void;
+}
+
+export function WalrusVersionDrawer({
+  versions,
+  activeVersionId,
+  onRestoreVersion,
+  onClearHistory,
+}: WalrusVersionDrawerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copiedBlobId, setCopiedBlobId] = useState<string | null>(null);
+
+  function handleCopyBlob(blobId: string) {
+    navigator.clipboard.writeText(blobId);
+    setCopiedBlobId(blobId);
+    toast.success("Walrus Blob ID copied to clipboard!");
+    setTimeout(() => setCopiedBlobId(null), 2000);
+  }
+
+  if (!versions || versions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-purple-500/30 bg-purple-950/10 dark:bg-purple-950/20 backdrop-blur-xs p-4 space-y-3 transition-all">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400">
+            <Database className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-bold text-foreground">
+                Walrus Decentralized Version History
+              </h4>
+              <Badge variant="outline" className="text-[10px] text-purple-400 border-purple-500/30 bg-purple-500/10">
+                {versions.length} {versions.length === 1 ? "Version" : "Versions"} Anchored
+              </Badge>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Immutable encrypted snapshots stored on Mysten Labs Walrus testnet.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {onClearHistory && versions.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearHistory}
+              className="text-[11px] h-7 text-muted-foreground hover:text-red-400"
+              title="Clear local version history cache"
+            >
+              Clear Cache
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-xs h-7 gap-1 text-purple-600 dark:text-purple-400 font-semibold"
+          >
+            <History className="w-3.5 h-3.5" />
+            {isOpen ? "Hide History" : "View Versions"}
+            {isOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </Button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="pt-2 border-t border-purple-500/20 space-y-2.5 max-h-72 overflow-y-auto pr-1">
+          {versions.map((ver, idx) => {
+            const isCurrent = activeVersionId === ver.id;
+            return (
+              <div
+                key={ver.id || idx}
+                className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  isCurrent
+                    ? "border-purple-500/60 bg-purple-500/15 shadow-xs"
+                    : "border-border/60 bg-card/60 hover:border-purple-500/30"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-foreground">
+                      v{ver.versionNumber || versions.length - idx} · {ver.role}
+                    </span>
+                    <span className="text-xs text-muted-foreground">@ {ver.company}</span>
+                    {ver.atsScore > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className={`text-[10px] font-semibold ${
+                          ver.atsScore >= 70
+                            ? "text-emerald-500 bg-emerald-500/10"
+                            : "text-amber-500 bg-amber-500/10"
+                        }`}
+                      >
+                        {ver.atsScore}% ATS
+                      </Badge>
+                    )}
+                    {ver.encrypted && (
+                      <Badge variant="outline" className="text-[9px] text-muted-foreground">
+                        <ShieldCheck className="w-2.5 h-2.5 mr-0.5 text-purple-400" />
+                        AES-256
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
+                    <span>{new Date(ver.createdAt).toLocaleString()}</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400">
+                      Blob: {ver.blobId.slice(0, 10)}...{ver.blobId.slice(-6)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyBlob(ver.blobId)}
+                    className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                    title="Copy Walrus Blob ID"
+                  >
+                    {copiedBlobId === ver.blobId ? (
+                      <Check className="w-3 h-3 text-emerald-500 mr-1" />
+                    ) : (
+                      <Copy className="w-3 h-3 mr-1" />
+                    )}
+                    Blob
+                  </Button>
+
+                  <a
+                    href={ver.walrusUrl || `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${ver.blobId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 h-7 px-2 text-[11px] rounded-md border border-border text-muted-foreground hover:text-foreground bg-background hover:bg-muted/40 transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Explorer
+                  </a>
+
+                  <Button
+                    size="sm"
+                    variant={isCurrent ? "secondary" : "outline"}
+                    onClick={() => onRestoreVersion(ver)}
+                    className="h-7 px-2.5 text-[11px] font-semibold gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    {isCurrent ? "Active" : "Restore"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
