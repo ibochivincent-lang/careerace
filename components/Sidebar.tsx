@@ -29,8 +29,7 @@ function SidebarContent() {
 
   const MAIN_NAV = [
     { label: 'Overview', href: '/dashboard?tab=overview', icon: LayoutDashboard, active: pathname === '/dashboard' && currentTab === 'overview' },
-    { label: 'Resumes', href: '/dashboard?tab=resumes', icon: FileText, active: pathname === '/dashboard' && currentTab === 'resumes' },
-    { label: 'Tailored Resumes', href: '/dashboard?tab=tailored', icon: Sparkles, active: pathname === '/dashboard' && currentTab === 'tailored' },
+    { label: 'Resume', href: '/dashboard?tab=resumes', icon: FileText, active: pathname === '/dashboard' && (currentTab === 'resumes' || currentTab === 'tailored') },
     { label: 'Cover Letters', href: '/dashboard?tab=cover_letters', icon: Mail, active: pathname === '/dashboard' && currentTab === 'cover_letters' },
     { label: 'Job Board', href: '/application_board', icon: Briefcase, active: pathname.startsWith('/application_board') },
   ]

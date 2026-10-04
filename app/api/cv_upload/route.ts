@@ -329,13 +329,15 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
       (pdfParseModule as any).default;
 
     if (typeof PDFParseClass === "function") {
-      const parser = new PDFParseClass({ data: buffer });
+      const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+      const parser = new PDFParseClass({ data: uint8 });
       const result = await parser.getText();
       if (typeof parser.destroy === "function") {
         await parser.destroy();
       }
-      if (result && typeof result.text === "string" && result.text.trim().length > 10) {
-        const clean = result.text
+      const rawText = (result?.text || (result?.pages || []).map((p: any) => p?.text || "").join("\n\n") || "").trim();
+      if (rawText.length > 10) {
+        const clean = rawText
           .replace(/-- \d+ of \d+ --/g, "")
           .replace(/\r\n/g, "\n")
           .replace(/\n{3,}/g, "\n\n")

@@ -81,11 +81,11 @@ function DashboardContent() {
   const [atsScorecard, setAtsScorecard] = useState<AtsScorecard | null>(null)
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false)
 
-  // Resumes Templates & Sub-tabs state
-  const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'executive' | 'tech' | 'classic'>('modern')
-  const [resumeSubTab, setResumeSubTab] = useState<'master' | 'tailored'>('master')
+  // Resume Tailoring & View State - Modern ATS Standard
   const [jobDescriptionForTailor, setJobDescriptionForTailor] = useState('')
   const [isTailoringResume, setIsTailoringResume] = useState(false)
+  const [isTailorOpen, setIsTailorOpen] = useState(false)
+  const [resumeDisplayMode, setResumeDisplayMode] = useState<'ats_document' | 'tailored_text'>('ats_document')
   const [newSkillInput, setNewSkillInput] = useState('')
 
   // Profiles State
@@ -95,10 +95,10 @@ function DashboardContent() {
   // Resume Document View Mode: default to upload when no profile exists
   const [resumeViewMode, setResumeViewMode] = useState<'editor' | 'upload'>('upload')
 
-  // Automatically switch sub-tab if activeTab is 'tailored'
+  // Automatically open tailoring calibration if tab is 'tailored'
   useEffect(() => {
     if (activeTab === 'tailored') {
-      setResumeSubTab('tailored')
+      setIsTailorOpen(true)
     }
   }, [activeTab])
 
@@ -107,19 +107,13 @@ function DashboardContent() {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages, isSending])
 
-  // Load stored profile strictly if valid (and clean out any legacy mock profiles)
+  // Load stored profile strictly if valid
   useEffect(() => {
     try {
       const stored = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
       if (stored) {
         const loaded = JSON.parse(stored)
-        // Purge legacy mock profile if present
-        if (loaded?.applicant_name === 'Ibochi Vincent' && loaded?.contact_email === 'ibochivincent@gmail.com') {
-          localStorage.removeItem('careerace_sovereign_profile')
-          localStorage.removeItem('careerace_parsed_profile')
-          setParsedProfile(null)
-          setResumeViewMode('upload')
-        } else if (loaded && (loaded.applicant_name || loaded.skills?.length)) {
+        if (loaded && (loaded.applicant_name || loaded.skills?.length || loaded.work_experience?.length)) {
           setParsedProfile(loaded)
           if (loaded.target_roles?.[0]) setTailorRole(loaded.target_roles[0])
           setResumeViewMode('editor')
@@ -521,6 +515,17 @@ function DashboardContent() {
       if (sessionAddress) {
         formData.append('address', sessionAddress)
       }
+
+      // If text file or markdown, read client-side to ensure zero-loss parsing
+      if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || file.type.includes('text')) {
+        try {
+          const txt = await file.text()
+          if (txt && txt.trim().length > 10) {
+            formData.append('cv_text', txt.trim())
+          }
+        } catch {}
+      }
+
       const geminiKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || '' : ''
       const groqKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || '' : ''
       const openRouterKey = typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || '' : ''
@@ -541,6 +546,9 @@ function DashboardContent() {
       if (data.profile) {
         setParsedProfile(data.profile)
         setResumeViewMode('editor')
+        if (data.profile.target_roles?.[0]) {
+          setTailorRole(data.profile.target_roles[0])
+        }
         localStorage.setItem('careerace_sovereign_profile', JSON.stringify(data.profile))
         localStorage.setItem('careerace_parsed_profile', JSON.stringify(data.profile))
         if (data.address) {
@@ -990,7 +998,7 @@ function DashboardContent() {
                   </Card>
                 </motion.div>
               ) : (
-                /* VIEW MODE 2: UNIFIED RESUME STUDIO (MASTER RESUME & TAILORED RESUMES) */
+                /* VIEW MODE 2: UNIFIED MODERN ATS RESUME WORKSPACE */
                 <motion.div
                   key="studio"
                   initial={{ opacity: 0, y: 16 }}
@@ -999,77 +1007,53 @@ function DashboardContent() {
                   transition={{ duration: 0.25 }}
                   className="space-y-6"
                 >
-                  {/* Top Toolbar: Subtab Switcher + Template Picker + Export Actions */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/80">
-                    {/* Subtab Toggle: Master Resume vs Tailored Resume */}
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/40 border border-border/60 self-start">
-                      <button
-                        type="button"
-                        onClick={() => setResumeSubTab('master')}
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          resumeSubTab === 'master'
-                            ? 'bg-background text-foreground shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Master Resume
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setResumeSubTab('tailored')}
-                        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                          resumeSubTab === 'tailored'
-                            ? 'bg-background text-foreground shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-purple-500" /> Tailored Resume
-                      </button>
-                    </div>
-
-                    {/* Template Selector Pills */}
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-muted-foreground text-[11px] font-medium mr-1 hidden sm:inline">
-                        Template:
-                      </span>
-                      {[
-                        { id: 'modern', label: 'Modern ATS' },
-                        { id: 'executive', label: 'Executive' },
-                        { id: 'tech', label: 'Minimal Tech' },
-                        { id: 'classic', label: 'Classic Serif' },
-                      ].map((tmpl) => (
-                        <button
-                          key={tmpl.id}
-                          type="button"
-                          onClick={() => setSelectedTemplate(tmpl.id as any)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                            selectedTemplate === tmpl.id
-                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
-                              : 'border-border/70 hover:bg-muted/40 text-muted-foreground'
-                          }`}
-                        >
-                          {tmpl.label}
-                        </button>
-                      ))}
+                  {/* Top Toolbar: Actions & Mode Indicator */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-emerald-500" />
+                          Resume Workspace
+                        </h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Standardized to <span className="font-semibold text-foreground">Modern ATS</span> format for optimal scanner compatibility.
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="hidden sm:inline-flex text-[11px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
+                        Modern ATS Standard
+                      </Badge>
                     </div>
 
                     {/* Primary Actions */}
                     <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant={isTailorOpen ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setIsTailorOpen(!isTailorOpen)}
+                        className={`text-xs h-8 gap-1.5 ${
+                          isTailorOpen
+                            ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                            : 'border-purple-500/40 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {isTailorOpen ? 'Hide Tailoring' : 'Tailor for Job'}
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                         className="text-xs h-8 gap-1.5 border-border/80"
                       >
-                        <Upload className="w-3.5 h-3.5" /> Attach New CV
+                        <Upload className="w-3.5 h-3.5" /> Attach / Replace CV
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const content = resumeSubTab === 'tailored' && tailoredResumeText
+                          const content = resumeDisplayMode === 'tailored_text' && tailoredResumeText
                             ? tailoredResumeText
-                            : `${parsedProfile?.applicant_name || 'Candidate'}\n${parsedProfile?.contact_email || ''} · ${parsedProfile?.contact_phone || ''}\n\nEXPERIENCE:\n${(parsedProfile?.work_experience || []).map((e: any) => `${e.role} at ${e.company}\n${(e.highlights || []).map((h: string) => `• ${h}`).join('\n')}`).join('\n\n')}\n\nSKILLS:\n${(parsedProfile?.skills || []).join(', ')}`
+                            : `${parsedProfile?.applicant_name || 'Candidate'}\n${parsedProfile?.contact_email || ''} · ${parsedProfile?.contact_phone || ''} · ${parsedProfile?.location || ''}\n\nTARGET: ${tailorRole || parsedProfile?.target_roles?.[0] || 'Professional'}\n\nEXPERIENCE:\n${(parsedProfile?.work_experience || []).map((e: any) => `${e.role} at ${e.company} (${e.duration || ''})\n${(e.highlights || []).map((h: string) => `• ${h}`).join('\n')}`).join('\n\n')}\n\nSKILLS:\n${(parsedProfile?.skills || []).join(', ')}`
                           navigator.clipboard.writeText(content)
                           toast.success('Resume copied to clipboard!')
                         }}
@@ -1088,22 +1072,173 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  {/* SUBTAB 1: MASTER RESUME EDITOR */}
-                  {resumeSubTab === 'master' && parsedProfile && (
-                    <Card className={`p-8 md:p-12 border border-border/80 shadow-md rounded-2xl bg-card space-y-7 transition-all ${
-                      selectedTemplate === 'executive'
-                        ? 'font-serif border-t-4 border-t-foreground'
-                        : selectedTemplate === 'tech'
-                        ? 'font-mono text-xs'
-                        : selectedTemplate === 'classic'
-                        ? 'font-serif'
-                        : 'font-sans'
-                    }`}>
+                  {/* Integrated Job Tailoring & ATS Optimization Panel */}
+                  <AnimatePresence>
+                    {isTailorOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <Card className="p-6 border border-purple-500/30 bg-purple-500/5 rounded-2xl space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-purple-500/20">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-purple-500" />
+                              <h3 className="font-bold text-sm text-foreground">Target Role Calibration &amp; ATS Tailoring</h3>
+                            </div>
+                            {atsScorecard && (
+                              <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
+                                ATS Alignment: {atsScorecard.overall_score}/100
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                                Target Company
+                              </label>
+                              <input
+                                type="text"
+                                value={tailorCompany}
+                                onChange={(e) => setTailorCompany(e.target.value)}
+                                placeholder="e.g. Anthropic, Stripe, Google, Linear"
+                                className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                                Target Role Title
+                              </label>
+                              <input
+                                type="text"
+                                value={tailorRole}
+                                onChange={(e) => {
+                                  setTailorRole(e.target.value)
+                                  if (parsedProfile) updateProfileField({ target_roles: [e.target.value] })
+                                }}
+                                placeholder="e.g. Senior Full Stack Engineer"
+                                className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                              Job Description Keywords &amp; Requirements
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={jobDescriptionForTailor}
+                              onChange={(e) => setJobDescriptionForTailor(e.target.value)}
+                              placeholder="Paste the target job posting bullets, technical requirements, or problem statements here to align your resume..."
+                              className="w-full p-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 leading-relaxed resize-none"
+                            />
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                            <div className="flex items-center gap-2">
+                              {tailoredResumeText && (
+                                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-background border text-xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => setResumeDisplayMode('ats_document')}
+                                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                                      resumeDisplayMode === 'ats_document'
+                                        ? 'bg-muted text-foreground font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                  >
+                                    Modern ATS Editor
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setResumeDisplayMode('tailored_text')}
+                                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                                      resumeDisplayMode === 'tailored_text'
+                                        ? 'bg-muted text-foreground font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                  >
+                                    Tailored Text Output
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            <Button
+                              size="sm"
+                              onClick={handleTailorResume}
+                              disabled={isTailoringResume}
+                              className="w-full sm:w-auto text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-9 px-4 rounded-xl"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              {isTailoringResume ? 'Optimizing with Sovereign AI...' : 'Tailor Resume Now'}
+                            </Button>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* DISPLAY MODE 1: TAILORED PLAINTEXT VIEW */}
+                  {resumeDisplayMode === 'tailored_text' && tailoredResumeText ? (
+                    <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-emerald-500" />
+                          <h3 className="font-bold text-sm text-foreground">Tailored Resume Output</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setResumeDisplayMode('ats_document')}
+                            className="text-xs h-7 gap-1"
+                          >
+                            Switch to ATS Document Editor
+                          </Button>
+                          <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
+                            Ready for Submission
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="p-5 rounded-xl border border-border/80 bg-background text-xs leading-relaxed whitespace-pre-wrap min-h-[380px] max-h-[500px] overflow-y-auto text-foreground shadow-inner font-mono">
+                        {tailoredResumeText}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tailoredResumeText)
+                            toast.success('Tailored resume copied to clipboard!')
+                          }}
+                          className="flex-1 text-xs gap-1.5"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Copy Text
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={handleDownloadDocxResume}
+                          disabled={isDownloadingDocx}
+                          className="flex-1 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Download Tailored .docx
+                        </Button>
+                      </div>
+                    </Card>
+                  ) : parsedProfile ? (
+                    /* DISPLAY MODE 2: MODERN ATS RESUME DOCUMENT EDITOR */
+                    <Card className="p-8 md:p-12 border border-border/80 shadow-md rounded-2xl bg-card space-y-7 transition-all font-sans">
                       {/* Candidate Header */}
-                      <div className={`pb-5 space-y-2 ${
-                        selectedTemplate === 'classic' ? 'text-center border-b border-border' : 'border-b border-border/70'
-                      }`}>
-                        <div className={`flex items-baseline justify-between gap-4 ${selectedTemplate === 'classic' ? 'justify-center' : ''}`}>
+                      <div className="pb-5 space-y-2 border-b border-border/70">
+                        <div className="flex items-baseline justify-between gap-4">
                           <input
                             type="text"
                             value={parsedProfile.applicant_name || ''}
@@ -1158,9 +1293,7 @@ function DashboardContent() {
                       {/* Work Experience Section */}
                       <div className="space-y-6">
                         <div className="flex items-center justify-between border-b pb-1.5">
-                          <h3 className={`text-xs font-extrabold tracking-wider uppercase ${
-                            selectedTemplate === 'modern' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
-                          }`}>
+                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
                             WORK EXPERIENCE
                           </h3>
                           <Button
@@ -1273,7 +1406,7 @@ function DashboardContent() {
                           </div>
                         ) : (
                           <div className="p-6 rounded-xl border border-dashed text-center text-xs text-muted-foreground">
-                            No work positions listed yet. Click "Add Position" above or attach a CV to parse.
+                            No work positions listed yet. Click &quot;Add Position&quot; above or attach a CV to parse.
                           </div>
                         )}
                       </div>
@@ -1281,9 +1414,7 @@ function DashboardContent() {
                       {/* Skills Section */}
                       <div className="space-y-3 pt-3 border-t border-border/70">
                         <div className="flex items-center justify-between">
-                          <h3 className={`text-xs font-extrabold tracking-wider uppercase ${
-                            selectedTemplate === 'modern' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
-                          }`}>
+                          <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
                             CORE COMPETENCIES &amp; SKILLS ({parsedProfile.skills?.length || 0})
                           </h3>
                         </div>
@@ -1330,9 +1461,7 @@ function DashboardContent() {
 
                       {/* Education Section */}
                       <div className="space-y-3 pt-3 border-t border-border/70">
-                        <h3 className={`text-xs font-extrabold tracking-wider uppercase ${
-                          selectedTemplate === 'modern' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
-                        }`}>
+                        <h3 className="text-xs font-extrabold tracking-wider uppercase text-emerald-600 dark:text-emerald-400">
                           EDUCATION
                         </h3>
                         {parsedProfile.academic_history && parsedProfile.academic_history.length > 0 ? (
@@ -1349,120 +1478,7 @@ function DashboardContent() {
                         )}
                       </div>
                     </Card>
-                  )}
-
-                  {/* SUBTAB 2: TAILORED RESUME STUDIO */}
-                  {resumeSubTab === 'tailored' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                      {/* Tailor Configuration Form */}
-                      <Card className="lg:col-span-5 p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
-                        <div className="flex items-center gap-2 pb-2 border-b">
-                          <Sparkles className="w-4 h-4 text-purple-500" />
-                          <h3 className="font-bold text-sm text-foreground">Target Role Calibration</h3>
-                        </div>
-
-                        <div className="space-y-3.5 text-xs">
-                          <div>
-                            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                              Target Company
-                            </label>
-                            <input
-                              type="text"
-                              value={tailorCompany}
-                              onChange={(e) => setTailorCompany(e.target.value)}
-                              placeholder="e.g. Anthropic, Stripe, Google, Linear"
-                              className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                              Target Role Title
-                            </label>
-                            <input
-                              type="text"
-                              value={tailorRole}
-                              onChange={(e) => setTailorRole(e.target.value)}
-                              placeholder="e.g. Senior Full Stack Engineer"
-                              className="w-full h-9 px-3 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                              Job Description Keywords &amp; Requirements
-                            </label>
-                            <textarea
-                              rows={5}
-                              value={jobDescriptionForTailor}
-                              onChange={(e) => setJobDescriptionForTailor(e.target.value)}
-                              placeholder="Paste the target job posting bullets or key technical requirements here to align your resume..."
-                              className="w-full p-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 leading-relaxed resize-none"
-                            />
-                          </div>
-
-                          <Button
-                            size="sm"
-                            onClick={handleTailorResume}
-                            disabled={isTailoringResume}
-                            className="w-full text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white h-10 rounded-xl"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            {isTailoringResume ? 'Optimizing with Sovereign AI...' : 'Generate Tailored Resume'}
-                          </Button>
-                        </div>
-                      </Card>
-
-                      {/* Tailored Output Display */}
-                      <Card className="lg:col-span-7 p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
-                        <div className="flex items-center justify-between pb-3 border-b">
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-emerald-500" />
-                            <h3 className="font-bold text-sm text-foreground">Tailored Resume Output</h3>
-                          </div>
-                          <Badge variant="outline" className="text-xs text-emerald-500 border-emerald-500/30">
-                            Ready for Submission
-                          </Badge>
-                        </div>
-
-                        <div className="p-5 rounded-xl border border-border/80 bg-background text-xs leading-relaxed whitespace-pre-wrap min-h-[380px] max-h-[500px] overflow-y-auto text-foreground shadow-inner font-mono">
-                          {tailoredResumeText || (
-                            <div className="text-center py-20 space-y-2 text-muted-foreground font-sans">
-                              <Sparkles className="w-8 h-8 text-purple-500 mx-auto" />
-                              <p className="font-semibold text-foreground text-sm">No tailored resume compiled yet</p>
-                              <p className="text-xs">
-                                Enter your target company and job description, then click Generate.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {tailoredResumeText && (
-                          <div className="flex items-center gap-2 pt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                navigator.clipboard.writeText(tailoredResumeText)
-                                toast.success('Tailored resume copied to clipboard!')
-                              }}
-                              className="flex-1 text-xs gap-1.5"
-                            >
-                              <Copy className="w-3.5 h-3.5" /> Copy Text
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={handleDownloadDocxResume}
-                              disabled={isDownloadingDocx}
-                              className="flex-1 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
-                            >
-                              <Download className="w-3.5 h-3.5" /> Download Tailored .docx
-                            </Button>
-                          </div>
-                        )}
-                      </Card>
-                    </div>
-                  )}
+                  ) : null}
                 </motion.div>
               )}
             </AnimatePresence>
