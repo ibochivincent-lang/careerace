@@ -14,12 +14,14 @@ import {
   Send, Bot, X,
   ShieldCheck, Mail, ExternalLink,
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
-  Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database
+  Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database,
+  TrendingUp, Target, AlertTriangle
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
-import { analyzeAtsMatch, type AtsScorecard } from '@/lib/ats_engine'
+import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
+import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -122,19 +124,25 @@ function DashboardContent() {
     } catch {}
   }, [])
 
-  // Calculate dynamic ATS match scorecard only when a real profile exists
+  // Calculate ATS scorecard ONLY against a real job description.
+  // We NEVER generate a synthetic JD from the candidate's own skills (that inflates scores).
   useEffect(() => {
-    if (parsedProfile && parsedProfile.skills && parsedProfile.skills.length > 0) {
+    if (
+      parsedProfile &&
+      parsedProfile.skills &&
+      parsedProfile.skills.length > 0 &&
+      jobDescriptionForTailor &&
+      jobDescriptionForTailor.trim().length > 30
+    ) {
       const expText = (parsedProfile.work_experience || [])
         .map((w: any) => `${w.role} at ${w.company}: ${(w.highlights || []).join(' ')}`)
         .join(' ')
       const eduText = (parsedProfile.academic_history || [])
         .map((a: any) => `${a.degree} at ${a.institution}`)
         .join(' ')
-      const targetRoleName = tailorRole || parsedProfile.target_roles?.[0] || 'Professional'
       const score = analyzeAtsMatch({
-        jobTitle: targetRoleName,
-        jobDescription: `Looking for an experienced professional skilled in ${(parsedProfile.skills || []).slice(0, 6).join(', ')} with strong architecture and production delivery.`,
+        jobTitle: tailorRole || parsedProfile.target_roles?.[0] || '',
+        jobDescription: jobDescriptionForTailor,
         applicantSkills: parsedProfile.skills || [],
         applicantExperienceText: expText,
         applicantAcademicText: eduText,
@@ -146,9 +154,10 @@ function DashboardContent() {
       })
       setAtsScorecard(score)
     } else {
+      // No real job description → no misleading score
       setAtsScorecard(null)
     }
-  }, [parsedProfile, tailorRole])
+  }, [parsedProfile, tailorRole, jobDescriptionForTailor])
 
   function updateProfileField(updates: Partial<any>) {
     if (!parsedProfile) return
@@ -516,8 +525,26 @@ function DashboardContent() {
         formData.append('address', sessionAddress)
       }
 
-      // If text file or markdown, read client-side to ensure zero-loss parsing
-      if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || file.type.includes('text')) {
+      const lowerName = file.name.toLowerCase()
+
+      // Strategy A: Client-side PDF.js extraction (most reliable for all PDF types)
+      if (lowerName.endsWith('.pdf') || file.type === 'application/pdf') {
+        try {
+          toast.loading(`Extracting text from PDF using PDF.js...`, { id: toastId })
+          const pdfText = await extractPdfTextInBrowser(file)
+          if (pdfText && pdfText.trim().length > 50) {
+            formData.append('cv_text', pdfText.trim())
+            console.log(`[PDF.js] Extracted ${pdfText.length} chars from ${file.name}`)
+          } else {
+            console.warn('[PDF.js] Extracted text too short, server will fallback to zlib stream parsing')
+          }
+        } catch (pdfErr) {
+          console.warn('[PDF.js] Client-side extraction failed, server-side fallback will be used:', pdfErr)
+        }
+      }
+
+      // Strategy B: Direct text read for plaintext/markdown files
+      if (lowerName.endsWith('.txt') || lowerName.endsWith('.md') || file.type.includes('text')) {
         try {
           const txt = await file.text()
           if (txt && txt.trim().length > 10) {
@@ -535,6 +562,7 @@ function DashboardContent() {
       if (openRouterKey) formData.append('openrouter_key', openRouterKey)
       if (openCodeKey) formData.append('opencode_key', openCodeKey)
 
+      toast.loading(`Sending to AI parser...`, { id: toastId })
       const res = await fetch('/api/cv_upload', {
         method: 'POST',
         body: formData
@@ -556,21 +584,24 @@ function DashboardContent() {
           localStorage.setItem('careerace_session_address', data.address)
         }
 
-        toast.success(`CV parsed and indexed into Sovereign Memory for ${data.profile.applicant_name || 'Candidate'}!`, { id: toastId })
-        
         const candidateName = data.profile.applicant_name && data.profile.applicant_name !== 'Candidate'
           ? data.profile.applicant_name
           : 'Candidate';
         const topSkills = (data.profile.skills || []).slice(0, 10).join(', ') || 'Technical competencies';
-        const targetRoles = (data.profile.target_roles || []).join(', ') || 'Software Engineer';
+        const targetRoles = (data.profile.target_roles || []).join(', ') || 'Professional';
         const expCount = data.profile.work_experience?.length || 0;
         const eduCount = data.profile.academic_history?.length || 0;
+        const methodNote = data.extraction_method === 'browser_pdf_extraction'
+          ? ' (PDF text extracted client-side with PDF.js)'
+          : '';
+
+        toast.success(`CV parsed for ${candidateName}!${methodNote}`, { id: toastId })
 
         setChatMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: `I have successfully analyzed **${file.name}** and indexed it into your Walrus Sovereign Memory vault!\n\n• **Candidate Name:** ${candidateName}\n• **Target Roles:** ${targetRoles}\n• **Skills Detected:** ${topSkills}\n• **Work History:** ${expCount} verified position(s)\n• **Academic Background:** ${eduCount} credential(s)\n\nAll credentials are sealed to ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'your vault'} on Walrus decentralized storage. You can now ask me to review your resume, practice STAR+R interview questions, tailor applications, or audit ATS compliance.`
+            content: `I have successfully analyzed **${file.name}** and indexed it into your Walrus Sovereign Memory vault!\n\n• **Candidate Name:** ${candidateName}\n• **Target Roles:** ${targetRoles}\n• **Skills Detected:** ${topSkills}\n• **Work History:** ${expCount} verified position(s)\n• **Academic Background:** ${eduCount} credential(s)\n\nAll credentials are sealed to ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'your vault'} on Walrus decentralized storage.\n\n🎯 **Next step:** Paste a job description into the **Tailor for Job** panel to get your real ATS keyword match score!`
           }
         ])
       }
@@ -635,7 +666,7 @@ function DashboardContent() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       {/* Circular Score Visual */}
-                      <div className="relative w-20 h-20 rounded-full flex items-center justify-center border-4 border-emerald-500/20 bg-emerald-500/5 shrink-0">
+                      <div className={`relative w-20 h-20 rounded-full flex items-center justify-center shrink-0 ${atsScorecard ? (atsScorecard.overall_score >= 70 ? 'border-4 border-emerald-500/30 bg-emerald-500/5' : atsScorecard.overall_score >= 45 ? 'border-4 border-amber-500/30 bg-amber-500/5' : 'border-4 border-red-500/30 bg-red-500/5') : 'border-4 border-muted/40 bg-muted/10'}`}>
                         <svg className="absolute inset-0 w-full h-full -rotate-90">
                           <circle
                             cx="40"
@@ -644,29 +675,39 @@ function DashboardContent() {
                             stroke="currentColor"
                             strokeWidth="5"
                             fill="transparent"
-                            className="text-emerald-500"
+                            className={atsScorecard ? (atsScorecard.overall_score >= 70 ? 'text-emerald-500' : atsScorecard.overall_score >= 45 ? 'text-amber-500' : 'text-red-500') : 'text-muted-foreground/20'}
                             strokeDasharray={213}
-                            strokeDashoffset={213 - (213 * Math.min(100, Math.max(0, atsScorecard?.overall_score || (parsedProfile ? 85 : 0)))) / 100}
+                            strokeDashoffset={213 - (213 * Math.min(100, Math.max(0, atsScorecard?.overall_score ?? 0))) / 100}
                           />
                         </svg>
                         <div className="text-center">
-                          <span className="text-xl font-extrabold text-foreground">
-                            {atsScorecard?.overall_score || (parsedProfile ? 85 : 0)}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground block -mt-1">/100</span>
+                          {atsScorecard ? (
+                            <>
+                              <span className="text-xl font-extrabold text-foreground">{atsScorecard.overall_score}</span>
+                              <span className="text-[10px] text-muted-foreground block -mt-1">/100</span>
+                            </>
+                          ) : (
+                            <span className="text-[9px] text-muted-foreground text-center leading-tight px-1">{parsedProfile ? 'Add JD' : 'Upload CV'}</span>
+                          )}
                         </div>
                       </div>
 
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-base text-foreground">Resume ATS Score</h3>
-                          <Badge variant="outline" className="text-xs font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                            {atsScorecard?.ats_grade || (parsedProfile ? 'A-' : 'Pending')}
-                          </Badge>
+                          {atsScorecard ? (
+                            <Badge variant="outline" className={`text-xs font-semibold ${atsScorecard.overall_score >= 70 ? 'text-emerald-600 border-emerald-500/30 bg-emerald-500/10' : atsScorecard.overall_score >= 45 ? 'text-amber-600 border-amber-500/30 bg-amber-500/10' : 'text-red-600 border-red-500/30 bg-red-500/10'}`}>
+                              {atsScorecard.ats_grade}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">Pending</Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          {parsedProfile
-                            ? `Profile calibrated for ${parsedProfile.target_roles?.[0] || 'Target Role'}. Verified across ATS keyword standards.`
+                          {atsScorecard
+                            ? `${atsScorecard.keyword_coverage_pct}% keyword match · ${atsScorecard.matched_skills.length} matched · ${atsScorecard.missing_critical_skills.length} critical gaps`
+                            : parsedProfile
+                            ? '📋 Paste a job description in the Tailor panel to get your real ATS score.'
                             : 'Upload your CV to calculate your live ATS parsing grade and keyword match.'}
                         </p>
                       </div>
@@ -681,7 +722,6 @@ function DashboardContent() {
                     </Button>
                   </div>
 
-                  {/* Sub Metrics Breakdown */}
                   {parsedProfile && (
                     <div className="grid grid-cols-3 gap-3 pt-5 mt-5 border-t border-border/60 text-xs">
                       <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-center">
@@ -693,8 +733,10 @@ function DashboardContent() {
                         <span className="font-bold text-sm text-foreground">{parsedProfile.work_experience?.length || 0} recorded</span>
                       </div>
                       <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-center">
-                        <span className="text-[11px] text-muted-foreground block">Format Quality</span>
-                        <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">95% ATS Ready</span>
+                        <span className="text-[11px] text-muted-foreground block">Keyword Match</span>
+                        <span className={`font-bold text-sm ${atsScorecard ? (atsScorecard.keyword_coverage_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : atsScorecard.keyword_coverage_pct >= 35 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400') : 'text-muted-foreground'}`}>
+                          {atsScorecard ? `${atsScorecard.keyword_coverage_pct}%` : 'Add JD →'}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1179,7 +1221,61 @@ function DashboardContent() {
                               {isTailoringResume ? 'Optimizing with Sovereign AI...' : 'Tailor Resume Now'}
                             </Button>
                           </div>
+
+                          {/* ── LIVE ATS KEYWORD DIFF ── */}
+                          {atsScorecard && atsScorecard.keyword_diff.length > 0 && (
+                            <div className="border-t border-purple-500/20 pt-4 space-y-3">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                  <TrendingUp className="w-3.5 h-3.5 text-purple-500" />
+                                  Live Keyword Diff — {atsScorecard.overall_score}/100
+                                </span>
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Matched</span>
+                                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Critical Gap</span>
+                                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Secondary Gap</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                                {atsScorecard.keyword_diff.slice(0, 35).map((item, i) => (
+                                  <span
+                                    key={i}
+                                    title={`${item.status === 'matched' ? '✓ Found in CV' : item.status === 'partial' ? '~ Partial match' : '✗ Missing from CV'} · Job description mentions ${item.frequency_in_jd}x`}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border cursor-default select-none ${
+                                      item.status === 'matched'
+                                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25'
+                                        : item.status === 'partial'
+                                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/25'
+                                        : item.category === 'critical'
+                                        ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/25'
+                                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25'
+                                    }`}
+                                  >
+                                    {item.status === 'matched' ? (
+                                      <Check className="w-2.5 h-2.5 shrink-0" />
+                                    ) : (
+                                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                                    )}
+                                    {item.keyword}
+                                    {item.frequency_in_jd > 1 && (
+                                      <span className="opacity-50 text-[9px]">×{item.frequency_in_jd}</span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                              {atsScorecard.actionable_recommendations.length > 0 && (
+                                <div className="space-y-1.5 pt-0.5">
+                                  {atsScorecard.actionable_recommendations.slice(0, 2).map((rec, i) => (
+                                    <p key={i} className="text-[10px] text-muted-foreground bg-muted/30 rounded-lg px-2.5 py-1.5 border border-border/50 leading-relaxed">
+                                      💡 {rec}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </Card>
+
                       </motion.div>
                     )}
                   </AnimatePresence>

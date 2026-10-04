@@ -320,22 +320,28 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
  * Extract readable text from PDF buffer using dynamic PDFParse with multiple fallbacks.
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Strategy 1: Official PDF.js engine via dynamic pdf-parse
+  // Strategy 1: pdf-parse v2 PDFParse class (requires load() before getText())
   try {
     const pdfParseModule = await import("pdf-parse");
     const PDFParseClass =
       pdfParseModule.PDFParse ||
-      (pdfParseModule as any).default?.PDFParse ||
-      (pdfParseModule as any).default;
+      (pdfParseModule as any).default?.PDFParse;
 
     if (typeof PDFParseClass === "function") {
-      const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-      const parser = new PDFParseClass({ data: uint8 });
+      // PDFParse v2 API: constructor takes options only, then load(buffer) then getText()
+      const parser = new PDFParseClass({});
+      await (parser as any).load(buffer);
       const result = await parser.getText();
       if (typeof parser.destroy === "function") {
         await parser.destroy();
       }
-      const rawText = (result?.text || (result?.pages || []).map((p: any) => p?.text || "").join("\n\n") || "").trim();
+      const rawText = (
+        typeof result === "string"
+          ? result
+          : result?.text ||
+            (result?.pages || []).map((p: any) => p?.text || "").join("\n\n") ||
+            ""
+      ).trim();
       if (rawText.length > 10) {
         const clean = rawText
           .replace(/-- \d+ of \d+ --/g, "")
@@ -346,8 +352,9 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
       }
     }
   } catch (err) {
-    console.warn("[cv_upload] PDFParse standard parsing failed, attempting fallback:", err);
+    console.warn("[cv_upload] PDFParse v2 parsing failed, attempting raw fallback:", err);
   }
+
 
   // Strategy 2: Decompress flate streams in PDF
   const textChunks: string[] = [];
