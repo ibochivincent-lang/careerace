@@ -25,9 +25,11 @@ import {
   Bot,
   Zap,
   Play,
-  RotateCcw
+  RotateCcw,
+  Mail
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
 
 export interface JobListing {
   id: string
@@ -49,6 +51,9 @@ export interface AppliedJobRecord {
   jobTitle: string
   company: string
   appliedAt: string
+  appliedTimestamp?: number
+  followUpStatus?: 'pending' | 'due' | 'sent'
+  followUpSentAt?: string
 }
 
 // Real live openings matching benchmark reference and maritime/tech sovereign employers
@@ -738,6 +743,7 @@ export default function ApplicationBoardPage() {
   const [allJobs, setAllJobs] = useState<JobListing[]>(VERIFIED_INITIAL_JOBS)
   const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const [appliedJobs, setAppliedJobs] = useState<AppliedJobRecord[]>([])
+  const [followUpModalJob, setFollowUpModalJob] = useState<{ job: JobListing; record: AppliedJobRecord } | null>(null)
 
   // Auto-apply agent state
   const [autoApplyRunning, setAutoApplyRunning] = useState(false)
@@ -825,20 +831,40 @@ export default function ApplicationBoardPage() {
     localStorage.setItem('careerace_saved_job_ids', JSON.stringify(updated))
   }
 
-  // Mark as applied: Removes from Discovery and adds to Applied list
+  // Mark as applied: Removes from Discovery and adds to Applied list with 7-day scheduler baseline
   function handleMarkAsApplied(job: JobListing) {
+    const now = Date.now()
     const record: AppliedJobRecord = {
       id: job.id,
       jobTitle: job.title,
       company: job.company,
       appliedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      appliedTimestamp: now,
+      followUpStatus: 'pending',
     }
 
     const updated = [record, ...appliedJobs.filter((a) => a.id !== job.id)]
     setAppliedJobs(updated)
     localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
 
-    toast.success(`Applied to ${job.company}! Removed from Discovery and moved to "3. Applied".`)
+    toast.success(`Applied to ${job.company}! Removed from Discovery and scheduled 7-day follow-up.`)
+  }
+
+  // Mark follow-up as sent
+  function handleMarkFollowUpSent(jobId: string) {
+    const updated = appliedJobs.map((a) => {
+      if (a.id === jobId) {
+        return {
+          ...a,
+          followUpStatus: 'sent' as const,
+          followUpSentAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        }
+      }
+      return a
+    })
+    setAppliedJobs(updated)
+    localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+    toast.success('Follow-up marked as sent!')
   }
 
   // Unmark applied: Moves back to Discovery
@@ -1380,9 +1406,31 @@ export default function ApplicationBoardPage() {
                               {job.company}
                             </span>
                             {isApplied && (
-                              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] py-0 px-1.5 font-mono">
-                                Applied {appliedRecord?.appliedAt ? `· ${appliedRecord.appliedAt}` : ''}
-                              </Badge>
+                              <>
+                                <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] py-0 px-1.5 font-mono">
+                                  Applied {appliedRecord?.appliedAt ? `· ${appliedRecord.appliedAt}` : ''}
+                                </Badge>
+                                {appliedRecord?.followUpStatus === 'sent' ? (
+                                  <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[10px] py-0 px-1.5 font-mono">
+                                    <CheckCircle2 className="w-3 h-3 mr-1 text-blue-500" /> Followed up
+                                  </Badge>
+                                ) : (
+                                  (() => {
+                                    const appliedTime = appliedRecord?.appliedTimestamp || Date.now() - 4 * 86400000
+                                    const daysElapsed = Math.floor((Date.now() - appliedTime) / 86400000)
+                                    const daysLeft = Math.max(0, 7 - daysElapsed)
+                                    return daysElapsed >= 7 ? (
+                                      <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40 text-[10px] py-0 px-1.5 font-mono animate-pulse">
+                                        <Clock className="w-3 h-3 mr-1" /> 7d Follow-Up Due
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-mono text-muted-foreground border-border/80">
+                                        <Clock className="w-3 h-3 mr-1 text-primary" /> Follow up in {daysLeft}d
+                                      </Badge>
+                                    )
+                                  })()
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -1432,16 +1480,39 @@ export default function ApplicationBoardPage() {
 
                         {/* Applied Tab vs Discovery Actions */}
                         {isApplied ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUnmarkApplied(job.id, job.title)}
-                            title="Move back to Discovery"
-                            className="h-8 text-xs gap-1 px-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                          >
-                            <Undo2 className="w-3.5 h-3.5" />
-                            <span>Unmark</span>
-                          </Button>
+                          <div className="flex items-center gap-1.5">
+                            {/* Follow-up Generator Button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setFollowUpModalJob({
+                                  job,
+                                  record: appliedRecord || {
+                                    id: job.id,
+                                    jobTitle: job.title,
+                                    company: job.company,
+                                    appliedAt: 'Recently',
+                                  },
+                                })
+                              }
+                              className="h-8 text-xs gap-1.5 px-3 border-purple-500/30 bg-purple-500/5 text-purple-600 dark:text-purple-400 hover:bg-purple-500/15 font-medium"
+                            >
+                              <Mail className="w-3.5 h-3.5 text-purple-500" />
+                              <span>Follow up (AI)</span>
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleUnmarkApplied(job.id, job.title)}
+                              title="Move back to Discovery"
+                              className="h-8 text-xs gap-1 px-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                            >
+                              <Undo2 className="w-3.5 h-3.5" />
+                              <span>Unmark</span>
+                            </Button>
+                          </div>
                         ) : (
                           <Button
                             variant="outline"
@@ -1478,6 +1549,21 @@ export default function ApplicationBoardPage() {
               <span>Verified direct company career postings</span>
             </div>
           </>
+        )}
+
+        {/* 7-Day Autonomous Application Follow-up Scheduler Modal */}
+        {followUpModalJob && (
+          <ApplicationFollowUpModal
+            open={!!followUpModalJob}
+            onOpenChange={(open) => !open && setFollowUpModalJob(null)}
+            jobTitle={followUpModalJob.job.title}
+            company={followUpModalJob.job.company}
+            appliedDate={followUpModalJob.record.appliedAt}
+            onMarkSent={() => {
+              handleMarkFollowUpSent(followUpModalJob.job.id)
+              setFollowUpModalJob(null)
+            }}
+          />
         )}
       </div>
     </AppShell>

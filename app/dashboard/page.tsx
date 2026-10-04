@@ -16,7 +16,7 @@ import {
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
   Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database,
   TrendingUp, Target, AlertTriangle, FileCheck,
-  RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers
+  RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
@@ -27,6 +27,7 @@ import { parseCvText } from '@/lib/heuristic_cv_parser'
 import { LivePdfPreview } from '@/components/LivePdfPreview'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
+import { MaritimeStcwVerifierModal } from '@/components/MaritimeStcwVerifierModal'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -99,6 +100,39 @@ function DashboardContent() {
 
   // ATS X-Ray Full Diagnostic Dialog state
   const [isAtsXRayOpen, setIsAtsXRayOpen] = useState(false)
+
+  // Autonomous Maritime STCW & Sea-Time Verifier modal state
+  const [isMaritimeModalOpen, setIsMaritimeModalOpen] = useState(false)
+
+  // Dynamic Split Screen Resizing state (Left Canvas vs Right Copilot)
+  const [splitRatio, setSplitRatio] = useState(65)
+  const [isDraggingSplit, setIsDraggingSplit] = useState(false)
+  const splitContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isDraggingSplit) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!splitContainerRef.current) return
+      const rect = splitContainerRef.current.getBoundingClientRect()
+      const relativeX = e.clientX - rect.left
+      const newRatio = (relativeX / rect.width) * 100
+      // Clamp between 45% and 80%
+      setSplitRatio(Math.min(Math.max(newRatio, 45), 80))
+    }
+
+    const handleMouseUp = () => {
+      setIsDraggingSplit(false)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDraggingSplit])
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -1494,6 +1528,49 @@ function DashboardContent() {
                         </Button>
                       </div>
 
+                      {/* Maritime STCW & Sea-Time Verifier Action Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsMaritimeModalOpen(true)}
+                        className="text-xs h-8 gap-1.5 border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-medium"
+                      >
+                        <Anchor className="w-3.5 h-3.5" />
+                        <span>STCW &amp; Sea-Time Verifier</span>
+                      </Button>
+
+                      {/* Dynamic Split Screen Presets */}
+                      <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-muted-foreground bg-muted/60 p-1 rounded-lg border border-border/80">
+                        <span className="text-[10px] text-muted-foreground font-sans px-1">Split:</span>
+                        <button
+                          type="button"
+                          onClick={() => setSplitRatio(60)}
+                          className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                            splitRatio === 60 ? 'bg-background text-foreground font-bold shadow-xs' : 'hover:text-foreground'
+                          }`}
+                        >
+                          60/40
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSplitRatio(65)}
+                          className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                            splitRatio === 65 ? 'bg-background text-foreground font-bold shadow-xs' : 'hover:text-foreground'
+                          }`}
+                        >
+                          65/35
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSplitRatio(70)}
+                          className={`px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+                            splitRatio === 70 ? 'bg-background text-foreground font-bold shadow-xs' : 'hover:text-foreground'
+                          }`}
+                        >
+                          70/30
+                        </button>
+                      </div>
+
                       {/* CV Replace Button */}
                       <Button
                         variant="outline"
@@ -1550,9 +1627,17 @@ function DashboardContent() {
                   )}
 
                   {/* ── TWO-COLUMN RESUME WORKSPACE: RESUME CANVAS (LEFT) + COPILOT CHATBOT (RIGHT) ── */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* LEFT COLUMN (8 cols): Modern ATS Canvas / Live PDF Preview */}
-                    <div className="lg:col-span-8 space-y-6">
+                  <div
+                    ref={splitContainerRef}
+                    className="flex flex-col lg:flex-row items-start gap-0 relative select-none w-full"
+                  >
+                    {/* LEFT COLUMN: Modern ATS Canvas / Live PDF Preview */}
+                    <div
+                      style={{
+                        width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${splitRatio}%` : '100%',
+                      }}
+                      className="w-full lg:pr-3 space-y-6 shrink-0 transition-none"
+                    >
                       {resumeDisplayMode === 'pdf_preview' ? (
                         <LivePdfPreview
                           profile={parsedProfile}
@@ -2038,8 +2123,36 @@ function DashboardContent() {
                       ) : null}
                     </div>
 
-                    {/* RIGHT COLUMN (4 cols): AI Career Copilot Chatbot */}
-                    <div className="lg:col-span-4 sticky top-6 space-y-4">
+                    {/* Draggable Divider Handle between Editor and Copilot */}
+                    <div
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setIsDraggingSplit(true)
+                      }}
+                      onDoubleClick={() => setSplitRatio(65)}
+                      title="Drag to resize · Double-click to reset (65/35)"
+                      className={`hidden lg:flex flex-col items-center justify-center w-5 -mx-2.5 h-full min-h-[680px] cursor-col-resize z-20 group relative transition-colors ${
+                        isDraggingSplit ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'
+                      }`}
+                    >
+                      <div
+                        className={`w-1 h-14 rounded-full transition-all flex flex-col items-center justify-center gap-1 ${
+                          isDraggingSplit ? 'bg-emerald-500 scale-y-125 shadow-xs' : 'bg-border/90 group-hover:bg-emerald-500/80'
+                        }`}
+                      >
+                        <span className="w-0.5 h-0.5 rounded-full bg-background" />
+                        <span className="w-0.5 h-0.5 rounded-full bg-background" />
+                        <span className="w-0.5 h-0.5 rounded-full bg-background" />
+                      </div>
+                    </div>
+
+                    {/* RIGHT COLUMN: AI Career Copilot Chatbot */}
+                    <div
+                      style={{
+                        width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${100 - splitRatio}%` : '100%',
+                      }}
+                      className="w-full lg:pl-3 sticky top-6 space-y-4 shrink-0 transition-none"
+                    >
                       {/* Target Role & ATS Calibration Card */}
                       <Card className="p-4 border border-border/80 shadow-sm rounded-2xl bg-card space-y-3">
                         <div className="flex items-center justify-between pb-2 border-b border-border/60">
@@ -2486,6 +2599,32 @@ function DashboardContent() {
           onOpenChange={setIsAtsXRayOpen}
           profile={parsedProfile}
           scorecard={atsScorecard}
+        />
+
+        {/* Maritime STCW & Sea-Time Autonomous Verifier Modal */}
+        <MaritimeStcwVerifierModal
+          open={isMaritimeModalOpen}
+          onOpenChange={setIsMaritimeModalOpen}
+          candidateName={parsedProfile?.applicant_name || 'Vincent Lang'}
+          candidateAddress={sessionAddress}
+          onVerificationComplete={(res) => {
+            if (parsedProfile) {
+              const certs = Array.from(
+                new Set([
+                  ...(parsedProfile.certifications || []),
+                  res.certificateName,
+                  'STCW 78/2010 Verified',
+                ])
+              )
+              updateProfileField({
+                certifications: certs,
+                maritime_sea_days: res.seaDaysTotal,
+                maritime_soulbound_id: res.soulboundTokenId,
+                walrus_maritime_blob: res.walrusBlobId,
+              })
+              toast.success(`${res.seaDaysTotal} Qualifying Sea Days verified and minted to Walrus!`)
+            }
+          }}
         />
       </div>
     </AppShell>
