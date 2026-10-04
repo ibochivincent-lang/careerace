@@ -15,6 +15,8 @@ interface BulletWithActionVerbsProps {
   onUpdate: (newBullet: string) => void;
   onDelete: () => void;
   index: number;
+  fontFamily?: string;
+  className?: string;
 }
 
 export function BulletWithActionVerbs({
@@ -22,6 +24,8 @@ export function BulletWithActionVerbs({
   onUpdate,
   onDelete,
   index,
+  fontFamily,
+  className = "",
 }: BulletWithActionVerbsProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -44,13 +48,14 @@ export function BulletWithActionVerbs({
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group/bullet relative space-y-1 rounded-xl p-2 transition-all hover:bg-muted/40 border border-transparent hover:border-border/60"
+      className={`group/bullet relative space-y-1 rounded-md p-1.5 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 border border-transparent hover:border-slate-200/60 dark:hover:border-slate-700/60 ${className}`}
     >
-      <div className="flex items-start gap-2.5">
-        <span className="text-muted-foreground text-xs select-none mt-1 font-bold">•</span>
+      <div className="flex items-start gap-2">
+        <span className="text-slate-400 select-none mt-1 font-bold text-xs leading-none">•</span>
         <textarea
           rows={2}
           value={bullet}
+          style={fontFamily ? { fontFamily } : undefined}
           onFocus={() => setIsFocused(true)}
           onBlur={() => {
             // small timeout to allow clicking suggestion chips
@@ -58,12 +63,12 @@ export function BulletWithActionVerbs({
           }}
           onChange={(e) => onUpdate(e.target.value)}
           placeholder="Spearheaded technical initiative resulting in 35% latency reduction..."
-          className="flex-1 text-xs leading-relaxed bg-transparent text-foreground border-b border-transparent hover:border-border/60 focus:border-emerald-500 focus:outline-none resize-none p-1 rounded font-sans transition-colors"
+          className="flex-1 text-xs leading-relaxed bg-transparent text-slate-800 border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none resize-none p-1 rounded transition-colors"
         />
         <button
           type="button"
           onClick={onDelete}
-          className="text-muted-foreground hover:text-red-500 opacity-30 group-hover/bullet:opacity-100 transition-opacity p-1 mt-0.5 shrink-0"
+          className="no-print text-slate-400 hover:text-red-500 opacity-20 group-hover/bullet:opacity-100 transition-opacity p-1 mt-0.5 shrink-0"
           title="Delete bullet"
         >
           <X className="w-3.5 h-3.5" />
@@ -72,7 +77,7 @@ export function BulletWithActionVerbs({
 
       {/* INLINE AI ACTION-VERB SUGGESTION CHIP (Like open-resume) */}
       {showSuggestions && (
-        <div className="flex flex-wrap items-center gap-1.5 pl-5 pt-0.5 animate-in fade-in duration-200">
+        <div className="no-print flex flex-wrap items-center gap-1.5 pl-5 pt-0.5 animate-in fade-in duration-200">
           <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
             <Sparkles className="w-2.5 h-2.5" />
             <span>

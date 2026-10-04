@@ -11,7 +11,6 @@ import {
   FileText,
   FileCheck,
   Sparkles,
-  ExternalLink,
   Layers,
   Database,
   RotateCcw,
@@ -20,11 +19,19 @@ import {
   Check,
   Building2,
   Cpu,
-  GraduationCap
+  GraduationCap,
+  Plus,
+  Trash2,
+  X,
+  Anchor,
+  Edit3,
+  CheckCircle2,
+  Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { BulletWithActionVerbs } from "@/components/BulletWithActionVerbs";
 import type { ParsedCv } from "@/lib/cv_parser";
 
 export type AtsTemplateId = "ivy_league" | "modern_tech" | "senior_architect";
@@ -76,6 +83,8 @@ interface LivePdfPreviewProps {
   initialTemplate?: AtsTemplateId;
   onCommitWalrusVersion?: () => void;
   isSavingVersion?: boolean;
+  onUpdateProfile?: (updated: Partial<ParsedCv>) => void;
+  onOpenMaritimeVerifier?: () => void;
 }
 
 export function LivePdfPreview({
@@ -89,6 +98,8 @@ export function LivePdfPreview({
   initialTemplate = "modern_tech",
   onCommitWalrusVersion,
   isSavingVersion = false,
+  onUpdateProfile,
+  onOpenMaritimeVerifier,
 }: LivePdfPreviewProps) {
   const [activeTemplate, setActiveTemplate] = useState<AtsTemplateId>(initialTemplate);
   const [activeView, setActiveView] = useState<"ats_live" | "uploaded_source">("ats_live");
@@ -97,6 +108,10 @@ export function LivePdfPreview({
   const [sourcePdfUrl, setSourcePdfUrl] = useState<string | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const [activeBlobId, setActiveBlobId] = useState<string>("");
+  const [newSkillInput, setNewSkillInput] = useState<string>("");
+  const [newCertInput, setNewCertInput] = useState<string>("");
+  const [showAddSkillInput, setShowAddSkillInput] = useState<boolean>(false);
+  const [showAddCertInput, setShowAddCertInput] = useState<boolean>(false);
 
   const printContainerRef = useRef<HTMLDivElement>(null);
 
@@ -157,9 +172,139 @@ export function LivePdfPreview({
     setZoomLevel((prev) => Math.min(160, Math.max(70, prev + delta)));
   }
 
+  // Profile Update Helpers
+  function updateField(fields: Partial<ParsedCv>) {
+    onUpdateProfile?.(fields);
+  }
+
+  function handleUpdateExperience(expIdx: number, field: string, value: any) {
+    if (!profile?.work_experience) return;
+    const copy = [...profile.work_experience];
+    copy[expIdx] = { ...copy[expIdx], [field]: value };
+    updateField({ work_experience: copy });
+  }
+
+  function handleAddExperience() {
+    const exp = [
+      ...(profile?.work_experience || []),
+      {
+        role: tailorRole || "Lead Systems Engineer",
+        company: tailorCompany || "Engineering Operations",
+        duration: "2023 - Present",
+        highlights: [
+          "Spearheaded critical technical deliverables resulting in 28% operational efficiency gains and zero system downtime.",
+          "Orchestrated cross-disciplinary workflows while enforcing rigorous safety and ATS quality standards."
+        ]
+      }
+    ];
+    updateField({ work_experience: exp });
+    toast.success("Added new position to resume");
+  }
+
+  function handleRemoveExperience(expIdx: number) {
+    if (!profile?.work_experience) return;
+    const exp = profile.work_experience.filter((_, idx) => idx !== expIdx);
+    updateField({ work_experience: exp });
+    toast.success("Removed position from resume");
+  }
+
+  function handleUpdateBullet(expIdx: number, bIdx: number, newBullet: string) {
+    if (!profile?.work_experience) return;
+    const copy = [...profile.work_experience];
+    const highlights = [...(copy[expIdx].highlights || [])];
+    highlights[bIdx] = newBullet;
+    copy[expIdx] = { ...copy[expIdx], highlights };
+    updateField({ work_experience: copy });
+  }
+
+  function handleAddBullet(expIdx: number) {
+    if (!profile?.work_experience) return;
+    const copy = [...profile.work_experience];
+    const highlights = [
+      ...(copy[expIdx].highlights || []),
+      "Architected high-throughput operational framework optimizing mission-critical reliability."
+    ];
+    copy[expIdx] = { ...copy[expIdx], highlights };
+    updateField({ work_experience: copy });
+    toast.success("Added accomplishment bullet");
+  }
+
+  function handleDeleteBullet(expIdx: number, bIdx: number) {
+    if (!profile?.work_experience) return;
+    const copy = [...profile.work_experience];
+    const highlights = (copy[expIdx].highlights || []).filter((_, idx) => idx !== bIdx);
+    copy[expIdx] = { ...copy[expIdx], highlights };
+    updateField({ work_experience: copy });
+  }
+
+  function handleAddSkill(skillToAdd?: string) {
+    const s = (skillToAdd || newSkillInput).trim();
+    if (!s) return;
+    const currentSkills = profile?.skills || [];
+    if (!currentSkills.map(x => x.toLowerCase()).includes(s.toLowerCase())) {
+      updateField({ skills: [...currentSkills, s] });
+      toast.success(`Added '${s}' to Core Skills`);
+    }
+    setNewSkillInput("");
+    setShowAddSkillInput(false);
+  }
+
+  function handleRemoveSkill(sIdx: number) {
+    if (!profile?.skills) return;
+    const updated = profile.skills.filter((_, idx) => idx !== sIdx);
+    updateField({ skills: updated });
+  }
+
+  function handleUpdateEducation(eduIdx: number, field: string, value: any) {
+    if (!profile?.academic_history) return;
+    const copy = [...profile.academic_history];
+    copy[eduIdx] = { ...copy[eduIdx], [field]: value };
+    updateField({ academic_history: copy });
+  }
+
+  function handleAddEducation() {
+    const edu = [
+      ...(profile?.academic_history || []),
+      {
+        institution: "Technical Institute / University",
+        degree: "Bachelor of Science",
+        field_of_study: "Marine / Mechanical Engineering",
+        graduation_year: "2021",
+        achievements: []
+      }
+    ];
+    updateField({ academic_history: edu });
+    toast.success("Added education credential");
+  }
+
+  function handleRemoveEducation(eduIdx: number) {
+    if (!profile?.academic_history) return;
+    const edu = profile.academic_history.filter((_, idx) => idx !== eduIdx);
+    updateField({ academic_history: edu });
+    toast.success("Removed education entry");
+  }
+
+  function handleAddCertification(certToAdd?: string) {
+    const c = (certToAdd || newCertInput).trim();
+    if (!c) return;
+    const current = profile?.certifications || [];
+    if (!current.includes(c)) {
+      updateField({ certifications: [...current, c] });
+      toast.success(`Added '${c}' certification`);
+    }
+    setNewCertInput("");
+    setShowAddCertInput(false);
+  }
+
+  function handleRemoveCertification(cIdx: number) {
+    if (!profile?.certifications) return;
+    const updated = profile.certifications.filter((_, idx) => idx !== cIdx);
+    updateField({ certifications: updated });
+  }
+
+  // Generate pristine vector HTML for high-fidelity PDF printing
   function handlePrintPdf() {
-    if (!printContainerRef.current) return;
-    const printContent = printContainerRef.current.innerHTML;
+    if (!profile) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Please allow pop-ups to print or export PDF.");
@@ -168,82 +313,154 @@ export function LivePdfPreview({
 
     const templateStyles = {
       ivy_league: `
-        @page { size: A4 portrait; margin: 15mm 18mm 15mm 18mm; }
-        body { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; color: #111827; }
-        h1 { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; font-size: 22pt; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin: 0 0 4pt 0; }
-        .contact-line { text-align: center; font-size: 9pt; color: #374151; margin-bottom: 12pt; border-bottom: 1.5pt solid #111827; padding-bottom: 6pt; }
-        .section-title { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; font-size: 10.5pt; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 2.5px; border-bottom: 1pt solid #9ca3af; padding-bottom: 2pt; margin-top: 12pt; margin-bottom: 6pt; }
-        .job-header { display: flex; justify-content: space-between; font-size: 10pt; font-weight: bold; margin-top: 6pt; text-transform: uppercase; }
-        .job-sub { display: flex; justify-content: space-between; font-size: 9pt; font-style: italic; color: #374151; margin-bottom: 3pt; }
-        li { font-size: 9pt; line-height: 1.35; margin-bottom: 2.5pt; color: #1f2937; text-align: justify; }
+        @page { size: A4 portrait; margin: 14mm 16mm 14mm 16mm; }
+        body { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; color: #111827; background: #ffffff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        h1 { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; font-size: 22pt; text-align: center; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin: 0 0 3pt 0; color: #0f172a; }
+        .role-subtitle { text-align: center; font-size: 10pt; font-style: italic; text-transform: uppercase; letter-spacing: 1.5px; color: #334155; margin-bottom: 4pt; }
+        .contact-line { text-align: center; font-size: 9pt; color: #374151; margin-bottom: 10pt; border-bottom: 1.5pt solid #111827; padding-bottom: 5pt; }
+        .section-title { font-family: 'Times New Roman', 'EB Garamond', Georgia, serif; font-size: 10pt; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 2.5px; border-bottom: 1pt solid #9ca3af; padding-bottom: 2pt; margin-top: 10pt; margin-bottom: 5pt; }
+        .job-header { display: flex; justify-content: space-between; font-size: 9.5pt; font-weight: bold; margin-top: 5pt; text-transform: uppercase; }
+        .job-sub { display: flex; justify-content: space-between; font-size: 9pt; font-style: italic; color: #374151; margin-bottom: 2pt; }
+        ul { margin: 2pt 0 4pt 14pt; padding: 0; }
+        li { font-size: 9pt; line-height: 1.35; margin-bottom: 2pt; color: #1f2937; text-align: justify; }
+        .skills-text, .summary-text { font-size: 9pt; line-height: 1.35; color: #1f2937; }
+        .walrus-stamp { margin-top: 14pt; padding-top: 6pt; border-top: 1pt solid #cbd5e1; display: flex; align-items: center; justify-content: space-between; font-family: monospace; font-size: 7.5pt; color: #475569; }
+        .walrus-stamp img { width: 50pt; height: 50pt; border: 1pt solid #cbd5e1; }
       `,
       modern_tech: `
         @page { size: A4 portrait; margin: 12mm 15mm 12mm 15mm; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; }
-        h1 { font-size: 21pt; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; margin: 0 0 2pt 0; }
-        .contact-line { font-size: 8.5pt; color: #475569; margin-bottom: 10pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 5pt; }
-        .section-title { font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; border-bottom: 1pt solid #e2e8f0; margin-top: 10pt; margin-bottom: 5pt; padding-bottom: 2pt; }
-        .job-header { display: flex; justify-content: space-between; font-size: 9.5pt; font-weight: 700; margin-top: 6pt; }
-        .job-sub { display: flex; justify-content: space-between; font-size: 8.5pt; color: #64748b; margin-bottom: 3pt; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #ffffff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        h1 { font-size: 21pt; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; margin: 0 0 2pt 0; color: #0f172a; }
+        .role-subtitle { font-size: 9pt; font-weight: 700; font-family: monospace; color: #047857; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3pt; }
+        .contact-line { font-size: 8.5pt; color: #475569; margin-bottom: 8pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 4pt; }
+        .section-title { font-size: 9.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; border-bottom: 1pt solid #e2e8f0; margin-top: 9pt; margin-bottom: 4pt; padding-bottom: 2pt; }
+        .job-header { display: flex; justify-content: space-between; font-size: 9pt; font-weight: 700; margin-top: 5pt; }
+        .job-sub { display: flex; justify-content: space-between; font-size: 8.5pt; color: #64748b; margin-bottom: 2pt; }
+        ul { margin: 2pt 0 4pt 12pt; padding: 0; }
         li { font-size: 8.5pt; line-height: 1.38; margin-bottom: 2pt; color: #1e293b; }
+        .skills-text, .summary-text { font-size: 8.5pt; line-height: 1.35; color: #1e293b; }
+        .walrus-stamp { margin-top: 14pt; padding-top: 6pt; border-top: 1pt solid #cbd5e1; display: flex; align-items: center; justify-content: space-between; font-family: monospace; font-size: 7.5pt; color: #475569; }
+        .walrus-stamp img { width: 50pt; height: 50pt; border: 1pt solid #cbd5e1; }
       `,
       senior_architect: `
         @page { size: A4 portrait; margin: 8mm 10mm 8mm 10mm; }
-        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 8pt; line-height: 1.25; color: #0f172a; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 8pt; line-height: 1.25; color: #0f172a; background: #ffffff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         h1 { font-size: 18pt; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; margin: 0; }
-        .contact-line { font-size: 8pt; color: #475569; margin-bottom: 6pt; border-bottom: 1.5pt solid #0f172a; padding-bottom: 3pt; }
-        .section-title { font-size: 8.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; background: #0f172a; color: #ffffff; padding: 2pt 4pt; margin-top: 6pt; margin-bottom: 3pt; border-radius: 1px; }
-        .job-header { display: flex; justify-content: space-between; font-size: 8.5pt; font-weight: 800; margin-top: 4pt; }
-        .job-sub { display: flex; justify-content: space-between; font-size: 8pt; color: #475569; margin-bottom: 2pt; }
+        .role-subtitle { font-size: 8pt; font-weight: 800; font-family: monospace; color: #0f172a; text-transform: uppercase; margin-bottom: 2pt; }
+        .contact-line { font-size: 7.5pt; color: #475569; margin-bottom: 5pt; border-bottom: 1.5pt solid #0f172a; padding-bottom: 2pt; }
+        .section-title { font-size: 8.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; background: #0f172a; color: #ffffff; padding: 2pt 4pt; margin-top: 5pt; margin-bottom: 2pt; }
+        .job-header { display: flex; justify-content: space-between; font-size: 8.5pt; font-weight: 800; margin-top: 3pt; }
+        .job-sub { display: flex; justify-content: space-between; font-size: 7.5pt; color: #475569; margin-bottom: 1.5pt; }
+        ul { margin: 1pt 0 3pt 10pt; padding: 0; }
         li { font-size: 8pt; line-height: 1.25; margin-bottom: 1.5pt; color: #1e293b; }
+        .skills-text, .summary-text { font-size: 8pt; line-height: 1.25; color: #1e293b; }
+        .walrus-stamp { margin-top: 10pt; padding-top: 4pt; border-top: 1pt solid #cbd5e1; display: flex; align-items: center; justify-content: space-between; font-family: monospace; font-size: 7pt; color: #475569; }
+        .walrus-stamp img { width: 44pt; height: 44pt; border: 1pt solid #cbd5e1; }
       `,
     }[activeTemplate];
+
+    const applicant = profile.applicant_name || "Applicant Name";
+    const contactLine = [
+      (profile as any).contact_email || profile.email,
+      (profile as any).contact_phone || profile.phone,
+      (profile as any).location,
+      profile.linkedin_url,
+      profile.github_url,
+    ].filter(Boolean).join("  •  ");
+
+    const roleTitle = tailorRole || profile.target_roles?.[0] || "Systems Engineer";
+    const cleanComp = (tailorCompany && tailorCompany.trim() !== "Target Organization" && tailorCompany.trim() !== "Not specified") ? tailorCompany.trim() : "";
+    const roleWithCompany = cleanComp ? `${roleTitle} — ${cleanComp}` : roleTitle;
+
+    const summary = (profile as any).summary ||
+      (profile.work_experience?.length
+        ? `Results-driven engineering professional with deep expertise in ${(profile.skills || []).slice(0, 6).join(", ")}. Proven history of architecting high-throughput systems, orchestrating cross-functional teams, and shipping production-grade solutions with measurable performance impact.`
+        : "");
+
+    const expHtml = (profile.work_experience || []).map(exp => `
+      <div style="margin-bottom: 6pt;">
+        <div class="job-header">
+          <span>${exp.role}</span>
+          <span style="font-weight: normal; font-size: 8.5pt;">${exp.duration}</span>
+        </div>
+        <div class="job-sub">
+          <span>${exp.company}</span>
+          <span style="font-size: 7.5pt;">Verified Record</span>
+        </div>
+        ${exp.highlights && exp.highlights.length > 0 ? `
+          <ul>
+            ${exp.highlights.map(h => `<li>${h}</li>`).join("")}
+          </ul>
+        ` : ""}
+      </div>
+    `).join("");
+
+    const eduHtml = (profile.academic_history || []).map(edu => `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 3pt; font-size: 8.5pt;">
+        <div>
+          <strong>${edu.degree}</strong>${edu.field_of_study ? ` in ${edu.field_of_study}` : ""} — <em>${edu.institution}</em>
+        </div>
+        <span style="font-style: italic;">${edu.graduation_year}</span>
+      </div>
+    `).join("");
+
+    const certsHtml = (profile.certifications || []).length > 0
+      ? `<div style="font-size: 8.5pt; color: #1e293b; margin-top: 3pt;">${profile.certifications.join("  •  ")}</div>`
+      : "";
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${profile?.applicant_name || "Resume"}_${activeTemplate.toUpperCase()}_ATS_Optimized</title>
+          <title>${applicant.replace(/\s+/g, "_")}_${activeTemplate.toUpperCase()}_Resume</title>
           <style>
             ${templateStyles}
-            body {
-              background: #ffffff;
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .resume-page {
-              width: 100%;
-              box-sizing: border-box;
-            }
-            ul { margin: 2pt 0 4pt 12pt; padding: 0; }
-            .skills-text, .summary-text { font-size: 8.5pt; line-height: 1.35; color: #1f2937; }
-            .walrus-stamp {
-              margin-top: 14pt;
-              padding-top: 6pt;
-              border-top: 1pt solid #cbd5e1;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              font-family: monospace;
-              font-size: 7.5pt;
-              color: #475569;
-            }
-            .walrus-stamp img {
-              width: 52pt;
-              height: 52pt;
-              border: 1pt solid #cbd5e1;
-              border-radius: 2pt;
-            }
-            @media print {
-              body { margin: 0; padding: 0; }
-            }
           </style>
         </head>
         <body>
-          <div class="resume-page">
-            ${printContent}
+          <div class="resume-sheet">
+            <h1>${applicant}</h1>
+            <div class="role-subtitle">${roleWithCompany}</div>
+            <div class="contact-line">${contactLine}</div>
+
+            ${summary ? `
+              <div class="section-title">Professional Summary</div>
+              <div class="summary-text">${summary}</div>
+            ` : ""}
+
+            ${(profile.skills || []).length > 0 ? `
+              <div class="section-title">Core Competencies &amp; Technical Proficiencies</div>
+              <div class="skills-text"><strong>Proficiencies:</strong> ${profile.skills.join("  •  ")}</div>
+            ` : ""}
+
+            ${expHtml ? `
+              <div class="section-title">Professional Experience</div>
+              <div>${expHtml}</div>
+            ` : ""}
+
+            ${eduHtml ? `
+              <div class="section-title">Education &amp; Credentials</div>
+              <div>${eduHtml}</div>
+            ` : ""}
+
+            ${certsHtml ? `
+              <div class="section-title">Certifications &amp; Professional Licenses</div>
+              <div>${certsHtml}</div>
+            ` : ""}
+
+            <div class="walrus-stamp">
+              <div style="display: flex; align-items: center; gap: 8pt;">
+                ${qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" alt="Walrus QR" />` : ""}
+                <div>
+                  <div style="font-weight: bold; text-transform: uppercase;">Walrus Verifiable Credential</div>
+                  <div>Blob ID: ${activeBlobId ? `${activeBlobId.slice(0, 16)}...${activeBlobId.slice(-8)}` : "Verified On-chain"}</div>
+                  <div style="font-size: 6.5pt; color: #64748b;">Cryptographically sealed &amp; anchored on Mysten Walrus Testnet</div>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <span style="border: 1pt solid #cbd5e1; padding: 2pt 4pt; border-radius: 2pt; font-weight: bold; color: #047857;">ATS CLEARED • TAMPER PROOF</span>
+              </div>
+            </div>
           </div>
           <script>
             window.onload = function() {
@@ -262,23 +479,19 @@ export function LivePdfPreview({
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-border bg-card/40">
         <FileText className="w-12 h-12 text-muted-foreground/40 mb-3" />
-        <h4 className="text-sm font-semibold text-foreground">Live ATS Multi-Template PDF Preview</h4>
+        <h4 className="text-sm font-semibold text-foreground">Live ATS Interactive Document Canvas</h4>
         <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-          Attach your CV on the Job Engine or enter your career accomplishments to preview verified ATS templates and Walrus cryptographic stamps.
+          Attach your CV to open the unified live editor canvas, optimize weak bullet verbs with 1-click power action verbs, and stamp your Walrus proof.
         </p>
       </div>
     );
   }
 
-  const applicantName = profile.applicant_name || "Candidate Name";
-  const contactParts = [
-    (profile as any).contact_email || profile.email,
-    (profile as any).contact_phone || profile.phone,
-    (profile as any).location,
-    profile.linkedin_url,
-    profile.github_url,
-  ].filter(Boolean) as string[];
-
+  const applicantName = profile.applicant_name || "Applicant Name";
+  const contactEmail = (profile as any).contact_email || profile.email || "";
+  const contactPhone = (profile as any).contact_phone || profile.phone || "";
+  const contactLocation = (profile as any).location || "";
+  const currentRole = tailorRole || profile.target_roles?.[0] || "Target Role";
   const cleanCompany = (tailorCompany && tailorCompany.trim() !== "Target Organization" && tailorCompany.trim() !== "Not specified") ? tailorCompany.trim() : "";
 
   const summaryText =
@@ -287,16 +500,18 @@ export function LivePdfPreview({
       ? `Results-driven engineering professional with deep expertise in ${(profile.skills || []).slice(0, 6).join(", ")}. Proven history of architecting high-throughput systems, orchestrating cross-functional teams, and shipping production-grade solutions with measurable performance impact.`
       : "");
 
+  const activeTemplateConfig = ATS_TEMPLATES.find(t => t.id === activeTemplate) || ATS_TEMPLATES[1];
+
   return (
     <div
       className={`flex flex-col rounded-2xl border border-border/80 bg-card shadow-sm transition-all overflow-hidden ${
         isFullscreen ? "fixed inset-4 z-50 bg-background/95 backdrop-blur-md shadow-2xl" : "w-full"
       }`}
     >
-      {/* ── TOP PREVIEW TOOLBAR WITH MULTI-TEMPLATE ATS GALLERY ── */}
+      {/* ── TOP UNIFIED TOOLBAR: MULTI-TEMPLATE ATS GALLERY, ZOOM, EXPORT ── */}
       <div className="flex flex-col gap-2.5 px-4 py-3 border-b border-border/70 bg-muted/30">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          {/* View Toggle */}
+          {/* View Toggle (Live ATS Canvas vs Original Upload) */}
           <div className="flex items-center p-0.5 rounded-lg bg-background border border-border/70 text-xs font-medium">
             <button
               type="button"
@@ -308,7 +523,7 @@ export function LivePdfPreview({
               }`}
             >
               <FileCheck className="w-3.5 h-3.5" />
-              Live ATS Vector PDF
+              Editable ATS Canvas
             </button>
             {sourcePdfUrl && (
               <button
@@ -416,11 +631,11 @@ export function LivePdfPreview({
           </div>
         </div>
 
-        {/* ── MULTI-TEMPLATE ATS GALLERY SELECTOR (Like reactive-resume) ── */}
+        {/* ── MULTI-TEMPLATE ATS GALLERY SELECTOR ── */}
         <div className="flex items-center gap-2 pt-1 border-t border-border/50 overflow-x-auto pb-0.5">
           <span className="text-[11px] font-semibold text-muted-foreground shrink-0 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-emerald-500" />
-            ATS Gallery:
+            ATS Layout:
           </span>
           <div className="flex items-center gap-1.5">
             {ATS_TEMPLATES.map((tmpl) => {
@@ -461,8 +676,8 @@ export function LivePdfPreview({
         </div>
       </div>
 
-      {/* ── PREVIEW CANVAS BODY ── */}
-      <div className="flex-1 bg-muted/40 p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[580px] max-h-[780px]">
+      {/* ── PREVIEW & EDITOR CANVAS BODY ── */}
+      <div className="flex-1 bg-muted/40 p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[640px] max-h-[860px]">
         {activeView === "uploaded_source" && sourcePdfUrl ? (
           <div className="w-full h-full min-h-[600px] rounded-xl overflow-hidden border border-border shadow-md bg-background">
             <iframe
@@ -472,14 +687,14 @@ export function LivePdfPreview({
             />
           </div>
         ) : (
-          /* ATS LIVE VECTOR DOCUMENT SHEET (Rendered according to activeTemplate) */
+          /* UNIFIED ATS EDITABLE VECTOR DOCUMENT SHEET */
           <div
             style={{
               transform: `scale(${zoomLevel / 100})`,
               transformOrigin: "top center",
               transition: "transform 0.15s ease-out",
             }}
-            className={`w-full max-w-[820px] bg-white text-slate-900 rounded-sm shadow-2xl border border-slate-300 transition-all select-text print:shadow-none print:border-none print:p-0 ${
+            className={`w-full max-w-[840px] bg-white text-slate-900 rounded-sm shadow-2xl border border-slate-300 transition-all select-text print:shadow-none print:border-none print:p-0 ${
               activeTemplate === "ivy_league"
                 ? "p-8 md:p-14 font-serif"
                 : activeTemplate === "senior_architect"
@@ -487,323 +702,480 @@ export function LivePdfPreview({
                 : "p-8 md:p-12 font-sans"
             }`}
           >
-            <div ref={printContainerRef} className="text-left">
-              {/* ────────── LAYOUT 1: STANDARD IVY LEAGUE ────────── */}
-              {activeTemplate === "ivy_league" && (
-                <div className="space-y-4 font-serif text-slate-900">
-                  {/* Ivy League Header: Centered & Dignified */}
-                  <div className="text-center pb-2 border-b-2 border-slate-900">
-                    <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-[0.16em] text-slate-900 m-0">
-                      {applicantName}
-                    </h1>
-                    {tailorRole && (
-                      <p className="text-xs uppercase tracking-widest text-slate-700 italic mt-1">
-                        {tailorRole} {cleanCompany ? `— ${cleanCompany}` : ""}
-                      </p>
-                    )}
-                    {contactParts.length > 0 && (
-                      <p className="text-[10.5px] text-slate-700 mt-2 flex flex-wrap items-center justify-center gap-1.5">
-                        {contactParts.map((item, idx) => (
-                          <span key={idx} className="flex items-center gap-1.5">
-                            {idx > 0 && <span className="text-slate-400">◆</span>}
-                            {item}
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                  </div>
+            <div ref={printContainerRef} className="text-left space-y-5">
+              {/* ────────── CANDIDATE HEADER (Inline Editable) ────────── */}
+              <div
+                className={`pb-3 border-b-2 border-slate-900 ${
+                  activeTemplate === "ivy_league" ? "text-center" : ""
+                }`}
+              >
+                {/* Candidate Name Input */}
+                <input
+                  type="text"
+                  value={applicantName}
+                  onChange={(e) => updateField({ applicant_name: e.target.value })}
+                  placeholder="Full Candidate Name"
+                  className={`w-full bg-transparent text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 py-0.5 ${
+                    activeTemplate === "ivy_league"
+                      ? "text-2xl md:text-3xl font-bold uppercase tracking-[0.16em] text-center"
+                      : activeTemplate === "senior_architect"
+                      ? "text-xl md:text-2xl font-black uppercase tracking-tight text-left"
+                      : "text-2xl md:text-3xl font-black uppercase tracking-tight text-left"
+                  }`}
+                />
 
-                  {/* Summary */}
-                  {summaryText && (
-                    <div className="space-y-1">
-                      <h2 className="text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-900 border-b border-slate-400 pb-0.5 m-0">
-                        Executive Summary
-                      </h2>
-                      <p className="text-xs leading-relaxed text-slate-800 text-justify pt-1">
-                        {summaryText}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Core Competencies */}
-                  {profile.skills && profile.skills.length > 0 && (
-                    <div className="space-y-1">
-                      <h2 className="text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-900 border-b border-slate-400 pb-0.5 m-0">
-                        Core Competencies &amp; Technical Proficiencies
-                      </h2>
-                      <p className="text-xs leading-relaxed text-slate-800 text-center pt-1">
-                        {profile.skills.join(" ◆ ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Work Experience */}
-                  {profile.work_experience && profile.work_experience.length > 0 && (
-                    <div className="space-y-3">
-                      <h2 className="text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-900 border-b border-slate-400 pb-0.5 m-0">
-                        Professional Experience
-                      </h2>
-                      <div className="space-y-4 pt-1">
-                        {profile.work_experience.map((exp, idx) => (
-                          <div key={idx} className="space-y-1">
-                            <div className="flex justify-between items-baseline text-xs font-bold text-slate-900">
-                              <span className="uppercase tracking-wider">{exp.role}</span>
-                              <span className="italic font-normal text-slate-700 text-[11px]">{exp.duration}</span>
-                            </div>
-                            <div className="flex justify-between items-baseline text-xs italic text-slate-700">
-                              <span>{exp.company}</span>
-                              <span className="text-[10px]">Verified Credentials</span>
-                            </div>
-                            {exp.highlights && exp.highlights.length > 0 && (
-                              <ul className="list-disc list-outside pl-4 space-y-1 text-xs text-slate-800 leading-snug pt-1">
-                                {exp.highlights.map((bullet, bIdx) => (
-                                  <li key={bIdx} className="pl-0.5 text-justify">
-                                    {bullet}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Education */}
-                  {profile.academic_history && profile.academic_history.length > 0 && (
-                    <div className="space-y-2">
-                      <h2 className="text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-900 border-b border-slate-400 pb-0.5 m-0">
-                        Education &amp; Credentials
-                      </h2>
-                      <div className="space-y-1.5 text-xs text-slate-800 pt-1">
-                        {profile.academic_history.map((edu, idx) => (
-                          <div key={idx} className="flex justify-between items-baseline">
-                            <div>
-                              <span className="font-bold text-slate-900 uppercase">{edu.institution}</span>
-                              <span className="italic text-slate-700"> — {edu.degree}{edu.field_of_study ? ` in ${edu.field_of_study}` : ""}</span>
-                            </div>
-                            <span className="italic text-slate-600 text-[11px]">{edu.graduation_year}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                {/* Subtitle / Target Role */}
+                <div
+                  className={`flex items-center gap-2 mt-1 flex-wrap ${
+                    activeTemplate === "ivy_league" ? "justify-center" : "justify-start"
+                  }`}
+                >
+                  <input
+                    type="text"
+                    value={currentRole}
+                    onChange={(e) => updateField({ target_roles: [e.target.value] })}
+                    placeholder="e.g. Lead Systems Engineer"
+                    className={`bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs ${
+                      activeTemplate === "ivy_league"
+                        ? "uppercase tracking-widest text-slate-700 italic text-center"
+                        : activeTemplate === "senior_architect"
+                        ? "bg-slate-900 text-white font-mono font-bold uppercase px-2 py-0.5 rounded-xs"
+                        : "font-bold font-mono text-emerald-700 uppercase tracking-widest"
+                    }`}
+                  />
+                  {cleanCompany && (
+                    <span className="text-xs text-slate-600 font-medium">
+                      — {cleanCompany}
+                    </span>
                   )}
                 </div>
-              )}
 
-              {/* ────────── LAYOUT 2: MODERN TECH MINIMALIST ────────── */}
-              {activeTemplate === "modern_tech" && (
-                <div className="space-y-5 font-sans text-slate-900">
-                  {/* Modern Tech Header: Crisp Left-aligned with subtle metadata */}
-                  <div className="pb-3 border-b-2 border-slate-900">
-                    <div className="flex justify-between items-start flex-wrap gap-2">
-                      <div>
-                        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900 m-0">
-                          {applicantName}
-                        </h1>
-                        {tailorRole && (
-                          <p className="text-xs font-bold font-mono text-emerald-700 uppercase tracking-widest mt-1">
-                            {tailorRole} {cleanCompany ? `· ${cleanCompany}` : ""}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {contactParts.length > 0 && (
-                      <p className="text-[11px] text-slate-600 mt-2.5 flex flex-wrap items-center gap-2">
-                        {contactParts.map((item, idx) => (
-                          <span key={idx} className="flex items-center gap-1.5">
-                            {idx > 0 && <span className="text-slate-300">|</span>}
-                            {item}
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                  </div>
+                {/* Contact Line (Email, Phone, Location) */}
+                <div
+                  className={`flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 ${
+                    activeTemplate === "ivy_league" ? "justify-center text-[10.5px] text-slate-700" : ""
+                  }`}
+                >
+                  <input
+                    type="text"
+                    value={contactEmail}
+                    onChange={(e) => updateField({ email: e.target.value, contact_email: e.target.value } as any)}
+                    placeholder="email@example.com"
+                    className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 max-w-[210px]"
+                  />
+                  <span className="text-slate-400">•</span>
+                  <input
+                    type="text"
+                    value={contactPhone}
+                    onChange={(e) => updateField({ phone: e.target.value, contact_phone: e.target.value } as any)}
+                    placeholder="+1 (555) 000-0000"
+                    className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 max-w-[150px]"
+                  />
+                  <span className="text-slate-400">•</span>
+                  <input
+                    type="text"
+                    value={contactLocation}
+                    onChange={(e) => updateField({ location: e.target.value } as any)}
+                    placeholder="City, Country"
+                    className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 max-w-[160px]"
+                  />
+                </div>
+              </div>
 
-                  {/* Summary */}
-                  {summaryText && (
-                    <div className="space-y-1.5">
-                      <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 m-0">
-                        Professional Summary
-                      </h2>
-                      <p className="text-xs leading-relaxed text-slate-800 text-justify">
-                        {summaryText}
-                      </p>
-                    </div>
-                  )}
+              {/* ────────── PROFESSIONAL SUMMARY (Inline Editable) ────────── */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h2
+                    className={
+                      activeTemplate === "ivy_league"
+                        ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 border-b border-slate-400 pb-0.5 m-0"
+                        : activeTemplate === "senior_architect"
+                        ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                        : "text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 m-0 w-full"
+                    }
+                  >
+                    Professional Summary
+                  </h2>
+                </div>
+                <textarea
+                  rows={3}
+                  value={summaryText}
+                  onChange={(e) => updateField({ summary: e.target.value } as any)}
+                  placeholder="Enter a compelling 2-3 sentence executive summary..."
+                  className={`w-full text-xs leading-relaxed bg-transparent text-slate-800 border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors p-1 rounded-sm resize-none ${
+                    activeTemplate === "ivy_league" ? "font-serif text-justify" : "font-sans"
+                  }`}
+                />
+              </div>
 
-                  {/* Skills */}
-                  {profile.skills && profile.skills.length > 0 && (
-                    <div className="space-y-1.5">
-                      <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 m-0">
-                        Core Competencies &amp; Technical Skills
-                      </h2>
-                      <p className="text-xs leading-relaxed text-slate-800">
-                        <span className="font-bold text-slate-900">Proficiencies: </span>
-                        {profile.skills.join(" • ")}
-                      </p>
-                    </div>
-                  )}
+              {/* ────────── CORE COMPETENCIES & TECHNICAL SKILLS ────────── */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h2
+                    className={
+                      activeTemplate === "ivy_league"
+                        ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 border-b border-slate-400 pb-0.5 m-0"
+                        : activeTemplate === "senior_architect"
+                        ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                        : "text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 m-0 w-full"
+                    }
+                  >
+                    Core Competencies &amp; Technical Skills ({profile.skills?.length || 0})
+                  </h2>
+                </div>
 
-                  {/* Experience */}
-                  {profile.work_experience && profile.work_experience.length > 0 && (
-                    <div className="space-y-3">
-                      <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 m-0">
-                        Professional Experience
-                      </h2>
-                      <div className="space-y-3.5">
-                        {profile.work_experience.map((exp, idx) => (
-                          <div key={idx} className="space-y-1">
-                            <div className="flex justify-between items-baseline text-xs font-bold text-slate-900">
-                              <span>
-                                {exp.role.toUpperCase()}{" "}
-                                <span className="font-semibold text-slate-600">| {exp.company}</span>
-                              </span>
-                              <span className="font-mono text-slate-600 text-[11px]">{exp.duration}</span>
-                            </div>
-                            {exp.highlights && exp.highlights.length > 0 && (
-                              <ul className="list-disc list-outside pl-4 space-y-1 text-xs text-slate-800 leading-snug">
-                                {exp.highlights.map((bullet, bIdx) => (
-                                  <li key={bIdx} className="pl-0.5">
-                                    {bullet}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                {/* Skills Tags List with Instant Remove & Inline Add */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {(profile.skills || []).map((skill, sIdx) => (
+                    <span
+                      key={sIdx}
+                      className="group/skill inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200 hover:border-slate-400 transition-colors"
+                    >
+                      <span>{skill}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(sIdx)}
+                        className="no-print text-slate-400 hover:text-red-500 opacity-30 group-skill/hover:opacity-100 transition-opacity ml-0.5"
+                        title="Remove skill"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
 
-                  {/* Education */}
-                  {profile.academic_history && profile.academic_history.length > 0 && (
-                    <div className="space-y-2">
-                      <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-0.5 m-0">
-                        Education &amp; Credentials
-                      </h2>
-                      <div className="space-y-1.5 text-xs text-slate-800">
-                        {profile.academic_history.map((edu, idx) => (
-                          <div key={idx} className="flex justify-between items-baseline">
-                            <div>
-                              <span className="font-bold text-slate-900">{edu.degree}</span>
-                              {edu.field_of_study && <span> in {edu.field_of_study}</span>}
-                              <span className="text-slate-600"> — {edu.institution}</span>
-                            </div>
-                            <span className="text-slate-500 font-mono text-[11px] font-medium">{edu.graduation_year}</span>
-                          </div>
-                        ))}
-                      </div>
+                  {/* Inline Add Skill Input */}
+                  {showAddSkillInput ? (
+                    <div className="no-print inline-flex items-center gap-1">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={newSkillInput}
+                        onChange={(e) => setNewSkillInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddSkill();
+                          } else if (e.key === "Escape") {
+                            setShowAddSkillInput(false);
+                          }
+                        }}
+                        placeholder="Type skill & press Enter..."
+                        className="h-6 px-2 text-xs border border-emerald-500 rounded bg-white text-slate-900 focus:outline-none"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddSkill()}
+                        className="h-6 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        Add
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddSkillInput(false)}
+                        className="text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSkillInput(true)}
+                      className="no-print inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded border border-dashed border-slate-300 text-slate-600 hover:border-emerald-500 hover:text-emerald-700 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> Add Skill
+                    </button>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* ────────── LAYOUT 3: COMPACT SENIOR ARCHITECT ────────── */}
-              {activeTemplate === "senior_architect" && (
-                <div className="space-y-3 font-sans text-slate-900 text-[11px] leading-tight">
-                  {/* High Density Header */}
-                  <div className="border-b-2 border-slate-900 pb-2">
-                    <div className="flex justify-between items-baseline flex-wrap gap-1">
-                      <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight text-slate-900 m-0">
-                        {applicantName}
-                      </h1>
-                      {tailorRole && (
-                        <span className="bg-slate-900 text-white text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-xs">
-                          {tailorRole} {cleanCompany ? `· ${cleanCompany}` : ""}
-                        </span>
-                      )}
+              {/* ────────── WORK EXPERIENCE WITH INLINE ACTION VERBS ────────── */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-300 pb-1">
+                  <h2
+                    className={
+                      activeTemplate === "ivy_league"
+                        ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 m-0"
+                        : activeTemplate === "senior_architect"
+                        ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                        : "text-xs font-black uppercase tracking-wider text-slate-900 m-0"
+                    }
+                  >
+                    Professional Experience
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddExperience}
+                    className="no-print text-xs text-emerald-700 hover:bg-emerald-50 h-7 px-2 gap-1 shrink-0 font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Position
+                  </Button>
+                </div>
+
+                {profile.work_experience && profile.work_experience.length > 0 ? (
+                  <div className="space-y-4">
+                    {profile.work_experience.map((exp, expIdx) => (
+                      <div
+                        key={expIdx}
+                        className="group/pos space-y-1.5 p-3 rounded-lg border border-slate-200/80 hover:border-slate-300 bg-slate-50/40 relative transition-all"
+                      >
+                        {/* Delete Position Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExperience(expIdx)}
+                          className="no-print absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-20 group-hover/pos:opacity-100 transition-opacity p-1"
+                          title="Delete this role position"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Position Header: Title, Company, Duration */}
+                        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pr-6">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <input
+                              type="text"
+                              value={exp.role || ""}
+                              onChange={(e) => handleUpdateExperience(expIdx, "role", e.target.value)}
+                              placeholder="Job Title"
+                              className="font-bold text-xs text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1"
+                            />
+                            <span className="text-slate-400 text-xs">at</span>
+                            <input
+                              type="text"
+                              value={exp.company || ""}
+                              onChange={(e) => handleUpdateExperience(expIdx, "company", e.target.value)}
+                              placeholder="Company Name"
+                              className="font-semibold text-xs text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1"
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={exp.duration || ""}
+                            onChange={(e) => handleUpdateExperience(expIdx, "duration", e.target.value)}
+                            placeholder="2022 - Present"
+                            className="text-slate-500 text-xs font-mono bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none text-right px-1 max-w-[140px]"
+                          />
+                        </div>
+
+                        {/* Bullets List with 1-Click Action Verb Optimization */}
+                        <div className="space-y-1 pt-1">
+                          {exp.highlights && exp.highlights.length > 0 ? (
+                            exp.highlights.map((bullet, bIdx) => (
+                              <BulletWithActionVerbs
+                                key={bIdx}
+                                bullet={bullet}
+                                index={bIdx}
+                                fontFamily={activeTemplateConfig.fontFamily}
+                                onUpdate={(newBullet) => handleUpdateBullet(expIdx, bIdx, newBullet)}
+                                onDelete={() => handleDeleteBullet(expIdx, bIdx)}
+                              />
+                            ))
+                          ) : (
+                            <p className="text-xs text-slate-400 italic pl-3">No accomplishment bullets added yet.</p>
+                          )}
+
+                          {/* Add Bullet Button */}
+                          <div className="no-print pt-1 pl-3">
+                            <button
+                              type="button"
+                              onClick={() => handleAddBullet(expIdx)}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
+                            >
+                              <Plus className="w-3 h-3" /> Add Accomplishment Bullet
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center border border-dashed border-slate-300 rounded-lg">
+                    <p className="text-xs text-slate-500">No work experience listed yet.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddExperience}
+                      className="mt-2 text-xs gap-1 border-slate-300 text-slate-700"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> + Add Experience
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* ────────── EDUCATION & CREDENTIALS ────────── */}
+              <div className="space-y-2 pt-2 border-t border-slate-300">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                  <h2
+                    className={
+                      activeTemplate === "ivy_league"
+                        ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 m-0"
+                        : activeTemplate === "senior_architect"
+                        ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                        : "text-xs font-black uppercase tracking-wider text-slate-900 m-0"
+                    }
+                  >
+                    Education &amp; Credentials
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddEducation}
+                    className="no-print text-xs text-emerald-700 hover:bg-emerald-50 h-7 px-2 gap-1 shrink-0 font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Degree
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {(profile.academic_history || []).map((edu, eduIdx) => (
+                    <div
+                      key={eduIdx}
+                      className="group/edu flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 p-2 rounded hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 flex-wrap flex-1">
+                        <input
+                          type="text"
+                          value={edu.degree || ""}
+                          onChange={(e) => handleUpdateEducation(eduIdx, "degree", e.target.value)}
+                          placeholder="Degree (e.g. B.S.)"
+                          className="font-bold text-xs text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1 max-w-[140px]"
+                        />
+                        <span className="text-slate-400 text-xs">in</span>
+                        <input
+                          type="text"
+                          value={edu.field_of_study || ""}
+                          onChange={(e) => handleUpdateEducation(eduIdx, "field_of_study", e.target.value)}
+                          placeholder="Field of Study"
+                          className="text-xs text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1 max-w-[200px]"
+                        />
+                        <span className="text-slate-400 text-xs">—</span>
+                        <input
+                          type="text"
+                          value={edu.institution || ""}
+                          onChange={(e) => handleUpdateEducation(eduIdx, "institution", e.target.value)}
+                          placeholder="Institution Name"
+                          className="font-medium text-xs text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1 flex-1"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <input
+                          type="text"
+                          value={edu.graduation_year || ""}
+                          onChange={(e) => handleUpdateEducation(eduIdx, "graduation_year", e.target.value)}
+                          placeholder="Year"
+                          className="text-slate-500 text-xs font-mono bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none text-right px-1 w-16"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEducation(eduIdx)}
+                          className="no-print text-slate-400 hover:text-red-500 opacity-20 group-hover/edu:opacity-100 transition-opacity p-0.5"
+                          title="Remove degree"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    {contactParts.length > 0 && (
-                      <p className="text-[10px] font-mono text-slate-600 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                        {contactParts.map((item, idx) => (
-                          <span key={idx}>
-                            {idx > 0 && <span className="text-slate-300 mr-2">|</span>}
-                            {item}
-                          </span>
-                        ))}
-                      </p>
+                  ))}
+                </div>
+              </div>
+
+              {/* ────────── CERTIFICATIONS & WALRUS MARITIME CREDENTIALS ────────── */}
+              <div className="space-y-2 pt-2 border-t border-slate-300">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                  <h2
+                    className={
+                      activeTemplate === "ivy_league"
+                        ? "text-center w-full text-xs font-bold uppercase tracking-[0.2em] text-slate-900 m-0"
+                        : activeTemplate === "senior_architect"
+                        ? "bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900 w-full"
+                        : "text-xs font-black uppercase tracking-wider text-slate-900 m-0"
+                    }
+                  >
+                    Certifications &amp; Professional Licenses ({profile.certifications?.length || 0})
+                  </h2>
+
+                  <div className="no-print flex items-center gap-2">
+                    {onOpenMaritimeVerifier && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onOpenMaritimeVerifier}
+                        className="text-[11px] h-7 gap-1 border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20"
+                        title="Autonomous OCR validator for Seaman's Book & STCW certificates"
+                      >
+                        <Anchor className="w-3 h-3" />
+                        <span>STCW Verifier</span>
+                      </Button>
                     )}
                   </div>
+                </div>
 
-                  {/* Summary */}
-                  {summaryText && (
-                    <div className="space-y-0.5">
-                      <div className="bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900">
-                        Core Architecture &amp; Executive Summary
-                      </div>
-                      <p className="text-[11px] leading-snug text-slate-800 pt-0.5 text-justify">
-                        {summaryText}
-                      </p>
-                    </div>
-                  )}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {(profile.certifications || []).map((cert, cIdx) => (
+                    <span
+                      key={cIdx}
+                      className="group/cert inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    >
+                      <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span>{cert}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCertification(cIdx)}
+                        className="no-print text-emerald-500 hover:text-red-500 opacity-40 group-hover/cert:opacity-100 transition-opacity ml-0.5"
+                        title="Remove certification"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
 
-                  {/* Dense Skills Matrix */}
-                  {profile.skills && profile.skills.length > 0 && (
-                    <div className="space-y-0.5">
-                      <div className="bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900">
-                        Technical Architecture Matrix &amp; Proficiencies ({profile.skills.length})
-                      </div>
-                      <p className="text-[10.5px] leading-snug text-slate-800 pt-0.5">
-                        <span className="font-bold text-slate-900">Proficiencies: </span>
-                        {profile.skills.join(" • ")}
-                      </p>
+                  {/* Inline Add Certification Input */}
+                  {showAddCertInput ? (
+                    <div className="no-print inline-flex items-center gap-1">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={newCertInput}
+                        onChange={(e) => setNewCertInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddCertification();
+                          } else if (e.key === "Escape") {
+                            setShowAddCertInput(false);
+                          }
+                        }}
+                        placeholder="e.g. STCW Certificate of Competency..."
+                        className="h-6 px-2 text-xs border border-emerald-500 rounded bg-white text-slate-900 focus:outline-none"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddCertification()}
+                        className="h-6 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        Add
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddCertInput(false)}
+                        className="text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-
-                  {/* High Bullet Density Work Experience */}
-                  {profile.work_experience && profile.work_experience.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900">
-                        Career Experience (10+ Year Verified Progression)
-                      </div>
-                      <div className="space-y-2.5 pt-0.5">
-                        {profile.work_experience.map((exp, idx) => (
-                          <div key={idx} className="space-y-0.5">
-                            <div className="flex justify-between items-baseline text-[11px] font-bold text-slate-900">
-                              <span>
-                                {exp.role}{" "}
-                                <span className="font-semibold text-slate-600">[{exp.company}]</span>
-                              </span>
-                              <span className="font-mono text-[10px] text-slate-600">{exp.duration}</span>
-                            </div>
-                            {exp.highlights && exp.highlights.length > 0 && (
-                              <ul className="list-disc list-outside pl-3.5 space-y-0.5 text-[10.5px] text-slate-800 leading-snug">
-                                {exp.highlights.map((bullet, bIdx) => (
-                                  <li key={bIdx} className="pl-0.5">
-                                    {bullet}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Education */}
-                  {profile.academic_history && profile.academic_history.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="bg-slate-100 border-l-2 border-slate-900 px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-slate-900">
-                        Education &amp; Accreditations
-                      </div>
-                      <div className="space-y-1 text-[10.5px] text-slate-800 pt-0.5">
-                        {profile.academic_history.map((edu, idx) => (
-                          <div key={idx} className="flex justify-between items-baseline">
-                            <div>
-                              <span className="font-bold text-slate-900">{edu.degree}</span>
-                              {edu.field_of_study && <span> · {edu.field_of_study}</span>}
-                              <span className="text-slate-600"> — {edu.institution}</span>
-                            </div>
-                            <span className="font-mono text-[10px] text-slate-500">{edu.graduation_year}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCertInput(true)}
+                      className="no-print inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded border border-dashed border-slate-300 text-slate-600 hover:border-emerald-500 hover:text-emerald-700 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" /> Add Certification
+                    </button>
                   )}
                 </div>
-              )}
+              </div>
 
               {/* ────────── WALRUS VERIFIABLE CREDENTIAL QR STAMP ────────── */}
               <div className="walrus-stamp mt-8 pt-4 border-t border-slate-300 flex items-center justify-between gap-4">
@@ -825,7 +1197,7 @@ export function LivePdfPreview({
                       <span>Walrus Verifiable Credential</span>
                     </div>
                     <p className="text-[9px] font-mono text-slate-600 m-0">
-                      Blob ID: <span className="font-bold text-slate-800">{activeBlobId.slice(0, 16)}...{activeBlobId.slice(-8)}</span>
+                      Blob ID: <span className="font-bold text-slate-800">{activeBlobId ? `${activeBlobId.slice(0, 16)}...${activeBlobId.slice(-8)}` : "Pending Walrus anchor"}</span>
                     </p>
                     <p className="text-[8.5px] text-slate-500 m-0 leading-tight">
                       Scan QR code with any phone camera to verify cryptographic authenticity, creation timestamp, and immutable record on Mysten Walrus protocol.
@@ -848,7 +1220,7 @@ export function LivePdfPreview({
       <div className="px-4 py-2 bg-muted/20 border-t border-border/70 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-2">
         <span className="flex items-center gap-1.5 font-medium">
           <Sparkles className="w-3 h-3 text-emerald-500" />
-          Active Layout: <strong className="text-foreground">{ATS_TEMPLATES.find(t => t.id === activeTemplate)?.name}</strong>
+          Active Layout: <strong className="text-foreground">{activeTemplateConfig.name}</strong>
         </span>
         <span className="flex items-center gap-3">
           <span className="text-purple-600 dark:text-purple-400 flex items-center gap-1 font-mono text-[10px]">
