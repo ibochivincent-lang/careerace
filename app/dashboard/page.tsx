@@ -16,9 +16,12 @@ import {
   Download, FileCode, Eye, Check, RefreshCw, ArrowRight,
   Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database,
   TrendingUp, Target, AlertTriangle, FileCheck,
-  RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor
+  RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor,
+  Cpu, Flame
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
+import { AtsBenchmarkSimulatorModal } from '@/components/AtsBenchmarkSimulatorModal'
+import { runAtsBenchmarkSimulator, type AtsBenchmarkReport } from '@/lib/ats_benchmark_simulator'
 import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
 import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
@@ -100,6 +103,30 @@ function DashboardContent() {
 
   // ATS X-Ray Full Diagnostic Dialog state
   const [isAtsXRayOpen, setIsAtsXRayOpen] = useState(false)
+
+  // Automated Live ATS Benchmark Simulator state
+  const [isBenchmarkModalOpen, setIsBenchmarkModalOpen] = useState(false)
+  const [benchmarkReport, setBenchmarkReport] = useState<AtsBenchmarkReport | null>(null)
+
+  function handleRunAtsBenchmark() {
+    if (!parsedProfile) {
+      toast.error('Please upload or initialize your resume first.')
+      return
+    }
+    const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Systems Engineer'
+    const effectiveJd = (jobDescriptionForTailor && jobDescriptionForTailor.trim().length > 30)
+      ? jobDescriptionForTailor
+      : getBenchmarkJobDescription(effectiveRole, parsedProfile.skills)
+
+    const report = runAtsBenchmarkSimulator({
+      profile: parsedProfile,
+      jobTitle: effectiveRole,
+      jobCompany: tailorCompany || 'Target Organization',
+      jobDescription: effectiveJd,
+    })
+    setBenchmarkReport(report)
+    setIsBenchmarkModalOpen(true)
+  }
 
   // Autonomous Maritime STCW & Sea-Time Verifier modal state
   const [isMaritimeModalOpen, setIsMaritimeModalOpen] = useState(false)
@@ -1062,13 +1089,26 @@ function DashboardContent() {
                       </div>
                     </div>
 
-                    <Button
-                      size="sm"
-                      onClick={() => router.push('/dashboard?tab=resumes')}
-                      className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 h-9"
-                    >
-                      {parsedProfile ? 'Open Resume Studio' : 'Upload Resume'} <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {parsedProfile && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleRunAtsBenchmark}
+                          className="text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10 min-h-[38px] shadow-xs"
+                        >
+                          <Cpu className="w-3.5 h-3.5 text-primary" />
+                          <span>Benchmark ATS</span>
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => router.push('/dashboard?tab=resumes')}
+                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white min-h-[38px] shadow-xs"
+                      >
+                        {parsedProfile ? 'Open Resume Studio' : 'Upload Resume'} <ArrowRight className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
 
                   {parsedProfile && (
@@ -1534,8 +1574,18 @@ function DashboardContent() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                      <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-lg font-semibold">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRunAtsBenchmark}
+                        className="min-h-[44px] sm:min-h-[36px] text-xs font-semibold gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 shadow-xs focus-visible:ring-2 focus-visible:ring-emerald-500"
+                      >
+                        <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Live ATS Simulator (Taleo &amp; Greenhouse)</span>
+                      </Button>
+
+                      <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg font-semibold text-xs font-mono">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                         {atsScorecard?.matched_skills.length || parsedProfile?.skills?.length || 0} Core Skills Aligned
                       </span>
@@ -2088,6 +2138,32 @@ function DashboardContent() {
           onOpenChange={setIsAtsXRayOpen}
           profile={parsedProfile}
           scorecard={atsScorecard}
+        />
+
+        {/* Automated Live ATS Benchmark Simulator (Taleo & Greenhouse) Dialog */}
+        <AtsBenchmarkSimulatorModal
+          open={isBenchmarkModalOpen}
+          onOpenChange={setIsBenchmarkModalOpen}
+          report={benchmarkReport}
+          onInsertSkill={(skill) => {
+            if (!parsedProfile) return
+            const currentSkills = parsedProfile.skills || []
+            if (!currentSkills.some((s: string) => s.toLowerCase() === skill.toLowerCase())) {
+              const updated = [...currentSkills, skill]
+              updateProfileField({ skills: updated })
+              const effectiveRole = tailorRole || parsedProfile.target_roles?.[0] || 'Systems Engineer'
+              const effectiveJd = (jobDescriptionForTailor && jobDescriptionForTailor.trim().length > 30)
+                ? jobDescriptionForTailor
+                : getBenchmarkJobDescription(effectiveRole, updated)
+              const nextReport = runAtsBenchmarkSimulator({
+                profile: { ...parsedProfile, skills: updated },
+                jobTitle: effectiveRole,
+                jobCompany: tailorCompany || 'Target Organization',
+                jobDescription: effectiveJd,
+              })
+              setBenchmarkReport(nextReport)
+            }
+          }}
         />
 
         {/* Maritime STCW & Sea-Time Autonomous Verifier Modal */}

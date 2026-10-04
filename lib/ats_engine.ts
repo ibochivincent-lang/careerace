@@ -73,7 +73,7 @@ const COMMON_STOPWORDS = new Set([
 ]);
 
 // Canonical technical skill taxonomy for tagging hard requirements
-const HARD_TECH_SKILLS = new Set([
+export const HARD_TECH_SKILLS = new Set([
   'typescript', 'javascript', 'python', 'rust', 'golang', 'go', 'java', 'c++',
   'c#', 'solidity', 'react', 'next.js', 'vue', 'angular', 'node.js', 'nodejs',
   'express', 'fastapi', 'django', 'nestjs', 'postgresql', 'postgres', 'mysql',

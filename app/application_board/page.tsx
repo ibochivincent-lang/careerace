@@ -30,6 +30,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
+import { AtsBenchmarkSimulatorModal } from '@/components/AtsBenchmarkSimulatorModal'
+import { runAtsBenchmarkSimulator, type AtsBenchmarkReport } from '@/lib/ats_benchmark_simulator'
 
 export interface JobListing {
   id: string
@@ -744,6 +746,40 @@ export default function ApplicationBoardPage() {
   const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const [appliedJobs, setAppliedJobs] = useState<AppliedJobRecord[]>([])
   const [followUpModalJob, setFollowUpModalJob] = useState<{ job: JobListing; record: AppliedJobRecord } | null>(null)
+
+  // Automated Live ATS Benchmark Simulator state
+  const [benchmarkModalReport, setBenchmarkModalReport] = useState<AtsBenchmarkReport | null>(null)
+  const [isBenchmarkModalOpen, setIsBenchmarkModalOpen] = useState(false)
+
+  function handleBenchmarkJob(job: JobListing) {
+    let profile: any = null
+    try {
+      const stored = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+      if (stored) {
+        profile = JSON.parse(stored)
+      }
+    } catch {}
+
+    if (!profile) {
+      profile = {
+        applicant_name: 'Candidate',
+        target_roles: [job.title],
+        skills: ['TypeScript', 'Distributed Systems', 'Cloud Architecture', 'APIs', 'Docker', 'Kubernetes'],
+        work_experience: [],
+        academic_history: [],
+      }
+    }
+
+    const report = runAtsBenchmarkSimulator({
+      profile,
+      jobTitle: job.title,
+      jobCompany: job.company,
+      jobDescription: job.description || `${job.title} at ${job.company}. Role category: ${job.roleCategory}. Seniority: ${job.seniority}. Location: ${job.location}`,
+    })
+
+    setBenchmarkModalReport(report)
+    setIsBenchmarkModalOpen(true)
+  }
 
   // Auto-apply agent state
   const [autoApplyRunning, setAutoApplyRunning] = useState(false)
@@ -1478,6 +1514,18 @@ export default function ApplicationBoardPage() {
                           <span>Prepare</span>
                         </Button>
 
+                        {/* Live ATS Benchmark Simulator Button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBenchmarkJob(job)}
+                          title="Simulate Taleo and Greenhouse ATS parse before applying"
+                          className="h-8 text-xs gap-1.5 px-3 border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 font-medium"
+                        >
+                          <Cpu className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Benchmark ATS</span>
+                        </Button>
+
                         {/* Applied Tab vs Discovery Actions */}
                         {isApplied ? (
                           <div className="flex items-center gap-1.5">
@@ -1565,6 +1613,13 @@ export default function ApplicationBoardPage() {
             }}
           />
         )}
+
+        {/* Automated Live ATS Benchmark Simulator (Taleo & Greenhouse) Modal */}
+        <AtsBenchmarkSimulatorModal
+          open={isBenchmarkModalOpen}
+          onOpenChange={setIsBenchmarkModalOpen}
+          report={benchmarkModalReport}
+        />
       </div>
     </AppShell>
   )
