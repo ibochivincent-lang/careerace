@@ -937,12 +937,80 @@ function matchesSeniority(job: JobListing, filter: string): boolean {
   return true
 }
 
+const DAILY_CHECKLIST_ITEMS = [
+  {
+    id: 'check-1',
+    title: 'Review New Discipline Openings',
+    desc: 'Inspect verified corporate job postings matching your engineering, marine, IT, or medical discipline on the Application Board.',
+    actionLabel: 'Browse Openings',
+    actionTab: 'discover' as const,
+  },
+  {
+    id: 'check-2',
+    title: 'Check 7-Day Follow-Up Milestones',
+    desc: 'Review dispatched applications and send timely follow-up messages for submissions that have hit the 7-day mark.',
+    actionLabel: 'Check Follow-ups',
+    actionTab: 'applied' as const,
+  },
+  {
+    id: 'check-3',
+    title: 'Calibrate Role ATS Keywords',
+    desc: 'Match your resume bullet points and competencies against specific employer job requirements to maintain >= 80% keyword alignment.',
+    actionLabel: 'Resume Studio',
+    link: '/dashboard?tab=resumes',
+  },
+  {
+    id: 'check-4',
+    title: 'Lead with High-Impact Power Verbs',
+    desc: 'Ensure every career accomplishment begins with strong action verbs and includes quantifiable metrics (cost, speed, scale).',
+    actionLabel: 'Polish Bullets',
+    link: '/dashboard?tab=resumes',
+  },
+  {
+    id: 'check-5',
+    title: 'Anchor Latest Profile to Walrus Vault',
+    desc: 'Re-seal and commit your verified credentials and latest tailored version snapshot to decentralized Walrus storage.',
+    actionLabel: 'View Walrus Vault',
+    link: '/memory',
+  },
+]
+
 export default function ApplicationBoardPage() {
   const router = useRouter()
 
-  // 4 distinct stages requested by user:
-  // 1. Discovery, 2. Saved, 3. Applied, 4. Auto Apply
-  const [activeBoardTab, setActiveBoardTab] = useState<'discover' | 'saved' | 'applied' | 'auto_apply'>('discover')
+  // 5 distinct stages on Application Board:
+  // 1. Discovery, 2. Saved, 3. Applied, 4. Auto Apply, 5. Daily Action Checklist
+  const [activeBoardTab, setActiveBoardTab] = useState<'discover' | 'saved' | 'applied' | 'auto_apply' | 'checklist'>('discover')
+
+  // Daily Action Checklist state (stored in localStorage)
+  const [completedChecklistIds, setCompletedChecklistIds] = useState<string[]>([])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('careerace_daily_checklist_completed')
+      if (stored) setCompletedChecklistIds(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  function handleToggleChecklistItem(id: string) {
+    setCompletedChecklistIds((prev) => {
+      const updated = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      try {
+        localStorage.setItem('careerace_daily_checklist_completed', JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
+  }
+
+  function handleResetDailyChecklist() {
+    setCompletedChecklistIds([])
+    try {
+      localStorage.removeItem('careerace_daily_checklist_completed')
+    } catch {}
+    toast.success('Daily checklist reset for today!')
+  }
+
+  const completedChecklistCount = completedChecklistIds.length
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('')
@@ -1578,6 +1646,24 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                 AI
               </Badge>
             </button>
+
+            {/* Stage: Daily Action Checklist */}
+            <button
+              onClick={() => setActiveBoardTab('checklist')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                activeBoardTab === 'checklist'
+                  ? 'bg-background text-foreground shadow-xs border border-border/80'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Daily Action Checklist</span>
+              {completedChecklistCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  {completedChecklistCount}/5
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Real-time status indicator */}
@@ -1646,7 +1732,106 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
         </div>
 
         {/* View Content depending on active tab */}
-        {activeBoardTab === 'auto_apply' ? (
+        {activeBoardTab === 'checklist' ? (
+          /* Stage 5: Daily Action Checklist (Dedicated Work Placement Focus) */
+          <div className="space-y-6">
+            <Card className="p-6 sm:p-8 border border-border/80 shadow-sm rounded-2xl bg-card space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-lg text-foreground">Daily Job-Hunting Action Checklist</h2>
+                      <p className="text-xs text-muted-foreground">
+                        5 strategic daily actions to consistently secure technical interviews and career offers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-xs font-semibold text-foreground">
+                      {completedChecklistCount} of {DAILY_CHECKLIST_ITEMS.length} Completed
+                    </span>
+                    <div className="w-36 h-2 bg-muted rounded-full overflow-hidden mt-1">
+                      <div
+                        className="h-full bg-emerald-500 transition-all duration-500"
+                        style={{ width: `${(completedChecklistCount / DAILY_CHECKLIST_ITEMS.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  {completedChecklistCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetDailyChecklist}
+                      className="text-xs text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {DAILY_CHECKLIST_ITEMS.map((item, idx) => {
+                  const isDone = completedChecklistIds.includes(item.id)
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-4 rounded-xl border transition-all ${
+                        isDone
+                          ? 'bg-emerald-500/5 border-emerald-500/30'
+                          : 'bg-muted/20 border-border/60 hover:border-border'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleChecklistItem(item.id)}
+                          className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer ${
+                            isDone
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs'
+                              : 'border-border bg-background hover:border-emerald-500 text-transparent'
+                          }`}
+                          title={isDone ? 'Mark uncompleted' : 'Mark completed'}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className={`text-sm font-semibold ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                              {idx + 1}. {item.title}
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (item.actionTab) {
+                                  setActiveBoardTab(item.actionTab)
+                                } else if (item.link) {
+                                  router.push(item.link)
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-medium shrink-0 cursor-pointer"
+                            >
+                              <span>{item.actionLabel}</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          </div>
+        ) : activeBoardTab === 'auto_apply' ? (
           /* Stage 4: Auto Apply via Corporate Emails & Walrus Credentials */
           <div className="space-y-6">
             {/* Top Auto Apply Banner */}

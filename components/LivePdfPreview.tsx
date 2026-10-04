@@ -108,6 +108,7 @@ interface LivePdfPreviewProps {
   onOpenWalrusHistory?: () => void;
   isSavingVersion?: boolean;
   onUpdateProfile?: (updated: Partial<ParsedCv>) => void;
+  highlightedBulletKey?: string | null;
 }
 
 export function LivePdfPreview({
@@ -124,6 +125,7 @@ export function LivePdfPreview({
   onOpenWalrusHistory,
   isSavingVersion = false,
   onUpdateProfile,
+  highlightedBulletKey = null,
 }: LivePdfPreviewProps) {
   const [activeTemplate, setActiveTemplate] = useState<AtsTemplateId>(initialTemplate);
   const [activeView, setActiveView] = useState<"ats_live" | "uploaded_source">("ats_live");
@@ -132,6 +134,12 @@ export function LivePdfPreview({
   const [sourcePdfUrl, setSourcePdfUrl] = useState<string | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const [activeBlobId, setActiveBlobId] = useState<string>("");
+  const [localHighlightedBulletKey, setLocalHighlightedBulletKey] = useState<string | null>(null);
+
+  function triggerLocalBulletHighlight(key: string) {
+    setLocalHighlightedBulletKey(key);
+    setTimeout(() => setLocalHighlightedBulletKey(null), 3500);
+  }
   const [newSkillInput, setNewSkillInput] = useState<string>("");
   const [newCertInput, setNewCertInput] = useState<string>("");
   const [showAddSkillInput, setShowAddSkillInput] = useState<boolean>(false);
@@ -255,6 +263,7 @@ export function LivePdfPreview({
     highlights[bIdx] = newBullet;
     copy[expIdx] = { ...copy[expIdx], highlights };
     updateField({ work_experience: copy });
+    triggerLocalBulletHighlight(`${expIdx}-${bIdx}`);
   }
 
   function handleAddBullet(expIdx: number) {
@@ -1061,6 +1070,12 @@ export function LivePdfPreview({
                                 fontFamily={activeTemplateConfig.fontFamily}
                                 targetRole={tailorRole || profile.target_roles?.[0]}
                                 allKeywords={profile.skills || []}
+                                isHighlighted={
+                                  highlightedBulletKey === "all" ||
+                                  highlightedBulletKey === `exp-${expIdx}` ||
+                                  highlightedBulletKey === `${expIdx}-${bIdx}` ||
+                                  localHighlightedBulletKey === `${expIdx}-${bIdx}`
+                                }
                                 onUpdate={(newBullet) => handleUpdateBullet(expIdx, bIdx, newBullet)}
                                 onDelete={() => handleDeleteBullet(expIdx, bIdx)}
                               />

@@ -228,6 +228,7 @@ function DashboardContent() {
   // 1. Career Ace Centralized Overview Chatbot state (Grounded in Walrus Sovereign Memory)
   const [overviewChatInput, setOverviewChatInput] = useState('')
   const [isOverviewSending, setIsOverviewSending] = useState(false)
+  const overviewChatContainerRef = useRef<HTMLDivElement>(null)
   const overviewChatEndRef = useRef<HTMLDivElement>(null)
   const [overviewChatMessages, setOverviewChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     FRESH_OVERVIEW_WELCOME_MESSAGE
@@ -236,10 +237,23 @@ function DashboardContent() {
   // 2. Resume Studio Assistant state (Dedicated to active CV canvas tailoring & bullets)
   const [resumeAssistantInput, setResumeAssistantInput] = useState('')
   const [isResumeSending, setIsResumeSending] = useState(false)
+  const resumeChatContainerRef = useRef<HTMLDivElement>(null)
   const resumeChatEndRef = useRef<HTMLDivElement>(null)
   const [resumeAssistantMessages, setResumeAssistantMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; edits_added?: number }>>([
     FRESH_RESUME_ASSISTANT_WELCOME
   ])
+
+  // Optimistic Bullet Highlight State
+  const [highlightedBulletKey, setHighlightedBulletKey] = useState<string | null>(null)
+  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  function triggerBulletHighlight(key: string = 'all') {
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current)
+    setHighlightedBulletKey(key)
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedBulletKey(null)
+    }, 3500)
+  }
 
   // Tailoring & Cover Letter state - No mock company or role defaults
   const [tailorCompany, setTailorCompany] = useState('')
@@ -366,13 +380,23 @@ function DashboardContent() {
     }
   }, [activeTab])
 
-  // Auto-scroll chat feeds on message change
+  // Auto-scroll chat feeds on message change (container-scoped scrollTo to eliminate page jumps)
   useEffect(() => {
-    overviewChatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (overviewChatContainerRef.current) {
+      overviewChatContainerRef.current.scrollTo({
+        top: overviewChatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+    }
   }, [overviewChatMessages, isOverviewSending])
 
   useEffect(() => {
-    resumeChatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (resumeChatContainerRef.current) {
+      resumeChatContainerRef.current.scrollTo({
+        top: resumeChatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+    }
   }, [resumeAssistantMessages, isResumeSending])
 
   // Load stored profile and Walrus version snapshots
@@ -667,6 +691,10 @@ function DashboardContent() {
     const res = actionItem.run(parsedProfile)
     if (res.updatedProfile && res.count > 0) {
       updateProfileField(res.updatedProfile)
+      // Optimistic highlight of updated experience bullets on canvas
+      if (res.updatedProfile.work_experience) {
+        triggerBulletHighlight('all')
+      }
     }
     setResumeAssistantMessages((prev) => [
       ...prev,
@@ -701,11 +729,13 @@ function DashboardContent() {
     if (!parsedProfile) return
     const exp = [...(parsedProfile.work_experience || [])]
     if (exp[expIdx]) {
+      const newHighlights = [...(exp[expIdx].highlights || []), 'Engineered and delivered key initiatives contributing to business and team objectives.']
       exp[expIdx] = {
         ...exp[expIdx],
-        highlights: [...(exp[expIdx].highlights || []), 'Engineered and delivered key initiatives contributing to business and team objectives.']
+        highlights: newHighlights
       }
       updateProfileField({ work_experience: exp })
+      triggerBulletHighlight(`${expIdx}-${newHighlights.length - 1}`)
     }
   }
 
@@ -717,6 +747,7 @@ function DashboardContent() {
       hl[bulletIdx] = text
       exp[expIdx] = { ...exp[expIdx], highlights: hl }
       updateProfileField({ work_experience: exp })
+      triggerBulletHighlight(`${expIdx}-${bulletIdx}`)
     }
   }
 
@@ -1453,36 +1484,21 @@ function DashboardContent() {
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
-            {/* Clean Standard Header */}
+            {/* Clean Standard Header (Clutter badges removed) */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/80">
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Sovereign career intelligence vault and autonomous CareerAce Chatbot powered by Walrus Memory.
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Autonomous career intelligence assistant &amp; decentralized sovereign profile vault.
                 </p>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="text-xs font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 px-2.5 py-1">
-                  <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-500" /> Walrus Sovereign Memory Grounded
-                </Badge>
-                {isRealtimeActive ? (
-                  <Badge variant="outline" className="text-xs font-medium border-cyan-500/40 text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 px-2.5 py-1 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 mr-1.5 inline-block" /> Realtime WebSockets (&lt;50ms)
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs font-medium border-border/60 text-muted-foreground bg-muted/20 px-2 py-0.5">
-                    Cloud Synced
-                  </Badge>
-                )}
               </div>
             </div>
 
-            {/* 1. CENTRALIZED CAREERACE CHATBOT (FULL-WIDTH PRIMARY EXPERIENCE) */}
+            {/* 1. EXPANDED PRIMARY CAREERACE CHATBOT (FULL-WIDTH, HIGH VISIBILITY, ROOMY MESSAGES) */}
             <div className="w-full">
-              <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[560px]">
+              <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[680px] sm:h-[740px] lg:h-[780px] min-h-[580px]">
                 {/* Status Bar */}
                 <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -1512,8 +1528,8 @@ function DashboardContent() {
                   </Badge>
                 </div>
 
-                {/* Chat Messages Feed */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
+                {/* Chat Messages Feed (Scrolls internally to avoid page jumping when typing) */}
+                <div ref={overviewChatContainerRef} className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
                   {overviewChatMessages.map((msg, i) => (
                     <div
                       key={i}
@@ -1522,15 +1538,15 @@ function DashboardContent() {
                       }`}
                     >
                       {msg.role === 'assistant' && (
-                        <div className="w-6 h-6 rounded-md bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <Bot className="w-3.5 h-3.5" />
+                        <div className="w-7 h-7 rounded-lg bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                          <Bot className="w-4 h-4" />
                         </div>
                       )}
 
                       <div
-                        className={`max-w-[85%] p-3.5 rounded-2xl text-xs ${
+                        className={`max-w-[85%] sm:max-w-[80%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                           msg.role === 'assistant'
-                            ? 'bg-muted/40 border border-border/80 text-foreground'
+                            ? 'bg-muted/40 border border-border/80 text-foreground shadow-2xs'
                             : 'bg-emerald-600 text-white font-medium shadow-xs'
                         }`}
                       >
@@ -1540,8 +1556,8 @@ function DashboardContent() {
                   ))}
 
                   {isOverviewSending && (
-                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60">
-                      <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3.5 rounded-xl bg-muted/30 border border-border/60">
+                      <Bot className="w-4 h-4 text-emerald-500 animate-pulse" />
                       <span>Querying Walrus Memory...</span>
                     </div>
                   )}
@@ -1564,8 +1580,8 @@ function DashboardContent() {
                   ))}
                 </div>
 
-                {/* Bottom Input (Zero attachment clutter - direct conversational interface) */}
-                <div className="p-3 border-t border-border/80 bg-card flex items-center gap-2">
+                {/* Bottom Input (Zero attachment clutter - spacious & direct) */}
+                <div className="p-3 sm:p-4 border-t border-border/80 bg-card flex items-center gap-2">
                   <input
                     type="text"
                     value={overviewChatInput}
@@ -1576,398 +1592,196 @@ function DashboardContent() {
                         ? "Ask about your education, work experience, certifications, applied jobs, or 7-day follow-ups..." 
                         : "Ask any question about your career, target roles, or type 'hello' to explore..."
                     }
-                    className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="flex-1 h-10 px-3.5 rounded-xl border border-border bg-background text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-2xs"
                   />
 
                   <Button
                     size="sm"
                     onClick={() => handleSendOverviewMessage()}
                     disabled={isOverviewSending || !overviewChatInput.trim()}
-                    className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs cursor-pointer"
+                    className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs sm:text-sm cursor-pointer shadow-xs"
                   >
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
+                    <span>Send</span>
                   </Button>
                 </div>
               </Card>
             </div>
 
-            {/* 2. SIDE-BY-SIDE GRID BELOW CHATBOT: Left Column (ATS Score + Daily Checklist) + Right Column (Sovereign Profile & Walrus Vault) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column (6 cols): ATS Scorecard + Daily Job-Hunting Action Checklist */}
-              <div className="lg:col-span-6 space-y-6">
-                {/* Circular ATS Health & Resume Scorecard */}
-                <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      {/* Circular Score Visual */}
-                      <div className={`relative w-20 h-20 rounded-full flex items-center justify-center shrink-0 ${atsScorecard ? (atsScorecard.overall_score >= 70 ? 'border-4 border-emerald-500/30 bg-emerald-500/5' : atsScorecard.overall_score >= 45 ? 'border-4 border-amber-500/30 bg-amber-500/5' : 'border-4 border-red-500/30 bg-red-500/5') : 'border-4 border-muted/40 bg-muted/10'}`}>
-                        <svg className="absolute inset-0 w-full h-full -rotate-90">
-                          <circle
-                            cx="40"
-                            cy="40"
-                            r="34"
-                            stroke="currentColor"
-                            strokeWidth="5"
-                            fill="transparent"
-                            className={atsScorecard ? (atsScorecard.overall_score >= 70 ? 'text-emerald-500' : atsScorecard.overall_score >= 45 ? 'text-amber-500' : 'text-red-500') : 'text-muted-foreground/20'}
-                            strokeDasharray={213}
-                            strokeDashoffset={213 - (213 * Math.min(100, Math.max(0, atsScorecard?.overall_score ?? 0))) / 100}
-                          />
-                        </svg>
-                        <div className="text-center">
-                          {atsScorecard ? (
-                            <>
-                              <span className="text-xl font-extrabold text-foreground">{atsScorecard.overall_score}</span>
-                              <span className="text-[10px] text-muted-foreground block -mt-1">/100</span>
-                            </>
-                          ) : (
-                            <span className="text-[9px] text-muted-foreground text-center leading-tight px-1">{parsedProfile ? 'Add JD' : 'Upload CV'}</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-base text-foreground">Resume ATS Score</h3>
-                          {atsScorecard ? (
-                            <Badge variant="outline" className={`text-xs font-semibold ${atsScorecard.overall_score >= 70 ? 'text-emerald-600 border-emerald-500/30 bg-emerald-500/10' : atsScorecard.overall_score >= 45 ? 'text-amber-600 border-amber-500/30 bg-amber-500/10' : 'text-red-600 border-red-500/30 bg-red-500/10'}`}>
-                              {atsScorecard.ats_grade}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs text-muted-foreground">Pending</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {atsScorecard
-                            ? `${atsScorecard.keyword_coverage_pct}% keyword match · ${atsScorecard.matched_skills.length} matched · ${atsScorecard.missing_critical_skills.length} critical gaps`
-                            : parsedProfile
-                            ? 'Paste a job description in the Tailoring Assistant to calibrate your ATS score.'
-                            : 'Upload your CV to calculate your live ATS parsing grade and keyword match.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        onClick={() => router.push('/dashboard?tab=resumes')}
-                        className="text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white min-h-[38px] shadow-xs cursor-pointer"
-                      >
-                        {parsedProfile ? 'Open Resume Studio' : 'Upload Resume'} <ArrowRight className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
+            {/* 2. COMPACT SUMMARY ROW BELOW CHATBOT: Left (Compact SuiNS Passport) + Right (Compact Sovereign Profile & Walrus Vault) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Left Column: Compact Sui Name Service (.sui) Passport (replaces ATS score, small & sleek) */}
+              <Card className="p-4 sm:p-5 border border-emerald-500/25 shadow-xs rounded-xl bg-card space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-emerald-500" />
+                    <h3 className="font-bold text-xs sm:text-sm text-foreground">Sui Name Service (.sui) Passport</h3>
                   </div>
-
-                  {parsedProfile && (
-                    <div className="grid grid-cols-3 gap-3 pt-5 mt-5 border-t border-border/60 text-xs">
-                      <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-center">
-                        <span className="text-[11px] text-muted-foreground block">Parsed Skills</span>
-                        <span className="font-bold text-sm text-foreground">{parsedProfile.skills?.length || 0} verified</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-center">
-                        <span className="text-[11px] text-muted-foreground block">Positions</span>
-                        <span className="font-bold text-sm text-foreground">{parsedProfile.work_experience?.length || 0} recorded</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50 text-center">
-                        <span className="text-[11px] text-muted-foreground block">Keyword Match</span>
-                        <span className={`font-bold text-sm ${atsScorecard ? (atsScorecard.keyword_coverage_pct >= 60 ? 'text-emerald-600 dark:text-emerald-400' : atsScorecard.keyword_coverage_pct >= 35 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400') : 'text-muted-foreground'}`}>
-                          {atsScorecard ? `${atsScorecard.keyword_coverage_pct}%` : 'Add JD →'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-
-                {/* Daily Job-Hunting Action Checklist (Empowering candidates to get work) */}
-                <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <h3 className="font-bold text-sm text-foreground">Daily Job-Hunting Action Checklist</h3>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-                      Work Placement Focus
+                  {activeSuinsDomain ? (
+                    <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[9px] font-mono py-0">
+                      Active &bull; Verified
                     </Badge>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {[
-                      {
-                        title: '1. Review New Discipline Openings',
-                        desc: 'Inspect verified corporate job postings matching your engineering, marine, IT, or medical discipline on the Application Board.',
-                        link: '/application_board',
-                        linkText: 'Browse Openings →'
-                      },
-                      {
-                        title: '2. Check 7-Day Follow-Up Milestones',
-                        desc: 'Review dispatched applications and send timely follow-up messages for submissions that have hit the 7-day mark.',
-                        link: '/application_board',
-                        linkText: 'Check Follow-ups →'
-                      },
-                      {
-                        title: '3. Calibrate Role ATS Keywords',
-                        desc: 'Match your resume bullet points and competencies against specific employer job requirements to maintain >= 80% keyword alignment.',
-                        link: '/dashboard?tab=resumes',
-                        linkText: 'Resume Studio →'
-                      },
-                      {
-                        title: '4. Lead with High-Impact Power Verbs',
-                        desc: 'Ensure every career accomplishment begins with strong action verbs and includes quantifiable metrics (cost, speed, scale).',
-                        link: '/dashboard?tab=resumes',
-                        linkText: 'Polish Bullets →'
-                      },
-                      {
-                        title: '5. Anchor Latest Profile to Walrus Vault',
-                        desc: 'Re-seal and commit your verified credentials and latest tailored version snapshot to decentralized Walrus storage.',
-                        link: '/memory',
-                        linkText: 'View Walrus Vault →'
-                      }
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border/60 text-xs">
-                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
-                          {idx + 1}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-semibold text-foreground">{item.title}</p>
-                            <button
-                              type="button"
-                              onClick={() => router.push(item.link)}
-                              className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium shrink-0 cursor-pointer"
-                            >
-                              {item.linkText}
-                            </button>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{item.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-
-              {/* Right Column (6 cols): Sovereign Profile & Walrus Vault Summary */}
-              <div className="lg:col-span-6 space-y-6">
-                <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-5">
-                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                      <h3 className="font-bold text-sm text-foreground">Sovereign Profile &amp; Walrus Vault</h3>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border/80">
-                      {sessionAddress ? `${sessionAddress.slice(0, 6)}...${sessionAddress.slice(-4)}` : 'Decentralized Vault'}
-                    </Badge>
-                  </div>
-
-                  {parsedProfile ? (
-                    <div className="space-y-4 text-xs">
-                      {/* Identity Details */}
-                      <div className="p-3.5 rounded-xl bg-muted/20 border border-border/60 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-muted-foreground">Candidate Name</span>
-                          <span className="font-bold text-foreground text-sm">{parsedProfile.applicant_name || 'Candidate'}</span>
-                        </div>
-                        {parsedProfile.contact_email && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-muted-foreground">Email Contact</span>
-                            <span className="font-medium text-foreground">{parsedProfile.contact_email}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-muted-foreground">Target Role</span>
-                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                            {tailorRole || parsedProfile.target_roles?.[0] || 'Target Role Pending'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Verified Skills */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
-                            Verified Skills ({parsedProfile.skills?.length || 0})
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto p-2 rounded-xl bg-muted/20 border border-border/60">
-                          {(parsedProfile.skills || []).map((skill: string, sIdx: number) => (
-                            <span
-                              key={sIdx}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-background border border-border/80 font-medium text-foreground"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Work & Education Highlights */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block uppercase tracking-wider font-semibold">Career Positions</span>
-                          <span className="font-extrabold text-base text-foreground mt-0.5 block">
-                            {parsedProfile.work_experience?.length || 0}
-                          </span>
-                          <p className="text-[10px] text-muted-foreground mt-1 truncate">
-                            {parsedProfile.work_experience?.[0]?.company || 'History indexed'}
-                          </p>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-muted/20 border border-border/60">
-                          <span className="text-[10px] text-muted-foreground block uppercase tracking-wider font-semibold">Academic History</span>
-                          <span className="font-extrabold text-base text-foreground mt-0.5 block">
-                            {parsedProfile.academic_history?.length || (parsedProfile.education ? 1 : 0)}
-                          </span>
-                          <p className="text-[10px] text-muted-foreground mt-1 truncate">
-                            {parsedProfile.academic_history?.[0]?.institution || parsedProfile.education || 'Institution indexed'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Walrus Versions & Anchor Status */}
-                      <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <Database className="w-4 h-4 text-emerald-500" />
-                          <div>
-                            <span className="font-bold text-xs text-foreground block">Walrus Storage Status</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {walrusVersions.length > 0
-                                ? `${walrusVersions.length} version snapshot(s) anchored`
-                                : 'Profile loaded from local sovereign vault'}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push('/memory')}
-                          className="text-xs h-8 border-border text-foreground hover:bg-muted cursor-pointer"
-                        >
-                          Manage Vault →
-                        </Button>
-                      </div>
-                    </div>
                   ) : (
-                    <div className="text-center py-8 space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-muted/40 border border-border flex items-center justify-center mx-auto text-muted-foreground">
-                        <Upload className="w-5 h-5 text-emerald-500" />
+                    <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground border-border/80 py-0">
+                      Unclaimed
+                    </Badge>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Map your zkLogin address to a human-readable <span className="font-mono text-foreground font-semibold">.sui</span> domain for recruiters.
+                </p>
+
+                {/* Compact Domain Claim Form */}
+                <form onSubmit={handleBindSuinsDomain} className="flex items-center gap-2 pt-0.5">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={suinsDomainInput}
+                      onChange={(e) => setSuinsDomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      placeholder="e.g. vincent"
+                      className="w-full h-8 pl-2.5 pr-10 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <span className="absolute right-2.5 top-2 text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 pointer-events-none">
+                      .sui
+                    </span>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isBindingSuins || !suinsDomainInput.trim()}
+                    className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium shrink-0 cursor-pointer"
+                  >
+                    {isBindingSuins ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Binding...
+                      </>
+                    ) : activeSuinsDomain === `${suinsDomainInput}.sui` ? (
+                      <>
+                        <Check className="w-3 h-3 mr-1" /> Bound
+                      </>
+                    ) : (
+                      'Claim'
+                    )}
+                  </Button>
+                </form>
+
+                {/* Live Recruiter Sharing Details */}
+                {activeSuinsDomain && (
+                  <div className="p-2.5 rounded-lg bg-muted/20 border border-border/70 space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">Handle</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {activeSuinsDomain}
+                      </span>
+                    </div>
+                    <div className="pt-1.5 border-t border-border/50 flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopySuinsRecruiterLink}
+                        className="h-7 text-[11px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer gap-1 flex-1 py-0"
+                      >
+                        {isCopiedSuinsLink ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                        {isCopiedSuinsLink ? 'Copied' : 'Copy Link'}
+                      </Button>
+                      <a
+                        href={`/p/${activeSuinsDomain}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center gap-1 h-7 text-[11px] px-2.5 rounded-md border border-border bg-background hover:bg-muted text-foreground font-medium transition-colors shrink-0"
+                      >
+                        <span>Passport</span>
+                        <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              {/* Right Column: Compact Sovereign Profile & Walrus Vault Summary */}
+              <Card className="p-4 sm:p-5 border border-border/80 shadow-xs rounded-xl bg-card space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <h3 className="font-bold text-xs sm:text-sm text-foreground">Sovereign Profile &amp; Walrus Vault</h3>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground border-border/80 py-0">
+                    {sessionAddress ? `${sessionAddress.slice(0, 6)}...${sessionAddress.slice(-4)}` : 'Decentralized Vault'}
+                  </Badge>
+                </div>
+
+                {parsedProfile ? (
+                  <div className="space-y-2.5 text-xs">
+                    {/* Compact Identity details */}
+                    <div className="p-2.5 rounded-lg bg-muted/20 border border-border/60 flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                      <div>
+                        <span className="text-muted-foreground mr-1.5">Candidate:</span>
+                        <span className="font-bold text-foreground">{parsedProfile.applicant_name || 'Candidate'}</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-sm text-foreground">No CV Attached Yet</h4>
-                        <p className="text-xs text-muted-foreground max-w-xs mx-auto mt-1">
-                          Attach your CV (.pdf or .docx) to index your work experience, skills, and education into Walrus memory.
-                        </p>
+                        <span className="text-muted-foreground mr-1.5">Role:</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          {tailorRole || parsedProfile.target_roles?.[0] || 'General'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Compact stats: Positions, Skills & Academics */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                      <div className="p-2 rounded-lg bg-muted/20 border border-border/60">
+                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wide">Skills</span>
+                        <span className="font-bold text-xs text-foreground mt-0.5 block">{parsedProfile.skills?.length || 0}</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-muted/20 border border-border/60">
+                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wide">Positions</span>
+                        <span className="font-bold text-xs text-foreground mt-0.5 block">{parsedProfile.work_experience?.length || 0}</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-muted/20 border border-border/60">
+                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wide">Education</span>
+                        <span className="font-bold text-xs text-foreground mt-0.5 block">
+                          {parsedProfile.academic_history?.length || (parsedProfile.education ? 1 : 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Compact Walrus Storage status */}
+                    <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-[11px] text-muted-foreground">
+                          {walrusVersions.length > 0
+                            ? `${walrusVersions.length} Walrus version(s) anchored`
+                            : 'Decentralized local vault active'}
+                        </span>
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer"
+                        variant="ghost"
+                        onClick={() => router.push('/memory')}
+                        className="text-[11px] h-6 px-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
                       >
-                        <Upload className="w-3.5 h-3.5 mr-1.5" /> Attach CV Now
+                        Manage →
                       </Button>
                     </div>
-                  )}
-                </Card>
-
-                {/* Sui Name Service (.sui) Recruiter Passport Card */}
-                <Card className="p-6 border border-emerald-500/30 shadow-sm rounded-2xl bg-gradient-to-br from-card via-card/95 to-emerald-500/5 space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-emerald-500 animate-pulse" />
-                      <h3 className="font-bold text-sm text-foreground">Sui Name Service (.sui) Passport</h3>
-                    </div>
-                    {activeSuinsDomain ? (
-                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[10px] font-mono">
-                        Active &bull; Verified
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border/80">
-                        Unclaimed
-                      </Badge>
-                    )}
                   </div>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Map your 66-character sovereign zkLogin wallet address to a human-readable SuiNS domain (e.g. <span className="font-mono text-foreground font-semibold">vincent.sui</span>). Recruiters can instantly look up your verified Walrus CV credentials and on-chain proofs without complex hashes.
-                  </p>
-
-                  {/* Domain Claim Form */}
-                  <form onSubmit={handleBindSuinsDomain} className="space-y-3 pt-1">
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={suinsDomainInput}
-                          onChange={(e) => setSuinsDomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                          placeholder="e.g. vincent"
-                          className="w-full h-9 pl-3 pr-12 rounded-xl border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
-                        <span className="absolute right-3 top-2.5 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 pointer-events-none">
-                          .sui
-                        </span>
-                      </div>
-
-                      <Button
-                        type="submit"
-                        size="sm"
-                        disabled={isBindingSuins || !suinsDomainInput.trim()}
-                        className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shrink-0 cursor-pointer"
-                      >
-                        {isBindingSuins ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Binding...
-                          </>
-                        ) : activeSuinsDomain === `${suinsDomainInput}.sui` ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 mr-1.5" /> Bound
-                          </>
-                        ) : (
-                          'Claim Handle'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-
-                  {/* Live Recruiter Sharing Details */}
-                  {activeSuinsDomain && (
-                    <div className="p-3.5 rounded-xl bg-muted/20 border border-border/80 space-y-2.5 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground text-[11px]">Bound SuiNS Handle</span>
-                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                          {activeSuinsDomain}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground text-[11px]">Sovereign Target</span>
-                        <span className="font-mono text-foreground text-[11px]">
-                          {sessionAddress ? `${sessionAddress.slice(0, 8)}...${sessionAddress.slice(-6)}` : 'zkLogin Sovereign Account'}
-                        </span>
-                      </div>
-                      <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCopySuinsRecruiterLink}
-                          className="h-8 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer gap-1.5 flex-1"
-                        >
-                          {isCopiedSuinsLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                          {isCopiedSuinsLink ? 'Link Copied' : 'Copy Recruiter Link'}
-                        </Button>
-
-                        <a
-                          href={`/p/${activeSuinsDomain}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 h-8 text-xs px-3 rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium transition-colors shrink-0"
-                        >
-                          <span>View Passport</span>
-                          <ExternalLink className="w-3 h-3 opacity-70" />
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              </div>
+                ) : (
+                  <div className="text-center py-4 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      No CV attached yet. Upload to index work history into Walrus.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-7 font-medium cursor-pointer"
+                    >
+                      <Upload className="w-3 h-3 mr-1" /> Attach CV
+                    </Button>
+                  </div>
+                )}
+              </Card>
             </div>
           </motion.div>
         )}
@@ -2156,6 +1970,7 @@ function DashboardContent() {
                         onCommitWalrusVersion={handlePromptSaveWalrusVersion}
                         isSavingVersion={isSavingWalrusVersion}
                         onUpdateProfile={updateProfileField}
+                        highlightedBulletKey={highlightedBulletKey}
                       />
                     </div>
 
@@ -2248,7 +2063,7 @@ function DashboardContent() {
                         </div>
 
                         {/* Chat Messages Feed */}
-                        <div className="flex-1 p-3.5 overflow-y-auto space-y-3 text-xs">
+                        <div ref={resumeChatContainerRef} className="flex-1 p-3.5 overflow-y-auto space-y-3 text-xs">
                           {resumeAssistantMessages.map((msg, i) => (
                             <div
                               key={i}

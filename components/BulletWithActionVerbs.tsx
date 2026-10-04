@@ -20,6 +20,7 @@ interface BulletWithActionVerbsProps {
   className?: string;
   targetRole?: string;
   allKeywords?: string[];
+  isHighlighted?: boolean;
 }
 
 export function BulletWithActionVerbs({
@@ -31,9 +32,14 @@ export function BulletWithActionVerbs({
   className = "",
   targetRole,
   allKeywords = [],
+  isHighlighted = false,
 }: BulletWithActionVerbsProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [localHighlight, setLocalHighlight] = useState(false);
+
+  // Combine external prop highlight (from AI Copilot) and local chip highlight
+  const activeHighlight = isHighlighted || localHighlight;
 
   // Role-tailored action verbs analysis
   const analysis = useMemo(
@@ -70,6 +76,8 @@ export function BulletWithActionVerbs({
   function handleSelectVerb(suggestion: VerbSuggestion) {
     const replaced = replaceBulletActionVerb(bullet, suggestion.verb);
     onUpdate(replaced);
+    setLocalHighlight(true);
+    setTimeout(() => setLocalHighlight(false), 3200);
     const weakLabel = analysis.weakPhrase ? `'${analysis.weakPhrase}'` : "opening verb";
     toast.success(
       `Replaced ${weakLabel} with '${suggestion.verb}' (+${suggestion.points} ATS points)`
@@ -79,6 +87,8 @@ export function BulletWithActionVerbs({
   function handleIntegrateKeyword(keyword: string) {
     const integrated = integrateKeywordIntoBullet(bullet, keyword);
     onUpdate(integrated);
+    setLocalHighlight(true);
+    setTimeout(() => setLocalHighlight(false), 3200);
     toast.success(`Integrated "${keyword}" into bullet!`);
   }
 
@@ -88,8 +98,19 @@ export function BulletWithActionVerbs({
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group/bullet relative space-y-1.5 rounded-lg p-2 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/30 border border-transparent hover:border-slate-200/70 dark:hover:border-slate-700/70 ${className}`}
+      className={`group/bullet relative space-y-1.5 rounded-lg p-2 transition-all duration-300 ${
+        activeHighlight
+          ? "ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900 bg-emerald-500/10 shadow-[0_0_18px_rgba(16,185,129,0.35)] border-emerald-500/60 scale-[1.005]"
+          : "hover:bg-slate-50/80 dark:hover:bg-slate-800/30 border border-transparent hover:border-slate-200/70 dark:hover:border-slate-700/70"
+      } ${className}`}
     >
+      {/* ── OPTIMISTIC HIGHLIGHT FLOATING PILL ── */}
+      {activeHighlight && (
+        <div className="no-print absolute -top-2.5 right-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-600 text-white shadow-md animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+          <Sparkles className="w-2.5 h-2.5 animate-pulse text-emerald-200" />
+          <span>Updated by AI Copilot</span>
+        </div>
+      )}
       <div className="flex items-start gap-2">
         <span className="text-slate-400 select-none mt-1 font-bold text-xs leading-none">•</span>
         <textarea
