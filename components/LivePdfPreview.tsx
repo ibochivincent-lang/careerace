@@ -26,13 +26,15 @@ import {
   Anchor,
   Edit3,
   CheckCircle2,
-  Briefcase
+  Briefcase,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { BulletWithActionVerbs } from "@/components/BulletWithActionVerbs";
 import type { ParsedCv } from "@/lib/cv_parser";
+import type { WalrusResumeVersionItem } from "@/components/WalrusVersionDrawer";
 
 export type AtsTemplateId = "ivy_league" | "modern_tech" | "senior_architect";
 
@@ -80,8 +82,10 @@ interface LivePdfPreviewProps {
   tailorCompany?: string;
   atsScore?: number | null;
   walrusBlobId?: string | null;
+  walrusVersions?: WalrusResumeVersionItem[];
   initialTemplate?: AtsTemplateId;
   onCommitWalrusVersion?: () => void;
+  onOpenWalrusHistory?: () => void;
   isSavingVersion?: boolean;
   onUpdateProfile?: (updated: Partial<ParsedCv>) => void;
   onOpenMaritimeVerifier?: () => void;
@@ -95,8 +99,10 @@ export function LivePdfPreview({
   tailorCompany,
   atsScore,
   walrusBlobId: passedBlobId,
+  walrusVersions,
   initialTemplate = "modern_tech",
   onCommitWalrusVersion,
+  onOpenWalrusHistory,
   isSavingVersion = false,
   onUpdateProfile,
   onOpenMaritimeVerifier,
@@ -615,6 +621,20 @@ export function LivePdfPreview({
               >
                 <Database className="w-3.5 h-3.5" />
                 {isSavingVersion ? "Uploading..." : "Save to Walrus"}
+              </Button>
+            )}
+
+            {/* Walrus Version History On-Demand Modal Trigger */}
+            {walrusVersions && walrusVersions.length > 0 && onOpenWalrusHistory && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenWalrusHistory}
+                className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-purple-500/40 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10 rounded-lg shadow-xs"
+                title="View immutable Walrus snapshots"
+              >
+                <History className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                <span>History ({walrusVersions.length})</span>
               </Button>
             )}
 

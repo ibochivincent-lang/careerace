@@ -17,7 +17,7 @@ import {
   Copy, Trash2, Paperclip, AlertCircle, Plus, Edit3, Database,
   TrendingUp, Target, AlertTriangle, FileCheck,
   RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor,
-  Cpu, Flame
+  Cpu, Flame, ChevronDown, ChevronUp, History
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { AtsBenchmarkSimulatorModal } from '@/components/AtsBenchmarkSimulatorModal'
@@ -28,6 +28,7 @@ import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
 import { parseCvText } from '@/lib/heuristic_cv_parser'
 import { LivePdfPreview } from '@/components/LivePdfPreview'
+import { WalrusVersionModal } from '@/components/WalrusVersionModal'
 import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 import { MaritimeStcwVerifierModal } from '@/components/MaritimeStcwVerifierModal'
@@ -130,6 +131,8 @@ function DashboardContent() {
 
   // Autonomous Maritime STCW & Sea-Time Verifier modal state
   const [isMaritimeModalOpen, setIsMaritimeModalOpen] = useState(false)
+  const [isWalrusHistoryModalOpen, setIsWalrusHistoryModalOpen] = useState(false)
+  const [isCalibrationOpen, setIsCalibrationOpen] = useState(false)
 
   // Dynamic Split Screen Resizing state (Left Canvas vs Right Copilot)
   const [splitRatio, setSplitRatio] = useState(65)
@@ -621,13 +624,59 @@ function DashboardContent() {
     toast.success(`Restored version: ${version.label}`)
   }
 
-  async function handleSendMessage() {
-    if (!chatInput.trim() || isSending) return
-    const text = chatInput.trim()
+  async function handleSendMessage(overrideText?: string) {
+    const rawText = typeof overrideText === 'string' ? overrideText : chatInput
+    if (!rawText.trim() || isSending) return
+    const text = rawText.trim()
     setChatInput('')
     const updatedMessages = [...chatMessages, { role: 'user' as const, content: text }]
     setChatMessages(updatedMessages)
     setIsSending(true)
+
+    // Conversational Target Calibration detection (No AI Slop - direct regex & heuristics)
+    let detectedRole = ''
+    let detectedCompany = ''
+    let detectedJd = ''
+
+    const roleMatch = text.match(/(?:target(?:\s+role)?|role|position|applying(?:\s+for)?)\s*(?::|is)?\s*([A-Za-z0-9\s/&-]+?)(?:\s+(?:at|@)\s+([A-Za-z0-9\s/&.-]+))?$/i)
+    const companyMatch = text.match(/(?:target(?:\s+company|\s+org(?:anization)?)?|company|org(?:anization)?)\s*(?::|is)\s*([A-Za-z0-9\s/&.-]+)$/i)
+
+    if ((text.toLowerCase().includes('job description') || text.toLowerCase().includes('requirements') || text.toLowerCase().includes('responsibilities') || text.toLowerCase().includes('qualifications')) && text.length > 70) {
+      detectedJd = text
+    }
+
+    if (roleMatch && roleMatch[1] && roleMatch[1].trim().length > 2 && roleMatch[1].trim().length < 60) {
+      detectedRole = roleMatch[1].trim()
+      if (roleMatch[2]) {
+        detectedCompany = roleMatch[2].trim()
+      }
+    }
+    if (companyMatch && companyMatch[1] && companyMatch[1].trim().length > 1 && companyMatch[1].trim().length < 60) {
+      detectedCompany = companyMatch[1].trim()
+    }
+
+    let activeProfileForCall = parsedProfile
+    if (detectedRole) {
+      setTailorRole(detectedRole)
+      if (parsedProfile) {
+        updateProfileField({ target_roles: [detectedRole] })
+        activeProfileForCall = { ...parsedProfile, target_roles: [detectedRole] }
+      }
+    }
+    if (detectedCompany) {
+      setTailorCompany(detectedCompany)
+    }
+    if (detectedJd) {
+      setJobDescriptionForTailor(detectedJd)
+    }
+    if (detectedRole || detectedCompany || detectedJd) {
+      const summary = [
+        detectedRole ? `Role: ${detectedRole}` : '',
+        detectedCompany ? `Org: ${detectedCompany}` : '',
+        detectedJd ? 'JD Calibrated' : ''
+      ].filter(Boolean).join(' · ')
+      toast.success(`Calibrated: ${summary}`)
+    }
 
     try {
       const customAiKeys = {
@@ -643,7 +692,7 @@ function DashboardContent() {
         body: JSON.stringify({
           message: text,
           messages: updatedMessages,
-          profile: parsedProfile,
+          profile: activeProfileForCall,
           address: sessionAddress || undefined,
           custom_keys: customAiKeys,
         })
@@ -1413,7 +1462,7 @@ function DashboardContent() {
 
                     <Button
                       size="sm"
-                      onClick={handleSendMessage}
+                      onClick={() => handleSendMessage()}
                       disabled={isSending || !chatInput.trim()}
                       className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs"
                     >
@@ -1550,61 +1599,22 @@ function DashboardContent() {
                       >
                         <Upload className="w-3.5 h-3.5" /> Attach / Replace CV
                       </Button>
+
+                      {/* Walrus Version History Trigger */}
+                      {walrusVersions.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsWalrusHistoryModalOpen(true)}
+                          className="text-xs h-8 gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-500/10"
+                          title="View Walrus Version History"
+                        >
+                          <Database className="w-3.5 h-3.5 text-purple-400" />
+                          <span className="hidden sm:inline">Walrus History</span> ({walrusVersions.length})
+                        </Button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Top ATS Health & Benchmark Score Banner (Without ATS X-Ray button) */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 px-5 rounded-2xl border border-border/80 bg-gradient-to-r from-emerald-500/5 via-background to-purple-500/5 shadow-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
-                        {atsScorecard ? atsScorecard.overall_score : 85}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground">ATS Benchmark Score</span>
-                          <Badge variant="outline" className="text-[10px] font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
-                            {atsScorecard ? `${atsScorecard.ats_grade} Grade` : 'A Grade'}
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {atsScorecard
-                            ? `${atsScorecard.keyword_coverage_pct}% keyword match against target role · Standardized single-column ATS architecture`
-                            : 'Standardized profile validated against ATS scanner standards'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRunAtsBenchmark}
-                        className="min-h-[44px] sm:min-h-[36px] text-xs font-semibold gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 shadow-xs focus-visible:ring-2 focus-visible:ring-emerald-500"
-                      >
-                        <Cpu className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Live ATS Simulator (Taleo &amp; Greenhouse)</span>
-                      </Button>
-
-                      <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg font-semibold text-xs font-mono">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                        {atsScorecard?.matched_skills.length || parsedProfile?.skills?.length || 0} Core Skills Aligned
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* WALRUS VERSION HISTORY DRAWER */}
-                  {walrusVersions.length > 0 && (
-                    <WalrusVersionDrawer
-                      versions={walrusVersions}
-                      activeVersionId={activeVersionId}
-                      onRestoreVersion={handleRestoreWalrusVersion}
-                      onClearHistory={() => {
-                        setWalrusVersions([])
-                        localStorage.removeItem('careerace_walrus_versions')
-                        toast.success('Walrus version cache cleared.')
-                      }}
-                    />
-                  )}
 
                   {/* ── TWO-COLUMN RESUME WORKSPACE: RESUME CANVAS (LEFT) + COPILOT CHATBOT (RIGHT) ── */}
                   <div
@@ -1630,6 +1640,8 @@ function DashboardContent() {
                             ? (walrusVersions.find(v => v.id === activeVersionId)?.blobId || walrusVersions[0]?.blobId)
                             : walrusVersions[0]?.blobId
                         }
+                        walrusVersions={walrusVersions}
+                        onOpenWalrusHistory={() => setIsWalrusHistoryModalOpen(true)}
                         onCommitWalrusVersion={handleCommitWalrusVersion}
                         isSavingVersion={isSavingWalrusVersion}
                         onUpdateProfile={updateProfileField}
@@ -1685,97 +1697,14 @@ function DashboardContent() {
                       </div>
                     </div>
 
-                    {/* RIGHT COLUMN: AI Career Copilot Chatbot */}
+                    {/* RIGHT COLUMN: Unified AI Career Copilot & Target Calibration Assistant */}
                     <div
                       style={{
                         width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${100 - splitRatio}%` : '100%',
                       }}
-                      className="w-full lg:pl-3 sticky top-6 space-y-4 shrink-0 transition-none"
+                      className="w-full lg:pl-3 sticky top-6 shrink-0 transition-none"
                     >
-                      {/* Target Role & ATS Calibration Card */}
-                      <Card className="p-4 border border-border/80 shadow-sm rounded-2xl bg-card space-y-3">
-                        <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-purple-500" />
-                            <h3 className="font-bold text-xs text-foreground">Target Role &amp; Organization</h3>
-                          </div>
-                          {atsScorecard && (
-                            <Badge variant="outline" className="text-[10px] font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
-                              {atsScorecard.overall_score}/100 ATS
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="space-y-2 text-xs">
-                          <div>
-                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                              Target Role Title
-                            </label>
-                            <input
-                              type="text"
-                              value={tailorRole}
-                              onChange={(e) => {
-                                setTailorRole(e.target.value)
-                                if (parsedProfile) updateProfileField({ target_roles: [e.target.value] })
-                              }}
-                              placeholder="e.g. Marine Systems Engineer"
-                              className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                              Target Organization (Optional)
-                            </label>
-                            <input
-                              type="text"
-                              value={tailorCompany}
-                              onChange={(e) => setTailorCompany(e.target.value)}
-                              placeholder="e.g. Maersk, ABS, Bourbon, Stripe"
-                              className="w-full h-8 px-2.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] font-semibold text-muted-foreground block mb-1">
-                              Job Description Keywords (Optional)
-                            </label>
-                            <textarea
-                              rows={2}
-                              value={jobDescriptionForTailor}
-                              onChange={(e) => setJobDescriptionForTailor(e.target.value)}
-                              placeholder="Paste JD requirements to run custom keyword matching..."
-                              className="w-full p-2 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-snug"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Keyword Diff Quick Preview */}
-                        {atsScorecard && atsScorecard.keyword_diff.length > 0 && (
-                          <div className="pt-2 border-t border-border/60">
-                            <span className="text-[10px] font-semibold text-muted-foreground block mb-1.5">
-                              Live ATS Match ({atsScorecard.keyword_coverage_pct}% Keyword Match)
-                            </span>
-                            <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
-                              {atsScorecard.keyword_diff.slice(0, 16).map((item, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-[9px] px-1.5 py-0.5 rounded font-medium border flex items-center gap-0.5 ${
-                                    item.status === 'matched'
-                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
-                                      : 'bg-muted text-muted-foreground border-border/60'
-                                  }`}
-                                >
-                                  {item.status === 'matched' ? '✓' : '•'} {item.keyword}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </Card>
-
-                      {/* AI Career Copilot Chatbot */}
-                      <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[520px]">
+                      <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[760px] lg:h-[calc(100vh-140px)] min-h-[640px]">
                         {/* Status Bar */}
                         <div className="p-3 border-b border-border/80 bg-muted/30 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1786,21 +1715,142 @@ function DashboardContent() {
                               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-background rounded-full" />
                             </div>
                             <div>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1.5">
                                 <h3 className="font-bold text-xs text-foreground">AI Career Copilot</h3>
                                 <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
                                   MemWal
                                 </Badge>
                               </div>
                               <p className="text-[10px] text-muted-foreground">
-                                Active Resume Assistant
+                                Active Resume Assistant &amp; Target Calibration
                               </p>
                             </div>
                           </div>
 
-                          <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
-                            <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            {atsScorecard && (
+                              <Badge variant="outline" className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+                                {atsScorecard.overall_score}/100 ATS
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
+                              <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Unified Target Role & JD Calibration Strip / Dropdown */}
+                        <div className="border-b border-border/70 bg-muted/15 transition-all">
+                          <div className="px-3 py-2 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsCalibrationOpen(!isCalibrationOpen)}
+                              className="flex-1 flex items-center gap-2 text-left group min-w-0"
+                            >
+                              <div className="p-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:bg-purple-500/20 transition-colors shrink-0">
+                                <Target className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[11px] font-bold text-foreground truncate">
+                                    {tailorRole || 'Set Target Role'}
+                                  </span>
+                                  {tailorCompany && (
+                                    <span className="text-[11px] text-muted-foreground truncate">
+                                      @ {tailorCompany}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {jobDescriptionForTailor ? 'Custom Job Description Calibrated' : 'Calibrate role, target company, or paste JD'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 shrink-0">
+                                <span>{isCalibrationOpen ? 'Collapse' : 'Calibrate'}</span>
+                                {isCalibrationOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </div>
+                            </button>
+                          </div>
+
+                          {/* Expandable Calibration Panel */}
+                          {isCalibrationOpen && (
+                            <div className="px-3 pb-3 pt-1 border-t border-border/60 space-y-2 bg-background/50 animate-in fade-in-0 slide-in-from-top-1 duration-150">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">
+                                    Target Role Title
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tailorRole}
+                                    onChange={(e) => {
+                                      setTailorRole(e.target.value)
+                                      if (parsedProfile) updateProfileField({ target_roles: [e.target.value] })
+                                    }}
+                                    placeholder="e.g. Marine Systems Engineer"
+                                    className="w-full h-7 px-2 rounded-md border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">
+                                    Target Organization (Optional)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tailorCompany}
+                                    onChange={(e) => setTailorCompany(e.target.value)}
+                                    placeholder="e.g. Maersk, Stripe, Bourbon"
+                                    className="w-full h-7 px-2 rounded-md border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-semibold text-muted-foreground block mb-0.5">
+                                  Job Description Keywords (Paste requirements to match)
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={jobDescriptionForTailor}
+                                  onChange={(e) => setJobDescriptionForTailor(e.target.value)}
+                                  placeholder="Paste JD requirements to run custom ATS keyword matching..."
+                                  className="w-full p-1.5 rounded-md border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-snug"
+                                />
+                              </div>
+
+                              {/* Keyword Match Tags & Simulator Trigger */}
+                              {atsScorecard && atsScorecard.keyword_diff.length > 0 && (
+                                <div className="pt-1.5 border-t border-border/60">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-semibold text-muted-foreground">
+                                      Keyword Alignment ({atsScorecard.keyword_coverage_pct}% Match)
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={handleRunAtsBenchmark}
+                                      className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-1"
+                                    >
+                                      <Cpu className="w-3 h-3" /> Taleo &amp; GH Simulator
+                                    </button>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
+                                    {atsScorecard.keyword_diff.slice(0, 14).map((item, i) => (
+                                      <span
+                                        key={i}
+                                        className={`text-[9px] px-1.5 py-0.5 rounded font-medium border flex items-center gap-0.5 ${
+                                          item.status === 'matched'
+                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25'
+                                            : 'bg-muted text-muted-foreground border-border/60'
+                                        }`}
+                                      >
+                                        {item.status === 'matched' ? '✓' : '•'} {item.keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Chat Messages Feed */}
@@ -1853,8 +1903,29 @@ function DashboardContent() {
                           <div ref={chatMessagesEndRef} />
                         </div>
 
-                        {/* PolishMe Action Move Chips */}
+                        {/* Interactive Assistant Quick Actions (Calibration & Polish) */}
                         <div className="px-3 py-2 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCalibrationOpen(true)
+                              handleSendMessage('What is the best way to tailor my resume for a specific job?')
+                            }}
+                            className="text-[10px] px-2 py-0.5 rounded-md border border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 font-semibold flex items-center gap-1"
+                          >
+                            <Target className="w-2.5 h-2.5" />
+                            <span>🎯 Calibrate Target</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleRunAtsBenchmark}
+                            className="text-[10px] px-2 py-0.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 font-semibold flex items-center gap-1"
+                          >
+                            <Cpu className="w-2.5 h-2.5" />
+                            <span>⚡ Live ATS Simulator</span>
+                          </button>
+
                           {SUGGESTED_COPILOT_ACTIONS.map((action, idx) => (
                             <button
                               key={idx}
@@ -1885,13 +1956,13 @@ function DashboardContent() {
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                            placeholder="Ask copilot to polish or add bullets..."
+                            placeholder="Ask copilot to tailor, set target role, or add bullets..."
                             className="flex-1 h-8 px-2.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                           />
 
                           <Button
                             size="sm"
-                            onClick={handleSendMessage}
+                            onClick={() => handleSendMessage()}
                             disabled={isSending || !chatInput.trim()}
                             className="h-8 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs"
                           >
@@ -2189,6 +2260,20 @@ function DashboardContent() {
               })
               toast.success(`${res.seaDaysTotal} Qualifying Sea Days verified and minted to Walrus!`)
             }
+          }}
+        />
+
+        {/* Walrus Decentralized Version History On-Demand Modal */}
+        <WalrusVersionModal
+          isOpen={isWalrusHistoryModalOpen}
+          onClose={() => setIsWalrusHistoryModalOpen(false)}
+          versions={walrusVersions}
+          activeVersionId={activeVersionId}
+          onRestoreVersion={handleRestoreWalrusVersion}
+          onClearHistory={() => {
+            setWalrusVersions([])
+            localStorage.removeItem('careerace_walrus_versions')
+            toast.success('Walrus version cache cleared.')
           }}
         />
       </div>
