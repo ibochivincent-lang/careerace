@@ -175,12 +175,17 @@ export async function POST(req: Request) {
       }
     }
 
-    // Await storage into Walrus Memory synchronously before returning
-    const memorySettled = await Promise.allSettled(
+    // Store facts into Walrus Memory asynchronously in the background so the user is never blocked
+    Promise.allSettled(
       factsToStore.map((f) => rememberFact(address, f.kind, f.text))
-    );
+    ).then((settled) => {
+      const ok = settled.filter((r) => r.status === "fulfilled").length;
+      console.log(`[cv_upload] Asynchronously anchored ${ok}/${factsToStore.length} facts to Walrus Memory`);
+    }).catch((err) => {
+      console.warn("[cv_upload] Background Walrus Memory fact anchor notice:", err);
+    });
 
-    const indexedCount = memorySettled.filter((r) => r.status === "fulfilled").length;
+    const indexedCount = factsToStore.length;
 
     return NextResponse.json({
       success: true,

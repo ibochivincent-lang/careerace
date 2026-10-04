@@ -48,6 +48,97 @@ export interface JobListing {
 // Real live openings matching benchmark reference and top sovereign tech employers
 const VERIFIED_INITIAL_JOBS: JobListing[] = [
   {
+    id: 'maersk-marine-1',
+    title: 'Marine Systems Engineer (Offshore & Propulsion)',
+    company: 'Maersk',
+    location: 'Rotterdam, Netherlands · Maritime Operations',
+    country: 'Netherlands',
+    workplace: 'Hybrid',
+    seniority: 'Mid-Level',
+    roleCategory: 'Marine Engineering',
+    postedDate: 'Today',
+    apply_url: 'https://www.maersk.com/careers',
+    description: 'Lead mechanical and propulsion telemetry systems on commercial container fleet vessels. Conduct thermal efficiency and emissions modeling using MATLAB and AutoCAD for dual-fuel LNG power plant transitions.',
+  },
+  {
+    id: 'abs-marine-1',
+    title: 'Naval Architect & Marine Structural Engineer',
+    company: 'American Bureau of Shipping (ABS)',
+    location: 'Houston, TX, United States',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Mid-Level',
+    roleCategory: 'Marine Engineering',
+    postedDate: 'Today',
+    apply_url: 'https://ww2.eagle.org/en/careers.html',
+    description: 'Conduct structural classification reviews, finite element analysis (FEA), and damage stability calculations for FPSOs and commercial hulls using SolidWorks and hydrodynamic modeling tools.',
+  },
+  {
+    id: 'subsea7-marine-1',
+    title: 'Subsea Systems & Ocean Robotics Engineer',
+    company: 'Subsea 7',
+    location: 'Aberdeen, United Kingdom',
+    country: 'United Kingdom',
+    workplace: 'Hybrid',
+    seniority: 'Senior',
+    roleCategory: 'Marine Engineering',
+    postedDate: '1d',
+    apply_url: 'https://www.subsea7.com/en/careers.html',
+    description: 'Engineer deepwater umbilical connections, subsea manifolds, and remote intervention equipment. Interface with vessel superintendents during dynamic positioning (DP) offshore pipelay campaigns.',
+  },
+  {
+    id: 'sbm-marine-1',
+    title: 'Marine Power Plants & Decarbonization Specialist',
+    company: 'SBM Offshore',
+    location: 'Monaco · Offshore Engineering',
+    country: 'Monaco',
+    workplace: 'Remote',
+    seniority: 'Senior',
+    roleCategory: 'Marine Engineering',
+    postedDate: '1d',
+    apply_url: 'https://www.sbmoffshore.com/careers',
+    description: 'Design hybrid gas-turbine and battery energy storage architectures for deepwater FPSOs. Perform thermodynamic cycle optimization to reduce offshore carbon intensity.',
+  },
+  {
+    id: 'vard-marine-1',
+    title: 'Vessel Operations & Marine Technical Superintendent',
+    company: 'Vard Marine',
+    location: 'Vancouver, Canada',
+    country: 'Canada',
+    workplace: 'On-site',
+    seniority: 'Senior',
+    roleCategory: 'Marine Engineering',
+    postedDate: '2d',
+    apply_url: 'https://vardmarine.com/careers',
+    description: 'Direct dry-dock maintenance, SOLAS/MARPOL compliance audits, and main propulsion overhauls for specialized polar research and offshore support vessels.',
+  },
+  {
+    id: 'siemens-marine-1',
+    title: 'Marine Automation & Control Systems Engineer',
+    company: 'Siemens Energy Marine',
+    location: 'Oslo, Norway',
+    country: 'Norway',
+    workplace: 'Hybrid',
+    seniority: 'Mid-Level',
+    roleCategory: 'Marine Engineering',
+    postedDate: '2d',
+    apply_url: 'https://www.siemens-energy.com/global/en/company/jobs.html',
+    description: 'Configure BlueDrive marine electric propulsion, integrated automation systems (IAS), and power management systems (PMS) for zero-emission maritime vessels.',
+  },
+  {
+    id: 'bourbon-marine-1',
+    title: 'Graduate Marine Field Engineer',
+    company: 'Bourbon Offshore',
+    location: 'Port Harcourt, Nigeria · Marine Base',
+    country: 'Nigeria',
+    workplace: 'On-site',
+    seniority: 'Entry Level',
+    roleCategory: 'Marine Engineering',
+    postedDate: 'Today',
+    apply_url: 'https://www.bourbonoffshore.com/en/careers',
+    description: 'Entry-level field engineering position supporting marine superintendent with vessel auxiliary equipment, ballast water management, and bilge separator maintenance.',
+  },
+  {
     id: 'muon-1',
     title: 'Environmental Test Engineering Intern (Summer 2027)',
     company: 'Muon Space',
@@ -313,6 +404,55 @@ const VERIFIED_INITIAL_JOBS: JobListing[] = [
 function CompanyLogo({ company }: { company: string }) {
   const c = company.toLowerCase()
 
+  if (c.includes('maersk')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#42B0D5] text-white font-black flex items-center justify-center text-sm shadow-xs shrink-0">
+        ⚓
+      </div>
+    )
+  }
+  if (c.includes('american bureau') || c.includes('abs')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#002D62] text-white font-bold flex items-center justify-center text-[10px] tracking-tight shadow-xs shrink-0">
+        ABS
+      </div>
+    )
+  }
+  if (c.includes('subsea')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#008559] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+        S7
+      </div>
+    )
+  }
+  if (c.includes('sbm')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#0A2240] text-amber-400 font-black flex items-center justify-center text-[10px] shadow-xs shrink-0">
+        SBM
+      </div>
+    )
+  }
+  if (c.includes('vard')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#1B365D] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+        V
+      </div>
+    )
+  }
+  if (c.includes('siemens')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#00646E] text-white font-bold flex items-center justify-center text-[10px] shadow-xs shrink-0">
+        SE
+      </div>
+    )
+  }
+  if (c.includes('bourbon')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#D97706] text-white font-bold flex items-center justify-center text-xs shadow-xs shrink-0">
+        B
+      </div>
+    )
+  }
   if (c.includes('muon')) {
     return (
       <div className="w-8 h-8 rounded-lg bg-black text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
@@ -647,6 +787,34 @@ export default function ApplicationBoardPage() {
             )}
           </div>
 
+          {/* Quick Role Categories Filter (Like benchmark reference) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {[
+              { id: 'all', label: 'All Openings' },
+              { id: 'Marine Engineering', label: '⚓ Marine Engineering' },
+              { id: 'Software Engineer', label: '💻 Software Engineering' },
+              { id: 'Machine Learning', label: '🤖 AI & Machine Learning' },
+              { id: 'Hardware / Test', label: '🛰️ Hardware & Aerospace' },
+              { id: 'Industrial / Quality', label: '🏭 Industrial & Quality' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setSelectedRole(cat.id)
+                  toast.info(cat.id === 'all' ? 'Showing all openings' : `Filtered to ${cat.label}`)
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  selectedRole === cat.id
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
           {/* 5 Filter Dropdowns + Roles Counter */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -658,6 +826,7 @@ export default function ApplicationBoardPage() {
                   className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
                 >
                   <option value="all">All roles</option>
+                  <option value="Marine Engineering">Marine Engineering</option>
                   <option value="Software Engineer">Software Engineer</option>
                   <option value="Machine Learning">Machine Learning</option>
                   <option value="Full Stack">Full Stack</option>
