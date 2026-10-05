@@ -193,7 +193,6 @@ function generateLocalDraft(params: {
     : intel.keyProblemsSolved;
 
   const topKeywords = intel.technicalKeywords.slice(0, 6).join(', ');
-  const verifiedMetric = intel.measurableImpactMetrics[0] || 'Maintained consistent operational uptime and verified technical rigor';
 
   let recentExpSummary = '';
   if (params.filteredHighlights && params.filteredHighlights.length > 0) {
@@ -232,7 +231,7 @@ Specifically, I tailor my technical approach around addressing and resolving key
 1. ${problems[0] || 'Mitigating system downtime through predictive diagnostics and rigorous preventive maintenance'}
 2. ${problems[1] || 'Optimizing resource allocation and operational throughput under high-constraint environments'}
 
-${recentExpSummary} As a proven benchmark, I have ${verifiedMetric.toLowerCase()}, ensuring that theoretical operational plans translate directly into field results.
+${recentExpSummary}
 
 ${walrusLine}
 
@@ -692,107 +691,106 @@ export default function CoverLetterStudioPage() {
           </div>
         </div>
 
-        {/* 1. DISCIPLINE & TARGET ROLE SELECTOR BOX (Clean Rectangular Box, Zero Emojis) */}
-        <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
+        {/* 1. DISCIPLINE & TARGET ROLE SELECTOR BOX (Roll-Down Dropdowns, Zero Emojis) */}
+        <Card className="p-4 sm:p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/70">
             <div className="flex items-center gap-2">
-              <Compass className="w-4 h-4 text-emerald-500" />
+              <Compass className="w-4 h-4 text-emerald-500 shrink-0" />
               <h2 className="text-sm font-bold text-foreground">Discipline and Target Role Selector</h2>
             </div>
             <span className="text-[11px] text-muted-foreground">
-              Select discipline to instantly calibrate role scope, CV highlights, and employer directory.
+              Select discipline and calibrated role to instantly align tone, role scope, and employer matching.
             </span>
           </div>
 
-          {/* Discipline Selector Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-            {DISCIPLINE_DEFINITIONS.map((def) => {
-              const isSelected = selectedDisciplineId === def.id;
-              return (
-                <button
-                  key={def.id}
-                  type="button"
-                  onClick={() => handleSelectDiscipline(def.id)}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 shadow-xs ring-1 ring-emerald-500'
-                      : 'border-border bg-background hover:border-emerald-500/50 hover:bg-muted/30 text-foreground'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
-                      {def.id.toUpperCase()}
-                    </span>
-                    {isSelected && <Check className="w-3 h-3 text-emerald-500" />}
-                  </div>
-                  <div className="text-xs font-bold truncate">{def.name}</div>
-                  <div className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                    {def.roles[0]}
-                  </div>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Discipline Dropdown */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground">
+                  Target Discipline
+                </label>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                  {DISCIPLINE_DEFINITIONS.length} Available
+                </span>
+              </div>
+              <select
+                value={selectedDisciplineId}
+                onChange={(e) => handleSelectDiscipline(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                {DISCIPLINE_DEFINITIONS.map((def) => (
+                  <option key={def.id} value={def.id}>
+                    {def.name} ({def.roles.length} Roles)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Target Role Dropdown */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-muted-foreground">
+                  Calibrated Target Role
+                </label>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                  {activeDiscipline.roles.length} in {activeDiscipline.name}
+                </span>
+              </div>
+              <select
+                value={customRoleInput.trim() ? 'custom' : targetRole}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'custom') {
+                    if (!customRoleInput) {
+                      setCustomRoleInput(targetRole || activeDiscipline.defaultRole);
+                    }
+                  } else {
+                    setCustomRoleInput('');
+                    handleSelectRole(val);
+                  }
+                }}
+                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+              >
+                <optgroup label={`Calibrated Roles (${activeDiscipline.name})`}>
+                  {activeDiscipline.roles.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </optgroup>
+                <option value="custom">Enter Custom Role...</option>
+              </select>
+            </div>
           </div>
 
-          {/* Calibrated Role Selection & Custom Role Input */}
-          <div className="pt-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Select Calibrated Role in {activeDiscipline.name}:
-              </span>
-              <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-                {activeDiscipline.roles.length} roles available
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 text-xs">
-              {activeDiscipline.roles.map((r) => {
-                const isRoleActive = targetRole === r && !customRoleInput.trim();
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => handleSelectRole(r)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                      isRoleActive
-                        ? 'bg-foreground text-background font-semibold shadow-xs'
-                        : 'bg-muted/50 text-foreground hover:bg-muted border border-border/80'
-                    }`}
-                  >
-                    {r}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Custom Target Role input if user wants something specific */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* Custom Role Input field (visible if custom role selected or entered) */}
+          {(customRoleInput || !activeDiscipline.roles.includes(targetRole)) && (
+            <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="text-xs font-semibold text-muted-foreground shrink-0">
-                Or Type Custom Target Role:
+                Custom Role Title:
               </div>
               <input
                 type="text"
-                value={customRoleInput}
+                value={customRoleInput || targetRole}
                 onChange={(e) => handleCustomRoleChange(e.target.value)}
                 placeholder={`e.g. ${activeDiscipline.defaultRole}`}
                 className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
-              {customRoleInput && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setCustomRoleInput('');
-                    updateDraft(targetRole, targetCompany, selectedDisciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
-                  }}
-                  className="text-xs h-9 text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  Reset to Calibrated Role
-                </Button>
-              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setCustomRoleInput('');
+                  handleSelectRole(activeDiscipline.defaultRole);
+                }}
+                className="text-xs h-9 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Reset to Calibrated Role
+              </Button>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Main 2-Column Split: Intelligence Engine & Editor */}
@@ -936,17 +934,6 @@ export default function CoverLetterStudioPage() {
                       </li>
                     ))}
                   </ul>
-                </div>
-
-                {/* 2. Calibrated ATS Impact Metrics */}
-                <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-800 dark:text-emerald-300">
-                    <Zap className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Calibrated Measurable Benchmark</span>
-                  </div>
-                  <p className="text-[11px] text-emerald-950 dark:text-emerald-200/90 leading-relaxed">
-                    {roleScope.measurableImpactMetrics[0]}
-                  </p>
                 </div>
               </div>
 

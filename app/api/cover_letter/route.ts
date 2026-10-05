@@ -127,7 +127,7 @@ Specifically, I tailor my technical approach around addressing and resolving key
 1. ${problemsToSolve[0]}
 2. ${problemsToSolve[1] || problemsToSolve[0]}
 
-${recentExpSummary} As a proven benchmark, I have ${verifiedMetric.toLowerCase()}, ensuring that theoretical plans translate into measurable field reliability.
+${recentExpSummary}
 
 ${walrusAttestationLine}
 

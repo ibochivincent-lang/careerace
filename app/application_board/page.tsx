@@ -1618,14 +1618,14 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
 
   return (
     <AppShell>
-      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-        {/* Top Header & 4 Stage Navigation Tabs: 1. Discovery, 2. Saved, 3. Applied, 4. Auto Apply */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-border/60">
-          <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border/80 w-fit">
+      <div className="p-2.5 sm:p-4 md:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Top Header & 4 Stage Navigation Tabs: 1. Discovery, 2. Saved, 3. Applied, 4. Auto Apply, 5. Checklist */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1 border-b border-border/60">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/60 border border-border/80 w-full sm:w-fit overflow-x-auto no-scrollbar shrink-0">
             {/* Stage 1: Discovery */}
             <button
               onClick={() => setActiveBoardTab('discover')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 activeBoardTab === 'discover'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
@@ -1638,7 +1638,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
             {/* Stage: Saved */}
             <button
               onClick={() => setActiveBoardTab('saved')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 activeBoardTab === 'saved'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
@@ -1656,7 +1656,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
             {/* Stage: Applied */}
             <button
               onClick={() => setActiveBoardTab('applied')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 activeBoardTab === 'applied'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
@@ -1674,7 +1674,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
             {/* Stage: Auto Apply */}
             <button
               onClick={() => setActiveBoardTab('auto_apply')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 activeBoardTab === 'auto_apply'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
@@ -1690,14 +1690,15 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
             {/* Stage: Daily Action Checklist */}
             <button
               onClick={() => setActiveBoardTab('checklist')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                 activeBoardTab === 'checklist'
                   ? 'bg-background text-foreground shadow-xs border border-border/80'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Daily Action Checklist</span>
+              <span className="hidden sm:inline">Daily Action Checklist</span>
+              <span className="sm:hidden">Checklist</span>
               {completedChecklistCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   {completedChecklistCount}/5
@@ -1707,67 +1708,9 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
           </div>
 
           {/* Real-time status indicator */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs text-muted-foreground">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-mono text-[11px]">Sovereign Pipeline · Auto-Sync Active</span>
-          </div>
-        </div>
-
-        {/* Walrus Sovereign CV Version Selector Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-foreground">Active CV Version</span>
-                <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                  Walrus Sovereign Storage
-                </Badge>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Select which tailored CV identity to present when applying across companies.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              onClick={() => setSelectedCvVersionId('active_draft')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedCvVersionId === 'active_draft'
-                  ? 'bg-foreground text-background shadow-xs'
-                  : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
-              }`}
-            >
-              Active Draft {activeDraftProfile?.target_roles?.[0] ? `(${activeDraftProfile.target_roles[0]})` : ''}
-            </button>
-            {walrusVersions.map((ver) => (
-              <button
-                key={ver.id}
-                onClick={() => setSelectedCvVersionId(ver.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  selectedCvVersionId === ver.id
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
-                }`}
-              >
-                <span>{ver.label || `v${ver.versionNumber}`}</span>
-                {ver.role && (
-                  <span className="text-[10px] opacity-80 font-mono">· {ver.role}</span>
-                )}
-              </button>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard?tab=resumes')}
-              className="text-[11px] text-muted-foreground hover:text-foreground h-8 px-2 gap-1"
-            >
-              <span>Manage Versions</span>
-              <ExternalLink className="w-3 h-3" />
-            </Button>
+            <span className="font-mono">Sovereign Pipeline · Auto-Sync Active</span>
           </div>
         </div>
 
@@ -1873,9 +1816,67 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
           </div>
         ) : activeBoardTab === 'auto_apply' ? (
           /* Stage 4: Auto Apply via Corporate Emails & Walrus Credentials */
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Walrus Sovereign CV Version Selector Bar (Exclusively in Auto Apply) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-foreground">Active CV Version</span>
+                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                      Walrus Sovereign Storage
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Select which tailored CV identity to present when applying across companies.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => setSelectedCvVersionId('active_draft')}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
+                    selectedCvVersionId === 'active_draft'
+                      ? 'bg-foreground text-background shadow-xs'
+                      : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
+                  }`}
+                >
+                  Active Draft {activeDraftProfile?.target_roles?.[0] ? `(${activeDraftProfile.target_roles[0]})` : ''}
+                </button>
+                {walrusVersions.map((ver) => (
+                  <button
+                    key={ver.id}
+                    onClick={() => setSelectedCvVersionId(ver.id)}
+                    className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                      selectedCvVersionId === ver.id
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border'
+                    }`}
+                  >
+                    <span>{ver.label || `v${ver.versionNumber}`}</span>
+                    {ver.role && (
+                      <span className="text-[10px] opacity-80 font-mono">· {ver.role}</span>
+                    )}
+                  </button>
+                ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push('/dashboard?tab=resumes')}
+                  className="text-[11px] text-muted-foreground hover:text-foreground h-7 sm:h-8 px-2 gap-1"
+                >
+                  <span>Manage</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+
             {/* Top Auto Apply Banner */}
-            <Card className="p-6 rounded-2xl border bg-card">
+            <Card className="p-4 sm:p-6 rounded-2xl border bg-card">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-border/60">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -2488,31 +2489,31 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                   return (
                     <div
                       key={job.id}
-                      className={`group flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3 rounded-xl border transition-all ${
+                      className={`group flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl border transition-all ${
                         isApplied
                           ? 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
                           : 'border-border/70 bg-card hover:bg-muted/20 hover:border-border'
                       }`}
                     >
                       {/* Left: Logo (clean monogram) & Job Title / Company */}
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
                         <CompanyLogo company={job.company} />
 
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <span className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors">
                               {job.title}
                             </span>
-                            <span className="text-xs text-muted-foreground font-normal">
+                            <span className="text-[11px] sm:text-xs text-muted-foreground font-normal">
                               {job.company}
                             </span>
                             {isApplied && (
                               <>
-                                <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] py-0 px-1.5 font-mono">
+                                <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[9px] sm:text-[10px] py-0 px-1.5 font-mono">
                                   Applied {appliedRecord?.appliedAt ? `· ${appliedRecord.appliedAt}` : ''}
                                 </Badge>
                                 {appliedRecord?.followUpStatus === 'sent' ? (
-                                  <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[10px] py-0 px-1.5 font-mono">
+                                  <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-[9px] sm:text-[10px] py-0 px-1.5 font-mono">
                                     <CheckCircle2 className="w-3 h-3 mr-1 text-blue-500" /> Followed up
                                   </Badge>
                                 ) : (
@@ -2521,11 +2522,11 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                                     const daysElapsed = Math.floor((Date.now() - appliedTime) / 86400000)
                                     const daysLeft = Math.max(0, 7 - daysElapsed)
                                     return daysElapsed >= 7 ? (
-                                      <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40 text-[10px] py-0 px-1.5 font-mono animate-pulse">
+                                      <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40 text-[9px] sm:text-[10px] py-0 px-1.5 font-mono animate-pulse">
                                         <Clock className="w-3 h-3 mr-1" /> 7d Follow-Up Due
                                       </Badge>
                                     ) : (
-                                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-mono text-muted-foreground border-border/80">
+                                      <Badge variant="outline" className="text-[9px] sm:text-[10px] py-0 px-1.5 font-mono text-muted-foreground border-border/80">
                                         <Clock className="w-3 h-3 mr-1 text-primary" /> Follow up in {daysLeft}d
                                       </Badge>
                                     )
@@ -2538,13 +2539,13 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                       </div>
 
                       {/* Middle: Location & Workplace */}
-                      <div className="text-xs text-muted-foreground shrink-0 md:min-w-[220px]">
+                      <div className="text-[11px] sm:text-xs text-muted-foreground shrink-0 md:min-w-[180px] lg:min-w-[220px]">
                         <span>{job.location}</span>
                       </div>
 
                       {/* Right: Actions */}
-                      <div className="flex items-center justify-between md:justify-end gap-2.5 shrink-0">
-                        <span className="text-xs text-muted-foreground font-mono w-10 text-right">
+                      <div className="flex flex-wrap items-center justify-between md:justify-end gap-1.5 sm:gap-2 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-border/40">
+                        <span className="text-[11px] sm:text-xs text-muted-foreground font-mono w-9 sm:w-10 text-left md:text-right">
                           {job.postedDate}
                         </span>
 
@@ -2553,7 +2554,7 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                           type="button"
                           onClick={() => toggleSaveJob(job.id, job.title)}
                           title={isSaved ? 'Remove from Saved' : 'Save role'}
-                          className={`p-1.5 rounded-lg border transition-colors ${
+                          className={`p-1 sm:p-1.5 rounded-lg border transition-colors cursor-pointer ${
                             isSaved
                               ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                               : 'border-border/70 hover:bg-muted/50 text-muted-foreground hover:text-foreground'
@@ -2573,16 +2574,15 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                               )}`
                             )
                           }
-                          className="h-8 text-xs gap-1.5 px-3 border-border/80 hover:bg-muted/60 text-foreground font-medium"
+                          className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 px-2 sm:px-3 border-border/80 hover:bg-muted/60 text-foreground font-medium cursor-pointer"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-primary" />
+                          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                           <span>Prepare</span>
                         </Button>
 
-
                         {/* Applied Tab vs Discovery Actions */}
                         {isApplied ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                             {/* Follow-up Generator Button */}
                             <Button
                               variant="outline"
@@ -2598,10 +2598,10 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                                   },
                                 })
                               }
-                              className="h-8 text-xs gap-1.5 px-3 border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 font-medium"
+                              className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 px-2 sm:px-3 border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 font-medium cursor-pointer"
                             >
-                              <Mail className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>Follow up (AI)</span>
+                              <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" />
+                              <span>Follow up</span>
                             </Button>
 
                             {/* Download Calendar (.ICS) Reminder */}
@@ -2610,10 +2610,10 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                               size="sm"
                               onClick={() => handleDownloadFollowUpIcs(job, appliedRecord)}
                               title="Download RFC 5545 Calendar reminder for 7-day follow-up"
-                              className="h-8 text-xs gap-1.5 px-2.5 border-border/80 hover:bg-muted text-foreground font-medium"
+                              className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 px-2 sm:px-2.5 border-border/80 hover:bg-muted text-foreground font-medium cursor-pointer"
                             >
-                              <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>.ICS Reminder</span>
+                              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500" />
+                              <span className="hidden sm:inline">.ICS</span>
                             </Button>
 
                             <Button
@@ -2621,9 +2621,9 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                               size="sm"
                               onClick={() => handleUnmarkApplied(job.id, job.title)}
                               title="Move back to Discovery"
-                              className="h-8 text-xs gap-1 px-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                              className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 px-1.5 sm:px-2 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                             >
-                              <Undo2 className="w-3.5 h-3.5" />
+                              <Undo2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               <span>Unmark</span>
                             </Button>
                           </div>
@@ -2633,9 +2633,9 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                             size="sm"
                             onClick={() => handleMarkAsApplied(job)}
                             title="Mark as Applied (moves to Applied tab)"
-                            className="h-8 text-xs gap-1.5 px-3 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-medium"
+                            className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 px-2.5 sm:px-3 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-medium cursor-pointer"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             <span>Applied</span>
                           </Button>
                         )}
@@ -2645,10 +2645,10 @@ Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
                           href={job.apply_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-lg bg-foreground text-background hover:bg-foreground/90 font-medium text-xs transition-colors shrink-0 shadow-xs"
+                          className="inline-flex items-center justify-center gap-1 sm:gap-1.5 h-7 sm:h-8 px-2.5 sm:px-3.5 rounded-lg bg-foreground text-background hover:bg-foreground/90 font-medium text-[11px] sm:text-xs transition-colors shrink-0 shadow-xs"
                         >
                           <span>Apply</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </a>
                       </div>
                     </div>
