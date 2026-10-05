@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       company,
       walrusBlobId,
       customSmtp,
+      attachments,
     } = payload;
 
     if (!to || !to.includes('@')) {
@@ -54,6 +55,8 @@ export async function POST(req: Request) {
       dkimStatus = `PASS (Authenticated via ${provider} OAuth/App Password)`;
     }
 
+    const attachedCount = Array.isArray(attachments) ? attachments.length : 0;
+
     return NextResponse.json({
       success: true,
       dispatchId,
@@ -64,7 +67,9 @@ export async function POST(req: Request) {
       relay: relayType,
       dkimStatus,
       walrusVerificationUrl: walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : null,
-      message: `Application successfully dispatched to ${to} via ${relayType}. 7-day follow-up reminder scheduled.`
+      attachmentsCount: attachedCount,
+      attachments: attachments || [],
+      message: `Application successfully dispatched to ${to} via ${relayType}${attachedCount > 0 ? ` with ${attachedCount} attached document(s)` : ''}. 7-day follow-up reminder scheduled.`
     });
   } catch (error: any) {
     return NextResponse.json(

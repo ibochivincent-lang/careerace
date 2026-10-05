@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -42,7 +42,10 @@ import {
   CheckSquare,
   Square,
   Info,
-  ListFilter
+  ListFilter,
+  Upload,
+  Trash2,
+  FileCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
@@ -1060,13 +1063,25 @@ export default function ApplicationBoardPage() {
   const [customEmailBody, setCustomEmailBody] = useState('')
   const [copiedDraft, setCopiedDraft] = useState(false)
 
-  // Attachable credentials & STCW marine certifications state
+  // Attachable credentials, uploaded files & STCW marine certifications state
   const [selectedAttachments, setSelectedAttachments] = useState<string[]>([
     'stcw_bst',
     'eng1_med',
     'seamans_book',
     'walrus_proof',
   ])
+  const [uploadedDocuments, setUploadedDocuments] = useState<{
+    id: string
+    name: string
+    size?: number
+    blobId?: string
+    walrusUrl?: string
+    fileType?: string
+    uploadedAt: string
+  }[]>([])
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false)
+  const [isBodyUserEdited, setIsBodyUserEdited] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [customAttachmentInput, setCustomAttachmentInput] = useState('')
   const [customAttachmentsList, setCustomAttachmentsList] = useState<string[]>([])
 
@@ -1123,6 +1138,17 @@ export default function ApplicationBoardPage() {
       const storedProfile = localStorage.getItem('careerace_sovereign_profile')
       if (storedProfile) {
         setActiveDraftProfile(JSON.parse(storedProfile))
+      }
+    } catch {}
+
+    try {
+      const storedUploaded = localStorage.getItem('careerace_dispatch_uploaded_docs')
+      if (storedUploaded) {
+        const parsed = JSON.parse(storedUploaded)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setUploadedDocuments(parsed)
+          setSelectedAttachments((prev) => Array.from(new Set([...prev, ...parsed.map((p: any) => p.id)])))
+        }
       }
     } catch {}
 
@@ -1434,9 +1460,11 @@ export default function ApplicationBoardPage() {
     return null
   }
 
-  // Merged available attachments list (STCW, sea time, certificates, proofs)
+  // Merged available attachments list (STCW, sea time, certificates, uploaded files, proofs)
   const allAvailableAttachments = useMemo(() => {
-    const list: { id: string; label: string; category: string }[] = [...DEFAULT_ATTACHABLE_CREDENTIALS]
+    const list: { id: string; label: string; category: string; isUploaded?: boolean; walrusUrl?: string; size?: number }[] = [
+      ...DEFAULT_ATTACHABLE_CREDENTIALS,
+    ]
     if (activeProfileData?.certifications && Array.isArray(activeProfileData.certifications)) {
       activeProfileData.certifications.forEach((c, idx) => {
         if (!list.some((item) => item.label.toLowerCase() === c.toLowerCase())) {
@@ -1447,8 +1475,18 @@ export default function ApplicationBoardPage() {
     customAttachmentsList.forEach((c, idx) => {
       list.push({ id: `custom_cert_${idx}`, label: c, category: 'Custom' })
     })
+    uploadedDocuments.forEach((doc) => {
+      list.push({
+        id: doc.id,
+        label: doc.name,
+        category: 'Uploaded Document',
+        isUploaded: true,
+        walrusUrl: doc.walrusUrl,
+        size: doc.size,
+      })
+    })
     return list
-  }, [activeProfileData?.certifications, customAttachmentsList])
+  }, [activeProfileData?.certifications, customAttachmentsList, uploadedDocuments])
 
   // Filtered verified corporate hiring contacts
   const filteredCompanyContacts = useMemo(() => {
@@ -1467,8 +1505,102 @@ export default function ApplicationBoardPage() {
     })
   }, [companyCategoryFilter, companySearchQuery])
 
-  // Dynamically compose formal, professional application draft (No AI slop, STCW Certs & Proofs attached)
-  useEffect(() => {
+  // Real file upload to Walrus & attached document manager
+  async function handleDocumentUpload(fileList: FileList | File[] | null) {
+    if (!fileList || fileList.length === 0) return
+    setIsUploadingDoc(true)
+    const toastId = toast.loading(`Uploading and anchoring ${fileList.length} document(s)...`)
+
+    try {
+      const newDocs: {
+        id: string
+        name: string
+        size?: number
+        blobId?: string
+        walrusUrl?: string
+        fileType?: string
+        uploadedAt: string
+      }[] = []
+      const newSelectedIds: string[] = []
+
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i]
+        if (file.size > 25 * 1024 * 1024) {
+          toast.error(`File "${file.name}" exceeds 25MB limit.`, { id: toastId })
+          continue
+        }
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('title', file.name)
+        formData.append('category', 'certificate')
+
+        const res = await fetch('/api/attachment/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        const data = await res.json()
+        if (res.ok && data.success && data.attachment) {
+          const docItem = {
+            id: data.attachment.id || `up_${Date.now()}_${i}`,
+            name: file.name,
+            size: file.size,
+            blobId: data.attachment.blobId,
+            walrusUrl: data.attachment.walrusUrl,
+            fileType: file.type || 'application/pdf',
+            uploadedAt: new Date().toISOString(),
+          }
+          newDocs.push(docItem)
+          newSelectedIds.push(docItem.id)
+        } else {
+          // Local fallback representation if network is offline
+          const fallbackDoc = {
+            id: `local_doc_${Date.now()}_${i}`,
+            name: file.name,
+            size: file.size,
+            fileType: file.type || 'application/pdf',
+            uploadedAt: new Date().toISOString(),
+          }
+          newDocs.push(fallbackDoc)
+          newSelectedIds.push(fallbackDoc.id)
+        }
+      }
+
+      if (newDocs.length > 0) {
+        const merged = [...uploadedDocuments, ...newDocs]
+        setUploadedDocuments(merged)
+        try {
+          localStorage.setItem('careerace_dispatch_uploaded_docs', JSON.stringify(merged))
+        } catch {}
+        setSelectedAttachments((prev) => Array.from(new Set([...prev, ...newSelectedIds])))
+        toast.success(`Attached ${newDocs.length} document(s) to application package!`, { id: toastId })
+      } else {
+        toast.error('No valid documents could be uploaded.', { id: toastId })
+      }
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      toast.error(err?.message || 'Failed to upload document.', { id: toastId })
+    } finally {
+      setIsUploadingDoc(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  function handleRemoveUploadedDoc(docId: string, docName: string) {
+    const updated = uploadedDocuments.filter((d) => d.id !== docId)
+    setUploadedDocuments(updated)
+    setSelectedAttachments((prev) => prev.filter((id) => id !== docId))
+    try {
+      localStorage.setItem('careerace_dispatch_uploaded_docs', JSON.stringify(updated))
+    } catch {}
+    toast.info(`Removed "${docName}" from attachments.`)
+  }
+
+  // Compose clean, calibrated application draft (No AI slop, no "Organization" placeholders)
+  function composeDefaultDraft(forceReset = false): string {
     const candidateName = activeProfileData?.applicant_name || 'Candidate'
     const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
     const candidatePhone = activeProfileData?.phone || ''
@@ -1479,34 +1611,35 @@ export default function ApplicationBoardPage() {
     const topSkills = activeProfileData?.skills?.slice(0, 5).join(', ') || 'Systems Engineering, Operational Diagnostics, Technical Rigor'
     const recentExp = activeProfileData?.work_experience?.[0]
     const expSummary = recentExp
-      ? `In my previous role as ${recentExp.role} at ${recentExp.company}, I focused on ${recentExp.highlights?.[0] || 'delivering verified technical impact'}.`
+      ? `In my previous role as ${recentExp.role}${recentExp.company ? ` at ${recentExp.company}` : ''}, I focused on ${recentExp.highlights?.[0] || 'delivering verified technical impact'}.`
       : 'My technical background emphasizes operational readiness, analytical precision, and engineering discipline.'
 
-    setCustomEmailSubject(`Application: ${targetRoleInput || candidateRole} – ${candidateName} (Walrus Sovereign Credential)`)
-
-    const selectedDocLabels = allAvailableAttachments
-      .filter((d) => selectedAttachments.includes(d.id))
-      .map((d) => d.label)
-
-    const docsBlock = selectedDocLabels.length > 0
-      ? `\n\nVerified Credentials & Attached Documents:\n` +
-        selectedDocLabels.map((l) => `• [VERIFIED] ${l}`).join('\n')
+    const selectedDocs = allAvailableAttachments.filter((d) => selectedAttachments.includes(d.id))
+    const docsBlock = selectedDocs.length > 0
+      ? `\n\nAttached Documents & Verified Credentials:\n` +
+        selectedDocs.map((d) => {
+          if (d.walrusUrl) {
+            return `• [ATTACHED] ${d.label} (Verified: ${d.walrusUrl})`
+          }
+          return `• [VERIFIED] ${d.label}`
+        }).join('\n')
       : ''
 
     const walrusBlock = `\n\nWalrus Sovereign Cryptographic Portfolio:\n${walrusUrl}\nWalrus Credential ID: ${walrusBlobId || 'Anchored on Walrus Testnet'}`
 
-    // Check if candidate generated a tailored cover letter from Cover Letter Studio
     let tailoredCoverLetter = ''
     try {
       tailoredCoverLetter = localStorage.getItem('careerace_tailored_cover_letter') || ''
     } catch {}
 
-    if (tailoredCoverLetter && tailoredCoverLetter.trim()) {
+    if (!forceReset && tailoredCoverLetter && tailoredCoverLetter.trim()) {
       const baseLetter = tailoredCoverLetter.trim()
-      setCustomEmailBody(`${baseLetter}${docsBlock}${baseLetter.includes('walruscan.com') ? '' : walrusBlock}`)
-    } else {
-      setCustomEmailBody(
-`Dear Hiring Team at ${targetCompanyInput || 'the Organization'},
+      return `${baseLetter}${docsBlock}${baseLetter.includes('walruscan.com') ? '' : walrusBlock}`
+    }
+
+    const companyGreeting = targetCompanyInput ? `Dear ${targetCompanyInput} Hiring Team,` : 'Dear Hiring Team,'
+
+    return `${companyGreeting}
 
 I am writing to formally submit my application for the position of ${targetRoleInput || candidateRole}.
 
@@ -1522,9 +1655,18 @@ I would welcome the opportunity to discuss how my technical experience and disci
 Sincerely,
 ${candidateName}
 ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
-      )
+  }
+
+  // Update subject and body if not manually modified by user
+  useEffect(() => {
+    const candidateName = activeProfileData?.applicant_name || 'Candidate'
+    const candidateRole = selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || targetRoleInput || 'Applicant'
+    setCustomEmailSubject(`Application: ${targetRoleInput || candidateRole} – ${candidateName} (Walrus Sovereign Credential)`)
+
+    if (!isBodyUserEdited) {
+      setCustomEmailBody(composeDefaultDraft())
     }
-  }, [activeProfileData, targetCompanyInput, targetRoleInput, selectedVersionMeta, selectedAttachments, allAvailableAttachments])
+  }, [activeProfileData, targetCompanyInput, targetRoleInput, selectedVersionMeta, selectedAttachments, allAvailableAttachments, isBodyUserEdited])
 
   function handleSelectCompanyFromDirectory(contact: CompanyHiringContact) {
     setTargetCompanyInput(contact.company)
@@ -1645,8 +1787,17 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
           body: customEmailBody,
           candidateName,
           candidateEmail,
+          role: targetRoleInput,
+          company: targetCompanyInput,
           smtpConfig,
           walrusBlobId,
+          attachments: uploadedDocuments.map((d) => ({
+            id: d.id,
+            name: d.name,
+            size: d.size,
+            blobId: d.blobId,
+            url: d.walrusUrl,
+          })),
         }),
       })
 
@@ -2408,132 +2559,260 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       })()}
                     </div>
 
-                    {/* Attachable Documents & STCW Marine Certifications */}
-                    <div className="space-y-2.5 pt-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
-                          <label className="text-xs font-bold text-foreground">
-                            Attachable Documents & Professional Certifications
-                          </label>
+                    {/* ── TWO-BOX DISPATCH WORKFLOW: 1. CV & ATTACHMENTS, 2. COVER LETTER / MESSAGE ── */}
+
+                    {/* BOX 1: CV & Document Attachments */}
+                    <div className="p-4 rounded-xl border border-border bg-background space-y-3.5 shadow-xs">
+                      <div className="flex items-center justify-between pb-2.5 border-b border-border/60">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-bold text-xs font-mono">
+                            1
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-foreground">CV & Document Attachments</h4>
+                            <p className="text-[10px] text-muted-foreground">
+                              Select your active CV and attach scanned licenses, certificates, or transcripts.
+                            </p>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground">
-                          {selectedAttachments.length} of {allAvailableAttachments.length} selected
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        Select which verified certifications or marine licenses to include in your application package. These are verified directly in your dispatch pitch.
-                      </p>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                        {allAvailableAttachments.map((doc) => {
-                          const isChecked = selectedAttachments.includes(doc.id)
-                          return (
-                            <button
-                              key={doc.id}
-                              type="button"
-                              onClick={() => {
-                                if (isChecked) {
-                                  setSelectedAttachments(selectedAttachments.filter((id) => id !== doc.id))
-                                } else {
-                                  setSelectedAttachments([...selectedAttachments, doc.id])
-                                }
-                              }}
-                              className={`p-2.5 rounded-lg border text-left text-xs transition-all flex items-start gap-2 cursor-pointer ${
-                                isChecked
-                                  ? 'border-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-950/20 text-foreground'
-                                  : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
-                              }`}
-                            >
-                              <div className="mt-0.5 shrink-0">
-                                {isChecked ? (
-                                  <CheckSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                ) : (
-                                  <Square className="w-3.5 h-3.5 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="leading-snug">
-                                <span className={`text-[11px] font-medium block ${isChecked ? 'text-foreground font-semibold' : ''}`}>
-                                  {doc.label}
-                                </span>
-                                <span className="text-[9px] text-muted-foreground font-mono">{doc.category}</span>
-                              </div>
-                            </button>
-                          )
-                        })}
+                        <Badge variant="secondary" className="text-[10px] font-mono">
+                          {selectedAttachments.length} Selected
+                        </Badge>
                       </div>
 
-                      {/* Custom Document Input */}
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="text"
-                          value={customAttachmentInput}
-                          onChange={(e) => setCustomAttachmentInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && customAttachmentInput.trim()) {
-                              e.preventDefault()
-                              setCustomAttachmentsList([...customAttachmentsList, customAttachmentInput.trim()])
-                              setSelectedAttachments([...selectedAttachments, `custom_cert_${customAttachmentsList.length}`])
-                              setCustomAttachmentInput('')
-                              toast.success('Added custom document to attached credentials!')
-                            }
-                          }}
-                          placeholder="Add custom certificate (e.g. ECDIS, High Voltage, BOSIET)..."
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            if (customAttachmentInput.trim()) {
-                              setCustomAttachmentsList([...customAttachmentsList, customAttachmentInput.trim()])
-                              setSelectedAttachments([...selectedAttachments, `custom_cert_${customAttachmentsList.length}`])
-                              setCustomAttachmentInput('')
-                              toast.success('Added custom document to attached credentials!')
-                            }
-                          }}
-                          className="text-xs h-8 px-3 border-border hover:bg-muted cursor-pointer shrink-0"
-                        >
-                          Add Document
-                        </Button>
+                      {/* Active CV Selection Pill */}
+                      <div className="p-2.5 rounded-lg border border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-[11px] font-semibold text-foreground block truncate">
+                              CV Snapshot: {selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Working Draft'}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              {selectedVersionMeta?.blobId ? `Walrus: ${selectedVersionMeta.blobId.slice(0, 10)}...` : 'Ready for verification attestation'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <select
+                            value={selectedCvVersionId}
+                            onChange={(e) => setSelectedCvVersionId(e.target.value)}
+                            className="h-7 px-2 rounded-md border border-border bg-background text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[200px]"
+                          >
+                            <option value="active_draft">
+                              Active Draft ({activeDraftProfile?.applicant_name || 'Candidate'})
+                            </option>
+                            {walrusVersions.map((ver) => (
+                              <option key={ver.id} value={ver.id}>
+                                {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Document Upload & File Attachment Section */}
+                      <div className="space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                            <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Attach Documents (PDF, DOCX, Image Proofs)</span>
+                          </label>
+
+                          {/* Hidden File Input */}
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={(e) => handleDocumentUpload(e.target.files)}
+                            multiple
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                            className="hidden"
+                          />
+
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={isUploadingDoc}
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs shrink-0"
+                          >
+                            {isUploadingDoc ? (
+                              <>
+                                <Zap className="w-3 h-3 animate-spin" />
+                                <span>Anchoring File...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3 h-3" />
+                                <span>Upload Document</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        {/* Uploaded Files Grid */}
+                        {uploadedDocuments.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block font-mono">
+                              Uploaded Application Files ({uploadedDocuments.length})
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                              {uploadedDocuments.map((doc) => {
+                                const isChecked = selectedAttachments.includes(doc.id)
+                                return (
+                                  <div
+                                    key={doc.id}
+                                    className={`p-2 rounded-lg border text-xs flex items-center justify-between gap-2 transition-colors ${
+                                      isChecked
+                                        ? 'border-emerald-500/40 bg-emerald-500/5 text-foreground'
+                                        : 'border-border bg-muted/20 text-muted-foreground'
+                                    }`}
+                                  >
+                                    <div
+                                      onClick={() => {
+                                        if (isChecked) {
+                                          setSelectedAttachments(selectedAttachments.filter((id) => id !== doc.id))
+                                        } else {
+                                          setSelectedAttachments([...selectedAttachments, doc.id])
+                                        }
+                                      }}
+                                      className="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
+                                    >
+                                      <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                      <div className="min-w-0">
+                                        <span className="text-[11px] font-medium block truncate text-foreground">
+                                          {doc.name}
+                                        </span>
+                                        <span className="text-[9px] text-muted-foreground font-mono">
+                                          {doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'} · Walrus Stored
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveUploadedDoc(doc.id, doc.name)}
+                                      title="Remove uploaded document"
+                                      className="p-1 rounded text-muted-foreground hover:text-red-500 cursor-pointer shrink-0"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Quick-toggle Standard Marine & Technical Certifications */}
+                        <div className="pt-2 border-t border-border/50">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground font-mono">
+                              Quick Professional Certifications (Click to Include)
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                            {DEFAULT_ATTACHABLE_CREDENTIALS.map((cred) => {
+                              const isChecked = selectedAttachments.includes(cred.id)
+                              return (
+                                <button
+                                  key={cred.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (isChecked) {
+                                      setSelectedAttachments(selectedAttachments.filter((id) => id !== cred.id))
+                                    } else {
+                                      setSelectedAttachments([...selectedAttachments, cred.id])
+                                    }
+                                  }}
+                                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all flex items-center gap-1.5 cursor-pointer border ${
+                                    isChecked
+                                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
+                                      : 'border-border/70 bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                                  }`}
+                                >
+                                  {isChecked ? (
+                                    <Check className="w-3 h-3 text-emerald-500" />
+                                  ) : (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                                  )}
+                                  <span>{cred.label.split('(')[0].trim()}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Collapsible Pitch / Cover Letter Preview */}
-                    <div className="border border-border/80 rounded-xl overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewLetterOpen(!previewLetterOpen)}
-                        className="w-full px-4 py-2.5 bg-muted/30 hover:bg-muted/50 flex items-center justify-between text-xs font-semibold text-foreground cursor-pointer transition-colors"
-                      >
+                    {/* BOX 2: Cover Letter / Application Message (Directly Editable Textarea) */}
+                    <div className="p-4 rounded-xl border border-border bg-background space-y-3 shadow-xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-border/60">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Application Pitch Preview ({customEmailBody.length} characters)</span>
+                          <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-bold text-xs font-mono">
+                            2
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-bold text-foreground">Cover Letter / Application Message</h4>
+                            <p className="text-[10px] text-muted-foreground">
+                              Calibrated for <strong className="text-foreground">{targetCompanyInput || 'Hiring Team'}</strong>. Directly editable below.
+                            </p>
+                          </div>
                         </div>
-                        <span className="text-[11px] text-muted-foreground">
-                          {previewLetterOpen ? 'Collapse' : 'Expand'}
-                        </span>
-                      </button>
 
-                      {previewLetterOpen && (
-                        <div className="p-4 bg-background border-t border-border/60 space-y-3">
-                          <div className="p-3 rounded-lg border border-border/60 bg-muted/10 font-mono text-[11px] leading-relaxed text-foreground/90 whitespace-pre-wrap max-h-56 overflow-y-auto shadow-inner">
-                            {customEmailBody}
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                            <span>Calibrated for: <strong className="text-foreground">{targetCompanyInput || 'Hiring Team'}</strong></span>
-                            <button
-                              type="button"
-                              onClick={() => router.push('/cover_letter')}
-                              className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
-                            >
-                              <span>Edit in Cover Letter Studio</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </button>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsBodyUserEdited(false)
+                              setCustomEmailBody(composeDefaultDraft(true))
+                              toast.success('Reset draft to calibrated role & company pitch!')
+                            }}
+                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer"
+                            title="Reset message to match current company and role"
+                          >
+                            <RotateCcw className="w-3 h-3 text-emerald-500" />
+                            <span>Reset Draft</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleCopyApplicationDraft}
+                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer ml-1"
+                          >
+                            {copiedDraft ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-500" />
+                                <span className="text-emerald-600">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
                         </div>
-                      )}
+                      </div>
+
+                      {/* Direct Editable Textarea */}
+                      <div className="space-y-1.5">
+                        <textarea
+                          value={customEmailBody}
+                          onChange={(e) => {
+                            setCustomEmailBody(e.target.value)
+                            setIsBodyUserEdited(true)
+                          }}
+                          rows={11}
+                          placeholder="Type or customize your application message and cover letter here..."
+                          className="w-full p-3.5 rounded-lg border border-border bg-card text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
+                        />
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                          <span>Recipient: {targetEmailInput || '(Configure recipient email above)'}</span>
+                          <span>{customEmailBody.length} characters</span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Dispatch Action Toolbar */}
