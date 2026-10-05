@@ -1,0 +1,40 @@
+name: CareerAce Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    name: Typecheck, Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run TypeScript typecheck
+        run: npx tsc --noEmit
+
+      - name: Run automated test suite
+        run: npm test
+
+      - name: Build Next.js production bundle
+        env:
+          NEXTAUTH_SECRET: ci-secret-key-at-least-32-characters-long
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          WALRUS_PUBLISHER_URL: https://publisher.walrus-testnet.walrus.space
+          WALRUS_AGGREGATOR_URL: https://aggregator.walrus-testnet.walrus.space
+          SUI_NETWORK: testnet
+        run: npm run build
