@@ -188,7 +188,7 @@ export function LivePdfPreview({
   // Calibrate comfortable ATS print scale on mobile screens (< 640px)
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth < 640) {
-      setZoomLevel(80);
+      setZoomLevel(100);
     }
   }, []);
 
@@ -743,7 +743,7 @@ export function LivePdfPreview({
       </div>
 
       {/* ── PREVIEW & EDITOR CANVAS BODY ── */}
-      <div className="flex-1 bg-muted/40 p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[700px]">
+      <div className="flex-1 bg-muted/40 p-1.5 sm:p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[500px] sm:min-h-[700px]">
         {activeView === "uploaded_source" && sourcePdfUrl ? (
           <div className="w-full h-full min-h-[600px] rounded-xl overflow-hidden border border-border shadow-md bg-background">
             <iframe
@@ -755,12 +755,16 @@ export function LivePdfPreview({
         ) : (
           /* UNIFIED ATS EDITABLE VECTOR DOCUMENT SHEET */
           <div
-            style={{
-              transform: `scale(${zoomLevel / 100})`,
-              transformOrigin: "top center",
-              transition: "transform 0.15s ease-out",
-            }}
-            className={`w-full max-w-[840px] bg-white text-slate-900 rounded-sm shadow-2xl border border-slate-300 transition-all select-text print:shadow-none print:border-none print:p-0 ${
+            style={
+              zoomLevel !== 100
+                ? {
+                    transform: `scale(${zoomLevel / 100})`,
+                    transformOrigin: "top center",
+                    transition: "transform 0.15s ease-out",
+                  }
+                : undefined
+            }
+            className={`w-full max-w-[840px] bg-white text-slate-900 rounded-sm shadow-md sm:shadow-2xl border border-slate-300 transition-all select-text print:shadow-none print:border-none print:p-0 mx-auto ${
               activeTemplate === "ivy_league"
                 ? "p-2.5 sm:p-8 md:p-14 font-serif"
                 : activeTemplate === "senior_architect"
@@ -816,77 +820,77 @@ export function LivePdfPreview({
                   )}
                 </div>
 
-                {/* Contact Line (Email, Phone, Location & Links with Unrestricted Sizing) */}
+                {/* Contact Line (Email, Phone, Location & Links with Responsive Layout) */}
                 <div
-                  className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5 text-xs text-slate-700 ${
-                    activeTemplate === "ivy_league" ? "justify-center text-[12px] text-slate-700" : ""
+                  className={`grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 sm:gap-x-3 sm:gap-y-1.5 mt-2.5 text-xs text-slate-700 ${
+                    activeTemplate === "ivy_league" ? "sm:justify-center text-[12px]" : ""
                   }`}
                 >
-                  <div className="inline-flex items-center gap-1 min-w-[140px] sm:min-w-[180px] flex-1">
-                    <span className="text-slate-400 text-[10px] uppercase font-mono">Email:</span>
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="text-slate-400 text-[10px] uppercase font-mono shrink-0">Email:</span>
                     <input
                       type="email"
                       value={contactEmail}
                       onChange={(e) => updateField({ email: e.target.value, contact_email: e.target.value } as any)}
                       placeholder="candidate.email@example.com"
-                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800"
+                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800 truncate"
                     />
                   </div>
                   <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                  <div className="inline-flex items-center gap-1 min-w-[110px] sm:min-w-[130px] flex-1 max-w-[210px]">
-                    <span className="text-slate-400 text-[10px] uppercase font-mono">Tel:</span>
+                  <div className="flex items-center gap-1.5 min-w-0 sm:max-w-[210px] flex-1">
+                    <span className="text-slate-400 text-[10px] uppercase font-mono shrink-0">Tel:</span>
                     <input
                       type="text"
                       value={contactPhone}
                       onChange={(e) => updateField({ phone: e.target.value, contact_phone: e.target.value } as any)}
                       placeholder="+1 (555) 000-0000"
-                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800"
+                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800 truncate"
                     />
                   </div>
                   <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                  <div className="inline-flex items-center gap-1 min-w-[110px] sm:min-w-[130px] flex-1 max-w-[220px]">
-                    <span className="text-slate-400 text-[10px] uppercase font-mono">Loc:</span>
+                  <div className="flex items-center gap-1.5 min-w-0 sm:max-w-[220px] flex-1">
+                    <span className="text-slate-400 text-[10px] uppercase font-mono shrink-0">Loc:</span>
                     <input
                       type="text"
                       value={contactLocation}
                       onChange={(e) => updateField({ location: e.target.value } as any)}
                       placeholder="City, Country"
-                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800"
+                      className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-xs text-slate-800 truncate"
                     />
                   </div>
 
                   {/* LinkedIn & GitHub & Portfolio Row */}
-                  <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5 text-[11px] text-slate-600 border-t border-slate-100">
-                    <div className="inline-flex items-center gap-1 flex-1 min-w-[130px] sm:min-w-[160px]">
-                      <span className="text-blue-600 font-bold text-[10px] font-mono">in/</span>
+                  <div className="w-full grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 sm:gap-x-3 sm:gap-y-1 pt-1.5 text-[11px] text-slate-600 border-t border-slate-100">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className="text-blue-600 font-bold text-[10px] font-mono shrink-0">in/</span>
                       <input
                         type="text"
                         value={profile.linkedin_url || ""}
                         onChange={(e) => updateField({ linkedin_url: e.target.value })}
                         placeholder="linkedin.com/in/username"
-                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700"
+                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700 truncate"
                       />
                     </div>
                     <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                    <div className="inline-flex items-center gap-1 flex-1 min-w-[130px] sm:min-w-[160px]">
-                      <span className="text-slate-800 font-bold text-[10px] font-mono">gh/</span>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className="text-slate-800 font-bold text-[10px] font-mono shrink-0">gh/</span>
                       <input
                         type="text"
                         value={profile.github_url || ""}
                         onChange={(e) => updateField({ github_url: e.target.value })}
                         placeholder="github.com/username"
-                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700"
+                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700 truncate"
                       />
                     </div>
                     <span className="text-slate-300 select-none hidden sm:inline">•</span>
-                    <div className="inline-flex items-center gap-1 flex-1 min-w-[130px] sm:min-w-[160px]">
-                      <span className="text-emerald-700 font-bold text-[10px] font-mono">web/</span>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className="text-emerald-700 font-bold text-[10px] font-mono shrink-0">web/</span>
                       <input
                         type="text"
                         value={profile.website_url || ""}
                         onChange={(e) => updateField({ website_url: e.target.value })}
                         placeholder="portfolio or personal site"
-                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700"
+                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 text-[11px] text-slate-700 truncate"
                       />
                     </div>
                   </div>

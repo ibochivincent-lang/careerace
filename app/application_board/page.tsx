@@ -1903,6 +1903,7 @@ export default function ApplicationBoardPage() {
     syncCandidateDataToCloud({ appliedJobs: updated })
 
     toast.success(`Applied to ${job.company}! Removed from Discovery and scheduled 7-day follow-up.`)
+    setActiveBoardTab('applied')
   }
 
   // Mark follow-up as sent
@@ -3903,40 +3904,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         ) : (
           /* Stages 1, 2, and 3: Discovery, Saved, Applied */
           <>
-            {/* Daily Application Goal & Accumulator Banner */}
-            <Card className="p-3.5 sm:p-4 rounded-xl border border-border bg-card shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-mono font-bold text-xs">
-                    {appliedTodayCount}/{DAILY_APPLICATION_TARGET}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-foreground">Daily Application Target</span>
-                      <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
-                        {appliedTodayCount >= DAILY_APPLICATION_TARGET ? 'Target Reached' : `${DAILY_APPLICATION_TARGET - appliedTodayCount} remaining today`}
-                      </Badge>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {appliedTodayCount} applications dispatched today · {filteredJobs.length} matching verified opportunities ready. Synchronized with AI Copilot.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <div className="w-28 sm:w-36 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-300"
-                      style={{ width: `${Math.min(100, Math.round((appliedTodayCount / DAILY_APPLICATION_TARGET) * 100))}%` }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    {Math.min(100, Math.round((appliedTodayCount / DAILY_APPLICATION_TARGET) * 100))}%
-                  </span>
-                </div>
-              </div>
-            </Card>
-
             {/* Search & Filter Bar (No Emojis) */}
             <div className="space-y-3">
               {/* Search Input */}
@@ -4232,20 +4199,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         <span className="text-[11px] sm:text-xs text-muted-foreground font-mono w-9 sm:w-10 text-left md:text-right">
                           {job.postedDate}
                         </span>
-
-                        {/* Bookmark Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => toggleSaveJob(job.id, job.title)}
-                          title={isSaved ? 'Remove from Saved' : 'Save role'}
-                          className={`p-1 sm:p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                            isSaved
-                              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                              : 'border-border/70 hover:bg-muted/50 text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
-                        </button>
 
                         {/* Prepare Button (triggers Interview Room Coming Soon) */}
                         <Button

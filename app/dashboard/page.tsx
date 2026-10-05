@@ -537,6 +537,20 @@ function DashboardContent() {
     }
   }, [sessionAddress])
 
+  // Synchronize candidate identity name with AccountChip header
+  useEffect(() => {
+    if (parsedProfile?.applicant_name && typeof parsedProfile.applicant_name === 'string') {
+      const cleanName = parsedProfile.applicant_name.trim()
+      if (cleanName && !cleanName.startsWith('0x')) {
+        const prev = typeof window !== 'undefined' ? localStorage.getItem('careerace_candidate_name') : null
+        if (prev !== cleanName) {
+          localStorage.setItem('careerace_candidate_name', cleanName)
+          window.dispatchEvent(new CustomEvent('careerace_auth_changed', { detail: { username: cleanName } }))
+        }
+      }
+    }
+  }, [parsedProfile?.applicant_name])
+
   // Calculate ATS scorecard: against custom JD if provided, or against standard industry benchmark JD for role.
   useEffect(() => {
     if (parsedProfile && parsedProfile.skills && parsedProfile.skills.length > 0) {

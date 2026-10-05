@@ -32,21 +32,41 @@ export async function GET(req: Request) {
 
       const { data } = await client
         .from("candidates")
-        .select("name, primary_role")
+        .select("name, target_role, primary_role")
         .eq("wallet_address", address.toLowerCase())
         .limit(1)
         .maybeSingle();
 
       if (data) {
-        username = data.name;
-        primaryRole = data.primary_role;
+        username = data.name || null;
+        primaryRole = data.target_role || data.primary_role || null;
+      }
+
+      // If no name stored on candidates record, inspect sovereign memory snapshot
+      if (!username) {
+        const { data: mem } = await client
+          .from("candidate_memories")
+          .select("fact_text")
+          .eq("candidate_wallet", address.toLowerCase())
+          .eq("fact_kind", "sovereign_profile_snapshot")
+          .limit(1)
+          .maybeSingle();
+
+        if (mem && mem.fact_text) {
+          try {
+            const parsed = JSON.parse(mem.fact_text);
+            if (parsed.applicant_name && typeof parsed.applicant_name === "string") {
+              username = parsed.applicant_name.trim();
+            }
+          } catch {}
+        }
       }
     }
 
     return NextResponse.json({
       authenticated: true,
       address,
-      username: username || address.slice(0, 8),
+      username: username && !username.startsWith("0x") ? username : null,
       primaryRole: primaryRole || "Candidate",
     });
   } catch (err) {

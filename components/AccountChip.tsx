@@ -42,9 +42,9 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
           .catch(() => {})
       }
 
-      // Check stored candidate name
+      // Check stored candidate name (ignoring any stale 0x hex values)
       const storedName = localStorage.getItem('careerace_candidate_name')
-      if (storedName && storedName.trim()) {
+      if (storedName && storedName.trim() && !storedName.startsWith('0x')) {
         setUsername(storedName.trim())
       } else {
         // Fallback to profile parsed name if available
@@ -52,8 +52,9 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
           const profileRaw = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
           if (profileRaw) {
             const parsed = JSON.parse(profileRaw)
-            if (parsed.applicant_name) {
+            if (parsed.applicant_name && typeof parsed.applicant_name === 'string' && !parsed.applicant_name.startsWith('0x')) {
               setUsername(parsed.applicant_name.trim())
+              localStorage.setItem('careerace_candidate_name', parsed.applicant_name.trim())
             }
           }
         } catch {}
@@ -86,9 +87,9 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
     fetch('/api/candidate/me')
       .then((res) => res.json())
       .then((data) => {
-        if (data.authenticated && data.username) {
-          setUsername(data.username)
-          localStorage.setItem('careerace_candidate_name', data.username)
+        if (data.authenticated && data.username && typeof data.username === 'string' && !data.username.startsWith('0x')) {
+          setUsername(data.username.trim())
+          localStorage.setItem('careerace_candidate_name', data.username.trim())
         }
       })
       .catch(() => {})
@@ -110,6 +111,28 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Compute best human-friendly display name (strictly avoiding 0x hex addresses)
+  const resolvedName = (username && username.trim() && !username.startsWith('0x'))
+    ? username.trim()
+    : (() => {
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('careerace_candidate_name')
+          if (stored && stored.trim() && !stored.startsWith('0x')) {
+            return stored.trim()
+          }
+          try {
+            const raw = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+            if (raw) {
+              const p = JSON.parse(raw)
+              if (p.applicant_name && typeof p.applicant_name === 'string' && !p.applicant_name.startsWith('0x')) {
+                return p.applicant_name.trim()
+              }
+            }
+          } catch {}
+        }
+        return null
+      })()
+
   if (!currentAddress) {
     return (
       <Link
@@ -122,7 +145,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
     )
   }
 
-  const initial = username ? username[0].toUpperCase() : currentAddress.slice(2, 3).toUpperCase() || 'U'
+  const initial = resolvedName ? resolvedName[0].toUpperCase() : 'U'
 
   return (
     <div className={`relative ${className || ''}`}>
@@ -130,16 +153,16 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/90 py-1 pl-1.5 pr-3 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs cursor-pointer"
+        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/90 py-1 pl-1.5 pr-2.5 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs cursor-pointer"
         title="View Sovereign Sui Passport & Identity"
       >
-        <span aria-hidden className="size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+        <span aria-hidden className="size-6 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
           {initial}
         </span>
         <div className="flex items-center gap-1.5 text-xs text-left">
           {/* Display Name */}
-          <span className="font-semibold text-foreground tracking-tight max-w-[100px] sm:max-w-[140px] truncate">
-            {username || 'Sui Candidate'}
+          <span className="font-semibold text-foreground tracking-tight max-w-[90px] sm:max-w-[140px] truncate">
+            {resolvedName || (suinsDomain ? suinsDomain : short(currentAddress))}
           </span>
 
           {/* SuiNS Handle or Short Address */}
@@ -149,7 +172,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
               <span>{suinsDomain}</span>
             </span>
           ) : (
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">
               ({short(currentAddress)})
             </span>
           )}
@@ -189,7 +212,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-sm text-foreground truncate">
-                      {username || 'Decentralized Candidate'}
+                      {resolvedName || 'Decentralized Candidate'}
                     </p>
                     <p className="text-[11px] text-muted-foreground font-mono">
                       Sui zkLogin Verified
