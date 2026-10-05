@@ -894,33 +894,6 @@ export default function CoverLetterStudioPage() {
                   />
                 </div>
               </div>
-
-              {/* Discipline-Filtered Candidate Highlights */}
-              <div className="p-3.5 rounded-xl border border-border/80 bg-muted/20 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-foreground flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Active CV Highlights ({activeDiscipline.name})</span>
-                  </span>
-                  <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600">
-                    Walrus Memory
-                  </Badge>
-                </div>
-                {activeCvHighlights.length > 0 ? (
-                  <ul className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
-                    {activeCvHighlights.map((hl, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                        <span>{hl}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground italic">
-                    Focusing on foundational problem-solving metrics and operational discipline for this role.
-                  </p>
-                )}
-              </div>
             </Card>
           </div>
 
@@ -1032,20 +1005,6 @@ export default function CoverLetterStudioPage() {
                 </div>
               </div>
             </Card>
-
-            {/* Anti-Slop Audit & Verification Guarantee */}
-            <div className="p-4 rounded-xl border border-border/80 bg-muted/20 text-xs space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  Sovereign Letter Standards
-                </span>
-                <span className="font-mono text-[10px] text-muted-foreground">Walrus Certified · Live Date {liveDateString}</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Zero cliché buzzwords (delve, foster, leverage, cutting-edge, tapestry). Sentences use active voice, concrete mechanisms, and direct accountability. Grounded strictly in candidate experience records.
-              </p>
-            </div>
           </div>
         </div>
       </div>

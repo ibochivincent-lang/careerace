@@ -1569,9 +1569,13 @@ const DAILY_CHECKLIST_ITEMS = [
 export default function ApplicationBoardPage() {
   const router = useRouter()
 
-  // 5 distinct stages on Application Board:
-  // 1. Discovery, 2. Saved, 3. Applied, 4. Auto Apply, 5. Daily Action Checklist
-  const [activeBoardTab, setActiveBoardTab] = useState<'discover' | 'saved' | 'applied' | 'auto_apply' | 'checklist'>('discover')
+  // 3 distinct stages on Application Board:
+  // 1. Discovery, 2. Applied, 3. Auto Apply
+  const [activeBoardTab, setActiveBoardTab] = useState<'discover' | 'applied' | 'auto_apply'>('discover')
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([])
+  const originalFileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingOriginalCv, setIsUploadingOriginalCv] = useState(false)
+  const [originalCvFileName, setOriginalCvFileName] = useState<string>('')
 
   // Daily Action Checklist state (stored in localStorage)
   const [completedChecklistIds, setCompletedChecklistIds] = useState<string[]>([])
@@ -1731,6 +1735,14 @@ export default function ApplicationBoardPage() {
     } catch {}
 
     try {
+      const storedOrig = localStorage.getItem('careerace_original_cv_doc')
+      if (storedOrig) {
+        const parsed = JSON.parse(storedOrig)
+        if (parsed?.name) setOriginalCvFileName(parsed.name)
+      }
+    } catch {}
+
+    try {
       const addr = getClientSessionAddress()
       if (addr) {
         setSessionAddress(addr)
@@ -1749,7 +1761,7 @@ export default function ApplicationBoardPage() {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search)
         const tabParam = params.get('tab')
-        if (tabParam === 'auto_apply' || tabParam === 'discover' || tabParam === 'saved' || tabParam === 'applied' || tabParam === 'checklist') {
+        if (tabParam === 'auto_apply' || tabParam === 'discover' || tabParam === 'applied') {
           setActiveBoardTab(tabParam)
         }
         const roleParam = params.get('role')
@@ -1927,11 +1939,6 @@ export default function ApplicationBoardPage() {
       // 1. Stage tab filter:
       // Discovery: Show ONLY jobs NOT applied yet
       if (activeBoardTab === 'discover' && appliedJobIdSet.has(job.id)) {
-        return false
-      }
-
-      // Saved: Show ONLY saved jobs
-      if (activeBoardTab === 'saved' && !savedJobIds.includes(job.id)) {
         return false
       }
 
@@ -2698,6 +2705,130 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     }
   }
 
+  // Dispatch applications to currently selected companies and move them automatically to Applied
+  async function handleDispatchSelectedCompanies() {
+    const selectedCompanies = filteredCompanyContacts.filter((c) =>
+      selectedCompanyIds.includes(c.id)
+    )
+
+    if (selectedCompanies.length === 0) {
+      toast.error('Please select at least 1 employer from the directory (or click Select 10 / Select 20).')
+      return
+    }
+
+    setIsBatchDispatching(true)
+    const toastId = toast.loading(`Dispatching application to ${selectedCompanies.length} verified employers...`)
+
+    let currentAppliedList = [...appliedJobs]
+    const candidateName = activeProfileData?.applicant_name || 'Candidate'
+    const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
+    const candidateRole = selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || targetRoleInput || 'Applicant'
+    const walrusBlobId = selectedVersionMeta?.blobId || ''
+
+    let smtpConfig: any = { provider: 'sovereign_relay' }
+    try {
+      const storedSmtp = localStorage.getItem('careerace_custom_smtp')
+      if (storedSmtp) smtpConfig = JSON.parse(storedSmtp)
+    } catch {}
+
+    for (let i = 0; i < selectedCompanies.length; i++) {
+      const contact = selectedCompanies[i]
+      const targetRole = contact.typicalRoles?.[0] || targetRoleInput || candidateRole
+      const batchSubject = `Application: ${targetRole} – ${candidateName} (Walrus Sovereign Credential)`
+
+      let batchBody = customEmailBody
+      if (batchBody.includes('Dear Hiring Team')) {
+        batchBody = batchBody.replace(/Dear Hiring Team at [^,\n]+,/, `Dear Hiring Team at ${contact.company},`)
+      }
+
+      try {
+        await fetch('/api/email/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: contact.contactEmail,
+            subject: batchSubject,
+            body: batchBody,
+            candidateName,
+            candidateEmail,
+            smtpConfig,
+            walrusBlobId,
+            attachments: uploadedDocuments.map((d) => ({
+              id: d.id,
+              name: d.name,
+              size: d.size,
+              blobId: d.blobId,
+              url: d.walrusUrl,
+            })),
+          }),
+        })
+      } catch {}
+
+      // Always create applied job record with 7-day follow-up
+      const now = Date.now()
+      const record: AppliedJobRecord = {
+        id: `auto-apply-${now}-${i}`,
+        jobTitle: targetRole,
+        company: contact.company,
+        appliedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        appliedTimestamp: now,
+        followUpStatus: 'pending',
+      }
+      currentAppliedList = [record, ...currentAppliedList.filter((a) => a.company !== contact.company)]
+      setAppliedJobs(currentAppliedList)
+      localStorage.setItem('careerace_applied_jobs', JSON.stringify(currentAppliedList))
+      syncCandidateDataToCloud({ appliedJobs: currentAppliedList })
+    }
+
+    setIsBatchDispatching(false)
+    setSelectedCompanyIds([])
+
+    toast.success(`Successfully dispatched to ${selectedCompanies.length} verified employers! Switched to Applied tracker.`, { id: toastId })
+    setActiveBoardTab('applied')
+  }
+
+  // Upload original CV directly to Walrus sovereign memory
+  async function handleOriginalCvUpload(fileList: FileList | File[] | null) {
+    if (!fileList || fileList.length === 0) return
+    const file = fileList[0]
+    setIsUploadingOriginalCv(true)
+    const toastId = toast.loading(`Uploading and anchoring original CV "${file.name}" to Walrus...`)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('title', `Original CV - ${file.name}`)
+      formData.append('category', 'original_cv')
+
+      const res = await fetch('/api/attachment/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      const docItem = {
+        id: data?.attachment?.id || `orig_${Date.now()}`,
+        name: file.name,
+        size: file.size,
+        blobId: data?.attachment?.blobId,
+        walrusUrl: data?.attachment?.walrusUrl,
+        fileType: file.type || 'application/pdf',
+        uploadedAt: new Date().toISOString(),
+        category: 'original_cv',
+      }
+
+      setOriginalCvFileName(file.name)
+      localStorage.setItem('careerace_original_cv_doc', JSON.stringify(docItem))
+      setUploadedDocuments((prev) => [docItem, ...prev.filter((d: any) => (d as any).category !== 'original_cv')])
+      toast.success(`Original CV anchored to Walrus sovereign memory!`, { id: toastId })
+    } catch {
+      toast.error('Failed to upload original CV.', { id: toastId })
+    } finally {
+      setIsUploadingOriginalCv(false)
+      if (originalFileInputRef.current) originalFileInputRef.current.value = ''
+    }
+  }
+
   function handleDownloadFollowUpIcs(job: JobListing, record?: AppliedJobRecord) {
     const followUpDate = record?.appliedTimestamp 
       ? new Date(record.appliedTimestamp + 7 * 86400000)
@@ -2746,7 +2877,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
   return (
     <AppShell>
       <div className="p-2.5 sm:p-4 md:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        {/* Top Header & 4 Stage Navigation Tabs: 1. Discovery, 2. Saved, 3. Applied, 4. Auto Apply, 5. Checklist */}
+        {/* Top Header & 3 Stage Navigation Tabs: 1. Discovery, 2. Applied, 3. Auto Apply */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1 border-b border-border/60">
           <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/60 border border-border/80 w-full sm:w-fit overflow-x-auto no-scrollbar shrink-0">
             {/* Stage 1: Discovery */}
@@ -2762,25 +2893,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
               <span>Discovery</span>
             </button>
 
-            {/* Stage: Saved */}
-            <button
-              onClick={() => setActiveBoardTab('saved')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeBoardTab === 'saved'
-                  ? 'bg-background text-foreground shadow-xs border border-border/80'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Bookmark className="w-3.5 h-3.5" />
-              <span>Saved</span>
-              {savedJobIds.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-primary/10 text-primary">
-                  {savedJobIds.length}
-                </span>
-              )}
-            </button>
-
-            {/* Stage: Applied */}
+            {/* Stage 2: Applied */}
             <button
               onClick={() => setActiveBoardTab('applied')}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
@@ -2798,7 +2911,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
               )}
             </button>
 
-            {/* Stage: Auto Apply */}
+            {/* Stage 3: Auto Apply */}
             <button
               onClick={() => setActiveBoardTab('auto_apply')}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
@@ -2813,25 +2926,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                 AI
               </Badge>
             </button>
-
-            {/* Stage: Daily Action Checklist */}
-            <button
-              onClick={() => setActiveBoardTab('checklist')}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                activeBoardTab === 'checklist'
-                  ? 'bg-background text-foreground shadow-xs border border-border/80'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="hidden sm:inline">Daily Action Checklist</span>
-              <span className="sm:hidden">Checklist</span>
-              {completedChecklistCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  {completedChecklistCount}/5
-                </span>
-              )}
-            </button>
           </div>
 
           {/* Real-time status indicator */}
@@ -2842,129 +2936,23 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         </div>
 
         {/* View Content depending on active tab */}
-        {activeBoardTab === 'checklist' ? (
-          /* Stage 5: Daily Action Checklist (Dedicated Work Placement Focus) */
-          <div className="space-y-6">
-            <Card className="p-6 sm:p-8 border border-border/80 shadow-sm rounded-2xl bg-card space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-lg text-foreground">Daily Job-Hunting Action Checklist</h2>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <span className="text-xs font-semibold text-foreground">
-                      {completedChecklistCount} of {DAILY_CHECKLIST_ITEMS.length} Completed
-                    </span>
-                    <div className="w-36 h-2 bg-muted rounded-full overflow-hidden mt-1">
-                      <div
-                        className="h-full bg-emerald-500 transition-all duration-500"
-                        style={{ width: `${(completedChecklistCount / DAILY_CHECKLIST_ITEMS.length) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  {completedChecklistCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetDailyChecklist}
-                      className="text-xs text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
-                    >
-                      Reset
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {DAILY_CHECKLIST_ITEMS.map((item, idx) => {
-                  const isDone = completedChecklistIds.includes(item.id)
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-4 rounded-xl border transition-all ${
-                        isDone
-                          ? 'bg-emerald-500/5 border-emerald-500/30'
-                          : 'bg-muted/20 border-border/60 hover:border-border'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3.5">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleChecklistItem(item.id)}
-                          className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer ${
-                            isDone
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-2xs'
-                              : 'border-border bg-background hover:border-emerald-500 text-transparent'
-                          }`}
-                          title={isDone ? 'Mark uncompleted' : 'Mark completed'}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h3 className={`text-sm font-semibold ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                              {idx + 1}. {item.title}
-                            </h3>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (item.actionTab) {
-                                  setActiveBoardTab(item.actionTab)
-                                } else if (item.link) {
-                                  router.push(item.link)
-                                }
-                              }}
-                              className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-medium shrink-0 cursor-pointer"
-                            >
-                              <span>{item.actionLabel}</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-          </div>
-        ) : activeBoardTab === 'auto_apply' ? (
+        {activeBoardTab === 'auto_apply' ? (
           /* Stage 4: Auto Apply via Corporate Emails & Walrus Credentials */
           <div className="space-y-4 sm:space-y-6">
             {/* Top Auto Apply Control & Safeguards Header */}
-            <Card className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-xs">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-bold text-foreground">Corporate Email Application Dispatch</h2>
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                      {categoryCounts.all} Verified Hiring Contacts
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px] font-mono border border-border text-muted-foreground">
-                      Anti-Spam Pacing & DKIM
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Transmit sovereign Walrus credentials, primary resume records, and verified attachments directly to corporate recruitment desks.
-                  </p>
+            {/* Top Auto Apply Control Header */}
+            <Card className="p-3 sm:p-4 rounded-xl border border-border bg-card shadow-xs">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-bold text-foreground">Corporate Email Application Dispatch</h2>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setSamplePreviewModalOpen(true)}
-                    className="gap-1.5 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted text-foreground cursor-pointer"
+                    className="gap-1.5 text-xs font-semibold h-8 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
                     title="Preview full rendered email layout, headers, and attachments"
                   >
                     <Eye className="w-3.5 h-3.5 text-emerald-500" />
@@ -2972,32 +2960,10 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                   </Button>
 
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setTestRecipientEmail(activeProfileData?.email || '')
-                      setTestEmailModalOpen(true)
-                    }}
-                    className="gap-1.5 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted text-foreground cursor-pointer"
-                    title="Send a sample test dispatch to your personal inbox"
-                  >
-                    <Mail className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Send Test Dispatch</span>
-                  </Button>
-
-                  <Button
-                    onClick={() => setBatchDispatchModalOpen(true)}
-                    className="gap-2 text-xs font-semibold h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>1-Click Batch Dispatch</span>
-                  </Button>
-
-                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setSmtpSettingsOpen(true)}
-                    className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg"
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg"
                     title="Configure SMTP Relay Settings"
                   >
                     <Settings className="w-3.5 h-3.5" />
@@ -3021,6 +2987,51 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </Badge>
                     </div>
 
+                    {/* Batch Selection Controls */}
+                    <div className="flex items-center justify-between gap-2 pt-1 pb-1 border-y border-border/40">
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
+                            setSelectedCompanyIds(eligible.slice(0, 10).map(c => c.id))
+                            toast.info('Selected 10 verified employers.')
+                          }}
+                          className="h-7 px-2.5 text-[11px] font-semibold border-border hover:bg-muted cursor-pointer"
+                        >
+                          Select 10
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
+                            setSelectedCompanyIds(eligible.slice(0, 20).map(c => c.id))
+                            toast.info('Selected 20 verified employers.')
+                          }}
+                          className="h-7 px-2.5 text-[11px] font-semibold border-border hover:bg-muted cursor-pointer"
+                        >
+                          Select 20
+                        </Button>
+                        {selectedCompanyIds.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedCompanyIds([])}
+                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                        {selectedCompanyIds.length} Selected
+                      </Badge>
+                    </div>
 
                     {/* Search Input */}
                     <div className="relative">
@@ -3058,71 +3069,53 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     </div>
 
                     {/* Company Cards List */}
-                    <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                    <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
                       {filteredCompanyContacts.map((contact) => {
                         const cd = getCompanyCooldown(contact.company)
-                        const isSelected = targetCompanyInput === contact.company
+                        const isChecked = selectedCompanyIds.includes(contact.id)
 
                         return (
                           <div
                             key={contact.id}
-                            className={`p-3 rounded-xl border transition-all text-xs space-y-2 ${
-                              isSelected
-                                ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20 shadow-xs'
+                            onClick={() => {
+                              setSelectedCompanyIds(prev =>
+                                prev.includes(contact.id)
+                                  ? prev.filter(id => id !== contact.id)
+                                  : [...prev, contact.id]
+                              )
+                            }}
+                            className={`p-2.5 rounded-lg border transition-all text-xs cursor-pointer select-none ${
+                              isChecked
+                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs'
                                 : 'border-border/80 bg-background hover:bg-muted/30'
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <span className="font-bold text-foreground block">{contact.company}</span>
-                                <span className="text-[11px] text-muted-foreground block font-mono">
-                                  {contact.contactEmail}
-                                </span>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {}}
+                                  className="w-3.5 h-3.5 rounded border-border text-emerald-600 focus:ring-emerald-500 pointer-events-none"
+                                />
+                                <div className="min-w-0">
+                                  <span className="font-semibold text-foreground block truncate">{contact.company}</span>
+                                  <span className="text-[10px] text-muted-foreground block font-mono truncate">
+                                    {contact.contactEmail}
+                                  </span>
+                                </div>
                               </div>
                               <Badge variant="outline" className="text-[9px] shrink-0 border-border">
                                 {contact.category.split('/')[0].trim()}
                               </Badge>
                             </div>
 
-                            {/* Cooldown Status Badge */}
                             {cd && cd.active && (
-                              <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-mono">
+                              <div className="flex items-center gap-1.5 text-[9px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 font-mono mt-1">
                                 <Clock className="w-3 h-3 shrink-0" />
                                 <span>Applied {cd.appliedAt} · {cd.remainingDays}d cooldown active</span>
                               </div>
                             )}
-
-                            {contact.typicalRoles && (
-                              <div className="flex flex-wrap gap-1">
-                                {contact.typicalRoles.slice(0, 2).map((r, rIdx) => (
-                                  <span
-                                    key={rIdx}
-                                    className="text-[10px] px-1.5 py-0.5 rounded-sm bg-muted/80 text-foreground font-mono"
-                                  >
-                                    {r}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            <div className="pt-1 flex items-center justify-between border-t border-border/40">
-                              <span className="text-[10px] text-muted-foreground">
-                                {contact.location || 'Verified Recruitment Desk'}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleSelectCompanyFromDirectory(contact)}
-                                className={`h-6 text-[10px] px-2 font-semibold cursor-pointer ${
-                                  isSelected
-                                    ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/15'
-                                    : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
-                                }`}
-                              >
-                                <span>{isSelected ? 'Selected' : 'Use in Dispatch'}</span>
-                                <ChevronRight className="w-3 h-3 ml-0.5" />
-                              </Button>
-                            </div>
                           </div>
                         )
                       })}
@@ -3190,85 +3183,149 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
                 {/* Right Column (7 cols): Clean Application Dispatch Console */}
                 <div className="lg:col-span-7 space-y-4">
-                  {/* Console Container & Target Recipient Box */}
+                  {/* Console Container */}
                   <div className="p-4 sm:p-5 rounded-xl border border-border bg-card space-y-4 shadow-xs">
-                    {/* Target Recipient Card */}
-                    <div className="p-3.5 rounded-xl border border-border/80 bg-muted/20 space-y-2">
+                    {/* Selected Target Recipients List */}
+                    <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
-                          Target Recipient
-                        </span>
-                        <Badge variant="secondary" className="text-[10px] font-mono">
-                          {targetCompanyInput || 'Hiring Team'}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                        <span className="font-mono text-foreground font-semibold">
-                          {targetEmailInput || '(No hiring email configured)'}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          Role: <strong className="text-foreground">{targetRoleInput}</strong>
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
+                            Selected Target Recipients
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                            {selectedCompanyIds.length} Selected
+                          </Badge>
+                        </div>
+                        {selectedCompanyIds.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedCompanyIds([])}
+                            className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            Clear All
+                          </Button>
+                        )}
                       </div>
 
-                      {/* 5-Working-Day Cooldown Notification */}
-                      {(() => {
-                        const cd = getCompanyCooldown(targetCompanyInput)
-                        if (cd && cd.active) {
-                          return (
-                            <div className="p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2 mt-2">
-                              <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                              <div className="space-y-0.5">
-                                <div className="font-bold text-[11px]">5-Working-Day Anti-Duplicate Cooldown Active</div>
-                                <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                                  You submitted an application to <strong>{targetCompanyInput}</strong> on <strong>{cd.appliedAt}</strong>. To protect your sender domain reputation and adhere to maritime hiring protocol, re-submissions are locked for <strong>{cd.remainingDays} more days</strong>.
-                                </p>
-                              </div>
-                            </div>
-                          )
-                        }
-                        return (
-                          <div className="p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between mt-1">
-                            <div className="flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span className="text-[11px]">Eligible for Transmission · No prior application within 5 working days</span>
-                            </div>
-                            <span className="text-[10px] font-mono text-emerald-600 font-bold">READY</span>
+                      {selectedCompanyIds.length === 0 ? (
+                        <div className="p-4 rounded-lg border border-dashed border-border/80 bg-background/50 text-center space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            No employers selected yet. Choose companies from the directory on the left or use the quick batch buttons.
+                          </p>
+                          <div className="flex items-center justify-center gap-2 pt-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
+                                setSelectedCompanyIds(eligible.slice(0, 10).map(c => c.id))
+                                toast.info('Selected 10 verified employers.')
+                              }}
+                              className="h-7 text-xs border-border hover:bg-muted cursor-pointer"
+                            >
+                              Select First 10
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
+                                setSelectedCompanyIds(eligible.slice(0, 20).map(c => c.id))
+                                toast.info('Selected 20 verified employers.')
+                              }}
+                              className="h-7 text-xs border-border hover:bg-muted cursor-pointer"
+                            >
+                              Select First 20
+                            </Button>
                           </div>
-                        )
-                      })()}
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                          {(() => {
+                            const selectedList = filteredCompanyContacts.filter((c) =>
+                              selectedCompanyIds.includes(c.id)
+                            )
+                            return selectedList.map((contact, index) => {
+                              const cd = getCompanyCooldown(contact.company)
+                              return (
+                                <div
+                                  key={contact.id}
+                                  className="p-2.5 rounded-lg border border-border/80 bg-background flex items-center justify-between gap-2.5 text-xs shadow-2xs"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">
+                                      {index + 1}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="font-semibold text-foreground truncate">{contact.company}</span>
+                                        <span className="text-[10px] text-muted-foreground font-mono truncate">
+                                          ({contact.contactEmail})
+                                        </span>
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground truncate">
+                                        Role: <strong className="text-foreground">{contact.typicalRoles?.[0] || targetRoleInput}</strong>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {cd && cd.active && (
+                                      <span className="text-[9px] font-mono text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                        Cooldown ({cd.remainingDays}d)
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedCompanyIds((prev) => prev.filter((id) => id !== contact.id))}
+                                      className="p-1 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors"
+                                      title="Remove from batch"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })
+                          })()}
+                        </div>
+                      )}
                     </div>
 
-                    {/* ── 3-TIER APPLICATION CREDENTIALS PACKAGE ── */}
+                    {/* ── APPLICATION CREDENTIAL PACKAGE (Walrus Sovereign CV + Original CV) ── */}
                     <div className="p-4 sm:p-5 rounded-xl border border-border bg-background space-y-4 shadow-xs">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/60">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-foreground">3-Tier Application Credentials Package</h4>
+                            <h4 className="text-xs font-bold text-foreground">Application Credential Package</h4>
                             <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
                               Walrus Sovereign Verified
                             </Badge>
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5">
-                            Candidate verification structured across decentralized memory, primary profile, and official attachments.
+                            Dual-layer credential bundle dispatched with each application.
                           </p>
                         </div>
                         <Badge variant="secondary" className="text-[10px] font-mono shrink-0">
-                          {uploadedDocuments.length + 2} Verified Elements
+                          2 Verified Anchors
                         </Badge>
                       </div>
 
-                      {/* TIER 1: Walrus Memory CV */}
-                      <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-2.5">
+                      {/* Box 1: Walrus Sovereign Memory CV */}
+                      <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-2.5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-[10px] font-mono shrink-0">
+                            <div className="w-6 h-6 rounded-md bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-[10px] font-mono shrink-0">
                               1
                             </div>
-                            <span className="text-xs font-bold text-foreground">Tier 1: Walrus Sovereign Memory CV</span>
-                            <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono">
-                              Decentralized Anchor
-                            </Badge>
+                            <div>
+                              <span className="text-xs font-bold text-foreground block">Walrus Sovereign Memory CV</span>
+                              <span className="text-[10px] text-muted-foreground">Decentralized Anchor</span>
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -3300,7 +3357,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground border-t border-emerald-500/20">
                           {selectedVersionMeta?.blobId ? (
                             <a
                               href={`https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}`}
@@ -3324,83 +3381,35 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         </div>
                       </div>
 
-                      {/* TIER 2: Original Candidate CV Profile */}
-                      <div className="p-3 rounded-xl border border-border bg-card space-y-2">
-                        <div className="flex items-center justify-between">
+                      {/* Box 2: Original CV (Stored in Walrus Sovereign Memory) */}
+                      <div className="p-3.5 rounded-xl border border-border bg-card space-y-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md bg-muted border border-border flex items-center justify-center text-foreground font-bold text-[10px] font-mono shrink-0">
+                            <div className="w-6 h-6 rounded-md bg-muted border border-border flex items-center justify-center text-foreground font-bold text-[10px] font-mono shrink-0">
                               2
                             </div>
-                            <span className="text-xs font-bold text-foreground">Tier 2: Original Candidate Profile</span>
-                          </div>
-                          <Badge variant="secondary" className="text-[10px] font-mono">
-                            {activeProfileData?.skills?.length || 0} Verified Skills
-                          </Badge>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                          <div>
-                            <span className="text-foreground font-semibold">{activeProfileData?.applicant_name || 'Candidate'}</span>
-                            <span className="text-muted-foreground text-[11px] ml-1.5">
-                              · {selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || 'Engineering Specialist'}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground font-mono">
-                            {activeProfileData?.email || 'applicant@careerace.online'}
-                          </span>
-                        </div>
-
-                        {activeProfileData?.skills && activeProfileData.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1 pt-1">
-                            {activeProfileData.skills.slice(0, 6).map((skill, idx) => (
-                              <span
-                                key={idx}
-                                className="text-[10px] px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                            {activeProfileData.skills.length > 6 && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md text-muted-foreground">
-                                +{activeProfileData.skills.length - 6} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* TIER 3: Attached Documents & Certifications */}
-                      <div className="p-3 rounded-xl border border-border bg-card space-y-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md bg-muted border border-border flex items-center justify-center text-foreground font-bold text-[10px] font-mono shrink-0">
-                              3
-                            </div>
                             <div>
-                              <span className="text-xs font-bold text-foreground">Tier 3: Attached Documents</span>
-                              <span className="text-[10px] text-muted-foreground ml-1.5 font-mono">
-                                ({uploadedDocuments.length} files attached)
-                              </span>
+                              <span className="text-xs font-bold text-foreground block">Original CV</span>
+                              <span className="text-[10px] text-muted-foreground">Stored in Walrus Sovereign Memory</span>
                             </div>
                           </div>
 
                           <input
                             type="file"
-                            ref={fileInputRef}
-                            onChange={(e) => handleDocumentUpload(e.target.files)}
-                            multiple
-                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                            ref={originalFileInputRef}
+                            onChange={(e) => handleOriginalCvUpload(e.target.files)}
+                            accept=".pdf,.doc,.docx"
                             className="hidden"
                           />
 
                           <Button
                             type="button"
                             size="sm"
-                            disabled={isUploadingDoc}
-                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploadingOriginalCv}
+                            onClick={() => originalFileInputRef.current?.click()}
                             className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs shrink-0"
                           >
-                            {isUploadingDoc ? (
+                            {isUploadingOriginalCv ? (
                               <>
                                 <Zap className="w-3 h-3 animate-spin" />
                                 <span>Anchoring...</span>
@@ -3408,224 +3417,70 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             ) : (
                               <>
                                 <Upload className="w-3 h-3" />
-                                <span>Upload Document</span>
+                                <span>{originalCvFileName ? 'Replace Original CV' : 'Upload Original CV'}</span>
                               </>
                             )}
                           </Button>
                         </div>
 
-                        {uploadedDocuments.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                            {uploadedDocuments.map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-foreground text-xs flex items-center justify-between gap-2"
-                              >
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                  <div className="min-w-0">
-                                    <span className="text-[11px] font-medium block truncate text-foreground">
-                                      {doc.name}
-                                    </span>
-                                    <span className="text-[9px] text-muted-foreground font-mono">
-                                      {doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'} · Walrus Stored
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveUploadedDoc(doc.id, doc.name)}
-                                  title="Remove uploaded document"
-                                  className="p-1 rounded text-muted-foreground hover:text-red-500 cursor-pointer shrink-0"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
+                        <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground border-t border-border/60">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span className="text-foreground font-medium truncate">
+                              {originalCvFileName || (activeDraftProfile?.applicant_name ? `${activeDraftProfile.applicant_name}_Original_Resume.pdf` : 'Candidate_Original_Resume.pdf')}
+                            </span>
                           </div>
-                        ) : (
-                          <div className="p-2.5 rounded-lg border border-dashed border-border/80 bg-muted/10 text-center">
-                            <p className="text-[11px] text-muted-foreground">
-                              No extra documents attached. Click <strong className="text-foreground">Upload Document</strong> to attach your PDF resume, licenses, or transcripts.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ── COVER LETTER & PITCH: SYNCHRONIZED PREVIEW (NO TEXTAREA) ── */}
-                    <div className="p-4 rounded-xl border border-border bg-background space-y-3 shadow-xs">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-border/60">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-foreground">Cover Letter & Application Pitch</h4>
-                            <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-600 font-mono">
-                              Studio Synchronized
-                            </Badge>
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">
-                            Calibrated for <strong className="text-foreground">{targetCompanyInput || 'Hiring Team'}</strong>. Authored and edited in Cover Letter Studio.
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => router.push(`/cover_letter?company=${encodeURIComponent(targetCompanyInput)}&role=${encodeURIComponent(targetRoleInput)}`)}
-                            className="h-7 px-2.5 text-[11px] font-semibold gap-1.5 text-foreground border-border hover:bg-muted cursor-pointer"
-                            title="Open Cover Letter Studio to edit paragraphs, adjust tone, or regenerate"
-                          >
-                            <span>Open in Studio</span>
-                            <ExternalLink className="w-3 h-3 text-emerald-500" />
-                          </Button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsBodyUserEdited(false)
-                              setCustomEmailBody(composeDefaultDraft(true))
-                              toast.success('Reset draft to calibrated role & company pitch!')
-                            }}
-                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer h-7 px-2 rounded-md hover:bg-muted"
-                            title="Reset message to match current company and role"
-                          >
-                            <RotateCcw className="w-3 h-3 text-emerald-500" />
-                            <span>Reset</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={handleCopyApplicationDraft}
-                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer h-7 px-2 rounded-md hover:bg-muted"
-                          >
-                            {copiedDraft ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-500" />
-                                <span className="text-emerald-600">Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Copy</span>
-                              </>
-                            )}
-                          </button>
+                          <Badge variant="outline" className="text-[9px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shrink-0">
+                            Walrus Sovereign Memory
+                          </Badge>
                         </div>
                       </div>
-
-                      {/* Synchronized Read-Only Live Preview Box (No Textarea) */}
-                      <div className="p-3.5 rounded-lg border border-border/80 bg-muted/20 space-y-2">
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono pb-2 border-b border-border/40">
-                          <span>Subject: {customEmailSubject || `Application: ${targetRoleInput} – ${activeProfileData?.applicant_name || 'Candidate'}`}</span>
-                          <span>{customEmailBody.length} characters</span>
-                        </div>
-                        <div className="text-xs text-foreground font-mono leading-relaxed whitespace-pre-wrap max-h-56 overflow-y-auto pr-1 select-text">
-                          {customEmailBody || composeDefaultDraft()}
-                        </div>
-                      </div>
-
-                      <p className="text-[10px] text-muted-foreground">
-                        To tailor individual paragraphs, adjust tone, or inject custom project highlights, click <strong className="text-foreground">Open in Studio</strong>. All studio revisions reflect here instantly.
-                      </p>
                     </div>
 
                     {/* Dispatch Action Toolbar */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/60">
                       <div className="flex flex-wrap items-center gap-2">
-                        {(() => {
-                          const cd = getCompanyCooldown(targetCompanyInput)
-                          const isCooldownActive = Boolean(cd && cd.active)
-
-                          return (
-                            <Button
-                              onClick={handleRelayDispatch}
-                              disabled={isRelayDispatching || isCooldownActive}
-                              className={`gap-2 text-xs font-semibold h-9 px-4 text-white shadow-xs cursor-pointer ${
-                                isCooldownActive
-                                  ? 'bg-muted-foreground/40 cursor-not-allowed text-muted-foreground'
-                                  : 'bg-emerald-600 hover:bg-emerald-700'
-                              }`}
-                              title={
-                                isCooldownActive
-                                  ? `Cooldown active: ${cd?.remainingDays || 5} days remaining`
-                                  : 'Dispatch directly via authenticated Sovereign DKIM or custom SMTP'
-                              }
-                            >
-                              {isRelayDispatching ? (
-                                <>
-                                  <Zap className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Dispatching Relay...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Zap className="w-3.5 h-3.5 text-amber-300" />
-                                  <span>1-Click Direct Relay Dispatch</span>
-                                </>
-                              )}
-                            </Button>
-                          )
-                        })()}
-
                         <Button
-                          variant="outline"
-                          onClick={() => setBatchDispatchModalOpen(true)}
-                          className="gap-2 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted text-foreground cursor-pointer"
-                          title="Open batch sender to apply across multiple verified employers in category"
+                          onClick={handleDispatchSelectedCompanies}
+                          disabled={isBatchDispatching || selectedCompanyIds.length === 0}
+                          className={`gap-2 text-xs font-semibold h-9 px-5 text-white shadow-xs cursor-pointer ${
+                            selectedCompanyIds.length === 0
+                              ? 'bg-muted-foreground/40 cursor-not-allowed text-muted-foreground'
+                              : 'bg-emerald-600 hover:bg-emerald-700'
+                          }`}
+                          title={
+                            selectedCompanyIds.length === 0
+                              ? 'Select employers from the directory on the left first'
+                              : `Dispatch applications to ${selectedCompanyIds.length} selected employers and record follow-ups`
+                          }
                         >
-                          <Users className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Batch Dispatch</span>
+                          {isBatchDispatching ? (
+                            <>
+                              <Zap className="w-3.5 h-3.5 animate-spin" />
+                              <span>Dispatching ({selectedCompanyIds.length})...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-3.5 h-3.5 text-emerald-200" />
+                              <span>Dispatch to Selected ({selectedCompanyIds.length})</span>
+                            </>
+                          )}
                         </Button>
 
                         <Button
                           variant="outline"
-                          onClick={handleSendApplicationEmail}
-                          className="gap-2 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
-                          title="Open application draft in your default desktop or webmail client"
+                          onClick={() => setSamplePreviewModalOpen(true)}
+                          className="gap-1.5 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
+                          title="Preview full application pitch, credentials, and message content"
                         >
-                          <Send className="w-3.5 h-3.5 text-muted-foreground" />
-                          <span>Email Client</span>
-                        </Button>
-
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            if (!targetEmailInput || !targetEmailInput.includes('@')) {
-                              toast.error('Please specify a corporate hiring email above.')
-                              return
-                            }
-                            downloadEmlReceipt({
-                              to: targetEmailInput,
-                              fromName: activeProfileData?.applicant_name || 'Candidate',
-                              fromEmail: activeProfileData?.email || 'applicant@careerace.online',
-                              subject: customEmailSubject,
-                              body: customEmailBody,
-                              candidateAddress: sessionAddress || null,
-                              company: targetCompanyInput,
-                              role: targetRoleInput,
-                              walrusBlobId: selectedVersionMeta?.blobId || null,
-                              relayProvider: 'Offline Verifiable Dispatch (.eml)',
-                              attachments: uploadedDocuments.map((d) => ({
-                                name: d.name,
-                                size: d.size,
-                                blobId: d.blobId,
-                                url: d.walrusUrl,
-                              })),
-                            })
-                            toast.success('Downloaded verifiable RFC-compliant delivery receipt (.eml).')
-                          }}
-                          className="gap-2 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
-                          title="Download RFC-compliant .eml message file for verifiable offline records"
-                        >
-                          <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Receipt (.eml)</span>
+                          <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Preview Sample</span>
                         </Button>
 
                         <Button
                           variant="outline"
                           onClick={() => setSmtpSettingsOpen(true)}
-                          className="gap-2 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
+                          className="gap-1.5 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
                           title="Configure Gmail, Outlook, or Sovereign DKIM relay settings"
                         >
                           <Settings className="w-3.5 h-3.5 text-emerald-500" />
@@ -3633,62 +3488,11 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         </Button>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        onClick={handleRecordAsAppliedDirectly}
-                        className="text-xs font-medium h-9 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mr-1.5" />
-                        <span>Log in Tracker</span>
-                      </Button>
+                      <div className="text-[11px] text-muted-foreground font-mono">
+                        <span>7-Day Follow-Up Tracking Auto-Scheduled</span>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Deliverability & Spam Prevention Protocol Card (Expandable) */}
-                  <Card className="p-4 border border-border bg-card rounded-xl shadow-xs">
-                    <button
-                      type="button"
-                      onClick={() => setDeliverabilityGuideOpen(!deliverabilityGuideOpen)}
-                      className="w-full flex items-center justify-between text-xs font-bold text-foreground cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Info className="w-4 h-4 text-emerald-500" />
-                        <span>Deliverability & Spam Prevention Protocol</span>
-                        <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-600">
-                          99%+ Inbox Placement
-                        </Badge>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        {deliverabilityGuideOpen ? 'Hide Guide' : 'View Protocol'}
-                      </span>
-                    </button>
-
-                    {deliverabilityGuideOpen && (
-                      <div className="mt-3 pt-3 border-t border-border space-y-2.5 text-xs text-muted-foreground leading-relaxed">
-                        <p className="text-[11px] text-foreground font-semibold">
-                          How CareerAce guarantees high corporate inbox delivery and avoids recruitment spam traps:
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-                          <div className="p-2.5 rounded-lg border border-border bg-muted/20 space-y-1">
-                            <span className="font-bold text-foreground block">1. Sender Domain Authentication (SPF/DKIM)</span>
-                            <span>Configure your Gmail App Password or custom SMTP in Relay Settings. Emails signed by your verified address pass Mimecast, Proofpoint, and Microsoft 365 gateway checks.</span>
-                          </div>
-                          <div className="p-2.5 rounded-lg border border-border bg-muted/20 space-y-1">
-                            <span className="font-bold text-foreground block">2. Mandatory 5-Working-Day Cooldown</span>
-                            <span>Spamming the same crewing desk or company within days triggers corporate blacklist filters. CareerAce locks repeat dispatches for 5 working days (7 calendar days) automatically.</span>
-                          </div>
-                          <div className="p-2.5 rounded-lg border border-border bg-muted/20 space-y-1">
-                            <span className="font-bold text-foreground block">3. Cryptographic Walrus Links vs Risky Binaries</span>
-                            <span>Corporate firewalls frequently quarantine large unexpected PDF/DOCX attachments from unknown applicants. Verified Walrus cryptographic URLs allow instant inspection without malware warnings.</span>
-                          </div>
-                          <div className="p-2.5 rounded-lg border border-border bg-muted/20 space-y-1">
-                            <span className="font-bold text-foreground block">4. Throttled Dispatch Cadence</span>
-                            <span>When batch applying, emails are throttled with 1.2-second pauses between transmissions to protect IP reputation and prevent provider rate-limit rejections.</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </Card>
                 </div>
               </div>
 
@@ -4320,8 +4124,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     ? `${filteredJobs.length} ${
                         activeBoardTab === 'applied'
                           ? 'applied'
-                          : activeBoardTab === 'saved'
-                          ? 'saved'
                           : 'open'
                       } roles`
                     : '0 roles'}
@@ -4337,15 +4139,11 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                   <h3 className="font-bold text-sm text-foreground">
                     {activeBoardTab === 'applied'
                       ? 'No applied roles yet'
-                      : activeBoardTab === 'saved'
-                      ? 'No saved roles yet'
                       : 'No roles match your filters'}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
                     {activeBoardTab === 'applied'
                       ? 'When you apply or mark a job on the Discovery tab, it moves here so you can track your submissions and prepare for interviews.'
-                      : activeBoardTab === 'saved'
-                      ? 'You have not saved any roles yet. Switch to Discovery and click the bookmark icon on any job.'
                       : 'Try broadening your search term or resetting some of the role or company dropdowns.'}
                   </p>
                     <Button

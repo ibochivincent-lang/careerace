@@ -185,6 +185,13 @@ export function LivePdfPreview({
     setActiveBlobId(blobId);
   }, [passedBlobId, profile]);
 
+  // Calibrate comfortable ATS print scale on mobile screens (< 640px)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      setZoomLevel(80);
+    }
+  }, []);
+
   // Generate cryptographic QR code linking to Walrus Explorer
   useEffect(() => {
     if (!activeBlobId) return;
@@ -755,16 +762,16 @@ export function LivePdfPreview({
             }}
             className={`w-full max-w-[840px] bg-white text-slate-900 rounded-sm shadow-2xl border border-slate-300 transition-all select-text print:shadow-none print:border-none print:p-0 ${
               activeTemplate === "ivy_league"
-                ? "p-4 sm:p-8 md:p-14 font-serif"
+                ? "p-2.5 sm:p-8 md:p-14 font-serif"
                 : activeTemplate === "senior_architect"
-                ? "p-3.5 sm:p-6 md:p-8 font-sans"
-                : "p-4 sm:p-8 md:p-12 font-sans"
+                ? "p-2 sm:p-6 md:p-8 font-sans"
+                : "p-2.5 sm:p-8 md:p-12 font-sans"
             }`}
           >
-            <div ref={printContainerRef} className="text-left space-y-5">
+            <div ref={printContainerRef} className="text-left space-y-3 sm:space-y-5">
               {/* ────────── CANDIDATE HEADER (Inline Editable) ────────── */}
               <div
-                className={`pb-3 border-b-2 border-slate-900 ${
+                className={`pb-2 sm:pb-3 border-b-2 border-slate-900 ${
                   activeTemplate === "ivy_league" ? "text-center" : ""
                 }`}
               >
@@ -776,10 +783,10 @@ export function LivePdfPreview({
                   placeholder="Full Candidate Name"
                   className={`w-full bg-transparent text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none transition-colors px-1 py-0.5 ${
                     activeTemplate === "ivy_league"
-                      ? "text-2xl md:text-3xl font-bold uppercase tracking-[0.16em] text-center"
+                      ? "text-lg sm:text-2xl md:text-3xl font-bold uppercase tracking-[0.12em] sm:tracking-[0.16em] text-center"
                       : activeTemplate === "senior_architect"
-                      ? "text-xl md:text-2xl font-black uppercase tracking-tight text-left"
-                      : "text-2xl md:text-3xl font-black uppercase tracking-tight text-left"
+                      ? "text-base sm:text-xl md:text-2xl font-black uppercase tracking-tight text-left"
+                      : "text-lg sm:text-2xl md:text-3xl font-black uppercase tracking-tight text-left"
                   }`}
                 />
 
