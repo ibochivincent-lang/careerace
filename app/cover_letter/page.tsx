@@ -904,7 +904,7 @@ export default function CoverLetterStudioPage() {
                   <ul className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
                     {activeCvHighlights.map((hl, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-emerald-500 font-bold mt-0.5 shrink-0">✓</span>
+                        <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
                         <span>{hl}</span>
                       </li>
                     ))}
@@ -915,47 +915,6 @@ export default function CoverLetterStudioPage() {
                   </p>
                 )}
               </div>
-
-              {/* Role Scope Parameters (Cleaned up: Core Responsibilities Scope Removed as requested) */}
-              <div className="space-y-3 pt-2 border-t border-border">
-                {/* 1. Key Industry Problems That Role Solves */}
-                <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-amber-900 dark:text-amber-300">
-                    <Target className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Key Industry Problems This Role Solves</span>
-                  </div>
-                  <ul className="space-y-1.5 text-[11px] text-amber-950 dark:text-amber-200/80 leading-relaxed pl-1">
-                    {roleScope.keyProblemsSolved.map((prob, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-0.5 shrink-0">
-                          {i + 1}.
-                        </span>
-                        <span>{prob}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Action Button: Safe client execution, no page reload or 404 */}
-              <Button
-                type="button"
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full h-10 rounded-xl text-xs font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
-              >
-                {isGenerating ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Synthesizing Tailored Letter...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Synthesize Tailored Cover Letter</span>
-                  </>
-                )}
-              </Button>
             </Card>
           </div>
 
