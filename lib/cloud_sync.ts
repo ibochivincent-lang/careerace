@@ -11,6 +11,9 @@ export interface CloudSyncPayload {
   appliedJobs?: any[];
   savedJobIds?: string[];
   coverLetter?: string;
+  candidateName?: string;
+  targetRole?: string;
+  suinsDomain?: string;
 }
 
 export async function restoreCandidateDataFromCloud(): Promise<{

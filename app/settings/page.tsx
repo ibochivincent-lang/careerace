@@ -12,17 +12,23 @@ import {
   Database,
   Trash2,
   Download,
-  Key,
   ExternalLink,
   LogOut,
   Copy,
   Check,
-  RefreshCw,
   Lock,
-  Layers
+  Layers,
+  Globe,
+  User,
+  Sparkles,
+  ArrowRight,
+  Save,
+  CheckCircle2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { signOutClient } from '@/lib/client_auth'
+import { signOutClient, getClientSessionAddress } from '@/lib/client_auth'
+import { syncCandidateDataToCloud } from '@/lib/cloud_sync'
+import { normalizeSuinsName } from '@/lib/suins'
 import { ResetVaultButton } from '@/components/ResetVaultButton'
 
 export default function SettingsPage() {
@@ -31,6 +37,16 @@ export default function SettingsPage() {
   const [isLoadingSession, setIsLoadingSession] = useState(true)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
+
+  // Sovereign Candidate Profile & SuiNS state
+  const [candidateName, setCandidateName] = useState('')
+  const [targetRole, setTargetRole] = useState('')
+  const [suinsDomain, setSuinsDomain] = useState('')
+  const [isBindingSuins, setIsBindingSuins] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileSkillsCount, setProfileSkillsCount] = useState(0)
+  const [profileExpCount, setProfileExpCount] = useState(0)
+
   const [vaultStats, setVaultStats] = useState<{
     anchoredCount: number
     versionsCount: number
@@ -43,6 +59,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     // Load zkLogin session
+    const localAddr = getClientSessionAddress()
+    if (localAddr) {
+      setSessionAddress(localAddr)
+      setIsLoadingSession(false)
+    }
+
     fetch('/api/auth/session')
       .then((res) => res.json())
       .then((data) => {
@@ -57,15 +79,36 @@ export default function SettingsPage() {
     try {
       const storedCv = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
       const storedApps = localStorage.getItem('careerace_applied_jobs')
+      const storedName = localStorage.getItem('careerace_candidate_name')
+      const storedRole = localStorage.getItem('careerace_target_title')
+      const storedDomain = localStorage.getItem('careerace_suins_domain')
+
+      if (storedDomain) setSuinsDomain(storedDomain)
+
       let anchored = 0
       let versions = 1
 
       if (storedCv) {
         anchored += 1
         const parsed = JSON.parse(storedCv)
-        if (Array.isArray(parsed.skills)) anchored += parsed.skills.length
-        if (Array.isArray(parsed.work_experience)) anchored += parsed.work_experience.length
+        if (parsed.applicant_name && !storedName) {
+          setCandidateName(parsed.applicant_name)
+        }
+        if (parsed.target_roles?.[0] && !storedRole) {
+          setTargetRole(parsed.target_roles[0])
+        }
+        if (Array.isArray(parsed.skills)) {
+          anchored += parsed.skills.length
+          setProfileSkillsCount(parsed.skills.length)
+        }
+        if (Array.isArray(parsed.work_experience)) {
+          anchored += parsed.work_experience.length
+          setProfileExpCount(parsed.work_experience.length)
+        }
       }
+
+      if (storedName) setCandidateName(storedName)
+      if (storedRole) setTargetRole(storedRole)
 
       if (storedApps) {
         const apps = JSON.parse(storedApps)
@@ -80,11 +123,95 @@ export default function SettingsPage() {
     } catch {}
   }, [])
 
+  async function handleSaveProfile() {
+    setIsSavingProfile(true)
+    try {
+      const cleanName = candidateName.trim()
+      const cleanRole = targetRole.trim()
+
+      if (cleanName) {
+        localStorage.setItem('careerace_candidate_name', cleanName)
+      }
+      if (cleanRole) {
+        localStorage.setItem('careerace_target_title', cleanRole)
+      }
+
+      // Update sovereign profile record if present
+      const rawProfile = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+      if (rawProfile) {
+        const parsed = JSON.parse(rawProfile)
+        if (cleanName) parsed.applicant_name = cleanName
+        if (cleanRole) {
+          parsed.target_roles = [cleanRole, ...(parsed.target_roles || []).filter((r: string) => r !== cleanRole)]
+        }
+        localStorage.setItem('careerace_sovereign_profile', JSON.stringify(parsed))
+      }
+
+      syncCandidateDataToCloud({
+        candidateName: cleanName,
+        targetRole: cleanRole,
+      })
+
+      window.dispatchEvent(new CustomEvent('careerace_auth_changed', { detail: { username: cleanName } }))
+      toast.success('Sovereign profile updated successfully.')
+    } catch {
+      toast.error('Failed to update profile.')
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  async function handleBindSuins() {
+    if (!suinsDomain.trim()) {
+      toast.error('Please enter a .sui domain name.')
+      return
+    }
+
+    const normalized = normalizeSuinsName(suinsDomain)
+    setSuinsDomain(normalized)
+    setIsBindingSuins(true)
+    const toastId = toast.loading(`Registering ${normalized} on Sui...`)
+
+    try {
+      const addr = sessionAddress || getClientSessionAddress()
+      if (!addr) {
+        throw new Error('Please sign in with your Sui wallet to bind your domain.')
+      }
+
+      const res = await fetch('/api/suins/bind', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domain: normalized,
+          candidateAddress: addr,
+        }),
+      })
+
+      const data = await res.json()
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to bind SuiNS domain.')
+      }
+
+      localStorage.setItem('careerace_suins_domain', normalized)
+      syncCandidateDataToCloud({ suinsDomain: normalized })
+      window.dispatchEvent(new CustomEvent('careerace_suins_changed', { detail: { domain: normalized } }))
+
+      toast.success(`Successfully bound ${normalized} to your sovereign address!`, { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to bind SuiNS domain.', { id: toastId })
+    } finally {
+      setIsBindingSuins(false)
+    }
+  }
+
   function handleExportVault() {
     const storedProfile = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
     const storedApps = localStorage.getItem('careerace_applied_jobs')
     const backupData = {
       sui_address: sessionAddress,
+      suins_domain: suinsDomain || null,
+      candidate_name: candidateName || null,
+      target_role: targetRole || null,
       parsed_profile: storedProfile ? JSON.parse(storedProfile) : null,
       applied_jobs: storedApps ? JSON.parse(storedApps) : [],
       exported_at: new Date().toISOString(),
@@ -102,7 +229,7 @@ export default function SettingsPage() {
 
   async function handleLogout() {
     try {
-      toast.success('Disconnecting session…')
+      toast.success('Disconnecting session...')
       await signOutClient('/signin')
     } catch {
       toast.error('Failed to log out.')
@@ -114,6 +241,7 @@ export default function SettingsPage() {
     localStorage.removeItem('careerace_parsed_profile')
     localStorage.removeItem('careerace_candidate_name')
     localStorage.removeItem('careerace_target_title')
+    localStorage.removeItem('careerace_suins_domain')
     localStorage.removeItem('careerace_applied_jobs')
     setShowClearConfirm(false)
     toast.success('Local browser profile cache cleared.')
@@ -122,17 +250,131 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
-        {/* Header - Crisp without cumbersome subtitles */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Settings &amp; Career Vault
+              Account &amp; Sovereign Settings
             </h1>
           </div>
           <ThemeToggle />
         </div>
 
-        {/* Compact zkLogin Wallet Card */}
+        {/* 1. Sui Name Service (SuiNS) Passport & Candidate Identity */}
+        <Card className="p-5 space-y-4 border border-border shadow-xs bg-card">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+            <div className="flex items-center gap-2.5">
+              <Globe className="w-4 h-4 text-emerald-500 shrink-0" />
+              <div>
+                <h2 className="font-bold text-sm text-foreground">Sui Name Service (SuiNS) &amp; Sovereign Profile</h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/5">
+                {suinsDomain ? `${suinsDomain} Active` : 'Domain Unbound'}
+              </Badge>
+              <Badge variant="secondary" className="font-mono text-[10px]">
+                Sui Testnet
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            {/* Candidate Name Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Candidate Full Name</span>
+              </label>
+              <input
+                type="text"
+                value={candidateName}
+                onChange={(e) => setCandidateName(e.target.value)}
+                placeholder="e.g. Vincent Ibochi"
+                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            {/* Target Career Title Field */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Target Career Discipline / Role</span>
+              </label>
+              <input
+                type="text"
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                placeholder="e.g. Marine Systems Engineer / Cloud Architect"
+                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            {/* SuiNS Domain Input & Action */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                <span>SuiNS Sovereign Domain (.sui)</span>
+              </label>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={suinsDomain}
+                    onChange={(e) => setSuinsDomain(e.target.value)}
+                    placeholder="e.g. alex or alex.sui"
+                    className="w-full h-9 pl-3 pr-12 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs font-mono text-muted-foreground pointer-events-none">
+                    .sui
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleBindSuins}
+                  disabled={isBindingSuins}
+                  className="h-9 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer shrink-0"
+                >
+                  <Globe className="w-3.5 h-3.5 mr-1.5" />
+                  <span>{isBindingSuins ? 'Registering...' : 'Bind .sui Domain'}</span>
+                </Button>
+                {suinsDomain && (
+                  <a
+                    href={`https://suins.io/#/${normalizeSuinsName(suinsDomain)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1 h-9 px-3 rounded-lg border border-border bg-muted/40 text-xs text-foreground hover:bg-muted font-medium cursor-pointer shrink-0"
+                  >
+                    <span>View on SuiNS</span>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics & Save Profile Action */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+              <span>{profileSkillsCount} Skills Verified</span>
+              <span>·</span>
+              <span>{profileExpCount} Positions Indexed</span>
+            </div>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSaveProfile}
+              disabled={isSavingProfile}
+              className="text-xs h-8 gap-1.5 border-border hover:bg-muted text-foreground cursor-pointer font-semibold"
+            >
+              <Save className="w-3.5 h-3.5 text-primary" />
+              <span>{isSavingProfile ? 'Saving...' : 'Save Profile Changes'}</span>
+            </Button>
+          </div>
+        </Card>
+
+        {/* 2. Compact zkLogin Wallet Card */}
         <Card className="p-4 border-l-4 border-l-primary">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -148,7 +390,7 @@ export default function SettingsPage() {
             {sessionAddress ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs text-muted-foreground select-all bg-muted/60 px-2 py-1 rounded border border-border/60">
-                  {sessionAddress.slice(0, 10)}…{sessionAddress.slice(-6)}
+                  {sessionAddress.slice(0, 10)}...{sessionAddress.slice(-6)}
                 </span>
                 <Button
                   variant="outline"
@@ -204,7 +446,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* Embedded Career Vault Management Section */}
+        {/* 3. Embedded Career Vault Management Section */}
         <Card className="p-5 space-y-4" id="vault">
           <div className="flex items-center justify-between border-b pb-3">
             <div className="flex items-center gap-2">
@@ -249,7 +491,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* Walrus Network Configuration */}
+        {/* 4. Walrus Network Configuration */}
         <Card className="p-5 space-y-3">
           <div className="flex items-center justify-between border-b pb-3">
             <div className="flex items-center gap-2">
@@ -275,7 +517,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* Local Storage & Cache Clear */}
+        {/* 5. Local Storage & Cache Clear */}
         <Card className="p-5 space-y-3 border-destructive/20">
           <div className="flex items-center justify-between border-b pb-3">
             <div className="flex items-center gap-2">

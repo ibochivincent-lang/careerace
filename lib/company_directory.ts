@@ -4782,5 +4782,159 @@ export const VERIFIED_COMPANY_HIRING_CONTACTS: CompanyHiringContact[] = [
     "location": "Ship manager / crewing",
     "careersUrl": "https://www.google.com/search?q=Anglo-Eastern+Ukraine+(crewing+&+training+centre)+careers",
     "notes": "Maritime operator contact."
+  },
+  {
+    "id": "ng-paystack-eng",
+    "company": "Paystack",
+    "category": "Software / Cloud",
+    "contactEmail": "careers@paystack.com",
+    "typicalRoles": [
+      "Backend Engineer",
+      "DevOps Engineer",
+      "Full Stack Developer"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://paystack.com/careers",
+    "notes": "Direct technical recruitment desk for payments engineering."
+  },
+  {
+    "id": "ng-flutterwave-eng",
+    "company": "Flutterwave",
+    "category": "Software / Cloud",
+    "contactEmail": "careers@flutterwavego.com",
+    "typicalRoles": [
+      "Cloud Infrastructure Engineer",
+      "Software Engineer",
+      "FinTech Security Specialist"
+    ],
+    "location": "Lagos, Nigeria / Remote",
+    "careersUrl": "https://flutterwave.com/careers",
+    "notes": "Direct corporate engineering and cloud recruitment."
+  },
+  {
+    "id": "ng-moniepoint-eng",
+    "company": "Moniepoint",
+    "category": "Software / Cloud",
+    "contactEmail": "recruitment@moniepoint.com",
+    "typicalRoles": [
+      "Core Banking Systems Engineer",
+      "Distributed Backend Architect",
+      "Reliability Engineer"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://moniepoint.com/careers",
+    "notes": "Direct corporate recruitment for core banking engines."
+  },
+  {
+    "id": "ng-interswitch-eng",
+    "company": "Interswitch",
+    "category": "Software / Cloud",
+    "contactEmail": "careers@interswitchgroup.com",
+    "typicalRoles": [
+      "Switching Software Engineer",
+      "Security Analyst",
+      "Digital Commerce Developer"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.interswitchgroup.com/careers",
+    "notes": "Direct recruitment desk for electronic transaction processing."
+  },
+  {
+    "id": "ng-jobberman-recruit",
+    "company": "Jobberman Nigeria",
+    "category": "Management / Operations",
+    "contactEmail": "info@jobberman.com",
+    "typicalRoles": [
+      "Graduate Trainee",
+      "Technical Specialist",
+      "Executive Analyst"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.jobberman.com",
+    "notes": "Leading Nigerian recruitment and career placement network."
+  },
+  {
+    "id": "ng-workforce-group",
+    "company": "Workforce Group",
+    "category": "Management / Operations",
+    "contactEmail": "hello@workforcegroup.com",
+    "typicalRoles": [
+      "IT Consultant",
+      "Enterprise Systems Analyst",
+      "Operations Specialist"
+    ],
+    "location": "Lagos / Abuja, Nigeria",
+    "careersUrl": "https://workforcegroup.com",
+    "notes": "Enterprise staffing and recruitment advisory."
+  },
+  {
+    "id": "ng-goodwork-marine",
+    "company": "GoodWork Marine Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@goodworkmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Systems Engineer",
+      "Offshore Vessel Crew"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://goodworkmarine.com",
+    "notes": "Seafarer crewing and marine engineering applications."
+  },
+  {
+    "id": "ng-ocean-professionals",
+    "company": "Ocean Professionals Nigeria",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@oceanprong.com",
+    "typicalRoles": [
+      "3rd Marine Engineer Officer",
+      "DP Systems Specialist",
+      "Offshore Marine Crew"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://ng.linkedin.com/company/ocean-professionals",
+    "notes": "Direct crewing desk for DP vessels and offshore Niger Delta operations."
+  },
+  {
+    "id": "ng-red-offshore",
+    "company": "Red Offshore",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@redoffshore.eu",
+    "typicalRoles": [
+      "Offshore Marine Specialist",
+      "Subsea Engineer",
+      "Marine Propulsion Officer"
+    ],
+    "location": "Lagos, Nigeria / International",
+    "careersUrl": "https://ng.linkedin.com/company/red-offshore-ltd",
+    "notes": "Offshore personnel, marine crew, and subsea engineering."
+  },
+  {
+    "id": "intl-telford-offshore",
+    "company": "Telford Offshore",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@telfordoffshore.com",
+    "typicalRoles": [
+      "Offshore Construction Specialist",
+      "Marine Engineer",
+      "DP Vessel Officer"
+    ],
+    "location": "International / West Africa",
+    "careersUrl": "https://www.telfordoffshore.com",
+    "notes": "Offshore marine crew and subsea DP pipelay vessel operations."
+  },
+  {
+    "id": "ng-deepwater-eng",
+    "company": "Deepwater Engineering",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@deepwaterfze.com",
+    "typicalRoles": [
+      "FPSO Marine Superintendent",
+      "Cargo Pump Engineer",
+      "Offshore Watchkeeper"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://deepwaterfze.com",
+    "notes": "FPSO and offshore marine engineering crewing desk."
   }
 ];

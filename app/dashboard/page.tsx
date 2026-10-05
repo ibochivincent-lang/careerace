@@ -110,6 +110,8 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
 }
 
 const OVERVIEW_KEYWORD_PILLS = [
+  'Available Jobs for Me',
+  "Today's Application Goal",
   'CV & Background',
   'Study & Education',
   'Work Experience',
