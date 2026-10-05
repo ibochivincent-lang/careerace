@@ -7,12 +7,11 @@ import {
   LayoutDashboard,
   FileText,
   Briefcase,
-  Database,
   Menu,
   X,
   Mail,
   Target,
-  Award,
+  Compass,
   Bell,
   Settings,
   LogOut,
@@ -21,26 +20,36 @@ import {
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { signOutClient, getClientSessionAddress } from '@/lib/client_auth'
+import { ComingSoonModal, type ComingSoonFeature } from './ComingSoonModal'
 
 interface NavItem {
   label: string
-  href: string
+  href?: string
+  comingSoon?: ComingSoonFeature
   icon: React.ComponentType<{ className?: string }>
 }
 
 const PRIMARY_NAV: NavItem[] = [
   { label: 'Overview', href: '/dashboard?tab=overview', icon: LayoutDashboard },
   { label: 'Resumes', href: '/dashboard?tab=resumes', icon: FileText },
+  { label: 'Cover Letters', href: '/cover_letter', icon: Mail },
   { label: 'Jobs', href: '/application_board', icon: Briefcase },
-  { label: 'Vault', href: '/memory', icon: Database },
 ]
 
 const MORE_NAV: NavItem[] = [
-  { label: 'Cover Letters', href: '/cover_letter', icon: Mail },
-  { label: 'Interview Room', href: '/interview_room', icon: Target },
-  { label: 'Accomplishments', href: '/progress', icon: Award },
+  { label: 'Interview Room', comingSoon: 'interview_room', icon: Target },
+  { label: 'Career Pathway', comingSoon: 'career_pathway', icon: Compass },
+  {
+    label: 'LinkedIn Outreach',
+    comingSoon: 'linkedin',
+    icon: () => (
+      <svg className="w-4 h-4 shrink-0 text-[#0A66C2]" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+      </svg>
+    ),
+  },
   { label: 'Notifications', href: '/notifications', icon: Bell },
-  { label: 'Settings & Identity', href: '/settings', icon: Settings },
+  { label: 'Settings & Vault', href: '/settings', icon: Settings },
 ]
 
 function MobileNavContent() {
@@ -50,8 +59,10 @@ function MobileNavContent() {
   const currentTab = searchParams?.get('tab') || 'overview'
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [comingSoonFeature, setComingSoonFeature] = useState<ComingSoonFeature | null>(null)
 
-  function isItemActive(href: string): boolean {
+  function isItemActive(href?: string): boolean {
+    if (!href) return false
     if (href.startsWith('/dashboard?tab=')) {
       const tab = href.split('tab=')[1]
       return pathname === '/dashboard' && currentTab === tab
@@ -86,10 +97,10 @@ function MobileNavContent() {
                 type="button"
                 onClick={() => {
                   setDrawerOpen(false)
-                  router.push(href)
+                  if (href) router.push(href)
                 }}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 py-1 px-1 h-full min-h-[44px] transition-colors relative',
+                  'flex flex-col items-center justify-center gap-1 py-1 px-1 h-full min-h-[44px] transition-colors relative cursor-pointer',
                   active
                     ? 'text-primary font-bold'
                     : 'text-muted-foreground hover:text-foreground'
@@ -111,7 +122,7 @@ function MobileNavContent() {
             type="button"
             onClick={() => setDrawerOpen((v) => !v)}
             className={cn(
-              'flex flex-col items-center justify-center gap-1 py-1 px-1 h-full min-h-[44px] transition-colors relative',
+              'flex flex-col items-center justify-center gap-1 py-1 px-1 h-full min-h-[44px] transition-colors relative cursor-pointer',
               drawerOpen || MORE_NAV.some((m) => isItemActive(m.href))
                 ? 'text-primary font-bold'
                 : 'text-muted-foreground hover:text-foreground'
@@ -156,7 +167,7 @@ function MobileNavContent() {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
                 aria-label="Close menu"
               >
                 <X className="w-4 h-4" />
@@ -165,7 +176,7 @@ function MobileNavContent() {
 
             {/* Menu Links */}
             <div className="py-3 space-y-1">
-              {MORE_NAV.map(({ label, href, icon: Icon }) => {
+              {MORE_NAV.map(({ label, href, comingSoon, icon: Icon }) => {
                 const active = isItemActive(href)
                 return (
                   <button
@@ -173,10 +184,14 @@ function MobileNavContent() {
                     type="button"
                     onClick={() => {
                       setDrawerOpen(false)
-                      router.push(href)
+                      if (comingSoon) {
+                        setComingSoonFeature(comingSoon)
+                      } else if (href) {
+                        router.push(href)
+                      }
                     }}
                     className={cn(
-                      'w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium transition-all text-left min-h-[44px]',
+                      'w-full flex items-center justify-between p-3 rounded-xl text-xs font-medium transition-all text-left min-h-[44px] cursor-pointer',
                       active
                         ? 'bg-primary/10 text-primary font-bold'
                         : 'text-foreground hover:bg-muted/70'
@@ -188,7 +203,11 @@ function MobileNavContent() {
                       </div>
                       <span>{label}</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                    {comingSoon ? (
+                      <span className="text-[10px] font-mono uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded">Soon</span>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
+                    )}
                   </button>
                 )
               })}
@@ -212,7 +231,7 @@ function MobileNavContent() {
                 type="button"
                 onClick={handleSignOut}
                 disabled={busy}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-xs font-semibold text-destructive bg-destructive/10 hover:bg-destructive/20 transition-colors min-h-[44px] disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-xs font-semibold text-destructive bg-destructive/10 hover:bg-destructive/20 transition-colors min-h-[44px] disabled:opacity-50 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>{busy ? 'Signing out…' : 'Sign Out / Switch Account'}</span>
@@ -221,6 +240,13 @@ function MobileNavContent() {
           </div>
         </div>
       )}
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        open={comingSoonFeature !== null}
+        onOpenChange={(open) => !open && setComingSoonFeature(null)}
+        feature={comingSoonFeature}
+      />
     </>
   )
 }
@@ -232,4 +258,3 @@ export function MobileNav() {
     </Suspense>
   )
 }
-

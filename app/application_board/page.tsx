@@ -51,6 +51,8 @@ import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
 import { SmtpRelaySettingsModal } from '@/components/SmtpRelaySettingsModal'
 import { downloadFollowUpIcs } from '@/lib/ics_calendar'
+import { downloadEmlReceipt } from '@/lib/email_receipt'
+import { getClientSessionAddress } from '@/lib/client_auth'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import type { WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime } from '@/lib/cloud_sync'
@@ -572,6 +574,136 @@ const VERIFIED_INITIAL_JOBS: JobListing[] = [
     apply_url: 'https://careers.chevron.com',
     description: 'Coordinate global energy transport movements, safety management systems (SMS), vetting audits (SIRE 2.0), and port turnaround logistics.',
   },
+  {
+    id: 'wartsila-marine-1',
+    title: 'Marine Automation & Dual-Fuel Engine Field Engineer',
+    company: 'Wärtsilä',
+    location: 'Vaasa, Finland · Marine Power',
+    country: 'Finland',
+    workplace: 'Hybrid',
+    seniority: 'Mid-Level',
+    roleCategory: 'Marine Engineering',
+    postedDate: 'Today',
+    apply_url: 'https://www.wartsila.com/careers',
+    description: 'Oversee electronic fuel injection, SCR emissions aftertreatment, and automated propulsion control commissioning on commercial dual-fuel methanol vessels.',
+  },
+  {
+    id: 'kongsberg-marine-1',
+    title: 'Dynamic Positioning (DP) & Vessel Control Systems Architect',
+    company: 'Kongsberg Maritime',
+    location: 'Kongsberg, Norway · Maritime Solutions',
+    country: 'Norway',
+    workplace: 'Hybrid',
+    seniority: 'Senior',
+    roleCategory: 'Marine Engineering',
+    postedDate: '1d',
+    apply_url: 'https://www.kongsberg.com/careers',
+    description: 'Design fault-tolerant DP class 3 architectures, acoustic reference transponders, and vessel cyber-security monitoring under DNV classification rules.',
+  },
+  {
+    id: 'technip-marine-1',
+    title: 'Subsea Umbilicals, Risers & Flowlines (SURF) Lead Engineer',
+    company: 'TechnipFMC',
+    location: 'Houston, TX, United States · Subsea',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Lead / Staff',
+    roleCategory: 'Marine Engineering',
+    postedDate: 'Today',
+    apply_url: 'https://www.technipfmc.com/en/careers',
+    description: 'Lead subsea manifold installations, dynamic umbilical fatigue analysis, and subsea tie-back engineering for offshore production assets.',
+  },
+  {
+    id: 'crowley-ops-1',
+    title: 'Fleet Safety & SIRE Vetting Marine Superintendent',
+    company: 'Crowley',
+    location: 'Jacksonville, FL, United States · Fleet Management',
+    country: 'United States',
+    workplace: 'On-site',
+    seniority: 'Senior',
+    roleCategory: 'Management & Operations',
+    postedDate: 'Today',
+    apply_url: 'https://www.crowley.com/careers',
+    description: 'Manage maritime safety management systems (SMS), USCG / Flag State regulatory audits, and SIRE 2.0 tanker compliance across tug and tanker fleets.',
+  },
+  {
+    id: 'mysten-core-1',
+    title: 'Core Protocol & Consensus Infrastructure Engineer',
+    company: 'Mysten Labs',
+    location: 'Palo Alto, CA, United States · Remote',
+    country: 'United States',
+    workplace: 'Remote',
+    seniority: 'Senior',
+    roleCategory: 'Software & IT',
+    postedDate: 'Today',
+    apply_url: 'https://mystenlabs.com/careers',
+    description: 'Scale Mysticeti and Bullshark Byzantine fault-tolerant consensus, Narwhal mempool latency, and Sui object-centric execution engine.',
+  },
+  {
+    id: 'mysten-walrus-1',
+    title: 'Decentralized Storage & Walrus Systems Architect',
+    company: 'Mysten Labs',
+    location: 'San Francisco, CA, United States · Remote',
+    country: 'United States',
+    workplace: 'Remote',
+    seniority: 'Lead / Staff',
+    roleCategory: 'Software & IT',
+    postedDate: 'Today',
+    apply_url: 'https://mystenlabs.com/careers',
+    description: 'Architect multi-petabyte decentralized blob storage, erasure-coding validation schemes, and zero-knowledge cryptographic commitments on Walrus.',
+  },
+  {
+    id: 'chainlink-oracle-1',
+    title: 'Smart Contract Security & Decentralized Oracle Engineer',
+    company: 'Chainlink Labs',
+    location: 'Remote · Global',
+    country: 'United States',
+    workplace: 'Remote',
+    seniority: 'Senior',
+    roleCategory: 'Software & IT',
+    postedDate: '1d',
+    apply_url: 'https://chainlinklabs.com/careers',
+    description: 'Build and audit Cross-Chain Interoperability Protocol (CCIP) contracts, cryptographic proof verifiers, and real-time oracle consensus nodes.',
+  },
+  {
+    id: 'anthropic-safety-1',
+    title: 'AI Safety & Multimodal Alignment Research Engineer',
+    company: 'Anthropic',
+    location: 'San Francisco, CA, United States',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Senior',
+    roleCategory: 'AI & Autonomous Systems',
+    postedDate: 'Today',
+    apply_url: 'https://www.anthropic.com/careers',
+    description: 'Develop mechanistic interpretability tooling, RLHF safety evaluation benchmarks, and automated constitutional red-teaming pipelines for Claude models.',
+  },
+  {
+    id: 'boston-robotics-1',
+    title: 'Robotics Control Systems & Motion Planning Engineer',
+    company: 'Boston Dynamics',
+    location: 'Waltham, MA, United States',
+    country: 'United States',
+    workplace: 'On-site',
+    seniority: 'Senior',
+    roleCategory: 'AI & Autonomous Systems',
+    postedDate: '2d',
+    apply_url: 'https://bostondynamics.com/careers',
+    description: 'Design dynamic trajectory generation, whole-body balance control algorithms, and visual perception pipelines for humanoid and quadruped platforms.',
+  },
+  {
+    id: 'cloudflare-systems-1',
+    title: 'High-Throughput Edge Network Systems Engineer',
+    company: 'Cloudflare',
+    location: 'Austin, TX, United States',
+    country: 'United States',
+    workplace: 'Hybrid',
+    seniority: 'Senior',
+    roleCategory: 'Software & IT',
+    postedDate: 'Today',
+    apply_url: 'https://www.cloudflare.com/careers',
+    description: 'Architect eBPF network packet processing, anycast routing protocols, and multi-terabit DDoS mitigation engines across global data centers.',
+  },
 ]
 
 // Visual Company Badge / Logo Renderer: Clean, typographic monograms only (no emojis)
@@ -771,6 +903,55 @@ function CompanyLogo({ company }: { company: string }) {
     return (
       <div className="w-8 h-8 rounded-lg bg-[#4338CA] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
         STRP
+      </div>
+    )
+  }
+  if (c.includes('wartsila') || c.includes('wï¿½rtsilï¿½') || c.includes('wärtsilä')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#003865] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        WAR
+      </div>
+    )
+  }
+  if (c.includes('kongsberg')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#002855] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        KNG
+      </div>
+    )
+  }
+  if (c.includes('technip')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#78281F] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        FTI
+      </div>
+    )
+  }
+  if (c.includes('crowley')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#B91C1C] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        CRW
+      </div>
+    )
+  }
+  if (c.includes('chainlink')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#375BD2] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        LINK
+      </div>
+    )
+  }
+  if (c.includes('boston dynamics')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#0284C7] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        BD
+      </div>
+    )
+  }
+  if (c.includes('cloudflare')) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-[#F38020] text-white font-bold flex items-center justify-center text-[10px] tracking-wider shadow-xs shrink-0">
+        NET
       </div>
     )
   }
@@ -1043,6 +1224,7 @@ export default function ApplicationBoardPage() {
   const [selectedWorkplace, setSelectedWorkplace] = useState('all')
 
   // Job storage state
+  const [sessionAddress, setSessionAddress] = useState<string | null>(null)
   const [allJobs, setAllJobs] = useState<JobListing[]>(VERIFIED_INITIAL_JOBS)
   const [savedJobIds, setSavedJobIds] = useState<string[]>([])
   const [appliedJobs, setAppliedJobs] = useState<AppliedJobRecord[]>([])
@@ -1144,6 +1326,20 @@ export default function ApplicationBoardPage() {
           setUploadedDocuments(parsed)
           setSelectedAttachments((prev) => Array.from(new Set([...prev, ...parsed.map((p: any) => p.id)])))
         }
+      }
+    } catch {}
+
+    try {
+      const addr = getClientSessionAddress()
+      if (addr) {
+        setSessionAddress(addr)
+      } else {
+        fetch('/api/auth/session')
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.authenticated && d.address) setSessionAddress(d.address)
+          })
+          .catch(() => {})
       }
     } catch {}
 
@@ -1681,6 +1877,31 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       return
     }
 
+    // Automated download of an RFC-compliant .eml delivery receipt alongside native mailto trigger
+    try {
+      downloadEmlReceipt({
+        to: targetEmailInput,
+        fromName: activeProfileData?.applicant_name || 'Candidate',
+        fromEmail: activeProfileData?.email || 'applicant@careerace.online',
+        subject: customEmailSubject,
+        body: customEmailBody,
+        candidateAddress: sessionAddress || null,
+        company: targetCompanyInput,
+        role: targetRoleInput,
+        walrusBlobId: selectedVersionMeta?.blobId || null,
+        relayProvider: 'Native Mail Client (RFC-5322 EML Receipt)',
+        attachments: uploadedDocuments.map((d) => ({
+          name: d.name,
+          size: d.size,
+          blobId: d.blobId,
+          url: d.walrusUrl,
+        })),
+      })
+      toast.info('RFC-5322 delivery receipt (.eml) downloaded for your offline record.')
+    } catch (e) {
+      console.error('Failed to trigger automatic .eml receipt', e)
+    }
+
     const mailtoUrl = `mailto:${encodeURIComponent(targetEmailInput)}?subject=${encodeURIComponent(
       customEmailSubject
     )}&body=${encodeURIComponent(customEmailBody)}`
@@ -1702,7 +1923,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
 
     setAutoApplyLogs((prev) => [
-      `[${new Date().toLocaleTimeString()}] Dispatched application to ${targetEmailInput} (${targetCompanyInput}) via mail client. Scheduled 7-day follow-up.`,
+      `[${new Date().toLocaleTimeString()}] Dispatched application to ${targetEmailInput} (${targetCompanyInput}) via mail client. Delivery receipt (.eml) saved. Scheduled 7-day follow-up.`,
       ...prev,
     ])
 
@@ -1820,6 +2041,32 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         `[${new Date().toLocaleTimeString()}] 5-working-day cooldown active for ${targetCompanyInput}.`,
         ...prev,
       ])
+
+      // Automated download of an RFC-compliant .eml delivery receipt alongside direct relay
+      try {
+        downloadEmlReceipt({
+          to: targetEmailInput,
+          fromName: candidateName,
+          fromEmail: candidateEmail,
+          subject: customEmailSubject,
+          body: customEmailBody,
+          candidateAddress: sessionAddress || null,
+          company: targetCompanyInput,
+          role: targetRoleInput,
+          walrusBlobId: walrusBlobId || null,
+          relayProvider: data.relayProvider || 'Sovereign DKIM Relay',
+          messageId: data.messageId || undefined,
+          attachments: uploadedDocuments.map((d) => ({
+            name: d.name,
+            size: d.size,
+            blobId: d.blobId,
+            url: d.walrusUrl,
+          })),
+        })
+        toast.info('RFC-5322 delivery receipt (.eml) saved to your device.')
+      } catch (e) {
+        console.error('Failed to trigger automatic .eml receipt', e)
+      }
 
       toast.success(data.message || `Dispatched application to ${targetEmailInput}! 5-working-day cooldown active.`, { id: toastId })
     } catch (err: any) {
@@ -2082,9 +2329,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     </div>
                     <div>
                       <h2 className="font-bold text-lg text-foreground">Daily Job-Hunting Action Checklist</h2>
-                      <p className="text-xs text-muted-foreground">
-                        5 strategic daily actions to consistently secure technical interviews and career offers.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -2779,6 +3023,40 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         >
                           <Send className="w-3.5 h-3.5 text-muted-foreground" />
                           <span>Email Client</span>
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (!targetEmailInput || !targetEmailInput.includes('@')) {
+                              toast.error('Please specify a corporate hiring email above.')
+                              return
+                            }
+                            downloadEmlReceipt({
+                              to: targetEmailInput,
+                              fromName: activeProfileData?.applicant_name || 'Candidate',
+                              fromEmail: activeProfileData?.email || 'applicant@careerace.online',
+                              subject: customEmailSubject,
+                              body: customEmailBody,
+                              candidateAddress: sessionAddress || null,
+                              company: targetCompanyInput,
+                              role: targetRoleInput,
+                              walrusBlobId: selectedVersionMeta?.blobId || null,
+                              relayProvider: 'Offline Verifiable Dispatch (.eml)',
+                              attachments: uploadedDocuments.map((d) => ({
+                                name: d.name,
+                                size: d.size,
+                                blobId: d.blobId,
+                                url: d.walrusUrl,
+                              })),
+                            })
+                            toast.success('Downloaded verifiable RFC-compliant delivery receipt (.eml).')
+                          }}
+                          className="gap-2 text-xs font-semibold h-9 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
+                          title="Download RFC-compliant .eml message file for verifiable offline records"
+                        >
+                          <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Receipt (.eml)</span>
                         </Button>
 
                         <Button

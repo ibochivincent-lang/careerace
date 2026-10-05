@@ -18,7 +18,7 @@ import {
   TrendingUp, Target, AlertTriangle, FileCheck,
   RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor,
   Cpu, Flame, ChevronDown, ChevronUp, History,
-  Globe, Loader2
+  Globe, Loader2, Bell
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
@@ -1439,14 +1439,14 @@ function DashboardContent() {
               ...prev,
               {
                 role: 'assistant',
-                content: `✓ **${file.name}** is sealed to your Walrus Sovereign Memory vault!\n\n• **Candidate:** ${candidateName}\n• **Target Roles:** ${(data.profile.target_roles || []).join(', ') || 'Professional'}\n• **Skills:** ${(data.profile.skills || []).slice(0, 8).join(', ')}\n• **Walrus Vault:** ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'Active'}\n\nAsk me anything or click a suggested action below to optimize your resume canvas!`
+                content: `Verified: **${file.name}** is sealed to your Walrus Sovereign Memory vault!\n\n• **Candidate:** ${candidateName}\n• **Target Roles:** ${(data.profile.target_roles || []).join(', ') || 'Professional'}\n• **Skills:** ${(data.profile.skills || []).slice(0, 8).join(', ')}\n• **Walrus Vault:** ${data.address ? `${data.address.slice(0, 6)}...${data.address.slice(-4)}` : 'Active'}\n\nAsk me anything or click a suggested action below to optimize your resume canvas!`
               }
             ])
             setOverviewChatMessages((prev) => [
               ...prev,
               {
                 role: 'assistant',
-                content: `✓ **${file.name}** verified & sealed to Walrus Sovereign Memory for **${candidateName}** (${(data.profile.target_roles || []).join(', ') || 'Professional'}). Your background, skills, and work history are now live!`
+                content: `Verified: **${file.name}** sealed to Walrus Sovereign Memory for **${candidateName}** (${(data.profile.target_roles || []).join(', ') || 'Professional'}). Your background, skills, and work history are now live!`
               }
             ])
             toast.success('CV permanently anchored to Walrus!')
@@ -2441,61 +2441,32 @@ function DashboardContent() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-6 max-w-3xl"
+            className="space-y-6 max-w-2xl mx-auto py-8"
           >
-            <div className="pb-4 border-b">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Verified LinkedIn Profile</h1>
-              <p className="text-xs text-muted-foreground mt-1">
-                Link your verified LinkedIn credentials and professional endorsements to enrich your sovereign Walrus memory lineage.
-              </p>
-            </div>
-
-            {/* LinkedIn Card */}
-            <Card className="p-6 border border-border/80 shadow-sm rounded-2xl bg-card space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-foreground">LinkedIn Professional Integration</h3>
-                  <p className="text-xs text-muted-foreground">Sync endorsements, public headline, and verified career tenure</p>
-                </div>
+            <Card className="p-8 border border-border/80 shadow-md rounded-2xl bg-card text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#0A66C2]/10 text-[#0A66C2] flex items-center justify-center mx-auto">
+                <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+                </svg>
               </div>
-
-              <div className="space-y-4 text-xs">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">LinkedIn Public Profile URL</label>
-                  <input
-                    type="url"
-                    value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
-                    placeholder="https://www.linkedin.com/in/your-profile"
-                    className="w-full h-10 px-3.5 rounded-lg border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Used to verify your public career profile and align ATS keyword targeting.
-                  </p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-center gap-2">
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">LinkedIn Sync &amp; Outreach</h2>
+                  <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">Coming Soon</Badge>
                 </div>
-
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <span className="text-xs text-muted-foreground">Status: {linkedinUrl ? 'Profile Linked' : 'Not Connected'}</span>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (!linkedinUrl.trim()) {
-                        toast.error('Please enter a valid LinkedIn URL')
-                        return
-                      }
-                      localStorage.setItem('careerace_candidate_linkedin', linkedinUrl.trim())
-                      toast.success('LinkedIn credentials synced to Sovereign Passport!')
-                    }}
-                    className="text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-500 text-white"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Sync LinkedIn to Walrus Memory
-                  </Button>
-                </div>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Bi-directional LinkedIn synchronization and automated InMail follow-up pipelines are currently being integrated with your sovereign Sui credentials.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Button
+                  size="sm"
+                  onClick={() => toast.success('You will be notified when LinkedIn integration goes live.')}
+                  className="gap-2 text-xs font-semibold h-8 px-4 cursor-pointer"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>Notify When Live</span>
+                </Button>
               </div>
             </Card>
           </motion.div>

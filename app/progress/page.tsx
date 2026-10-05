@@ -24,6 +24,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ComingSoonModal } from '@/components/ComingSoonModal'
 
 interface WorkExperienceItem {
   role: string
@@ -43,6 +44,7 @@ interface AccomplishmentsData {
 
 export default function ProgressPage() {
   const router = useRouter()
+  const [showComingSoon, setShowComingSoon] = useState(true)
   const [data, setData] = useState<AccomplishmentsData>({
     address: null,
     skills: [],
@@ -207,9 +209,9 @@ export default function ProgressPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">Accomplishments & Career Pathways</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Career Pathway</h1>
               <Badge variant="outline" className="font-mono text-[10px]">
-                Sovereign Proofs
+                Coming Soon
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
@@ -588,6 +590,12 @@ export default function ProgressPage() {
           )
         })()}
       </div>
+
+      <ComingSoonModal
+        open={showComingSoon}
+        onOpenChange={setShowComingSoon}
+        feature="career_pathway"
+      />
     </AppShell>
   )
 }

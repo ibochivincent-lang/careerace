@@ -21,7 +21,8 @@ import {
   RefreshCw,
   Calendar,
   Compass,
-  Send
+  Send,
+  FileCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getRoleIntelligence, type RoleIntelligenceProfile } from '@/lib/role_intelligence';
@@ -29,6 +30,8 @@ import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/l
 import type { ParsedCv } from '@/lib/cv_parser';
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime } from '@/lib/cloud_sync';
 import { saveFact } from '@/app/actions/memory';
+import { downloadEmlReceipt } from '@/lib/email_receipt';
+import { getClientSessionAddress } from '@/lib/client_auth';
 
 export interface DisciplineDefinition {
   id: string;
@@ -584,6 +587,39 @@ export default function CoverLetterStudioPage() {
     toast.success('Cover letter text file downloaded!');
   }
 
+  function handleDownloadEml() {
+    if (!coverLetterText) return;
+    const roleForFile = customRoleInput.trim() || targetRole;
+    const compForFile = targetCompany.trim() || 'Hiring Organization';
+    const matchedContact = VERIFIED_COMPANY_HIRING_CONTACTS.find(
+      (c) => c.company.toLowerCase() === targetCompany.toLowerCase().trim()
+    );
+    const recipientEmail = matchedContact?.contactEmail || `careers@${targetCompany.toLowerCase().replace(/[^a-z0-9]/g, '') || 'company'}.com`;
+    const candidateName = profile?.applicant_name || 'Candidate';
+    const candidateEmail = profile?.email || 'applicant@careerace.online';
+    const sessionAddr = getClientSessionAddress();
+
+    try {
+      downloadEmlReceipt({
+        to: recipientEmail,
+        fromName: candidateName,
+        fromEmail: candidateEmail,
+        subject: `Application: ${roleForFile} - ${candidateName}`,
+        body: coverLetterText,
+        candidateAddress: sessionAddr || null,
+        candidatePhone: profile?.phone || null,
+        company: compForFile,
+        role: roleForFile,
+        walrusBlobId: walrusBlobId || null,
+        relayProvider: 'Cover Letter Studio (Verifiable .eml)',
+      });
+      toast.success('Verifiable RFC-5322 .eml message file downloaded!');
+    } catch (e) {
+      console.error('Failed to generate .eml receipt', e);
+      toast.error('Failed to generate .eml receipt.');
+    }
+  }
+
   async function handleAnchorToWalrusVault() {
     if (!coverLetterText) return;
     setIsSavingToWalrus(true);
@@ -954,6 +990,18 @@ export default function CoverLetterStudioPage() {
                   >
                     <Download className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>Download (.TXT)</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDownloadEml}
+                    className="text-xs gap-1.5 h-9 border-border text-foreground hover:bg-muted cursor-pointer"
+                    title="Download RFC-compliant .eml message file for verifiable offline records"
+                  >
+                    <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Download (.EML)</span>
                   </Button>
                 </div>
 

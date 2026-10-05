@@ -20,8 +20,10 @@ import {
   RefreshCw,
   Building2,
   Compass,
-  Database
+  Database,
+  Bell
 } from 'lucide-react'
+import { ComingSoonModal } from '@/components/ComingSoonModal'
 
 const CATEGORY_LABELS: Record<string, string> = {
   technical: 'Technical Questions',
@@ -76,6 +78,7 @@ export default function InterviewRoomPage() {
     insight: string
     distance: number
   }>>([])
+  const [showComingSoon, setShowComingSoon] = useState(true)
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -505,6 +508,12 @@ export default function InterviewRoomPage() {
           )}
         </div>
       </div>
+
+      <ComingSoonModal
+        open={showComingSoon}
+        onOpenChange={setShowComingSoon}
+        feature="interview_room"
+      />
     </AppShell>
   )
 }

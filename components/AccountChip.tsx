@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getClientSessionAddress, signOutClient } from '@/lib/client_auth'
-import { ShieldCheck, Settings, LogOut, Copy, Check, ArrowRight, Globe, ExternalLink } from 'lucide-react'
+import { ShieldCheck, Settings, LogOut, Copy, Check, ArrowRight, Globe, ExternalLink, User } from 'lucide-react'
 
 function short(address: string) {
   if (!address) return ''
@@ -42,10 +42,21 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
           .catch(() => {})
       }
 
-      // Check stored username
+      // Check stored candidate name
       const storedName = localStorage.getItem('careerace_candidate_name')
       if (storedName && storedName.trim()) {
         setUsername(storedName.trim())
+      } else {
+        // Fallback to profile parsed name if available
+        try {
+          const profileRaw = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
+          if (profileRaw) {
+            const parsed = JSON.parse(profileRaw)
+            if (parsed.applicant_name) {
+              setUsername(parsed.applicant_name.trim())
+            }
+          }
+        } catch {}
       }
 
       // Check stored SuiNS domain passport
@@ -119,28 +130,28 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-border/80 bg-card/90 py-1 pl-1.5 pr-2.5 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs"
+        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/90 py-1 pl-1.5 pr-3 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs cursor-pointer"
+        title="View Sovereign Sui Passport & Identity"
       >
-        <span aria-hidden className="size-5 sm:size-5.5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
+        <span aria-hidden className="size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
           {initial}
         </span>
-        <div className="flex items-center gap-1 text-xs">
+        <div className="flex items-center gap-1.5 text-xs text-left">
+          {/* Display Name */}
+          <span className="font-semibold text-foreground tracking-tight max-w-[100px] sm:max-w-[140px] truncate">
+            {username || 'Sui Candidate'}
+          </span>
+
+          {/* SuiNS Handle or Short Address */}
           {suinsDomain ? (
-            <span className="font-mono text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+            <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full flex items-center gap-1">
               <Globe className="w-2.5 h-2.5" />
               <span>{suinsDomain}</span>
             </span>
           ) : (
-            <>
-              {username && (
-                <span className="font-semibold text-foreground tracking-tight max-w-[85px] sm:max-w-[120px] truncate">
-                  {username}
-                </span>
-              )}
-              <span className="font-mono text-[10px] sm:text-[11px] text-muted-foreground">
-                ({short(currentAddress)})
-              </span>
-            </>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              ({short(currentAddress)})
+            </span>
           )}
         </div>
       </button>
@@ -151,11 +162,13 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-72 overflow-hidden rounded-2xl border border-border/80 bg-popover shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
-            <div className="border-b border-border/70 p-3.5 bg-muted/40">
+          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-80 overflow-hidden rounded-2xl border border-border/80 bg-popover shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-100">
+            {/* Header: Verified Sovereign Passport */}
+            <div className="border-b border-border/70 p-4 bg-muted/40 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-500" /> Sovereign Vault
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Sui Sovereign Passport</span>
                 </span>
                 <button
                   type="button"
@@ -168,27 +181,40 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
                 </button>
               </div>
 
-              {suinsDomain && (
-                <div className="mt-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="w-3 h-3 text-emerald-500" />
-                    <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">{suinsDomain}</span>
+              {/* Candidate Identity Card */}
+              <div className="p-3 rounded-xl bg-background border border-border/70 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
+                    {initial}
                   </div>
-                  <span className="text-[9px] font-mono font-medium px-1 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                    Sui Passport
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-foreground truncate">
+                      {username || 'Decentralized Candidate'}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground font-mono">
+                      Sui zkLogin Verified
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {username && (
-                <p className="mt-1.5 font-bold text-sm text-foreground truncate">{username}</p>
-              )}
-              <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground/90 bg-background/50 p-1.5 rounded-md border border-border/40">
-                {currentAddress}
-              </p>
+                {suinsDomain && (
+                  <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground text-[11px]">SuiNS Domain:</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      {suinsDomain}
+                    </span>
+                  </div>
+                )}
+
+                <div className="pt-1.5 text-[10px] font-mono text-muted-foreground break-all select-all">
+                  {currentAddress}
+                </div>
+              </div>
             </div>
 
-            <div className="p-1 space-y-0.5">
+            {/* Menu Links */}
+            <div className="p-1.5 space-y-0.5">
               {suinsDomain && (
                 <a
                   href={`/p/${suinsDomain}`}
@@ -205,23 +231,36 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
                 </a>
               )}
 
+              <a
+                href={`https://suiscan.xyz/testnet/account/${currentAddress}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-foreground rounded-lg hover:bg-accent transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>View on Suiscan Explorer</span>
+                </div>
+              </a>
+
               <Link
                 href="/settings"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-medium text-foreground rounded-lg hover:bg-accent transition-colors"
               >
                 <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Account & Vault Settings</span>
+                <span>Account &amp; Career Vault Settings</span>
               </Link>
 
               <button
                 type="button"
                 onClick={handleSignOut}
                 disabled={busy}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-semibold text-destructive rounded-lg hover:bg-destructive/10 transition-colors disabled:opacity-50 text-left"
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-semibold text-destructive rounded-lg hover:bg-destructive/10 transition-colors disabled:opacity-50 text-left cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>{busy ? 'Signing out…' : 'Sign Out'}</span>
+                <span>{busy ? 'Signing out…' : 'Sign Out / Disconnect'}</span>
               </button>
             </div>
           </div>
