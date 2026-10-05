@@ -1087,6 +1087,36 @@ export default function ApplicationBoardPage() {
       }
     } catch {}
 
+    // Check for incoming handoff from Cover Letter Studio or external deep-links (?tab=auto_apply&role=...&company=...)
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        const tabParam = params.get('tab')
+        if (tabParam === 'auto_apply' || tabParam === 'discover' || tabParam === 'saved' || tabParam === 'applied' || tabParam === 'checklist') {
+          setActiveBoardTab(tabParam)
+        }
+        const roleParam = params.get('role')
+        if (roleParam) {
+          setTargetRoleInput(roleParam)
+        }
+        const companyParam = params.get('company')
+        if (companyParam) {
+          setTargetCompanyInput(companyParam)
+          // Look up verified contact email if known
+          const matchedContact = VERIFIED_COMPANY_HIRING_CONTACTS.find(
+            (c) => c.company.toLowerCase() === companyParam.toLowerCase()
+          )
+          if (matchedContact) {
+            setTargetEmailInput(matchedContact.contactEmail)
+          }
+        }
+        const letterParam = params.get('letter')
+        if (letterParam) {
+          setCustomEmailBody(decodeURIComponent(letterParam))
+        }
+      }
+    } catch {}
+
     // Cross-device cloud restore: hydrate applications, versions, and profile onto mobile
     restoreCandidateDataFromCloud().then((cloudData) => {
       if (cloudData) {
@@ -1361,7 +1391,16 @@ export default function ApplicationBoardPage() {
 
     setCustomEmailSubject(`Application: ${targetRoleInput || candidateRole} – ${candidateName} (Walrus Sovereign Credential)`)
     
-    setCustomEmailBody(
+    // Check if candidate generated a tailored cover letter from Cover Letter Studio
+    let tailoredCoverLetter = ''
+    try {
+      tailoredCoverLetter = localStorage.getItem('careerace_tailored_cover_letter') || ''
+    } catch {}
+
+    if (tailoredCoverLetter && tailoredCoverLetter.trim()) {
+      setCustomEmailBody(tailoredCoverLetter)
+    } else {
+      setCustomEmailBody(
 `Dear Hiring Team at ${targetCompanyInput || 'the Organization'},
 
 I am writing to formally submit my application for the position of ${targetRoleInput || candidateRole}.
@@ -1382,7 +1421,8 @@ Sincerely,
 ${candidateName}
 ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}
 Walrus Sovereign Credential ID: ${walrusBlobId || 'Recorded on Walrus Testnet'}`
-    )
+      )
+    }
   }, [activeProfileData, targetCompanyInput, targetRoleInput, selectedVersionMeta])
 
   function handleSelectCompanyFromDirectory(contact: CompanyHiringContact) {

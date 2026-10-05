@@ -191,6 +191,30 @@ export const VERIFIED_ROLE_INTELLIGENCE: Record<string, RoleIntelligenceProfile>
       'Reduced supplier-induced component defect rate by 34% through statistical tolerance reviews.',
       'Led 100% compliant AS9100 aerospace quality audit with zero major non-conformances.'
     ]
+  },
+  // 7. Maritime Navigation & Master Mariner / Captain
+  'ship_captain': {
+    discipline: 'Engineering & Marine',
+    coreResponsibilities: [
+      'Command vessel safe navigation, bridge watchkeeping, and passage planning under COLREGs and SOLAS.',
+      'Supervise deck crew operations, cargo loading stability (ballast/draft calculations), and mooring safety.',
+      'Direct shipboard emergency response, safety drills, maritime security (ISPS), and environmental compliance.',
+      'Coordinate with port state authorities, pilotage services, class surveyors, and chartering operations.'
+    ],
+    keyProblemsSolved: [
+      'Navigational collision, grounding risks, and severe weather damage through proactive route optimization.',
+      'Port turnaround delays and costly demurrage caused by improper ballast or cargo discharge sequence.',
+      'Port State Control (PSC) detentions and class non-conformities through rigorous maritime audit discipline.',
+      'Crew fatigue, safety incident escalation, and non-compliance with STCW rest-hour regulations.'
+    ],
+    technicalKeywords: [
+      'Bridge Resource Management (BRM)', 'COLREGs & SOLAS', 'Passage Planning (ECDIS)', 'Vessel Stability Calculations',
+      'ISPS Security', 'Cargo Operations', 'Dynamic Positioning', 'Master Mariner License', 'Safety Drills'
+    ],
+    measurableImpactMetrics: [
+      'Commanded 45,000+ nautical miles of open-ocean passage with zero navigational incidents or safety detentions.',
+      'Achieved 100% on-time berth arrivals while reducing voyage fuel burn by 3.8% via optimized weather routing.'
+    ]
   }
 };
 
@@ -201,9 +225,14 @@ export function getRoleIntelligence(roleTitle: string, jobDescription?: string):
   const t = (roleTitle || '').toLowerCase();
   const d = (jobDescription || '').toLowerCase();
 
-  // Check direct matches
-  if (t.includes('marine') || t.includes('naval') || t.includes('propulsion') || t.includes('subsea') || t.includes('offshore')) {
-    if (t.includes('cadet') || t.includes('trainee') || t.includes('junior')) {
+  // Check captain / master / bridge officer
+  if (t.includes('captain') || t.includes('master') || t.includes('deck officer') || t.includes('chief mate') || t.includes('navigator') || t.includes('bridge')) {
+    return VERIFIED_ROLE_INTELLIGENCE['ship_captain'];
+  }
+
+  // Check marine engineering / cadet
+  if (t.includes('marine') || t.includes('naval') || t.includes('propulsion') || t.includes('subsea') || t.includes('offshore') || t.includes('vessel')) {
+    if (t.includes('cadet') || t.includes('trainee') || t.includes('junior') || t.includes('apprentice')) {
       return VERIFIED_ROLE_INTELLIGENCE['engine_cadet'];
     }
     return VERIFIED_ROLE_INTELLIGENCE['marine_systems_engineer'];
