@@ -73,14 +73,16 @@ export function generateTailoredCvAndCoverLetter(job: NormalizedJob, cv: ParsedC
 
   const primarySkill = skillsToFeature[0] || "TypeScript";
   const secondarySkill = skillsToFeature[1] || "Modern Web Frameworks";
-  const prevRole = cv.work_experience?.[0]?.role || "Software Engineer";
-  const prevComp = cv.work_experience?.[0]?.company || "previous tech organization";
+  const prevRole = cv.work_experience?.[0]?.role || "Specialist";
+  const prevComp = cv.work_experience?.[0]?.company?.trim();
+  const cleanPrevComp = prevComp && !/^(?:organization|previous tech organization|company)$/i.test(prevComp) ? prevComp : "";
+  const roleClause = cleanPrevComp ? `as ${prevRole} at ${cleanPrevComp}` : `as ${prevRole}`;
 
   const cover_letter = `Dear Hiring Team at ${job.company},
 
 I am writing to express my strong interest in the ${job.title} position. With hands-on experience in ${skillsToFeature.join(", ")}, I have designed resilient production architectures and delivered high-throughput APIs.
 
-In my recent experience as ${prevRole} at ${prevComp}, I led performance optimizations and built scalable features using ${primarySkill} and ${secondarySkill}. My technical background directly aligns with the key qualifications outlined for ${job.company}'s engineering objectives.
+In my recent experience ${roleClause}, I led performance optimizations and built scalable features using ${primarySkill} and ${secondarySkill}. My technical background directly aligns with the key qualifications outlined for ${job.company}'s engineering objectives.
 
 I would welcome the opportunity to discuss how my technical proficiencies and problem-solving background can contribute to your team.
 

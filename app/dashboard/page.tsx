@@ -805,9 +805,9 @@ function DashboardContent() {
         }
         setResumeDisplayMode('pdf_preview')
         toast.success(`Tailored resume compiled! ATS Score: ${data.ats_scorecard?.overall_score || 85}/100`, { id: toastId })
-      } else {
         const bullets = (parsedProfile.work_experience || []).flatMap((e: any) => e.highlights || [])
-        const tailored = `${parsedProfile.applicant_name || 'Candidate'}\n${parsedProfile.contact_email || ''} · ${parsedProfile.contact_phone || ''} · ${parsedProfile.location || ''}\n\nTARGET: ${tailorRole || 'Specialist'} at ${tailorCompany || 'Target Organization'}\n\nPROFESSIONAL SUMMARY\nResults-driven professional with deep expertise in ${(parsedProfile.skills || []).slice(0, 8).join(', ')}. Demonstrated success delivering high-reliability solutions aligned with organizational goals.\n\nCORE COMPETENCIES\n${(parsedProfile.skills || []).join(' · ')}\n\nEXPERIENCE HIGHLIGHTS\n${bullets.slice(0, 8).map((b: string) => `• ${b}`).join('\n')}`
+        const cleanCompanyTarget = tailorCompany && !/^(?:target organization|organization|not specified)$/i.test(tailorCompany.trim()) ? ` at ${tailorCompany.trim()}` : ''
+        const tailored = `${parsedProfile.applicant_name || 'Candidate'}\n${parsedProfile.contact_email || ''} · ${parsedProfile.contact_phone || ''} · ${parsedProfile.location || ''}\n\nTARGET: ${tailorRole || 'Specialist'}${cleanCompanyTarget}\n\nPROFESSIONAL SUMMARY\nResults-driven professional with deep expertise in ${(parsedProfile.skills || []).slice(0, 8).join(', ')}. Demonstrated success delivering high-reliability solutions aligned with organizational goals.\n\nCORE COMPETENCIES\n${(parsedProfile.skills || []).join(' · ')}\n\nEXPERIENCE HIGHLIGHTS\n${bullets.slice(0, 8).map((b: string) => `• ${b}`).join('\n')}`
         setTailoredResumeText(tailored)
         setResumeDisplayMode('pdf_preview')
         toast.success('Tailored resume generated!', { id: toastId })
@@ -1312,7 +1312,9 @@ function DashboardContent() {
       `I have built a track record of delivering reliable outcomes, solving operational bottlenecks, and taking direct accountability for deliverables.\n\n` +
       problemSolvingBlock +
       (recentExp
-        ? `In my work at ${recentExp.company || 'my previous organization'} as ${recentExp.role || 'a specialist'}, I managed key workflows and collaborated with cross-functional partners to achieve measurable results.\n\n`
+        ? (recentExp.company && !/^(?:organization|company|employer|client|my previous organization)$/i.test(recentExp.company.trim())
+            ? `In my work at ${recentExp.company.trim()} as ${recentExp.role || 'a specialist'}, I managed key workflows and collaborated with cross-functional partners to achieve measurable results.\n\n`
+            : `In my professional capacity as ${recentExp.role || 'a specialist'}, I managed key workflows and collaborated with cross-functional partners to achieve measurable results.\n\n`)
         : '') +
       `I welcome the opportunity to bring this practical discipline, accountability, and problem-solving focus to ${company}.`
 

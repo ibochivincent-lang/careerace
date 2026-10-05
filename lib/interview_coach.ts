@@ -24,8 +24,9 @@ export function generatePostApplicationInterviewPrep(
   const secondarySkill = cv.skills?.[1] || "React";
   const company = application.company || "Target Tech Company";
   const role = application.title || "Software Engineer";
-  const prevCompany = cv.work_experience?.[0]?.company || "previous tech organization";
-  const prevRole = cv.work_experience?.[0]?.role || "Software Developer";
+  const rawPrevComp = cv.work_experience?.[0]?.company?.trim();
+  const prevCompany = rawPrevComp && !/^(?:organization|previous tech organization|company)$/i.test(rawPrevComp) ? rawPrevComp : "";
+  const prevRole = cv.work_experience?.[0]?.role || "Professional";
 
   const questions: StarQuestion[] = [];
 
@@ -54,9 +55,9 @@ export function generatePostApplicationInterviewPrep(
     {
       question_id: `q_${application.job_id}_1`,
       category: "technical",
-      question_text: `Can you describe a complex technical challenge you solved using ${primarySkill} and ${secondarySkill} at ${prevCompany}?`,
+      question_text: `Can you describe a complex technical challenge you solved using ${primarySkill} and ${secondarySkill}${prevCompany ? ` at ${prevCompany}` : " in your professional career"}?`,
       suggested_star_angle: {
-        situation: `Working at ${prevCompany}, high latency and scalability bottlenecks affected core customer workflows.`,
+        situation: prevCompany ? `Working at ${prevCompany}, high latency and scalability bottlenecks affected core customer workflows.` : `In a critical production environment, high latency and scalability bottlenecks affected core workflows.`,
         task: `Refactor backend service endpoints and optimize client state caching without disrupting active users.`,
         action: `Implemented asynchronous query batching, structured error boundaries, and Redis caching layers.`,
         result: `Reduced endpoint response latency by 45% and improved customer satisfaction scores.`,

@@ -166,10 +166,13 @@ export async function POST(req: Request) {
     if (finalProfile.work_experience && Array.isArray(finalProfile.work_experience)) {
       for (const exp of finalProfile.work_experience.slice(0, 4)) {
         if (exp.company || exp.role) {
+          const compClean = exp.company && !/^(?:organization|company|employer|client|previous tech organization|target organization)$/i.test(exp.company.trim()) ? exp.company.trim() : "";
+          const roleClean = exp.role || "Professional";
+          const compClause = compClean ? ` at ${compClean}` : "";
           const highlightsText = exp.highlights && exp.highlights.length > 0 ? ` - Key achievements: ${exp.highlights.slice(0, 2).join("; ")}` : "";
           factsToStore.push({
             kind: "experience",
-            text: `Experience: ${exp.role} at ${exp.company}${exp.duration ? ` (${exp.duration})` : ""}${highlightsText}`,
+            text: `Experience: ${roleClean}${compClause}${exp.duration ? ` (${exp.duration})` : ""}${highlightsText}`,
           });
         }
       }
@@ -342,7 +345,7 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
  * Extract readable text from PDF buffer using dynamic PDFParse with multiple fallbacks.
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Strategy 1: pdf-parse v2 PDFParse class (requires load() before getText())
+  // Strategy 1: pdf-parse v2 PDFParse class (requires { data: buffer } passed to constructor)
   try {
     const pdfParseModule = await import("pdf-parse");
     const PDFParseClass =
@@ -350,9 +353,8 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
       (pdfParseModule as any).default?.PDFParse;
 
     if (typeof PDFParseClass === "function") {
-      // PDFParse v2 API: constructor takes options only, then load(buffer) then getText()
-      const parser = new PDFParseClass({});
-      await (parser as any).load(buffer);
+      const parser = new PDFParseClass({ data: buffer });
+      await (parser as any).load();
       const result = await parser.getText();
       if (typeof parser.destroy === "function") {
         await parser.destroy();
@@ -374,9 +376,8 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
       }
     }
   } catch (err) {
-    console.warn("[cv_upload] PDFParse v2 parsing failed, attempting raw fallback:", err);
+    console.warn("[cv_upload] PDFParse v2 parsing notice, falling back:", err);
   }
-
 
   // Strategy 2: Decompress flate streams in PDF
   const textChunks: string[] = [];
@@ -426,6 +427,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 
 /**
  * Extract readable text from DOCX buffer (which is a ZIP containing word/document.xml).
+ * Preserves paragraphs, bullet points, and table structures cleanly without artificial line chopping.
  */
 function extractDocxText(buffer: Buffer): string {
   try {
@@ -451,22 +453,36 @@ function extractDocxText(buffer: Buffer): string {
           }
 
           if (xml) {
-            const wtMatches = xml.match(/<w:t[^>]*>([^<]*)<\/w:t>/gi) || [];
-            const textLines: string[] = [];
-            let currentLine = "";
+            const lines: string[] = [];
 
-            for (const wt of wtMatches) {
-              const val = wt.replace(/<[^>]+>/g, "");
-              currentLine += val + " ";
-              if (currentLine.length > 80) {
-                textLines.push(currentLine.trim());
-                currentLine = "";
+            // Extract all paragraphs (<w:p>)
+            const pMatches = xml.match(/<w:p[\s\S]*?<\/w:p>/gi) || [];
+
+            for (const pXml of pMatches) {
+              // Check if paragraph is marked as a bullet or numbered list
+              const isList = /<w:numPr[\s\S]*?<\/w:numPr>/i.test(pXml) ||
+                             /w:val="ListParagraph"/i.test(pXml);
+
+              // Extract text runs inside paragraph
+              const tMatches = pXml.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/gi) || [];
+              let pText = "";
+              for (const tm of tMatches) {
+                pText += tm.replace(/<[^>]+>/g, "");
+              }
+
+              pText = pText.replace(/\s+/g, " ").trim();
+
+              if (pText.length > 0) {
+                if (isList && !/^[-*•·▪▫◦✦►✓\u2022\u00b7\u2013\u2014>]|^\d+[\.\)]/i.test(pText)) {
+                  lines.push(`• ${pText}`);
+                } else {
+                  lines.push(pText);
+                }
               }
             }
-            if (currentLine.trim()) textLines.push(currentLine.trim());
 
-            if (textLines.length > 0) {
-              return textLines.join("\n");
+            if (lines.length > 0) {
+              return lines.join("\n");
             }
           }
         }
@@ -481,9 +497,12 @@ function extractDocxText(buffer: Buffer): string {
 
   // Fallback: strip XML tags from raw buffer
   const raw = buffer.toString("utf-8");
-  const wtMatches = raw.match(/<w:t[^>]*>([^<]*)<\/w:t>/gi) || [];
-  if (wtMatches.length > 0) {
-    return wtMatches.map((m) => m.replace(/<[^>]+>/g, "")).join(" ").trim();
+  const pMatches = raw.match(/<w:p[\s\S]*?<\/w:p>/gi);
+  if (pMatches && pMatches.length > 0) {
+    return pMatches
+      .map((p) => p.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+      .filter((s) => s.length > 0)
+      .join("\n");
   }
   return raw.replace(/<[^>]+>/g, " ").replace(/[^\x20-\x7E\n\r\t]/g, " ").trim();
 }

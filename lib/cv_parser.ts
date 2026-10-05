@@ -33,10 +33,11 @@ CRITICAL EXTRACTION REQUIREMENTS:
 1. "applicant_name": The candidate's actual full personal name (usually at the very top of the CV header). Never return "Candidate" or "Resume" if a real name exists.
 2. "email", "phone", "github_url", "linkedin_url": Extract all available contact details and portfolio links.
 3. "skills": Extract ALL programming languages, frameworks, developer tools, cloud platforms, engineering competencies, and domain specializations mentioned.
-4. "work_experience": Extract every professional role listed. For each role include:
-   - "company": Organization or client name
-   - "role": Exact job title
-   - "duration": Date range (e.g. "2023 - Present" or "Jan 2021 - Dec 2023")
+4. "work_experience": Extract every professional role listed.
+   CRITICAL RULES:
+   - "company": The actual company, corporation, firm, bank, agency, vessel, or employer name (e.g. "First Bank of Nigeria", "Bourbon Interoil", "Maersk", "Stripe"). It almost always appears right before or right after the role title or on an adjacent line. NEVER return generic placeholders like "Organization", "Tech Company", "Previous Employer", or "Company".
+   - "role": Exact professional job title (e.g. "Business Relationship Officer", "Marine Engineer", "Senior Software Developer").
+   - "duration": Date range (e.g. "2021 - Present" or "Jan 2019 - Dec 2022").
    - "highlights": Array of 2-5 detailed bullet point achievements, projects, or responsibilities.
 5. "academic_history": Extract every university, college, school, or institution:
    - "institution": School or university name
@@ -123,7 +124,19 @@ Extract ONLY factual data present in the text. Return raw JSON only.`;
 
       const resolvedWorkExp =
         Array.isArray(aiParsed.work_experience) && aiParsed.work_experience.length > 0
-          ? aiParsed.work_experience
+          ? aiParsed.work_experience.map((exp: any, idx: number) => {
+              const compRaw = typeof exp.company === "string" ? exp.company.trim() : "";
+              const isGenericComp = !compRaw || /^(?:organization|company|employer|client|previous tech organization|target organization|my previous organization)$/i.test(compRaw);
+              const fallbackComp = fallback.work_experience?.[idx]?.company || fallback.work_experience?.[0]?.company || "";
+              const cleanComp = isGenericComp ? (fallbackComp && !/^(?:organization|company)$/i.test(fallbackComp) ? fallbackComp : "") : compRaw;
+
+              return {
+                company: cleanComp,
+                role: exp.role || fallback.work_experience?.[idx]?.role || "Professional",
+                duration: exp.duration || fallback.work_experience?.[idx]?.duration || "",
+                highlights: Array.isArray(exp.highlights) && exp.highlights.length > 0 ? exp.highlights : (fallback.work_experience?.[idx]?.highlights || []),
+              };
+            })
           : fallback.work_experience;
 
       const resolvedAcademic =

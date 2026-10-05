@@ -1,0 +1,1970 @@
+[
+  {
+    "company": "MAR-001",
+    "email": "general.inquiries@one-line.com",
+    "location": "Ocean Network Express (ONE)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-001",
+    "email": "career@one-line.com",
+    "location": "Ocean Network Express (ONE)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-002",
+    "email": "corporate@pilship.com",
+    "location": "Pacific International Lines (PIL)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-002",
+    "email": "careers@pilship.com",
+    "location": "Pacific International Lines (PIL)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-003",
+    "email": "info@epshipping.com.sg",
+    "location": "Eastern Pacific Shipping (EPS)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-003",
+    "email": "crewrecruitment@epshipping.com.sg",
+    "location": "Eastern Pacific Shipping (EPS)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-004",
+    "email": "contact@bwgroup.net",
+    "location": "BW Group",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-004",
+    "email": "careers@bwgroup.net",
+    "location": "BW Group",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-005",
+    "email": "contact@hafniapair.com",
+    "location": "Hafnia",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-005",
+    "email": "crew@hafniapair.com",
+    "location": "Hafnia",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-006",
+    "email": "info@bergebulk.com",
+    "location": "Berge Bulk",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-006",
+    "email": "crewrecruitment@bergebulk.com",
+    "location": "Berge Bulk",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-007",
+    "email": "contact@synergyship.com",
+    "location": "Synergy Marine Group",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-007",
+    "email": "crewing@synergymarinegroup.com",
+    "location": "Synergy Marine Group",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-008",
+    "email": "info@osmthome.com",
+    "location": "OSM Thome",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-008",
+    "email": "crewing@osmthome.com",
+    "location": "OSM Thome",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-009",
+    "email": "esm@executiveship.com",
+    "location": "Executive Ship Management (ESM)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-009",
+    "email": "recruitment@executiveship.com",
+    "location": "Executive Ship Management (ESM)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-010",
+    "email": "contact@seatrium.com",
+    "location": "Seatrium Limited",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-010",
+    "email": "careers@seatrium.com",
+    "location": "Seatrium Limited",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-011",
+    "email": "info@posh.com.sg",
+    "location": "POSH (PACC Offshore Services)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-011",
+    "email": "crewing@posh.com.sg",
+    "location": "POSH (PACC Offshore Services)",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-012",
+    "email": "info@xpressfeeders.com",
+    "location": "X-Press Feeders",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-012",
+    "email": "hr@xpressfeeders.com",
+    "location": "X-Press Feeders",
+    "description": "Singapore"
+  },
+  {
+    "company": "MAR-013",
+    "email": "info@coscoshipping.com",
+    "location": "COSCO Shipping Lines",
+    "description": "China"
+  },
+  {
+    "company": "MAR-013",
+    "email": "cs.crew@coscoshipping.com",
+    "location": "COSCO Shipping Lines",
+    "description": "China"
+  },
+  {
+    "company": "MAR-014",
+    "email": "cset@coscoshipping.com",
+    "location": "COSCO Shipping Energy Transportation",
+    "description": "China"
+  },
+  {
+    "company": "MAR-014",
+    "email": "hr@cset.coscoshipping.com",
+    "location": "COSCO Shipping Energy Transportation",
+    "description": "China"
+  },
+  {
+    "company": "MAR-015",
+    "email": "info@cmenergy.com.hk",
+    "location": "China Merchants Energy Shipping (CMES)",
+    "description": "China"
+  },
+  {
+    "company": "MAR-015",
+    "email": "hr@cmenergy.com.hk",
+    "location": "China Merchants Energy Shipping (CMES)",
+    "description": "China"
+  },
+  {
+    "company": "MAR-016",
+    "email": "info@sinotrans.com",
+    "location": "Sinotrans Limited",
+    "description": "China"
+  },
+  {
+    "company": "MAR-016",
+    "email": "hr@sinotrans.com",
+    "location": "Sinotrans Limited",
+    "description": "China"
+  },
+  {
+    "company": "MAR-017",
+    "email": "sitc@sitc.com",
+    "location": "SITC International Holdings",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-017",
+    "email": "hr@sitc.com",
+    "location": "SITC International Holdings",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-018",
+    "email": "enquiry@oocl.com",
+    "location": "Orient Overseas Container Line (OOCL)",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-018",
+    "email": "careers@oocl.com",
+    "location": "Orient Overseas Container Line (OOCL)",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-019",
+    "email": "fml@fleetship.com",
+    "location": "Hong Kong",
+    "description": "Fleet Management Limited (FML)"
+  },
+  {
+    "company": "MAR-019",
+    "email": "fleetrecruitment@fleetship.com",
+    "location": "Hong Kong",
+    "description": "Fleet Management Limited (FML)"
+  },
+  {
+    "company": "MAR-020",
+    "email": "info@angloeastern.com",
+    "location": "Anglo-Eastern Univan Group",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-020",
+    "email": "crewing@angloeastern.com",
+    "location": "Anglo-Eastern Univan Group",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-021",
+    "email": "contact@wallem.com",
+    "location": "Wallem Group",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-021",
+    "email": "crewrecruitment@wallem.com",
+    "location": "Wallem Group",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-022",
+    "email": "info@wahkwong.com.hk",
+    "location": "Wah Kwong Maritime Transport",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-022",
+    "email": "crewing@wahkwong.com.hk",
+    "location": "Wah Kwong Maritime Transport",
+    "description": "Hong Kong"
+  },
+  {
+    "company": "MAR-023",
+    "email": "ship@cssc.net.cn",
+    "location": "CSSC (China State Shipbuilding Corp)",
+    "description": "China"
+  },
+  {
+    "company": "MAR-023",
+    "email": "hr@cssc.net.cn",
+    "location": "CSSC (China State Shipbuilding Corp)",
+    "description": "China"
+  },
+  {
+    "company": "MAR-024",
+    "email": "prgroup@nykgroup.com",
+    "location": "Nippon Yusen Kaisha (NYK Line)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-024",
+    "email": "recruit@nykgroup.com",
+    "location": "Nippon Yusen Kaisha (NYK Line)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-025",
+    "email": "contact@molgroup.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-025",
+    "email": "crew@molgroup.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-026",
+    "email": "klinc@kline.com",
+    "location": "Kawasaki Kisen Kaisha (\u201cK\u201d Line)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-026",
+    "email": "recruit@kline.com",
+    "location": "Kawasaki Kisen Kaisha (\u201cK\u201d Line)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-027",
+    "email": "inquiry@iino.co.jp",
+    "location": "Iino Kaiun Kaisha",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-027",
+    "email": "recruit@iino.co.jp",
+    "location": "Iino Kaiun Kaisha",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-028",
+    "email": "bnd@classnk.or.jp",
+    "location": "ClassNK (Nippon Kaiji Kyokai)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-028",
+    "email": "hr@classnk.or.jp",
+    "location": "ClassNK (Nippon Kaiji Kyokai)",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-029",
+    "email": "info@imazo.co.jp",
+    "location": "Imabari Shipbuilding",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-029",
+    "email": "recruit@imazo.co.jp",
+    "location": "Imabari Shipbuilding",
+    "description": "Japan"
+  },
+  {
+    "company": "MAR-030",
+    "email": "hmm_pr@hmm21.com",
+    "location": "HMM (Hyundai Merchant Marine)",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-030",
+    "email": "crewrecruit@hmm21.com",
+    "location": "HMM (Hyundai Merchant Marine)",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-031",
+    "email": "info@panocean.com",
+    "location": "Pan Ocean",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-031",
+    "email": "crew@panocean.com",
+    "location": "Pan Ocean",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-032",
+    "email": "smline@smlines.com",
+    "location": "SM Line",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-032",
+    "email": "hr@smlines.com",
+    "location": "SM Line",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-033",
+    "email": "glovis@glovis.net",
+    "location": "Hyundai Glovis",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-033",
+    "email": "recruit@glovis.net",
+    "location": "Hyundai Glovis",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-034",
+    "email": "sks@skshipping.com",
+    "location": "SK Shipping",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-034",
+    "email": "crew@skshipping.com",
+    "location": "SK Shipping",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-035",
+    "email": "contact@hd.com",
+    "location": "HD Hyundai Heavy Industries",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-035",
+    "email": "recruit@hd.com",
+    "location": "HD Hyundai Heavy Industries",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-036",
+    "email": "shi@samsung.com",
+    "location": "Samsung Heavy Industries (SHI)",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-036",
+    "email": "recruit@samsung.com",
+    "location": "Samsung Heavy Industries (SHI)",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-037",
+    "email": "ocean@hanwha.com",
+    "location": "Hanwha Ocean",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-037",
+    "email": "recruit@hanwha.com",
+    "location": "Hanwha Ocean",
+    "description": "South Korea"
+  },
+  {
+    "company": "MAR-038",
+    "email": "inquiry@evergreen-marine.com",
+    "location": "Evergreen Marine Corporation",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-038",
+    "email": "crew@evergreen-marine.com",
+    "location": "Evergreen Marine Corporation",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-039",
+    "email": "service@yangming.com",
+    "location": "Yang Ming Marine Transport",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-039",
+    "email": "recruit@yangming.com",
+    "location": "Yang Ming Marine Transport",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-040",
+    "email": "contact@wanhai.com",
+    "location": "Wan Hai Lines",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-040",
+    "email": "hr@wanhai.com",
+    "location": "Wan Hai Lines",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-041",
+    "email": "info@uming.com.tw",
+    "location": "U-Ming Marine Transport",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-041",
+    "email": "crew@uming.com.tw",
+    "location": "U-Ming Marine Transport",
+    "description": "Taiwan"
+  },
+  {
+    "company": "MAR-042",
+    "email": "contactus@sci.co.in",
+    "location": "Shipping Corporation of India (SCI)",
+    "description": "India"
+  },
+  {
+    "company": "MAR-042",
+    "email": "maritimecrew@sci.co.in",
+    "location": "Shipping Corporation of India (SCI)",
+    "description": "India"
+  },
+  {
+    "company": "MAR-043",
+    "email": "corp_comm@greatship.com",
+    "location": "The Great Eastern Shipping",
+    "description": "India"
+  },
+  {
+    "company": "MAR-043",
+    "email": "seafaring@greatship.com",
+    "location": "The Great Eastern Shipping",
+    "description": "India"
+  },
+  {
+    "company": "MAR-044",
+    "email": "contact@seamec.in",
+    "location": "SEAMEC Limited",
+    "description": "India"
+  },
+  {
+    "company": "MAR-044",
+    "email": "recruit@seamec.in",
+    "location": "SEAMEC Limited",
+    "description": "India"
+  },
+  {
+    "company": "MAR-045",
+    "email": "samson@samsonmaritime.com",
+    "location": "Samson Maritime",
+    "description": "India"
+  },
+  {
+    "company": "MAR-045",
+    "email": "crew@samsonmaritime.com",
+    "location": "Samson Maritime",
+    "description": "India"
+  },
+  {
+    "company": "MAR-046",
+    "email": "info@sadhav.com",
+    "location": "Sadhav Shipping",
+    "description": "India"
+  },
+  {
+    "company": "MAR-046",
+    "email": "careers@sadhav.com",
+    "location": "Sadhav Shipping",
+    "description": "India"
+  },
+  {
+    "company": "MAR-047",
+    "email": "mail@marangas.com",
+    "location": "Maran Gas / Maran Tankers",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-047",
+    "email": "crewing@marantankers.gr",
+    "location": "Maran Gas / Maran Tankers",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-048",
+    "email": "dynagas@dynagas.com",
+    "location": "Dynagas / Dynacom Tankers",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-048",
+    "email": "recruitment@dynacomtm.com",
+    "location": "Dynagas / Dynacom Tankers",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-049",
+    "email": "contact@minervamarine.com",
+    "location": "Minerva Marine",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-049",
+    "email": "crewing@minervamarine.com",
+    "location": "Minerva Marine",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-050",
+    "email": "contact@thenamaris.com",
+    "location": "Thenamaris",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-050",
+    "email": "crewing@thenamaris.com",
+    "location": "Thenamaris",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-051",
+    "email": "ten@tenn.gr",
+    "location": "Tsakos Energy Navigation (TEN)",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-051",
+    "email": "crewing@tsakosfleet.gr",
+    "location": "Tsakos Energy Navigation (TEN)",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-052",
+    "email": "contact@capitalmaritime.com",
+    "location": "Capital Maritime & Trading",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-052",
+    "email": "crew@capitalmaritime.com",
+    "location": "Capital Maritime & Trading",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-053",
+    "email": "info@starbulk.com",
+    "location": "Greece",
+    "description": "Star Bulk Carriers"
+  },
+  {
+    "company": "MAR-053",
+    "email": "crew@starbulk.com",
+    "location": "Greece",
+    "description": "Star Bulk Carriers"
+  },
+  {
+    "company": "MAR-054",
+    "email": "info@costamare.com",
+    "location": "Costamare",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-054",
+    "email": "crewing@costamare.com",
+    "location": "Costamare",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-055",
+    "email": "contact@navios.com",
+    "location": "Navios Maritime Partners",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-055",
+    "email": "crew@navios.com",
+    "location": "Navios Maritime Partners",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-056",
+    "email": "mail@tmstankers.gr",
+    "location": "TMS Tankers / TMS Cardiff Gas",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-056",
+    "email": "crewing@tms-marine.com",
+    "location": "TMS Tankers / TMS Cardiff Gas",
+    "description": "Greece"
+  },
+  {
+    "company": "MAR-057",
+    "email": "post@solstad.com",
+    "location": "Solstad Offshore",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-057",
+    "email": "offshorecrewing@solstad.com",
+    "location": "Solstad Offshore",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-058",
+    "email": "corporate@dof.com",
+    "location": "DOF Group",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-058",
+    "email": "crewing@dof.com",
+    "location": "DOF Group",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-059",
+    "email": "info@sea1offshore.com",
+    "location": "Sea1 Offshore (Siem Offshore)",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-059",
+    "email": "offshorecrew@sea1offshore.com",
+    "location": "Sea1 Offshore (Siem Offshore)",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-060",
+    "email": "contact@frontline.bm",
+    "location": "Frontline plc",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-060",
+    "email": "crew@frontline.bm",
+    "location": "Frontline plc",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-061",
+    "email": "contact@goldenocean.bm",
+    "location": "Golden Ocean Group",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-061",
+    "email": "crew@goldenocean.bm",
+    "location": "Golden Ocean Group",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-062",
+    "email": "corporate@walwil.com",
+    "location": "Wallenius Wilhelmsen",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-062",
+    "email": "hr@walwil.com",
+    "location": "Wallenius Wilhelmsen",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-063",
+    "email": "contact@hoegh.com",
+    "location": "H\u00f6egh Autoliners",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-063",
+    "email": "careers@hoegh.com",
+    "location": "H\u00f6egh Autoliners",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-064",
+    "email": "contact@dnv.com",
+    "location": "DNV",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-064",
+    "email": "careers@dnv.com",
+    "location": "DNV",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-065",
+    "email": "wsm.contact@wilhelmsen.com",
+    "location": "Wilhelmsen Ship Management",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-065",
+    "email": "wsm.crew@wilhelmsen.com",
+    "location": "Wilhelmsen Ship Management",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-066",
+    "email": "contact@klaveness.com",
+    "location": "Torvald Klaveness",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-066",
+    "email": "recruitment@klaveness.com",
+    "location": "Torvald Klaveness",
+    "description": "Norway"
+  },
+  {
+    "company": "MAR-067",
+    "email": "contact@maersk.com",
+    "location": "A.P. Moller \u2013 Maersk",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-067",
+    "email": "maerskcareers@maersk.com",
+    "location": "A.P. Moller \u2013 Maersk",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-068",
+    "email": "info@torm.com",
+    "location": "TORM",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-068",
+    "email": "career@torm.com",
+    "location": "TORM",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-069",
+    "email": "contact@norden.com",
+    "location": "D/S Norden",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-069",
+    "email": "job@norden.com",
+    "location": "D/S Norden",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-070",
+    "email": "info@unifeeder.com",
+    "location": "Unifeeder",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-070",
+    "email": "career@unifeeder.com",
+    "location": "Unifeeder",
+    "description": "Denmark"
+  },
+  {
+    "company": "MAR-071",
+    "email": "info@hlag.com",
+    "location": "Hapag-Lloyd",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-071",
+    "email": "recruitment@hlag.com",
+    "location": "Hapag-Lloyd",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-072",
+    "email": "info@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-072",
+    "email": "crewing@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-073",
+    "email": "shipmanagement@csm-cy.com",
+    "location": "Columbia Shipmanagement (CSM)",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-073",
+    "email": "crewing@csm-cy.com",
+    "location": "Columbia Shipmanagement (CSM)",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-074",
+    "email": "info@doehle.de",
+    "location": "Peter D\u00f6hle Schiffahrts-KG",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-074",
+    "email": "seapersonnel@doehle.de",
+    "location": "Peter D\u00f6hle Schiffahrts-KG",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-075",
+    "email": "info@bbc-chartering.com",
+    "location": "BBC Chartering",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-075",
+    "email": "crewing@bbc-chartering.com",
+    "location": "BBC Chartering",
+    "description": "Germany"
+  },
+  {
+    "company": "MAR-076",
+    "email": "info@msc.com",
+    "location": "Mediterranean Shipping Company (MSC)",
+    "description": "Switzerland"
+  },
+  {
+    "company": "MAR-076",
+    "email": "crew.recruitment@msc.com",
+    "location": "Mediterranean Shipping Company (MSC)",
+    "description": "Switzerland"
+  },
+  {
+    "company": "MAR-077",
+    "email": "corporate@kuehne-nagel.com",
+    "location": "Kuehne + Nagel (Ocean Division)",
+    "description": "Switzerland"
+  },
+  {
+    "company": "MAR-077",
+    "email": "careers@kuehne-nagel.com",
+    "location": "Kuehne + Nagel (Ocean Division)",
+    "description": "Switzerland"
+  },
+  {
+    "company": "MAR-078",
+    "email": "ho.contact@cma-cgm.com",
+    "location": "CMA CGM Group",
+    "description": "France"
+  },
+  {
+    "company": "MAR-078",
+    "email": "careers@cma-cgm.com",
+    "location": "CMA CGM Group",
+    "description": "France"
+  },
+  {
+    "company": "MAR-079",
+    "email": "communication@bourbon-offshore.com",
+    "location": "Bourbon Marine & Logistics",
+    "description": "France"
+  },
+  {
+    "company": "MAR-079",
+    "email": "contact-recruitment@bourbon-offshore.com",
+    "location": "Bourbon Marine & Logistics",
+    "description": "France"
+  },
+  {
+    "company": "MAR-080",
+    "email": "contact.marine@bureauveritas.com",
+    "location": "Bureau Veritas (BV)",
+    "description": "France"
+  },
+  {
+    "company": "MAR-080",
+    "email": "careers@bureauveritas.com",
+    "location": "Bureau Veritas (BV)",
+    "description": "France"
+  },
+  {
+    "company": "MAR-081",
+    "email": "contact@lda.fr",
+    "location": "Louis Dreyfus Armateurs (LDA)",
+    "description": "France"
+  },
+  {
+    "company": "MAR-081",
+    "email": "recrutement@lda.fr",
+    "location": "Louis Dreyfus Armateurs (LDA)",
+    "description": "France"
+  },
+  {
+    "company": "MAR-082",
+    "email": "contact@vgroup.com",
+    "location": "V.Group / V.Ships",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-082",
+    "email": "crewrecruit@vships.com",
+    "location": "V.Group / V.Ships",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-083",
+    "email": "contact@zodiac-maritime.com",
+    "location": "Zodiac Maritime",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-083",
+    "email": "crewing@zodiac-maritime.com",
+    "location": "Zodiac Maritime",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-084",
+    "email": "contact@lr.org",
+    "location": "Lloyd\u2019s Register (LR)",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-084",
+    "email": "careers@lr.org",
+    "location": "Lloyd\u2019s Register (LR)",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-085",
+    "email": "research@clarksons.com",
+    "location": "Clarksons PLC",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-085",
+    "email": "hr@clarksons.com",
+    "location": "Clarksons PLC",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-086",
+    "email": "enquiries@bibbymarine.com",
+    "location": "Bibby Marine",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-086",
+    "email": "careers@bibbymarine.com",
+    "location": "Bibby Marine",
+    "description": "United Kingdom"
+  },
+  {
+    "company": "MAR-087",
+    "email": "info@grimaldi.napoli.it",
+    "location": "Grimaldi Group",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-087",
+    "email": "crewrecruitment@grimaldi.napoli.it",
+    "location": "Grimaldi Group",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-088",
+    "email": "corporate@saipem.com",
+    "location": "Saipem",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-088",
+    "email": "hr.recruitment@saipem.com",
+    "location": "Saipem",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-089",
+    "email": "info@fincantieri.it",
+    "location": "Fincantieri",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-089",
+    "email": "recruiting@fincantieri.it",
+    "location": "Fincantieri",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-090",
+    "email": "info@rina.org",
+    "location": "RINA",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-090",
+    "email": "recruitment@rina.org",
+    "location": "RINA",
+    "description": "Italy"
+  },
+  {
+    "company": "MAR-091",
+    "email": "info@boskalis.com",
+    "location": "Royal Boskalis Westminster",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-091",
+    "email": "careers@boskalis.com",
+    "location": "Royal Boskalis Westminster",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-092",
+    "email": "info@vanoord.com",
+    "location": "Royal Van Oord",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-092",
+    "email": "recruitment@vanoord.com",
+    "location": "Royal Van Oord",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-093",
+    "email": "info@damen.com",
+    "location": "Damen Shipyards Group",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-093",
+    "email": "career@damen.com",
+    "location": "Damen Shipyards Group",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-094",
+    "email": "info@smitlamnalco.com",
+    "location": "Smit Lamnalco",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-094",
+    "email": "crewing@smitlamnalco.com",
+    "location": "Smit Lamnalco",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-095",
+    "email": "info@kotug.com",
+    "location": "Kotug International",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-095",
+    "email": "careers@kotug.com",
+    "location": "Kotug International",
+    "description": "Netherlands"
+  },
+  {
+    "company": "MAR-096",
+    "email": "info@dpworld.com",
+    "location": "DP World / P&O Maritime",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-096",
+    "email": "careers@dpworld.com",
+    "location": "DP World / P&O Maritime",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-097",
+    "email": "info@globalfeeders.com",
+    "location": "Global Feeder Shipping (GFS)",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-097",
+    "email": "hr@globalfeeders.com",
+    "location": "Global Feeder Shipping (GFS)",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-098",
+    "email": "info@zmi.ae",
+    "location": "Zakher Marine International (ZMI)",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-098",
+    "email": "recruitment@zmi.ae",
+    "location": "Zakher Marine International (ZMI)",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-099",
+    "email": "info@stanfordmarine.com",
+    "location": "Stanford Marine Group",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-099",
+    "email": "crewing@stanfordmarine.com",
+    "location": "Stanford Marine Group",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-100",
+    "email": "info@allianzmarine.com",
+    "location": "Allianz Marine Services",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-100",
+    "email": "careers@allianzmarine.com",
+    "location": "Allianz Marine Services",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-101",
+    "email": "contact@adnocls.ae",
+    "location": "ADNOC Logistics & Services",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-101",
+    "email": "careers@adnocls.ae",
+    "location": "ADNOC Logistics & Services",
+    "description": "United Arab Emirates"
+  },
+  {
+    "company": "MAR-102",
+    "email": "communication@bahri.sa",
+    "location": "Bahri",
+    "description": "Saudi Arabia"
+  },
+  {
+    "company": "MAR-102",
+    "email": "careers@bahri.sa",
+    "location": "Bahri",
+    "description": "Saudi Arabia"
+  },
+  {
+    "company": "MAR-103",
+    "email": "info@rawabivallianz.com",
+    "location": "Rawabi Vallianz Offshore (RVOS)",
+    "description": "Saudi Arabia"
+  },
+  {
+    "company": "MAR-103",
+    "email": "careers@rawabivallianz.com",
+    "location": "Rawabi Vallianz Offshore (RVOS)",
+    "description": "Saudi Arabia"
+  },
+  {
+    "company": "MAR-104",
+    "email": "info@zamiloffshore.com",
+    "location": "Zamil Offshore Services",
+    "description": "Saudi Arabia"
+  },
+  {
+    "company": "MAR-104",
+    "email": "jobs@zamiloffshore.com",
+    "location": "Zamil Offshore Services",
+    "description": "Saudi Arabia"
+  },
+  {
+    "company": "MAR-105",
+    "email": "info@nakilat.com",
+    "location": "Nakilat (Qatar Gas Transport)",
+    "description": "Qatar"
+  },
+  {
+    "company": "MAR-105",
+    "email": "crewing@nakilat.com",
+    "location": "Nakilat (Qatar Gas Transport)",
+    "description": "Qatar"
+  },
+  {
+    "company": "MAR-106",
+    "email": "communication@milaha.com",
+    "location": "Milaha (Qatar Navigation)",
+    "description": "Qatar"
+  },
+  {
+    "company": "MAR-106",
+    "email": "careers@milaha.com",
+    "location": "Milaha (Qatar Navigation)",
+    "description": "Qatar"
+  },
+  {
+    "company": "MAR-107",
+    "email": "info@tdw.com",
+    "location": "Tidewater Marine",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-107",
+    "email": "recruiting@tdw.com",
+    "location": "Tidewater Marine",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-108",
+    "email": "info@chouest.com",
+    "location": "Edison Chouest Offshore (ECO)",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-108",
+    "email": "recruiting@chouest.com",
+    "location": "Edison Chouest Offshore (ECO)",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-109",
+    "email": "info@hornbeckoffshore.com",
+    "location": "Hornbeck Offshore Services (HOS)",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-109",
+    "email": "offshorejobs@hornbeckoffshore.com",
+    "location": "Hornbeck Offshore Services (HOS)",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-110",
+    "email": "corporate@seacormarine.com",
+    "location": "SEACOR Marine",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-110",
+    "email": "recruiting@seacormarine.com",
+    "location": "SEACOR Marine",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-111",
+    "email": "info@crowley.com",
+    "location": "Crowley Maritime",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-111",
+    "email": "mariners@crowley.com",
+    "location": "Crowley Maritime",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-112",
+    "email": "info@kirbycorp.com",
+    "location": "Kirby Corporation",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-112",
+    "email": "careers@kirbycorp.com",
+    "location": "Kirby Corporation",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-113",
+    "email": "abs-worldhq@eagle.org",
+    "location": "American Bureau of Shipping (ABS)",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-113",
+    "email": "careers@eagle.org",
+    "location": "American Bureau of Shipping (ABS)",
+    "description": "United States"
+  },
+  {
+    "company": "MAR-114",
+    "email": "info@algonet.com",
+    "location": "Algoma Central Corporation",
+    "description": "Canada"
+  },
+  {
+    "company": "MAR-114",
+    "email": "marinehr@algonet.com",
+    "location": "Algoma Central Corporation",
+    "description": "Canada"
+  },
+  {
+    "company": "MAR-115",
+    "email": "info@cslships.com",
+    "location": "CSL Group (Canada Steamship Lines)",
+    "description": "Canada"
+  },
+  {
+    "company": "MAR-115",
+    "email": "crewcanada@cslships.com",
+    "location": "CSL Group (Canada Steamship Lines)",
+    "description": "Canada"
+  },
+  {
+    "company": "MAR-116",
+    "email": "info@seaspan.com",
+    "location": "Seaspan Marine",
+    "description": "Canada"
+  },
+  {
+    "company": "MAR-116",
+    "email": "recruiting@seaspan.com",
+    "location": "Seaspan Marine",
+    "description": "Canada"
+  },
+  {
+    "company": "MAR-117",
+    "email": "faleconosco@transpetro.com.br",
+    "location": "Transpetro (Petrobras Marine)",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-117",
+    "email": "rh@transpetro.com.br",
+    "location": "Transpetro (Petrobras Marine)",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-118",
+    "email": "contato@wilsonsons.com.br",
+    "location": "Wilson Sons",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-118",
+    "email": "vagas@wilsonsons.com.br",
+    "location": "Wilson Sons",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-119",
+    "email": "cbo@embarquecbo.com.br",
+    "location": "CBO (Companhia Brasileira de Offshore)",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-119",
+    "email": "rh@embarquecbo.com.br",
+    "location": "CBO (Companhia Brasileira de Offshore)",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-120",
+    "email": "contato@bramoffshore.com.br",
+    "location": "Bram Offshore",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-120",
+    "email": "curriculo@bramoffshore.com.br",
+    "location": "Bram Offshore",
+    "description": "Brazil"
+  },
+  {
+    "company": "MAR-121",
+    "email": "info@marineplatforms.com",
+    "location": "Marine Platforms Limited (MPL)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-121",
+    "email": "careers@marineplatforms.com",
+    "location": "Marine Platforms Limited (MPL)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-122",
+    "email": "info@caverton-offshore.com",
+    "location": "Caverton Offshore Support Group",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-122",
+    "email": "recruitment@caverton-offshore.com",
+    "location": "Caverton Offshore Support Group",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-123",
+    "email": "info@oceanmarinesolutions.com",
+    "location": "Ocean Marine Solutions (OMS)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-123",
+    "email": "hr@oceanmarinesolutions.com",
+    "location": "Ocean Marine Solutions (OMS)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-124",
+    "email": "info@pacificmaritimeservices.com",
+    "location": "Pacific Maritime Services",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-124",
+    "email": "recruitment@pacificmaritimeservices.com",
+    "location": "Pacific Maritime Services",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-125",
+    "email": "info@starzs-group.com",
+    "location": "Starzs Marine and Engineering",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-125",
+    "email": "careers@starzs-group.com",
+    "location": "Starzs Marine and Engineering",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-126",
+    "email": "info@tilonesubsea.com",
+    "location": "Tilone Subsea Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-126",
+    "email": "hr@tilonesubsea.com",
+    "location": "Tilone Subsea Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-127",
+    "email": "info@waventures.com",
+    "location": "West African Ventures (WAV)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-127",
+    "email": "hr@waventures.com",
+    "location": "West African Ventures (WAV)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-128",
+    "email": "info@homelandios.com",
+    "location": "Homeland Integrated Offshore (HIOS)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-128",
+    "email": "recruitment@homelandios.com",
+    "location": "Homeland Integrated Offshore (HIOS)",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-129",
+    "email": "info@aboffshore.com",
+    "location": "AB Offshore Marine Services",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-129",
+    "email": "careers@aboffshore.com",
+    "location": "AB Offshore Marine Services",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-130",
+    "email": "info@gogmarine.com",
+    "location": "GOG Marine Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-130",
+    "email": "operations@gogmarine.com",
+    "location": "GOG Marine Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-131",
+    "email": "info@coastalmarine.ng",
+    "location": "Coastal Marine Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-131",
+    "email": "crewing@coastalmarine.ng",
+    "location": "Coastal Marine Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-132",
+    "email": "info@fymakmarine.com",
+    "location": "Fymak Marine and Oil Services",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-132",
+    "email": "hr@fymakmarine.com",
+    "location": "Fymak Marine and Oil Services",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-133",
+    "email": "info@utmoffshore.com",
+    "location": "UTM Offshore Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-133",
+    "email": "careers@utmoffshore.com",
+    "location": "UTM Offshore Limited",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-134",
+    "email": "info@nigerdock.com",
+    "location": "Nigerdock",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-134",
+    "email": "careers@nigerdock.com",
+    "location": "Nigerdock",
+    "description": "Nigeria"
+  },
+  {
+    "company": "MAR-135",
+    "email": "info@suezcanal.gov.eg",
+    "location": "Egypt",
+    "description": "Suez Canal Authority (Fleet Division)"
+  },
+  {
+    "company": "MAR-135",
+    "email": "marine@suezcanal.gov.eg",
+    "location": "Egypt",
+    "description": "Suez Canal Authority (Fleet Division)"
+  },
+  {
+    "company": "MAR-136",
+    "email": "contact@maridive.com",
+    "location": "Maridive & Oil Services",
+    "description": "Egypt"
+  },
+  {
+    "company": "MAR-136",
+    "email": "crew@maridive.com",
+    "location": "Maridive & Oil Services",
+    "description": "Egypt"
+  },
+  {
+    "company": "MAR-137",
+    "email": "info@pan-marine.net",
+    "location": "Pan Marine Petroleum Services",
+    "description": "Egypt"
+  },
+  {
+    "company": "MAR-137",
+    "email": "careers@pan-marine.net",
+    "location": "Pan Marine Petroleum Services",
+    "description": "Egypt"
+  },
+  {
+    "company": "MAR-138",
+    "email": "info@amsol.co.za",
+    "location": "African Marine Solutions (AMSOL)",
+    "description": "South Africa"
+  },
+  {
+    "company": "MAR-138",
+    "email": "careers@amsol.co.za",
+    "location": "African Marine Solutions (AMSOL)",
+    "description": "South Africa"
+  },
+  {
+    "company": "MAR-139",
+    "email": "info@grindrodshipping.com",
+    "location": "Grindrod Shipping",
+    "description": "South Africa"
+  },
+  {
+    "company": "MAR-139",
+    "email": "crew@grindrodshipping.com",
+    "location": "Grindrod Shipping",
+    "description": "South Africa"
+  },
+  {
+    "company": "MAR-140",
+    "email": "info@sonasurf.com",
+    "location": "Sonasurf (Bourbon Sonangol JV)",
+    "description": "Angola"
+  },
+  {
+    "company": "MAR-140",
+    "email": "crewing@sonasurf.com",
+    "location": "Sonasurf (Bourbon Sonangol JV)",
+    "description": "Angola"
+  },
+  {
+    "company": "MAR-141",
+    "email": "info@sonatide.com",
+    "location": "Sonatide (Tidewater Sonangol JV)",
+    "description": "Angola"
+  },
+  {
+    "company": "MAR-141",
+    "email": "recruiting@sonatide.com",
+    "location": "Sonatide (Tidewater Sonangol JV)",
+    "description": "Angola"
+  },
+  {
+    "company": "Nigeria",
+    "email": "vendorservices@nlng.com",
+    "location": "Nigeria LNG Limited (NLNG)",
+    "description": "LNG / energy shipping"
+  },
+  {
+    "company": "Nigeria",
+    "email": "info@sifaxgroup.com",
+    "location": "SIFAX Group / SIFAX Marine",
+    "description": "Marine / offshore support / shipping"
+  },
+  {
+    "company": "Nigeria",
+    "email": "nigeria@service.hlag.com",
+    "location": "Hapag-Lloyd Nigeria Shipping Ltd",
+    "description": "Container shipping"
+  },
+  {
+    "company": "Nigeria",
+    "email": "nigeria@sales.hlag.com",
+    "location": "Hapag-Lloyd Nigeria Shipping Ltd",
+    "description": "Container shipping"
+  },
+  {
+    "company": "Nigeria",
+    "email": "ng401-info@msc.com",
+    "location": "MSC Nigeria",
+    "description": "Container shipping"
+  },
+  {
+    "company": "Nigeria",
+    "email": "austin.aliu@lag.pilship.com",
+    "location": "Container shipping / seafaring",
+    "description": "Pacific International Lines (PIL) Nigeria"
+  },
+  {
+    "company": "Nigeria",
+    "email": "olalekan.mustafa@onn.pilship.com",
+    "location": "Container shipping / seafaring",
+    "description": "Pacific International Lines (PIL) Nigeria"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "pbcrewing.worldwide@pacificbasin.com",
+    "location": "Pacific Basin Shipping",
+    "description": "Dry bulk / seafaring"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "pbcrewing.india@pacificbasin.com",
+    "location": "Pacific Basin Shipping",
+    "description": "Dry bulk / seafaring"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "pbcrewing.philippines@pacificbasin.com",
+    "location": "Pacific Basin Shipping",
+    "description": "Dry bulk / seafaring"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "pbcrewing.hksar@pacificbasin.com",
+    "location": "Pacific Basin Shipping",
+    "description": "Dry bulk / seafaring"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "recruiting@pacificbasin.com",
+    "location": "Pacific Basin Shipping - Shore Careers",
+    "description": "Dry bulk / shore careers"
+  },
+  {
+    "company": "Japan / Global",
+    "email": "recruitment.molme@molgroup.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Deep-sea shipping / seafaring"
+  },
+  {
+    "company": "Japan / Global",
+    "email": "molms@molgroup.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Deep-sea shipping / seafaring"
+  },
+  {
+    "company": "Japan / Global",
+    "email": "molmi@molgroup.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Deep-sea shipping / seafaring"
+  },
+  {
+    "company": "Japan / Global",
+    "email": "mmm.portengineer@magmol.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Deep-sea shipping / seafaring"
+  },
+  {
+    "company": "Japan / Global",
+    "email": "crewing@mcmol-international.com",
+    "location": "Mitsui O.S.K. Lines (MOL)",
+    "description": "Deep-sea shipping / seafaring"
+  },
+  {
+    "company": "South Korea",
+    "email": "recruit@hmm21.com",
+    "location": "HMM",
+    "description": "Container / bulk shipping"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "careers.sea@angloeastern.com",
+    "location": "Anglo-Eastern",
+    "description": "Ship management / seafaring"
+  },
+  {
+    "company": "Hong Kong / Global",
+    "email": "gme.recruitment@angloeastern.com",
+    "location": "Anglo-Eastern",
+    "description": "Ship management / seafaring"
+  },
+  {
+    "company": "Global",
+    "email": "enquiries@vgrouplimited.com",
+    "location": "V.Group",
+    "description": "Ship management / marine services / seafaring"
+  },
+  {
+    "company": "Global",
+    "email": "ua-csc-ode-man@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Ship management / seafaring / offshore"
+  },
+  {
+    "company": "Global",
+    "email": "pl-csc-crewing@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Ship management / seafaring / offshore"
+  },
+  {
+    "company": "Global",
+    "email": "ro-csc-recruitment@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Ship management / seafaring / offshore"
+  },
+  {
+    "company": "Global",
+    "email": "lv-csc-rig-man@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Ship management / seafaring / offshore"
+  },
+  {
+    "company": "Global",
+    "email": "hr-csc-crewing@bs-shipmanagement.com",
+    "location": "Bernhard Schulte Shipmanagement (BSM)",
+    "description": "Ship management / seafaring / offshore"
+  },
+  {
+    "company": "Cyprus / Global",
+    "email": "csm.connect@csmcy.com",
+    "location": "Columbia Shipmanagement",
+    "description": "Ship management / crewing"
+  },
+  {
+    "company": "Cyprus / Global",
+    "email": "support_crewconnect@csmcy.com",
+    "location": "Columbia Shipmanagement",
+    "description": "Ship management / crewing"
+  },
+  {
+    "company": "Denmark / Global",
+    "email": "recruitment.india@torm.com",
+    "location": "TORM",
+    "description": "Product tanker / seafaring"
+  },
+  {
+    "company": "Denmark / Global",
+    "email": "recruitment.denmark@torm.com",
+    "location": "TORM",
+    "description": "Product tanker / seafaring"
+  },
+  {
+    "company": "Denmark / Global",
+    "email": "recruitment.manila@torm.com",
+    "location": "TORM",
+    "description": "Product tanker / seafaring"
+  },
+  {
+    "company": "Denmark / Global",
+    "email": "recruiting@zorovic.hr",
+    "location": "TORM",
+    "description": "Product tanker / seafaring"
+  },
+  {
+    "company": "Belgium",
+    "email": "careerday@deme-group.com",
+    "location": "DEME",
+    "description": "Dredging / offshore marine / engineering"
+  },
+  {
+    "company": "India",
+    "email": "hrd@greatship.com",
+    "location": "The Great Eastern Shipping Company",
+    "description": "Tanker / bulk / offshore"
+  },
+  {
+    "company": "India",
+    "email": "fleet@greatship.com",
+    "location": "The Great Eastern Shipping Company",
+    "description": "Tanker / bulk / offshore"
+  },
+  {
+    "company": "India",
+    "email": "technical@greatship.com",
+    "location": "The Great Eastern Shipping Company",
+    "description": "Tanker / bulk / offshore"
+  },
+  {
+    "company": "Wilhelmsen-Smith Bell Manning, Inc.",
+    "email": "bsb-mnl-recruitment@wilhelmsen.com",
+    "location": "Manning agency",
+    "description": "Philippines (Makati)"
+  },
+  {
+    "company": "WilhMar Manning Philippines Inc.",
+    "email": "wsm-mnl-info@wilhmar.com",
+    "location": "Manning agency",
+    "description": "Philippines (Pasay)"
+  },
+  {
+    "company": "Anglo-Eastern Ukraine (crewing & training centre)",
+    "email": "aeua_recruiting@angloeastern.com",
+    "location": "Ship manager / crewing",
+    "description": "Ukraine (Odesa)"
+  },
+  {
+    "company": "GAC Shipping (UK) Ltd, Shetland",
+    "email": "agency.shetland@gac.com",
+    "location": "Ship agent",
+    "description": "UK (Lerwick)"
+  },
+  {
+    "company": "Cory Brothers Shipping Agency Ltd",
+    "email": "agency.grangemouth@corybrothers.com",
+    "location": "Ship agent",
+    "description": "UK (Grangemouth)"
+  },
+  {
+    "company": "Clarksons (Lerwick)",
+    "email": "lerwick@clarksons.com",
+    "location": "Ship agent",
+    "description": "UK (Shetland)"
+  },
+  {
+    "company": "Graypen Ltd",
+    "email": "sullom-voe@graypen.com",
+    "location": "Ship agent",
+    "description": "UK (Lerwick)"
+  },
+  {
+    "company": "Peterson (UK) Ltd",
+    "email": "info-uk@onepeterson.com",
+    "location": "Ship agent",
+    "description": "UK (Lerwick)"
+  },
+  {
+    "company": "ASCO Ships Agency",
+    "email": "lerwick.agency@ascoworld.com",
+    "location": "Ship agent",
+    "description": "UK (Lerwick)"
+  },
+  {
+    "company": "Carnival Corporation (Carnival, Princess, Holland America, P&O, Cunard, Costa, AIDA, Seabourn)",
+    "email": "guestcare@carnival.com",
+    "location": "Cruise line",
+    "description": "Global"
+  }
+]

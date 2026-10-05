@@ -480,23 +480,26 @@ export function LivePdfPreview({
         ? `Results-driven engineering professional with deep expertise in ${(profile.skills || []).slice(0, 6).join(", ")}. Proven history of architecting high-throughput systems, orchestrating cross-functional teams, and shipping production-grade solutions with measurable performance impact.`
         : "");
 
-    const expHtml = (profile.work_experience || []).map(exp => `
+    const expHtml = (profile.work_experience || []).map(exp => {
+      const cleanComp = (exp.company && !/^(?:organization|company|employer|client|target organization)$/i.test(exp.company.trim())) ? exp.company.trim() : "";
+      return `
       <div style="margin-bottom: 6pt;">
         <div class="job-header">
-          <span>${exp.role}</span>
-          <span style="font-weight: normal; font-size: 8.5pt;">${exp.duration}</span>
+          <span>${exp.role || "Professional"}</span>
+          <span style="font-weight: normal; font-size: 8.5pt;">${exp.duration || ""}</span>
         </div>
+        ${cleanComp ? `
         <div class="job-sub">
-          <span>${exp.company}</span>
+          <span>${cleanComp}</span>
           <span style="font-size: 7.5pt;">${exp.proofAttachment ? `✓ Proof Anchored on Walrus` : "Verified Record"}</span>
-        </div>
+        </div>` : ""}
         ${exp.highlights && exp.highlights.length > 0 ? `
           <ul>
             ${exp.highlights.map(h => `<li>${h}</li>`).join("")}
           </ul>
         ` : ""}
       </div>
-    `).join("");
+    `;}).join("");
 
     const eduHtml = (profile.academic_history || []).map(edu => `
       <div style="display: flex; justify-content: space-between; margin-bottom: 3pt; font-size: 8.5pt;">
@@ -1044,7 +1047,7 @@ export function LivePdfPreview({
                             <span className="text-slate-400 text-xs">at</span>
                             <input
                               type="text"
-                              value={exp.company || ""}
+                              value={(exp.company && !/^(?:organization|company)$/i.test(exp.company.trim())) ? exp.company : ""}
                               onChange={(e) => handleUpdateExperience(expIdx, "company", e.target.value)}
                               placeholder="Company Name"
                               className="font-semibold text-xs text-slate-700 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 focus:outline-none px-1"

@@ -88,7 +88,11 @@ export async function POST(req: NextRequest) {
       if (p.work_experience && Array.isArray(p.work_experience)) {
         for (const exp of p.work_experience) {
           if (exp.company || exp.role) {
-            promises.push(rememberFact(address, "experience", `Experience: ${exp.role || "Developer"} at ${exp.company || "Organization"} (${exp.duration || "Present"})`));
+            const cleanComp = exp.company && !/^(?:organization|company|employer|client|previous tech organization|target organization)$/i.test(exp.company.trim()) ? exp.company.trim() : "";
+            const cleanRole = exp.role || "Professional";
+            const compPart = cleanComp ? ` at ${cleanComp}` : "";
+            const durPart = exp.duration ? ` (${exp.duration})` : "";
+            promises.push(rememberFact(address, "experience", `Experience: ${cleanRole}${compPart}${durPart}`));
           }
         }
       }

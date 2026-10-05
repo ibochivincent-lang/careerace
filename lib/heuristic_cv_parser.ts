@@ -196,8 +196,18 @@ export const ROLE_PATTERNS = [
   "operations manager", "operations lead", "operations coordinator",
   "operations specialist", "director of operations", "head of operations",
   "chief operating officer", "coo", "general manager",
-  "business analyst", "management consultant", "strategy consultant",
-  "supply chain manager", "logistics coordinator", "procurement specialist"
+  "supply chain manager", "logistics coordinator", "procurement specialist",
+  // Banking, Relationship Management, Corporate & Public Sector
+  "business relationship officer", "relationship officer", "customer relationship officer",
+  "client relationship officer", "relationship manager", "credit officer", "loan officer",
+  "branch manager", "bank teller", "operations officer", "administrative officer",
+  "commercial officer", "business development officer", "marketing officer", "technical officer",
+  "executive trainee", "management trainee", "commercial manager", "commercial executive",
+  "account relationship officer", "client service officer", "underwriting officer",
+  // Maritime & Offshore Deck/Engine Officers
+  "chief officer", "second engineer", "third engineer", "fourth engineer", "cadet engineer",
+  "deck officer", "safety officer", "environmental officer", "marine superintendent",
+  "port captain", "harbor pilot", "cargo surveyor"
 ];
 
 export const KNOWN_CERTIFICATIONS = [
@@ -423,10 +433,113 @@ export function parseCvText(rawText: string): ParsedCv {
         (SECTION_HEADERS.education.test(l) ||
           SECTION_HEADERS.certifications.test(l) ||
           SECTION_HEADERS.projects.test(l) ||
-          SECTION_HEADERS.skills.test(l))
+          SECTION_HEADERS.skills.test(l) ||
+          SECTION_HEADERS.leadership.test(l) ||
+          SECTION_HEADERS.conferences.test(l) ||
+          SECTION_HEADERS.attachments.test(l) ||
+          /^(?:#{0,3}\s*)?(?:references?|publications?|languages?|awards?|interests?|volunteer(?:ing)?)\b/i.test(l))
     );
-    const sectionEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, expHeadingIdx + 45);
+    const sectionEnd = endIdx !== -1 ? endIdx : Math.min(lines.length, expHeadingIdx + 120);
     const expLines = lines.slice(expHeadingIdx + 1, sectionEnd);
+
+    // Date Pattern: catches ranges e.g. "2021 – Present", "Jan 2020 - Dec 2022", "04/2019 - 09/2021", "2019 - 2023"
+    const DATE_PATTERN = /((?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}\s*(?:–|—|-|to)\s*(?:present|current|now|to date|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}))|(?:\d{1,2}\/\d{4}\s*(?:–|—|-|to)\s*(?:\d{1,2}\/\d{4}|present|current|now|to date))|(?:(?:20|19)\d{2}\s*(?:–|—|-|to)\s*(?:present|current|now|to date|(?:20|19)\d{2}))|(?:since|from)\s+(?:20|19)\d{2}|\b(?:20|19)\d{2}\b)/i;
+
+    const ACTION_VERBS = /^(?:spearheaded|managed|led|directed|developed|engineered|designed|implemented|conducted|coordinated|oversaw|monitored|achieved|reduced|increased|optimized|delivered|maintained|executed|collaborated|facilitated|authored|analyzed|established|trained|supervised|negotiated|administered|resolved|prepared|underwrote|originated|audited|piloted|inspected|created|built|championed|structured|drove)\b/i;
+
+    const cleanLineText = (s: string) =>
+      s.replace(/^[\s•\-\*–—|:,;]+|[\s•\-\*–—|:,;]+$/g, "").replace(/\s+/g, " ").trim();
+
+    const isRoleName = (str: string): boolean => {
+      const s = str.toLowerCase();
+      for (const r of ROLE_PATTERNS) {
+        if (r.length <= 4) {
+          if (new RegExp(`\\b${r}\\b`, "i").test(s)) return true;
+        } else {
+          if (s.includes(r)) return true;
+        }
+      }
+      if (/\b(officer|specialist|engineer|manager|director|lead|leader|developer|analyst|consultant|associate|coordinator|executive|administrator|supervisor|advisor|architect|assistant|head|president|trainee|operator|cadet|technician|superintendent|master|mate|captain|chief|pilot|planner|strategist|auditor|accountant|cashier|teller|scientist|instructor|lecturer|fellow|representative|counsel|partner|practitioner|attorney|designer|writer|marketer|recruiter|surveyor|inspector|underwriter|relationship officer)\b/i.test(s)) return true;
+      if (/^(?:senior|junior|lead|principal|staff|chief|head of|associate|assistant|executive|graduate|trainee|intern)\b/i.test(s)) return true;
+      return false;
+    };
+
+    const isCompanyName = (str: string): boolean => {
+      const s = str.toLowerCase();
+      if (/\b(bank|plc|ltd|limited|inc|corp|corporation|company|co\.|technologies|technology|solutions|services|group|holdings|systems|shipping|maritime|lines|marine|offshore|logistics|energy|capital|partners|hospital|clinic|center|centre|authority|ministry|agency|consulting|studio|labs|foundation|ventures|enterprises|industries|association|commission|oil|gas|petroleum|trust|cargo|fleet|vessels|terminals)\b/i.test(s)) return true;
+      if (/\b(google|microsoft|apple|amazon|meta|first bank|zenith|access bank|gtbank|guaranty trust|uba|stanbic|bourbon|maersk|chevron|shell|totalenergies|nlng|stripe|fidelity|fcmb|ecobank|wema|union bank|keystone|sterling)\b/i.test(s)) return true;
+      return false;
+    };
+
+    const splitRoleAndCompany = (text: string): { role: string; company: string } => {
+      // 1. Check for "at" or "@"
+      const atMatch = text.match(/(.*?)\s+(?:at|@)\s+(.*)/i);
+      if (atMatch) {
+        return {
+          role: cleanLineText(atMatch[1]),
+          company: cleanLineText(atMatch[2]),
+        };
+      }
+
+      // 2. Check for pipe separation (handles multi-column e.g. "Role | Company | Location")
+      if (text.includes("|")) {
+        const parts = text.split("|").map(cleanLineText).filter(Boolean);
+        if (parts.length >= 2) {
+          const roleIdx = parts.findIndex((p) => isRoleName(p));
+          const compIdx = parts.findIndex((p) => isCompanyName(p));
+
+          if (roleIdx !== -1 && compIdx !== -1 && roleIdx !== compIdx) {
+            return { role: parts[roleIdx], company: parts[compIdx] };
+          }
+          if (roleIdx !== -1) {
+            const nonRole = parts.filter((_, i) => i !== roleIdx);
+            const bestComp = nonRole.find((p) => isCompanyName(p)) || nonRole[0];
+            return { role: parts[roleIdx], company: bestComp || "" };
+          }
+          if (compIdx !== -1) {
+            const nonComp = parts.filter((_, i) => i !== compIdx);
+            const bestRole = nonComp.find((p) => isRoleName(p)) || nonComp[0];
+            return { role: bestRole || "", company: parts[compIdx] };
+          }
+          return { company: parts[0], role: parts[1] };
+        }
+      }
+
+      // 3. Check for separators: " — ", " – ", " - "
+      const sepMatch = text.match(/(.*?)\s*(?:[—–]|\s-\s)\s*(.*)/i);
+      if (sepMatch) {
+        const p1 = cleanLineText(sepMatch[1]);
+        const p2 = cleanLineText(sepMatch[2]);
+        const p1Role = isRoleName(p1);
+        const p2Role = isRoleName(p2);
+        const p1Comp = isCompanyName(p1);
+        const p2Comp = isCompanyName(p2);
+
+        if (p1Role && !p2Role) return { role: p1, company: p2 };
+        if (p2Role && !p1Role) return { role: p2, company: p1 };
+        if (p1Comp && !p2Comp) return { role: p2, company: p1 };
+        if (p2Comp && !p1Comp) return { role: p1, company: p2 };
+        if (p2Role) return { role: p2, company: p1 };
+        if (p1Role) return { role: p1, company: p2 };
+        return { company: p1, role: p2 };
+      }
+
+      // 4. Check for comma separation: "Business Relationship Officer, First Bank of Nigeria"
+      if (text.includes(",")) {
+        const parts = text.split(",").map((p) => cleanLineText(p)).filter(Boolean);
+        if (parts.length >= 2) {
+          const [p1, p2] = parts;
+          if (isRoleName(p1) && (isCompanyName(p2) || !isRoleName(p2))) {
+            return { role: p1, company: p2 };
+          }
+          if (isCompanyName(p1) && isRoleName(p2)) {
+            return { role: p2, company: p1 };
+          }
+        }
+      }
+
+      return { role: "", company: "" };
+    };
 
     let currentCompany = "";
     let currentRole = "";
@@ -434,81 +547,158 @@ export function parseCvText(rawText: string): ParsedCv {
     let currentHighlights: string[] = [];
 
     const flushEntry = () => {
-      if (currentCompany || currentRole) {
+      let comp = cleanLineText(currentCompany);
+      let rol = cleanLineText(currentRole);
+
+      // Strip location suffix if present on company e.g. "First Bank of Nigeria, Lagos"
+      if (comp.includes(",")) {
+        const parts = comp.split(",");
+        if (isCompanyName(parts[0])) {
+          comp = cleanLineText(parts[0]);
+        }
+      }
+
+      // If one is missing, check if the other contains both
+      if (!comp && rol) {
+        const split = splitRoleAndCompany(rol);
+        if (split.company) {
+          comp = split.company;
+          rol = split.role;
+        }
+      } else if (!rol && comp) {
+        const split = splitRoleAndCompany(comp);
+        if (split.role) {
+          rol = split.role;
+          comp = split.company;
+        }
+      }
+
+      // Sanitize: NEVER default company to "Organization" or "worked at Organization"
+      if (/^(?:organization|company|employer|client|previous tech organization|target organization|my previous organization)$/i.test(comp)) {
+        comp = "";
+      }
+
+      if (rol || comp) {
         work_experience.push({
-          company: currentCompany || "Organization",
-          role: currentRole || "Role",
+          company: comp, // Clean extracted organization name (no dummy fallback)
+          role: rol || "Professional",
           duration: currentDuration || "",
-          highlights: currentHighlights.length > 0 ? currentHighlights : [],
+          highlights: currentHighlights.filter((h) => h.length > 5),
         });
       }
+
       currentCompany = "";
       currentRole = "";
       currentDuration = "";
       currentHighlights = [];
     };
 
-    for (const line of expLines) {
-      const isBullet = /^[-*\u2022\u00b7>]/.test(line);
-      const dateMatch = line.match(
-        /((?:\d{1,2}\/\d{4}\s*[-\u2013—to\s]+\s*(?:\d{1,2}\/\d{4}|present|current|now))|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4}\s*[-\u2013—to\s]+\s*(?:present|current|now|to date|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s*\d{0,4})|(?:20|19)\d{2}\s*[-\u2013—to\s]+\s*(?:present|current|now|to date)|(?:20|19)\d{2}\s*[-\u2013—]\s*(?:20|19)\d{2}|\b(?:20|19)\d{2}\b)/i
-      );
+    for (let i = 0; i < expLines.length; i++) {
+      const line = expLines[i];
+      const isBullet = /^[-*•·▪▫◦✦►✓\u2022\u00b7\u2013\u2014>]|^\d+[\.\)]\s+/.test(line);
 
-      if (isBullet) {
-        currentHighlights.push(line.replace(/^[-*\u2022\u00b7>\s]+/, "").trim());
-      } else if (dateMatch && line.length < 90) {
+      // If line is clearly an accomplishment bullet or an action-verb sentence under a role
+      if (isBullet || (currentHighlights.length > 0 && ACTION_VERBS.test(line))) {
+        currentHighlights.push(line.replace(/^[-*•·▪▫◦✦►✓\u2022\u00b7\u2013\u2014>\s]+|^\d+[\.\)]\s+/, "").trim());
+        continue;
+      }
+
+      // If we already collected bullets for an entry and now encounter a new non-bullet line, flush previous entry!
+      if (currentHighlights.length > 0) {
+        flushEntry();
+      }
+
+      const dateMatch = line.match(DATE_PATTERN);
+
+      if (dateMatch && line.length < 120) {
         const dateStr = dateMatch[0].trim();
-        const nonDatePart = line.replace(dateMatch[0], "").replace(/[|,\-\u2013—()]/g, " ").trim();
+        const nonDatePart = cleanLineText(
+          line.replace(dateMatch[0], "").replace(/[\(\)\[\]]/g, " ")
+        );
 
         if (nonDatePart.length < 3 || /^(?:present|current|now|to date)$/i.test(nonDatePart)) {
-          currentDuration = line.trim();
-        } else {
-          if (currentCompany || currentRole) flushEntry();
+          // Dedicated date line (e.g. "2021 – Present" or "Jan 2020 - Dec 2023")
           currentDuration = dateStr;
-          const sepMatch = nonDatePart.match(/(.*?)\s+(?:at|@|—|–|-|\|)\s+(.*)/i);
-          if (sepMatch) {
-            currentCompany = sepMatch[1].trim();
-            currentRole = sepMatch[2].trim();
-          } else {
-            currentCompany = nonDatePart;
-          }
-        }
-      } else if (line.length < 90 && !isBullet) {
-        const sepMatch = line.match(/(.*?)\s+(?:at|@|—|–|-|\|)\s+(.*)/i);
-        if (sepMatch && sepMatch[1].length < 50 && sepMatch[2].length < 50) {
-          if (currentCompany || currentRole) flushEntry();
-          const p1 = sepMatch[1].replace(/^[#*\-\s]+/, "").trim();
-          const p2 = sepMatch[2].replace(/^[#*\-\s]+/, "").trim();
-          const p1IsRole = ROLE_PATTERNS.some((r) => p1.toLowerCase().includes(r)) || /(?:manager|lead|engineer|director|specialist|analyst|developer|officer|head)/i.test(p1);
-          const p2IsRole = ROLE_PATTERNS.some((r) => p2.toLowerCase().includes(r)) || /(?:manager|lead|engineer|director|specialist|analyst|developer|officer|head)/i.test(p2);
-
-          if (p1IsRole && !p2IsRole) {
-            currentRole = p1;
-            currentCompany = p2;
-          } else {
-            currentCompany = p1;
-            currentRole = p2;
-          }
-        } else if (!currentRole) {
-          if (currentCompany && currentDuration) flushEntry();
-          currentRole = line.replace(/^[#*\-\s]+/, "").trim();
-        } else if (!currentCompany) {
-          currentCompany = line.replace(/^[#*\-\s]+/, "").trim();
-        } else if (line.length > 20) {
-          const sentences = line.split(/(?<=[.!?])\s+(?=[A-Z])/).map((s) => s.trim()).filter((s) => s.length > 15);
-          if (sentences.length > 1) {
-            currentHighlights.push(...sentences);
-          } else {
-            currentHighlights.push(line.trim());
-          }
-        }
-      } else if (line.length > 20 && !isBullet) {
-        const sentences = line.split(/(?<=[.!?])\s+(?=[A-Z])/).map((s) => s.trim()).filter((s) => s.length > 15);
-        if (sentences.length > 1) {
-          currentHighlights.push(...sentences);
         } else {
+          // Line has text AND dates (e.g. "Business Relationship Officer | 2021 - Present" or "First Bank of Nigeria (2021 - Present)")
+          currentDuration = dateStr;
+          const compound = splitRoleAndCompany(nonDatePart);
+
+          if (compound.role && compound.company) {
+            if (currentRole || currentCompany) flushEntry();
+            currentRole = compound.role;
+            currentCompany = compound.company;
+            currentDuration = dateStr;
+          } else if (isRoleName(nonDatePart)) {
+            if (currentRole && currentCompany) {
+              flushEntry();
+              currentRole = nonDatePart;
+              currentDuration = dateStr;
+            } else {
+              currentRole = nonDatePart;
+            }
+          } else if (isCompanyName(nonDatePart)) {
+            if (currentCompany && currentRole) {
+              flushEntry();
+              currentCompany = nonDatePart;
+              currentDuration = dateStr;
+            } else {
+              currentCompany = nonDatePart;
+            }
+          } else {
+            if (!currentRole) currentRole = nonDatePart;
+            else if (!currentCompany) currentCompany = nonDatePart;
+          }
+        }
+      } else if (line.length < 120 && !isBullet) {
+        // Line without date: Check compound header e.g. "Business Relationship Officer at First Bank of Nigeria"
+        const compound = splitRoleAndCompany(line);
+        if (compound.role && compound.company) {
+          if (currentRole || currentCompany) flushEntry();
+          currentRole = compound.role;
+          currentCompany = compound.company;
+        } else if (isRoleName(line)) {
+          if (currentRole) {
+            if (currentCompany) {
+              flushEntry();
+              currentRole = line;
+            } else if (isCompanyName(currentRole)) {
+              currentCompany = currentRole;
+              currentRole = line;
+            } else {
+              flushEntry();
+              currentRole = line;
+            }
+          } else {
+            currentRole = line;
+          }
+        } else if (isCompanyName(line)) {
+          if (currentCompany) {
+            if (currentRole) {
+              flushEntry();
+              currentCompany = line;
+            } else if (isRoleName(currentCompany)) {
+              currentRole = currentCompany;
+              currentCompany = line;
+            } else {
+              flushEntry();
+              currentCompany = line;
+            }
+          } else {
+            currentCompany = line;
+          }
+        } else if (ACTION_VERBS.test(line) && (currentRole || currentCompany)) {
+          // Action-verb sentence without leading bullet character
+          currentHighlights.push(line.trim());
+        } else if (!currentRole) {
+          currentRole = cleanLineText(line);
+        } else if (!currentCompany) {
+          currentCompany = cleanLineText(line);
+        } else if (line.length > 25) {
           currentHighlights.push(line.trim());
         }
+      } else if (line.length > 25) {
+        currentHighlights.push(line.trim());
       }
     }
     flushEntry();
@@ -706,7 +896,7 @@ export function parseCvText(rawText: string): ParsedCv {
       if (curRole || curOrg) {
         leadership.push({
           role: curRole || "Lead Volunteer",
-          organization: curOrg || "Community Initiative",
+          organization: curOrg || "",
           duration: curDur || undefined,
           highlights: curHighlights.length > 0 ? curHighlights : undefined,
         });

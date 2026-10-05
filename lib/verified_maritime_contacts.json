@@ -1,0 +1,4493 @@
+[
+  {
+    "id": "mar-ocean-network-express-one-1",
+    "company": "Ocean Network Express (ONE)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "career@one-line.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.one-line.com",
+    "notes": "Primary sector: Container Liner. Fleet: Ultra-Large & Feeder Container Fleets."
+  },
+  {
+    "id": "mar-ocean-network-express-one-2",
+    "company": "Ocean Network Express (ONE)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "general.inquiries@one-line.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.one-line.com",
+    "notes": "Primary sector: Container Liner. Fleet: Ultra-Large & Feeder Container Fleets."
+  },
+  {
+    "id": "mar-pacific-international-lines-pi-3",
+    "company": "Pacific International Lines (PIL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@pilship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.pilship.com",
+    "notes": "Primary sector: Container & Multipurpose. Fleet: Container, Dry Bulk & Multipurpose."
+  },
+  {
+    "id": "mar-pacific-international-lines-pi-4",
+    "company": "Pacific International Lines (PIL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corporate@pilship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.pilship.com",
+    "notes": "Primary sector: Container & Multipurpose. Fleet: Container, Dry Bulk & Multipurpose."
+  },
+  {
+    "id": "mar-eastern-pacific-shipping-eps-5",
+    "company": "Eastern Pacific Shipping (EPS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewrecruitment@epshipping.com.sg",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.epshipping.com.sg",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: Dual-Fuel Tankers, Bulk & LNG."
+  },
+  {
+    "id": "mar-eastern-pacific-shipping-eps-6",
+    "company": "Eastern Pacific Shipping (EPS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@epshipping.com.sg",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.epshipping.com.sg",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: Dual-Fuel Tankers, Bulk & LNG."
+  },
+  {
+    "id": "mar-bw-group-7",
+    "company": "BW Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@bwgroup.net",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.bwgroup.net",
+    "notes": "Primary sector: Gas & Energy Logistics. Fleet: LNG, LPG, Product & Crude Tankers."
+  },
+  {
+    "id": "mar-bw-group-8",
+    "company": "BW Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@bwgroup.net",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.bwgroup.net",
+    "notes": "Primary sector: Gas & Energy Logistics. Fleet: LNG, LPG, Product & Crude Tankers."
+  },
+  {
+    "id": "mar-hafnia-9",
+    "company": "Hafnia",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@hafniapair.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.hafniapair.com",
+    "notes": "Primary sector: Product Tankers. Fleet: Product & Chemical Tankers (LR1, MR)."
+  },
+  {
+    "id": "mar-hafnia-10",
+    "company": "Hafnia",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@hafniapair.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.hafniapair.com",
+    "notes": "Primary sector: Product Tankers. Fleet: Product & Chemical Tankers (LR1, MR)."
+  },
+  {
+    "id": "mar-berge-bulk-11",
+    "company": "Berge Bulk",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewrecruitment@bergebulk.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.bergebulk.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize & Newcastlemax Dry Bulk."
+  },
+  {
+    "id": "mar-berge-bulk-12",
+    "company": "Berge Bulk",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@bergebulk.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.bergebulk.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize & Newcastlemax Dry Bulk."
+  },
+  {
+    "id": "mar-synergy-marine-group-13",
+    "company": "Synergy Marine Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@synergymarinegroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.synergymarinegroup.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Technical Ship Management & Crewing."
+  },
+  {
+    "id": "mar-synergy-marine-group-14",
+    "company": "Synergy Marine Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@synergyship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.synergymarinegroup.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Technical Ship Management & Crewing."
+  },
+  {
+    "id": "mar-osm-thome-15",
+    "company": "OSM Thome",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@osmthome.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.osmthome.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Tankers, Bulkers, Offshore & Cruise."
+  },
+  {
+    "id": "mar-osm-thome-16",
+    "company": "OSM Thome",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@osmthome.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.osmthome.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Tankers, Bulkers, Offshore & Cruise."
+  },
+  {
+    "id": "mar-executive-ship-management-esm-17",
+    "company": "Executive Ship Management (ESM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@executiveship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.executiveship.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Chemical Tankers, Bulk & Gas Fleets."
+  },
+  {
+    "id": "mar-executive-ship-management-esm-18",
+    "company": "Executive Ship Management (ESM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "esm@executiveship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.executiveship.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Chemical Tankers, Bulk & Gas Fleets."
+  },
+  {
+    "id": "mar-seatrium-limited-19",
+    "company": "Seatrium Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@seatrium.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.seatrium.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Rigs, FPSO Conversion, Offshore Wind."
+  },
+  {
+    "id": "mar-seatrium-limited-20",
+    "company": "Seatrium Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@seatrium.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.seatrium.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Rigs, FPSO Conversion, Offshore Wind."
+  },
+  {
+    "id": "mar-posh-pacc-offshore-services-21",
+    "company": "POSH (PACC Offshore Services)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@posh.com.sg",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.posh.com.sg",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSV, Harbor & Subsea Towage."
+  },
+  {
+    "id": "mar-posh-pacc-offshore-services-22",
+    "company": "POSH (PACC Offshore Services)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@posh.com.sg",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.posh.com.sg",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSV, Harbor & Subsea Towage."
+  },
+  {
+    "id": "mar-x-press-feeders-23",
+    "company": "X-Press Feeders",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@xpressfeeders.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.xpressfeeders.com",
+    "notes": "Primary sector: Feeder Container Line. Fleet: Regional Common Feeder Services."
+  },
+  {
+    "id": "mar-x-press-feeders-24",
+    "company": "X-Press Feeders",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@xpressfeeders.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Singapore, Singapore",
+    "careersUrl": "https://www.xpressfeeders.com",
+    "notes": "Primary sector: Feeder Container Line. Fleet: Regional Common Feeder Services."
+  },
+  {
+    "id": "mar-cosco-shipping-lines-25",
+    "company": "COSCO Shipping Lines",
+    "category": "Maritime / Offshore",
+    "contactEmail": "cs.crew@coscoshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Shanghai, China",
+    "careersUrl": "https://lines.coscoshipping.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Ultra-Large Container Fleet."
+  },
+  {
+    "id": "mar-cosco-shipping-lines-26",
+    "company": "COSCO Shipping Lines",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@coscoshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Shanghai, China",
+    "careersUrl": "https://lines.coscoshipping.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Ultra-Large Container Fleet."
+  },
+  {
+    "id": "mar-cosco-shipping-energy-transpor-27",
+    "company": "COSCO Shipping Energy Transportation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@cset.coscoshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Shanghai, China",
+    "careersUrl": "https://energy.coscoshipping.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: VLCCs, Product Tankers & LNG Carriers."
+  },
+  {
+    "id": "mar-cosco-shipping-energy-transpor-28",
+    "company": "COSCO Shipping Energy Transportation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "cset@coscoshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Shanghai, China",
+    "careersUrl": "https://energy.coscoshipping.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: VLCCs, Product Tankers & LNG Carriers."
+  },
+  {
+    "id": "mar-china-merchants-energy-shippin-29",
+    "company": "China Merchants Energy Shipping (CMES)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@cmenergy.com.hk",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, China",
+    "careersUrl": "https://www.cmenergy.com.hk",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: VLCC Crude Fleet & VLOC Ore Carriers."
+  },
+  {
+    "id": "mar-china-merchants-energy-shippin-30",
+    "company": "China Merchants Energy Shipping (CMES)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@cmenergy.com.hk",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, China",
+    "careersUrl": "https://www.cmenergy.com.hk",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: VLCC Crude Fleet & VLOC Ore Carriers."
+  },
+  {
+    "id": "mar-sinotrans-limited-31",
+    "company": "Sinotrans Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@sinotrans.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Beijing, China",
+    "careersUrl": "https://www.sinotrans.com",
+    "notes": "Primary sector: Logistics & Marine Services. Fleet: Integrated Freight, Coastal & Bulk."
+  },
+  {
+    "id": "mar-sinotrans-limited-32",
+    "company": "Sinotrans Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@sinotrans.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Beijing, China",
+    "careersUrl": "https://www.sinotrans.com",
+    "notes": "Primary sector: Logistics & Marine Services. Fleet: Integrated Freight, Coastal & Bulk."
+  },
+  {
+    "id": "mar-sitc-international-holdings-33",
+    "company": "SITC International Holdings",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@sitc.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.sitc.com",
+    "notes": "Primary sector: Container Liner. Fleet: High-Density Intra-Asia Container Lines."
+  },
+  {
+    "id": "mar-sitc-international-holdings-34",
+    "company": "SITC International Holdings",
+    "category": "Maritime / Offshore",
+    "contactEmail": "sitc@sitc.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.sitc.com",
+    "notes": "Primary sector: Container Liner. Fleet: High-Density Intra-Asia Container Lines."
+  },
+  {
+    "id": "mar-orient-overseas-container-line-35",
+    "company": "Orient Overseas Container Line (OOCL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@oocl.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.oocl.com",
+    "notes": "Primary sector: Container Liner. Fleet: Transpacific, Transatlantic & Intra-Asia."
+  },
+  {
+    "id": "mar-orient-overseas-container-line-36",
+    "company": "Orient Overseas Container Line (OOCL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "enquiry@oocl.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.oocl.com",
+    "notes": "Primary sector: Container Liner. Fleet: Transpacific, Transatlantic & Intra-Asia."
+  },
+  {
+    "id": "mar-fleet-management-limited-fml-37",
+    "company": "Fleet Management Limited (FML)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "fleetrecruitment@fleetship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.fleetship.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Comprehensive Technical Management & Crew."
+  },
+  {
+    "id": "mar-fleet-management-limited-fml-38",
+    "company": "Fleet Management Limited (FML)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "fml@fleetship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.fleetship.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Comprehensive Technical Management & Crew."
+  },
+  {
+    "id": "mar-anglo-eastern-univan-group-39",
+    "company": "Anglo-Eastern Univan Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@angloeastern.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.angloeastern.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Global Commercial & Technical Fleet Mgmt."
+  },
+  {
+    "id": "mar-anglo-eastern-univan-group-40",
+    "company": "Anglo-Eastern Univan Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@angloeastern.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.angloeastern.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Global Commercial & Technical Fleet Mgmt."
+  },
+  {
+    "id": "mar-wallem-group-41",
+    "company": "Wallem Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewrecruitment@wallem.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.wallem.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Ship Management, Agency & Commercial."
+  },
+  {
+    "id": "mar-wallem-group-42",
+    "company": "Wallem Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@wallem.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.wallem.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Ship Management, Agency & Commercial."
+  },
+  {
+    "id": "mar-wah-kwong-maritime-transport-43",
+    "company": "Wah Kwong Maritime Transport",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@wahkwong.com.hk",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.wahkwong.com.hk",
+    "notes": "Primary sector: Ship Management & Bulk. Fleet: Modern Bulk Carriers, Crude & Gas."
+  },
+  {
+    "id": "mar-wah-kwong-maritime-transport-44",
+    "company": "Wah Kwong Maritime Transport",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@wahkwong.com.hk",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hong Kong, Hong Kong",
+    "careersUrl": "https://www.wahkwong.com.hk",
+    "notes": "Primary sector: Ship Management & Bulk. Fleet: Modern Bulk Carriers, Crude & Gas."
+  },
+  {
+    "id": "mar-cssc-china-state-shipbuilding--45",
+    "company": "CSSC (China State Shipbuilding Corp)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@cssc.net.cn",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Beijing, China",
+    "careersUrl": "https://www.cssc.net.cn",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Merchant Vessels, LNG Carriers & Navy."
+  },
+  {
+    "id": "mar-cssc-china-state-shipbuilding--46",
+    "company": "CSSC (China State Shipbuilding Corp)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ship@cssc.net.cn",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Beijing, China",
+    "careersUrl": "https://www.cssc.net.cn",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Merchant Vessels, LNG Carriers & Navy."
+  },
+  {
+    "id": "mar-nippon-yusen-kaisha-nyk-line-47",
+    "company": "Nippon Yusen Kaisha (NYK Line)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@nykgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.nyk.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Containerships, Bulk, Car Carriers & LNG."
+  },
+  {
+    "id": "mar-nippon-yusen-kaisha-nyk-line-48",
+    "company": "Nippon Yusen Kaisha (NYK Line)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "prgroup@nykgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.nyk.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Containerships, Bulk, Car Carriers & LNG."
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-49",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@molgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.mol.co.jp",
+    "notes": "Primary sector: Diversified Shipping. Fleet: LNG Fleets, Tankers, Dry Bulk & Ferries."
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-50",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@molgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.mol.co.jp",
+    "notes": "Primary sector: Diversified Shipping. Fleet: LNG Fleets, Tankers, Dry Bulk & Ferries."
+  },
+  {
+    "id": "mar-kawasaki-kisen-kaisha-k-line-51",
+    "company": "Kawasaki Kisen Kaisha (\u201cK\u201d Line)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@kline.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.kline.co.jp",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Dry Bulk, Energy Logistics & Car Carriers."
+  },
+  {
+    "id": "mar-kawasaki-kisen-kaisha-k-line-52",
+    "company": "Kawasaki Kisen Kaisha (\u201cK\u201d Line)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "klinc@kline.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.kline.co.jp",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Dry Bulk, Energy Logistics & Car Carriers."
+  },
+  {
+    "id": "mar-iino-kaiun-kaisha-53",
+    "company": "Iino Kaiun Kaisha",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@iino.co.jp",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.iino.co.jp",
+    "notes": "Primary sector: Chemical & Gas Tankers. Fleet: Specialized Chemical Tankers & Gas Fleets."
+  },
+  {
+    "id": "mar-iino-kaiun-kaisha-54",
+    "company": "Iino Kaiun Kaisha",
+    "category": "Maritime / Offshore",
+    "contactEmail": "inquiry@iino.co.jp",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.iino.co.jp",
+    "notes": "Primary sector: Chemical & Gas Tankers. Fleet: Specialized Chemical Tankers & Gas Fleets."
+  },
+  {
+    "id": "mar-classnk-nippon-kaiji-kyokai-55",
+    "company": "ClassNK (Nippon Kaiji Kyokai)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@classnk.or.jp",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.classnk.or.jp",
+    "notes": "Primary sector: Classification Society. Fleet: Hull & Machinery Survey, Marine Standards."
+  },
+  {
+    "id": "mar-classnk-nippon-kaiji-kyokai-56",
+    "company": "ClassNK (Nippon Kaiji Kyokai)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "bnd@classnk.or.jp",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Tokyo, Japan",
+    "careersUrl": "https://www.classnk.or.jp",
+    "notes": "Primary sector: Classification Society. Fleet: Hull & Machinery Survey, Marine Standards."
+  },
+  {
+    "id": "mar-imabari-shipbuilding-57",
+    "company": "Imabari Shipbuilding",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@imazo.co.jp",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Imabari, Japan",
+    "careersUrl": "https://www.imazo.co.jp",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Ultra-Large Container Vessels & Bulk Carriers."
+  },
+  {
+    "id": "mar-imabari-shipbuilding-58",
+    "company": "Imabari Shipbuilding",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@imazo.co.jp",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Imabari, Japan",
+    "careersUrl": "https://www.imazo.co.jp",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Ultra-Large Container Vessels & Bulk Carriers."
+  },
+  {
+    "id": "mar-hmm-hyundai-merchant-marine-59",
+    "company": "HMM (Hyundai Merchant Marine)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewrecruit@hmm21.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.hmm21.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Mega-Container Carriers & Bulk."
+  },
+  {
+    "id": "mar-hmm-hyundai-merchant-marine-60",
+    "company": "HMM (Hyundai Merchant Marine)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hmm_pr@hmm21.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.hmm21.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Mega-Container Carriers & Bulk."
+  },
+  {
+    "id": "mar-pan-ocean-61",
+    "company": "Pan Ocean",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@panocean.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.panocean.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize, Panamax Bulkers & Heavy Lift."
+  },
+  {
+    "id": "mar-pan-ocean-62",
+    "company": "Pan Ocean",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@panocean.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.panocean.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize, Panamax Bulkers & Heavy Lift."
+  },
+  {
+    "id": "mar-sm-line-63",
+    "company": "SM Line",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@smlines.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.smlines.com",
+    "notes": "Primary sector: Container Liner. Fleet: Transpacific & Intra-Asia Container Shipping."
+  },
+  {
+    "id": "mar-sm-line-64",
+    "company": "SM Line",
+    "category": "Maritime / Offshore",
+    "contactEmail": "smline@smlines.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.smlines.com",
+    "notes": "Primary sector: Container Liner. Fleet: Transpacific & Intra-Asia Container Shipping."
+  },
+  {
+    "id": "mar-hyundai-glovis-65",
+    "company": "Hyundai Glovis",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@glovis.net",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.glovis.net",
+    "notes": "Primary sector: Ro-Ro & Car Carriers. Fleet: Pure Car/Truck Carriers (PCTC) Global Fleet."
+  },
+  {
+    "id": "mar-hyundai-glovis-66",
+    "company": "Hyundai Glovis",
+    "category": "Maritime / Offshore",
+    "contactEmail": "glovis@glovis.net",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.glovis.net",
+    "notes": "Primary sector: Ro-Ro & Car Carriers. Fleet: Pure Car/Truck Carriers (PCTC) Global Fleet."
+  },
+  {
+    "id": "mar-sk-shipping-67",
+    "company": "SK Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@skshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.skshipping.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: Crude Oil Tankers, LNG & LPG Transports."
+  },
+  {
+    "id": "mar-sk-shipping-68",
+    "company": "SK Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "sks@skshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seoul, South Korea",
+    "careersUrl": "https://www.skshipping.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: Crude Oil Tankers, LNG & LPG Transports."
+  },
+  {
+    "id": "mar-hd-hyundai-heavy-industries-69",
+    "company": "HD Hyundai Heavy Industries",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@hd.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Ulsan, South Korea",
+    "careersUrl": "https://www.hd-hhi.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: LNG Carriers, Dual-Fuel Containerships."
+  },
+  {
+    "id": "mar-hd-hyundai-heavy-industries-70",
+    "company": "HD Hyundai Heavy Industries",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@hd.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Ulsan, South Korea",
+    "careersUrl": "https://www.hd-hhi.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: LNG Carriers, Dual-Fuel Containerships."
+  },
+  {
+    "id": "mar-samsung-heavy-industries-shi-71",
+    "company": "Samsung Heavy Industries (SHI)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@samsung.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seongnam, South Korea",
+    "careersUrl": "https://www.samsungshi.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: FLNG Facilities, Drillships, Mega-Vessels."
+  },
+  {
+    "id": "mar-samsung-heavy-industries-shi-72",
+    "company": "Samsung Heavy Industries (SHI)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "shi@samsung.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Seongnam, South Korea",
+    "careersUrl": "https://www.samsungshi.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: FLNG Facilities, Drillships, Mega-Vessels."
+  },
+  {
+    "id": "mar-hanwha-ocean-73",
+    "company": "Hanwha Ocean",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@hanwha.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Geoje, South Korea",
+    "careersUrl": "https://www.hanwhaocean.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: LNG Carriers, Naval Submarines & Offshore."
+  },
+  {
+    "id": "mar-hanwha-ocean-74",
+    "company": "Hanwha Ocean",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ocean@hanwha.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Geoje, South Korea",
+    "careersUrl": "https://www.hanwhaocean.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: LNG Carriers, Naval Submarines & Offshore."
+  },
+  {
+    "id": "mar-evergreen-marine-corporation-75",
+    "company": "Evergreen Marine Corporation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@evergreen-marine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Taoyuan, Taiwan",
+    "careersUrl": "https://www.evergreen-marine.com",
+    "notes": "Primary sector: Container Liner. Fleet: World Top-10 Global Container Carrier Fleet."
+  },
+  {
+    "id": "mar-evergreen-marine-corporation-76",
+    "company": "Evergreen Marine Corporation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "inquiry@evergreen-marine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Taoyuan, Taiwan",
+    "careersUrl": "https://www.evergreen-marine.com",
+    "notes": "Primary sector: Container Liner. Fleet: World Top-10 Global Container Carrier Fleet."
+  },
+  {
+    "id": "mar-yang-ming-marine-transport-77",
+    "company": "Yang Ming Marine Transport",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@yangming.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Keelung, Taiwan",
+    "careersUrl": "https://www.yangming.com",
+    "notes": "Primary sector: Container Liner. Fleet: International Container Freight & Terminals."
+  },
+  {
+    "id": "mar-yang-ming-marine-transport-78",
+    "company": "Yang Ming Marine Transport",
+    "category": "Maritime / Offshore",
+    "contactEmail": "service@yangming.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Keelung, Taiwan",
+    "careersUrl": "https://www.yangming.com",
+    "notes": "Primary sector: Container Liner. Fleet: International Container Freight & Terminals."
+  },
+  {
+    "id": "mar-wan-hai-lines-79",
+    "company": "Wan Hai Lines",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@wanhai.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Taipei, Taiwan",
+    "careersUrl": "https://www.wanhai.com",
+    "notes": "Primary sector: Container Liner. Fleet: Intra-Asia, South America & US Liner Lines."
+  },
+  {
+    "id": "mar-wan-hai-lines-80",
+    "company": "Wan Hai Lines",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@wanhai.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Taipei, Taiwan",
+    "careersUrl": "https://www.wanhai.com",
+    "notes": "Primary sector: Container Liner. Fleet: Intra-Asia, South America & US Liner Lines."
+  },
+  {
+    "id": "mar-u-ming-marine-transport-81",
+    "company": "U-Ming Marine Transport",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@uming.com.tw",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Taipei, Taiwan",
+    "careersUrl": "https://www.uming.com.tw",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize, Post-Panamax & Cement Carriers."
+  },
+  {
+    "id": "mar-u-ming-marine-transport-82",
+    "company": "U-Ming Marine Transport",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@uming.com.tw",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Taipei, Taiwan",
+    "careersUrl": "https://www.uming.com.tw",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize, Post-Panamax & Cement Carriers."
+  },
+  {
+    "id": "mar-shipping-corporation-of-india--83",
+    "company": "Shipping Corporation of India (SCI)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "maritimecrew@sci.co.in",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.shipindia.com",
+    "notes": "Primary sector: State Maritime Carrier. Fleet: Crude Tankers, Bulkers, Offshore & Coastal."
+  },
+  {
+    "id": "mar-shipping-corporation-of-india--84",
+    "company": "Shipping Corporation of India (SCI)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contactus@sci.co.in",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.shipindia.com",
+    "notes": "Primary sector: State Maritime Carrier. Fleet: Crude Tankers, Bulkers, Offshore & Coastal."
+  },
+  {
+    "id": "mar-the-great-eastern-shipping-85",
+    "company": "The Great Eastern Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "seafaring@greatship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.greatship.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude & Product Tankers, Dry Bulk Fleet."
+  },
+  {
+    "id": "mar-the-great-eastern-shipping-86",
+    "company": "The Great Eastern Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corp_comm@greatship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.greatship.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude & Product Tankers, Dry Bulk Fleet."
+  },
+  {
+    "id": "mar-seamec-limited-87",
+    "company": "SEAMEC Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@seamec.in",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.seamec.in",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: Diving Support Vessels (DSV) & Offshore Barges."
+  },
+  {
+    "id": "mar-seamec-limited-88",
+    "company": "SEAMEC Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@seamec.in",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.seamec.in",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: Diving Support Vessels (DSV) & Offshore Barges."
+  },
+  {
+    "id": "mar-samson-maritime-89",
+    "company": "Samson Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@samsonmaritime.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.samsonmaritime.com",
+    "notes": "Primary sector: Offshore Support & Towage. Fleet: OSVs, Workboats, Anchor Handlers & Towage."
+  },
+  {
+    "id": "mar-samson-maritime-90",
+    "company": "Samson Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "samson@samsonmaritime.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.samsonmaritime.com",
+    "notes": "Primary sector: Offshore Support & Towage. Fleet: OSVs, Workboats, Anchor Handlers & Towage."
+  },
+  {
+    "id": "mar-sadhav-shipping-91",
+    "company": "Sadhav Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@sadhav.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.sadhav.com",
+    "notes": "Primary sector: Coastal Towage & Port Logistics. Fleet: Port Patrol Boats, Mooring Crafts & Tugs."
+  },
+  {
+    "id": "mar-sadhav-shipping-92",
+    "company": "Sadhav Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@sadhav.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Mumbai, India",
+    "careersUrl": "https://www.sadhav.com",
+    "notes": "Primary sector: Coastal Towage & Port Logistics. Fleet: Port Patrol Boats, Mooring Crafts & Tugs."
+  },
+  {
+    "id": "mar-maran-gas-maran-tankers-93",
+    "company": "Maran Gas / Maran Tankers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@marantankers.gr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.angelicoussisgroup.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: LNG Carriers & Very Large Crude Tankers."
+  },
+  {
+    "id": "mar-maran-gas-maran-tankers-94",
+    "company": "Maran Gas / Maran Tankers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "mail@marangas.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.angelicoussisgroup.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: LNG Carriers & Very Large Crude Tankers."
+  },
+  {
+    "id": "mar-dynagas-dynacom-tankers-95",
+    "company": "Dynagas / Dynacom Tankers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@dynacomtm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.dynagas.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: Ice-Class LNG & Crude Oil Carrier Fleet."
+  },
+  {
+    "id": "mar-dynagas-dynacom-tankers-96",
+    "company": "Dynagas / Dynacom Tankers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "dynagas@dynagas.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.dynagas.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: Ice-Class LNG & Crude Oil Carrier Fleet."
+  },
+  {
+    "id": "mar-minerva-marine-97",
+    "company": "Minerva Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@minervamarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.minervamarine.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Modern Aframax, Suezmax & Clean Tankers."
+  },
+  {
+    "id": "mar-minerva-marine-98",
+    "company": "Minerva Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@minervamarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.minervamarine.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Modern Aframax, Suezmax & Clean Tankers."
+  },
+  {
+    "id": "mar-thenamaris-99",
+    "company": "Thenamaris",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@thenamaris.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.thenamaris.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude, Products, Dry Bulk & Gas Carriers."
+  },
+  {
+    "id": "mar-thenamaris-100",
+    "company": "Thenamaris",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@thenamaris.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.thenamaris.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude, Products, Dry Bulk & Gas Carriers."
+  },
+  {
+    "id": "mar-tsakos-energy-navigation-ten-101",
+    "company": "Tsakos Energy Navigation (TEN)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@tsakosfleet.gr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.tenn.gr",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude Oil Tankers, Shuttle Tankers & LNG."
+  },
+  {
+    "id": "mar-tsakos-energy-navigation-ten-102",
+    "company": "Tsakos Energy Navigation (TEN)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ten@tenn.gr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.tenn.gr",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude Oil Tankers, Shuttle Tankers & LNG."
+  },
+  {
+    "id": "mar-capital-maritime-trading-103",
+    "company": "Capital Maritime & Trading",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@capitalmaritime.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Piraeus, Greece",
+    "careersUrl": "https://www.capitalmaritime.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Tankers, Neo-Panamax Containers & Bulkers."
+  },
+  {
+    "id": "mar-capital-maritime-trading-104",
+    "company": "Capital Maritime & Trading",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@capitalmaritime.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Piraeus, Greece",
+    "careersUrl": "https://www.capitalmaritime.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Tankers, Neo-Panamax Containers & Bulkers."
+  },
+  {
+    "id": "mar-star-bulk-carriers-105",
+    "company": "Star Bulk Carriers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@starbulk.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.starbulk.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize, Newcastlemax & Ultramax Bulkers."
+  },
+  {
+    "id": "mar-star-bulk-carriers-106",
+    "company": "Star Bulk Carriers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@starbulk.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.starbulk.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Capesize, Newcastlemax & Ultramax Bulkers."
+  },
+  {
+    "id": "mar-costamare-107",
+    "company": "Costamare",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@costamare.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.costamare.com",
+    "notes": "Primary sector: Container & Dry Bulk. Fleet: Containership Chartering & Dry Bulk Fleets."
+  },
+  {
+    "id": "mar-costamare-108",
+    "company": "Costamare",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@costamare.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.costamare.com",
+    "notes": "Primary sector: Container & Dry Bulk. Fleet: Containership Chartering & Dry Bulk Fleets."
+  },
+  {
+    "id": "mar-navios-maritime-partners-109",
+    "company": "Navios Maritime Partners",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@navios.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Piraeus, Greece",
+    "careersUrl": "https://www.navios.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Dry Cargo Bulkers, Containerships & Tankers."
+  },
+  {
+    "id": "mar-navios-maritime-partners-110",
+    "company": "Navios Maritime Partners",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@navios.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Piraeus, Greece",
+    "careersUrl": "https://www.navios.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Dry Cargo Bulkers, Containerships & Tankers."
+  },
+  {
+    "id": "mar-tms-tankers-tms-cardiff-gas-111",
+    "company": "TMS Tankers / TMS Cardiff Gas",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@tms-marine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.tms-tankers.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: State-of-the-Art Tankers & LNG Fleet."
+  },
+  {
+    "id": "mar-tms-tankers-tms-cardiff-gas-112",
+    "company": "TMS Tankers / TMS Cardiff Gas",
+    "category": "Maritime / Offshore",
+    "contactEmail": "mail@tmstankers.gr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Athens, Greece",
+    "careersUrl": "https://www.tms-tankers.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: State-of-the-Art Tankers & LNG Fleet."
+  },
+  {
+    "id": "mar-solstad-offshore-113",
+    "company": "Solstad Offshore",
+    "category": "Maritime / Offshore",
+    "contactEmail": "offshorecrewing@solstad.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Skudeneshavn, Norway",
+    "careersUrl": "https://www.solstad.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: High-Spec AHTS, CSV, Subsea & PSVs."
+  },
+  {
+    "id": "mar-solstad-offshore-114",
+    "company": "Solstad Offshore",
+    "category": "Maritime / Offshore",
+    "contactEmail": "post@solstad.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Skudeneshavn, Norway",
+    "careersUrl": "https://www.solstad.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: High-Spec AHTS, CSV, Subsea & PSVs."
+  },
+  {
+    "id": "mar-dof-group-115",
+    "company": "DOF Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@dof.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Storeb\u00f8, Norway",
+    "careersUrl": "https://www.dof.com",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: Deepwater Construction, ROV & Survey."
+  },
+  {
+    "id": "mar-dof-group-116",
+    "company": "DOF Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corporate@dof.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Storeb\u00f8, Norway",
+    "careersUrl": "https://www.dof.com",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: Deepwater Construction, ROV & Survey."
+  },
+  {
+    "id": "mar-sea1-offshore-siem-offshore-117",
+    "company": "Sea1 Offshore (Siem Offshore)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "offshorecrew@sea1offshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Kristiansand, Norway",
+    "careersUrl": "https://www.sea1offshore.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Clean Design PSVs, AHTS & Cable Lay."
+  },
+  {
+    "id": "mar-sea1-offshore-siem-offshore-118",
+    "company": "Sea1 Offshore (Siem Offshore)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@sea1offshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Kristiansand, Norway",
+    "careersUrl": "https://www.sea1offshore.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Clean Design PSVs, AHTS & Cable Lay."
+  },
+  {
+    "id": "mar-frontline-plc-119",
+    "company": "Frontline plc",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@frontline.bm",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.frontlineplc.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Very Large Crude Carriers (VLCC) & Suezmax."
+  },
+  {
+    "id": "mar-frontline-plc-120",
+    "company": "Frontline plc",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@frontline.bm",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.frontlineplc.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Very Large Crude Carriers (VLCC) & Suezmax."
+  },
+  {
+    "id": "mar-golden-ocean-group-121",
+    "company": "Golden Ocean Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@goldenocean.bm",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.goldenocean.bm",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Modern Capesize & Panamax Dry Cargo."
+  },
+  {
+    "id": "mar-golden-ocean-group-122",
+    "company": "Golden Ocean Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@goldenocean.bm",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.goldenocean.bm",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Modern Capesize & Panamax Dry Cargo."
+  },
+  {
+    "id": "mar-wallenius-wilhelmsen-123",
+    "company": "Wallenius Wilhelmsen",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@walwil.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lysaker, Norway",
+    "careersUrl": "https://www.walleniuswilhelmsen.com",
+    "notes": "Primary sector: Ro-Ro & Car Carriers. Fleet: Vehicle Carriers & Specialized Ocean Ro-Ro."
+  },
+  {
+    "id": "mar-wallenius-wilhelmsen-124",
+    "company": "Wallenius Wilhelmsen",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corporate@walwil.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lysaker, Norway",
+    "careersUrl": "https://www.walleniuswilhelmsen.com",
+    "notes": "Primary sector: Ro-Ro & Car Carriers. Fleet: Vehicle Carriers & Specialized Ocean Ro-Ro."
+  },
+  {
+    "id": "mar-h-egh-autoliners-125",
+    "company": "H\u00f6egh Autoliners",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@hoegh.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.hoeghautoliners.com",
+    "notes": "Primary sector: Ro-Ro & Car Carriers. Fleet: Multi-Deck Pure Car/Truck Carriers (PCTC)."
+  },
+  {
+    "id": "mar-h-egh-autoliners-126",
+    "company": "H\u00f6egh Autoliners",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@hoegh.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.hoeghautoliners.com",
+    "notes": "Primary sector: Ro-Ro & Car Carriers. Fleet: Multi-Deck Pure Car/Truck Carriers (PCTC)."
+  },
+  {
+    "id": "mar-dnv-127",
+    "company": "DNV",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@dnv.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "H\u00f8vik, Norway",
+    "careersUrl": "https://www.dnv.com",
+    "notes": "Primary sector: Classification Society. Fleet: Global Ship Classification & Advisory."
+  },
+  {
+    "id": "mar-dnv-128",
+    "company": "DNV",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@dnv.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "H\u00f8vik, Norway",
+    "careersUrl": "https://www.dnv.com",
+    "notes": "Primary sector: Classification Society. Fleet: Global Ship Classification & Advisory."
+  },
+  {
+    "id": "mar-wilhelmsen-ship-management-129",
+    "company": "Wilhelmsen Ship Management",
+    "category": "Maritime / Offshore",
+    "contactEmail": "wsm.crew@wilhelmsen.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lysaker, Norway",
+    "careersUrl": "https://www.wilhelmsen.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Full Technical & Global Seafarer Creweing."
+  },
+  {
+    "id": "mar-wilhelmsen-ship-management-130",
+    "company": "Wilhelmsen Ship Management",
+    "category": "Maritime / Offshore",
+    "contactEmail": "wsm.contact@wilhelmsen.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lysaker, Norway",
+    "careersUrl": "https://www.wilhelmsen.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Full Technical & Global Seafarer Creweing."
+  },
+  {
+    "id": "mar-torvald-klaveness-131",
+    "company": "Torvald Klaveness",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@klaveness.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.klaveness.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Combination Carriers (CABU/CLEANBU) & Bulk."
+  },
+  {
+    "id": "mar-torvald-klaveness-132",
+    "company": "Torvald Klaveness",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@klaveness.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Oslo, Norway",
+    "careersUrl": "https://www.klaveness.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Combination Carriers (CABU/CLEANBU) & Bulk."
+  },
+  {
+    "id": "mar-a-p-moller-maersk-133",
+    "company": "A.P. Moller \u2013 Maersk",
+    "category": "Maritime / Offshore",
+    "contactEmail": "maerskcareers@maersk.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Copenhagen, Denmark",
+    "careersUrl": "https://www.maersk.com",
+    "notes": "Primary sector: Container Liner. Fleet: End-to-End Global Container Logistics."
+  },
+  {
+    "id": "mar-a-p-moller-maersk-134",
+    "company": "A.P. Moller \u2013 Maersk",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@maersk.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Copenhagen, Denmark",
+    "careersUrl": "https://www.maersk.com",
+    "notes": "Primary sector: Container Liner. Fleet: End-to-End Global Container Logistics."
+  },
+  {
+    "id": "mar-torm-135",
+    "company": "TORM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "career@torm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Copenhagen, Denmark",
+    "careersUrl": "https://www.torm.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Refined Petroleum Product Tankers."
+  },
+  {
+    "id": "mar-torm-136",
+    "company": "TORM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@torm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Copenhagen, Denmark",
+    "careersUrl": "https://www.torm.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Refined Petroleum Product Tankers."
+  },
+  {
+    "id": "mar-d-s-norden-137",
+    "company": "D/S Norden",
+    "category": "Maritime / Offshore",
+    "contactEmail": "job@norden.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hellerup, Denmark",
+    "careersUrl": "https://www.norden.com",
+    "notes": "Primary sector: Dry Bulk & Tankers. Fleet: Dry Cargo Bulkers & MR Product Tankers."
+  },
+  {
+    "id": "mar-d-s-norden-138",
+    "company": "D/S Norden",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@norden.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hellerup, Denmark",
+    "careersUrl": "https://www.norden.com",
+    "notes": "Primary sector: Dry Bulk & Tankers. Fleet: Dry Cargo Bulkers & MR Product Tankers."
+  },
+  {
+    "id": "mar-unifeeder-139",
+    "company": "Unifeeder",
+    "category": "Maritime / Offshore",
+    "contactEmail": "career@unifeeder.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Aarhus, Denmark",
+    "careersUrl": "https://www.unifeeder.com",
+    "notes": "Primary sector: Feeder Container Line. Fleet: European Feeder & Multimodal Networks."
+  },
+  {
+    "id": "mar-unifeeder-140",
+    "company": "Unifeeder",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@unifeeder.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Aarhus, Denmark",
+    "careersUrl": "https://www.unifeeder.com",
+    "notes": "Primary sector: Feeder Container Line. Fleet: European Feeder & Multimodal Networks."
+  },
+  {
+    "id": "mar-hapag-lloyd-141",
+    "company": "Hapag-Lloyd",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@hlag.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.hapag-lloyd.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Modern Container Liner Operations."
+  },
+  {
+    "id": "mar-hapag-lloyd-142",
+    "company": "Hapag-Lloyd",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@hlag.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.hapag-lloyd.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Modern Container Liner Operations."
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-143",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.bs-shipmanagement.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Ship Management, Maritime Training & Crew."
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-144",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.bs-shipmanagement.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Ship Management, Maritime Training & Crew."
+  },
+  {
+    "id": "mar-columbia-shipmanagement-csm-145",
+    "company": "Columbia Shipmanagement (CSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@csm-cy.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.columbia-shipmanagement.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Integrated Marine Management & Logistics."
+  },
+  {
+    "id": "mar-columbia-shipmanagement-csm-146",
+    "company": "Columbia Shipmanagement (CSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "shipmanagement@csm-cy.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.columbia-shipmanagement.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: Integrated Marine Management & Logistics."
+  },
+  {
+    "id": "mar-peter-d-hle-schiffahrts-kg-147",
+    "company": "Peter D\u00f6hle Schiffahrts-KG",
+    "category": "Maritime / Offshore",
+    "contactEmail": "seapersonnel@doehle.de",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.doehle.de",
+    "notes": "Primary sector: Shipowner & Management. Fleet: Containerships, Bulkers & Multi-Purpose."
+  },
+  {
+    "id": "mar-peter-d-hle-schiffahrts-kg-148",
+    "company": "Peter D\u00f6hle Schiffahrts-KG",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@doehle.de",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Hamburg, Germany",
+    "careersUrl": "https://www.doehle.de",
+    "notes": "Primary sector: Shipowner & Management. Fleet: Containerships, Bulkers & Multi-Purpose."
+  },
+  {
+    "id": "mar-bbc-chartering-149",
+    "company": "BBC Chartering",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@bbc-chartering.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Leer, Germany",
+    "careersUrl": "https://www.bbc-chartering.com",
+    "notes": "Primary sector: Heavy Lift & Project Cargo. Fleet: Heavy Lift, Project Cargo & Multi-Purpose."
+  },
+  {
+    "id": "mar-bbc-chartering-150",
+    "company": "BBC Chartering",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@bbc-chartering.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Leer, Germany",
+    "careersUrl": "https://www.bbc-chartering.com",
+    "notes": "Primary sector: Heavy Lift & Project Cargo. Fleet: Heavy Lift, Project Cargo & Multi-Purpose."
+  },
+  {
+    "id": "mar-mediterranean-shipping-company-151",
+    "company": "Mediterranean Shipping Company (MSC)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew.recruitment@msc.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Geneva, Switzerland",
+    "careersUrl": "https://www.msc.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Container Shipping Line & Cruise Fleet."
+  },
+  {
+    "id": "mar-mediterranean-shipping-company-152",
+    "company": "Mediterranean Shipping Company (MSC)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@msc.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Geneva, Switzerland",
+    "careersUrl": "https://www.msc.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Container Shipping Line & Cruise Fleet."
+  },
+  {
+    "id": "mar-kuehne-nagel-ocean-division-153",
+    "company": "Kuehne + Nagel (Ocean Division)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@kuehne-nagel.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Schindellegi, Switzerland",
+    "careersUrl": "https://www.kuehne-nagel.com",
+    "notes": "Primary sector: Ocean Freight Forwarding. Fleet: Global Ocean Logistics & Sea Freight Forwarding."
+  },
+  {
+    "id": "mar-kuehne-nagel-ocean-division-154",
+    "company": "Kuehne + Nagel (Ocean Division)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corporate@kuehne-nagel.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Schindellegi, Switzerland",
+    "careersUrl": "https://www.kuehne-nagel.com",
+    "notes": "Primary sector: Ocean Freight Forwarding. Fleet: Global Ocean Logistics & Sea Freight Forwarding."
+  },
+  {
+    "id": "mar-cma-cgm-group-155",
+    "company": "CMA CGM Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@cma-cgm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Marseille, France",
+    "careersUrl": "https://www.cma-cgm.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Container Transports & Logistics."
+  },
+  {
+    "id": "mar-cma-cgm-group-156",
+    "company": "CMA CGM Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ho.contact@cma-cgm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Marseille, France",
+    "careersUrl": "https://www.cma-cgm.com",
+    "notes": "Primary sector: Container Liner. Fleet: Global Container Transports & Logistics."
+  },
+  {
+    "id": "mar-bourbon-marine-logistics-157",
+    "company": "Bourbon Marine & Logistics",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact-recruitment@bourbon-offshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Marseille, France",
+    "careersUrl": "https://www.bourbonoffshore.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSV, Crew Transit Launches & Tug."
+  },
+  {
+    "id": "mar-bourbon-marine-logistics-158",
+    "company": "Bourbon Marine & Logistics",
+    "category": "Maritime / Offshore",
+    "contactEmail": "communication@bourbon-offshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Marseille, France",
+    "careersUrl": "https://www.bourbonoffshore.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSV, Crew Transit Launches & Tug."
+  },
+  {
+    "id": "mar-bureau-veritas-bv-159",
+    "company": "Bureau Veritas (BV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@bureauveritas.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Neuilly-sur-Seine, France",
+    "careersUrl": "https://www.bureauveritas.com",
+    "notes": "Primary sector: Classification Society. Fleet: Marine Classification, Survey & Inspection."
+  },
+  {
+    "id": "mar-bureau-veritas-bv-160",
+    "company": "Bureau Veritas (BV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact.marine@bureauveritas.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Neuilly-sur-Seine, France",
+    "careersUrl": "https://www.bureauveritas.com",
+    "notes": "Primary sector: Classification Society. Fleet: Marine Classification, Survey & Inspection."
+  },
+  {
+    "id": "mar-louis-dreyfus-armateurs-lda-161",
+    "company": "Louis Dreyfus Armateurs (LDA)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recrutement@lda.fr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Suresnes, France",
+    "careersUrl": "https://www.lda.fr",
+    "notes": "Primary sector: Specialized Marine Transport. Fleet: Subsea Cable Lay, Dry Cargo & Marine Logistics."
+  },
+  {
+    "id": "mar-louis-dreyfus-armateurs-lda-162",
+    "company": "Louis Dreyfus Armateurs (LDA)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@lda.fr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Suresnes, France",
+    "careersUrl": "https://www.lda.fr",
+    "notes": "Primary sector: Specialized Marine Transport. Fleet: Subsea Cable Lay, Dry Cargo & Marine Logistics."
+  },
+  {
+    "id": "mar-v-group-v-ships-163",
+    "company": "V.Group / V.Ships",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewrecruit@vships.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.vgrouplimited.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: World's Largest Independent Ship Manager."
+  },
+  {
+    "id": "mar-v-group-v-ships-164",
+    "company": "V.Group / V.Ships",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@vgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.vgrouplimited.com",
+    "notes": "Primary sector: Ship Management & Crewing. Fleet: World's Largest Independent Ship Manager."
+  },
+  {
+    "id": "mar-zodiac-maritime-165",
+    "company": "Zodiac Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@zodiac-maritime.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.zodiac-maritime.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Tankers, Bulkers, Container & Gas Fleets."
+  },
+  {
+    "id": "mar-zodiac-maritime-166",
+    "company": "Zodiac Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@zodiac-maritime.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.zodiac-maritime.com",
+    "notes": "Primary sector: Diversified Shipping. Fleet: Tankers, Bulkers, Container & Gas Fleets."
+  },
+  {
+    "id": "mar-lloyd-s-register-lr-167",
+    "company": "Lloyd\u2019s Register (LR)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@lr.org",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.lr.org",
+    "notes": "Primary sector: Classification Society. Fleet: Marine Classification, Engineering & Risk."
+  },
+  {
+    "id": "mar-lloyd-s-register-lr-168",
+    "company": "Lloyd\u2019s Register (LR)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@lr.org",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.lr.org",
+    "notes": "Primary sector: Classification Society. Fleet: Marine Classification, Engineering & Risk."
+  },
+  {
+    "id": "mar-clarksons-plc-169",
+    "company": "Clarksons PLC",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@clarksons.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.clarksons.com",
+    "notes": "Primary sector: Shipbroking & Marine Advisory. Fleet: Integrated Shipbroking, Intelligence & Port Agency."
+  },
+  {
+    "id": "mar-clarksons-plc-170",
+    "company": "Clarksons PLC",
+    "category": "Maritime / Offshore",
+    "contactEmail": "research@clarksons.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "London, United Kingdom",
+    "careersUrl": "https://www.clarksons.com",
+    "notes": "Primary sector: Shipbroking & Marine Advisory. Fleet: Integrated Shipbroking, Intelligence & Port Agency."
+  },
+  {
+    "id": "mar-bibby-marine-171",
+    "company": "Bibby Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@bibbymarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Liverpool, United Kingdom",
+    "careersUrl": "https://www.bibbymarine.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Service Operation Vessels (SOV) & Walk-to-Work."
+  },
+  {
+    "id": "mar-bibby-marine-172",
+    "company": "Bibby Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "enquiries@bibbymarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Liverpool, United Kingdom",
+    "careersUrl": "https://www.bibbymarine.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Service Operation Vessels (SOV) & Walk-to-Work."
+  },
+  {
+    "id": "mar-grimaldi-group-173",
+    "company": "Grimaldi Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewrecruitment@grimaldi.napoli.it",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Naples, Italy",
+    "careersUrl": "https://www.grimaldi.napoli.it",
+    "notes": "Primary sector: Ro-Ro & Ferries. Fleet: Multipurpose Ro-Ro, Car Carriers & Ferries."
+  },
+  {
+    "id": "mar-grimaldi-group-174",
+    "company": "Grimaldi Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@grimaldi.napoli.it",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Naples, Italy",
+    "careersUrl": "https://www.grimaldi.napoli.it",
+    "notes": "Primary sector: Ro-Ro & Ferries. Fleet: Multipurpose Ro-Ro, Car Carriers & Ferries."
+  },
+  {
+    "id": "mar-saipem-175",
+    "company": "Saipem",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr.recruitment@saipem.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Milan, Italy",
+    "careersUrl": "https://www.saipem.com",
+    "notes": "Primary sector: Subsea & Offshore Engineering. Fleet: Deepwater Pipelaying, Field Development Rigs."
+  },
+  {
+    "id": "mar-saipem-176",
+    "company": "Saipem",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corporate@saipem.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Milan, Italy",
+    "careersUrl": "https://www.saipem.com",
+    "notes": "Primary sector: Subsea & Offshore Engineering. Fleet: Deepwater Pipelaying, Field Development Rigs."
+  },
+  {
+    "id": "mar-fincantieri-177",
+    "company": "Fincantieri",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@fincantieri.it",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Trieste, Italy",
+    "careersUrl": "https://www.fincantieri.it",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Cruise Liners, Naval Vessels & Specialized OSVs."
+  },
+  {
+    "id": "mar-fincantieri-178",
+    "company": "Fincantieri",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@fincantieri.it",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Trieste, Italy",
+    "careersUrl": "https://www.fincantieri.it",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Cruise Liners, Naval Vessels & Specialized OSVs."
+  },
+  {
+    "id": "mar-rina-179",
+    "company": "RINA",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@rina.org",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Genoa, Italy",
+    "careersUrl": "https://www.rina.org",
+    "notes": "Primary sector: Classification Society. Fleet: Ship Classification, Energy & Decarbonization."
+  },
+  {
+    "id": "mar-rina-180",
+    "company": "RINA",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@rina.org",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Genoa, Italy",
+    "careersUrl": "https://www.rina.org",
+    "notes": "Primary sector: Classification Society. Fleet: Ship Classification, Energy & Decarbonization."
+  },
+  {
+    "id": "mar-royal-boskalis-westminster-181",
+    "company": "Royal Boskalis Westminster",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@boskalis.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Papendrecht, Netherlands",
+    "careersUrl": "https://www.boskalis.com",
+    "notes": "Primary sector: Dredging & Marine Salvage. Fleet: Heavy Ocean Transport, Dredging, Salvage."
+  },
+  {
+    "id": "mar-royal-boskalis-westminster-182",
+    "company": "Royal Boskalis Westminster",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@boskalis.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Papendrecht, Netherlands",
+    "careersUrl": "https://www.boskalis.com",
+    "notes": "Primary sector: Dredging & Marine Salvage. Fleet: Heavy Ocean Transport, Dredging, Salvage."
+  },
+  {
+    "id": "mar-royal-van-oord-183",
+    "company": "Royal Van Oord",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@vanoord.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rotterdam, Netherlands",
+    "careersUrl": "https://www.vanoord.com",
+    "notes": "Primary sector: Offshore Marine Works. Fleet: Offshore Wind Installation, Cable Lay & Dredging."
+  },
+  {
+    "id": "mar-royal-van-oord-184",
+    "company": "Royal Van Oord",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@vanoord.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rotterdam, Netherlands",
+    "careersUrl": "https://www.vanoord.com",
+    "notes": "Primary sector: Offshore Marine Works. Fleet: Offshore Wind Installation, Cable Lay & Dredging."
+  },
+  {
+    "id": "mar-damen-shipyards-group-185",
+    "company": "Damen Shipyards Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "career@damen.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Gorinchem, Netherlands",
+    "careersUrl": "https://www.damen.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Tugs, Workboats, Patrol Vessels & Fast Ferries."
+  },
+  {
+    "id": "mar-damen-shipyards-group-186",
+    "company": "Damen Shipyards Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@damen.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Gorinchem, Netherlands",
+    "careersUrl": "https://www.damen.com",
+    "notes": "Primary sector: Shipbuilding & Engineering. Fleet: Tugs, Workboats, Patrol Vessels & Fast Ferries."
+  },
+  {
+    "id": "mar-smit-lamnalco-187",
+    "company": "Smit Lamnalco",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@smitlamnalco.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rotterdam, Netherlands",
+    "careersUrl": "https://www.smitlamnalco.com",
+    "notes": "Primary sector: Harbor Towage & Terminal Support. Fleet: LNG/Oil Terminal Support Tugs & Pilotage."
+  },
+  {
+    "id": "mar-smit-lamnalco-188",
+    "company": "Smit Lamnalco",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@smitlamnalco.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rotterdam, Netherlands",
+    "careersUrl": "https://www.smitlamnalco.com",
+    "notes": "Primary sector: Harbor Towage & Terminal Support. Fleet: LNG/Oil Terminal Support Tugs & Pilotage."
+  },
+  {
+    "id": "mar-kotug-international-189",
+    "company": "Kotug International",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@kotug.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rotterdam, Netherlands",
+    "careersUrl": "https://www.kotug.com",
+    "notes": "Primary sector: Harbor Towage & Innovation. Fleet: Rotortugs, Inland Pusher Tugs & Offshore Towing."
+  },
+  {
+    "id": "mar-kotug-international-190",
+    "company": "Kotug International",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@kotug.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rotterdam, Netherlands",
+    "careersUrl": "https://www.kotug.com",
+    "notes": "Primary sector: Harbor Towage & Innovation. Fleet: Rotortugs, Inland Pusher Tugs & Offshore Towing."
+  },
+  {
+    "id": "mar-dp-world-p-o-maritime-191",
+    "company": "DP World / P&O Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@dpworld.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.dpworld.com",
+    "notes": "Primary sector: Port Logistics & Towage. Fleet: Global Marine Terminals, Port Towage & Tugs."
+  },
+  {
+    "id": "mar-dp-world-p-o-maritime-192",
+    "company": "DP World / P&O Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@dpworld.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.dpworld.com",
+    "notes": "Primary sector: Port Logistics & Towage. Fleet: Global Marine Terminals, Port Towage & Tugs."
+  },
+  {
+    "id": "mar-global-feeder-shipping-gfs-193",
+    "company": "Global Feeder Shipping (GFS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@globalfeeders.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.globalfeeders.com",
+    "notes": "Primary sector: Feeder Container Line. Fleet: Middle East, Red Sea & Subcontinent Feeders."
+  },
+  {
+    "id": "mar-global-feeder-shipping-gfs-194",
+    "company": "Global Feeder Shipping (GFS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@globalfeeders.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.globalfeeders.com",
+    "notes": "Primary sector: Feeder Container Line. Fleet: Middle East, Red Sea & Subcontinent Feeders."
+  },
+  {
+    "id": "mar-zakher-marine-international-zm-195",
+    "company": "Zakher Marine International (ZMI)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@zmi.ae",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Abu Dhabi, United Arab Emirates",
+    "careersUrl": "https://www.zmi.ae",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Jack-Up Barges, AHTS, Crew & Supply Vessels."
+  },
+  {
+    "id": "mar-zakher-marine-international-zm-196",
+    "company": "Zakher Marine International (ZMI)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@zmi.ae",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Abu Dhabi, United Arab Emirates",
+    "careersUrl": "https://www.zmi.ae",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Jack-Up Barges, AHTS, Crew & Supply Vessels."
+  },
+  {
+    "id": "mar-stanford-marine-group-197",
+    "company": "Stanford Marine Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@stanfordmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.stanfordmarine.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, Platform Supply & Fast Crew Transfer."
+  },
+  {
+    "id": "mar-stanford-marine-group-198",
+    "company": "Stanford Marine Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@stanfordmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.stanfordmarine.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, Platform Supply & Fast Crew Transfer."
+  },
+  {
+    "id": "mar-allianz-marine-services-199",
+    "company": "Allianz Marine Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@allianzmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.allianzmarine.com",
+    "notes": "Primary sector: Offshore Support & Towage. Fleet: Tugboats, Offshore Cargo Barges & Workboats."
+  },
+  {
+    "id": "mar-allianz-marine-services-200",
+    "company": "Allianz Marine Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@allianzmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Dubai, United Arab Emirates",
+    "careersUrl": "https://www.allianzmarine.com",
+    "notes": "Primary sector: Offshore Support & Towage. Fleet: Tugboats, Offshore Cargo Barges & Workboats."
+  },
+  {
+    "id": "mar-adnoc-logistics-services-201",
+    "company": "ADNOC Logistics & Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@adnocls.ae",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Abu Dhabi, United Arab Emirates",
+    "careersUrl": "https://www.adnocls.ae",
+    "notes": "Primary sector: Energy Shipping & Offshore. Fleet: Crude/Gas Tankers & Offshore Logistics."
+  },
+  {
+    "id": "mar-adnoc-logistics-services-202",
+    "company": "ADNOC Logistics & Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@adnocls.ae",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Abu Dhabi, United Arab Emirates",
+    "careersUrl": "https://www.adnocls.ae",
+    "notes": "Primary sector: Energy Shipping & Offshore. Fleet: Crude/Gas Tankers & Offshore Logistics."
+  },
+  {
+    "id": "mar-bahri-203",
+    "company": "Bahri",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@bahri.sa",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Riyadh, Saudi Arabia",
+    "careersUrl": "https://www.bahri.sa",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: National Fleet of VLCCs, Chemical, Dry Bulk."
+  },
+  {
+    "id": "mar-bahri-204",
+    "company": "Bahri",
+    "category": "Maritime / Offshore",
+    "contactEmail": "communication@bahri.sa",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Riyadh, Saudi Arabia",
+    "careersUrl": "https://www.bahri.sa",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: National Fleet of VLCCs, Chemical, Dry Bulk."
+  },
+  {
+    "id": "mar-rawabi-vallianz-offshore-rvos-205",
+    "company": "Rawabi Vallianz Offshore (RVOS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@rawabivallianz.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Al Khobar, Saudi Arabia",
+    "careersUrl": "https://www.rawabivallianz.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Major Gulf Offshore Supply & Maintenance Fleet."
+  },
+  {
+    "id": "mar-rawabi-vallianz-offshore-rvos-206",
+    "company": "Rawabi Vallianz Offshore (RVOS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@rawabivallianz.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Al Khobar, Saudi Arabia",
+    "careersUrl": "https://www.rawabivallianz.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Major Gulf Offshore Supply & Maintenance Fleet."
+  },
+  {
+    "id": "mar-zamil-offshore-services-207",
+    "company": "Zamil Offshore Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "jobs@zamiloffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Al Khobar, Saudi Arabia",
+    "careersUrl": "https://www.zamiloffshore.com",
+    "notes": "Primary sector: Offshore Support & Shipbuilding. Fleet: OSV Operations, Port Fleet & Ship Maintenance."
+  },
+  {
+    "id": "mar-zamil-offshore-services-208",
+    "company": "Zamil Offshore Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@zamiloffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Al Khobar, Saudi Arabia",
+    "careersUrl": "https://www.zamiloffshore.com",
+    "notes": "Primary sector: Offshore Support & Shipbuilding. Fleet: OSV Operations, Port Fleet & Ship Maintenance."
+  },
+  {
+    "id": "mar-nakilat-qatar-gas-transport-209",
+    "company": "Nakilat (Qatar Gas Transport)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@nakilat.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Doha, Qatar",
+    "careersUrl": "https://www.nakilat.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: World's Largest Dedicated LNG Carrier Fleet."
+  },
+  {
+    "id": "mar-nakilat-qatar-gas-transport-210",
+    "company": "Nakilat (Qatar Gas Transport)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@nakilat.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Doha, Qatar",
+    "careersUrl": "https://www.nakilat.com",
+    "notes": "Primary sector: Wet & Dry Bulk / Gas. Fleet: World's Largest Dedicated LNG Carrier Fleet."
+  },
+  {
+    "id": "mar-milaha-qatar-navigation-211",
+    "company": "Milaha (Qatar Navigation)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@milaha.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Doha, Qatar",
+    "careersUrl": "https://www.milaha.com",
+    "notes": "Primary sector: Diversified Maritime. Fleet: Gas Transport, Offshore, Container & Logistics."
+  },
+  {
+    "id": "mar-milaha-qatar-navigation-212",
+    "company": "Milaha (Qatar Navigation)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "communication@milaha.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Doha, Qatar",
+    "careersUrl": "https://www.milaha.com",
+    "notes": "Primary sector: Diversified Maritime. Fleet: Gas Transport, Offshore, Container & Logistics."
+  },
+  {
+    "id": "mar-tidewater-marine-213",
+    "company": "Tidewater Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@tdw.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Houston, TX, United States",
+    "careersUrl": "https://www.tdw.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: World's Largest Commercial OSV Fleet."
+  },
+  {
+    "id": "mar-tidewater-marine-214",
+    "company": "Tidewater Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@tdw.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Houston, TX, United States",
+    "careersUrl": "https://www.tdw.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: World's Largest Commercial OSV Fleet."
+  },
+  {
+    "id": "mar-edison-chouest-offshore-eco-215",
+    "company": "Edison Chouest Offshore (ECO)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@chouest.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Cut Off, LA, United States",
+    "careersUrl": "https://www.chouest.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Deepwater AHTS, Subsea CSV & Fast Supply."
+  },
+  {
+    "id": "mar-edison-chouest-offshore-eco-216",
+    "company": "Edison Chouest Offshore (ECO)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@chouest.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Cut Off, LA, United States",
+    "careersUrl": "https://www.chouest.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Deepwater AHTS, Subsea CSV & Fast Supply."
+  },
+  {
+    "id": "mar-hornbeck-offshore-services-hos-217",
+    "company": "Hornbeck Offshore Services (HOS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "offshorejobs@hornbeckoffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Covington, LA, United States",
+    "careersUrl": "https://www.hornbeckoffshore.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: High-Spec Deepwater MPSVs & Heavy PSVs."
+  },
+  {
+    "id": "mar-hornbeck-offshore-services-hos-218",
+    "company": "Hornbeck Offshore Services (HOS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@hornbeckoffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Covington, LA, United States",
+    "careersUrl": "https://www.hornbeckoffshore.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: High-Spec Deepwater MPSVs & Heavy PSVs."
+  },
+  {
+    "id": "mar-seacor-marine-219",
+    "company": "SEACOR Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@seacormarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Houston, TX, United States",
+    "careersUrl": "https://www.seacormarine.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Fast Support Vessels, Liftboats, Crew Boats."
+  },
+  {
+    "id": "mar-seacor-marine-220",
+    "company": "SEACOR Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "corporate@seacormarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Houston, TX, United States",
+    "careersUrl": "https://www.seacormarine.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Fast Support Vessels, Liftboats, Crew Boats."
+  },
+  {
+    "id": "mar-crowley-maritime-221",
+    "company": "Crowley Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "mariners@crowley.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Jacksonville, FL, United States",
+    "careersUrl": "https://www.crowley.com",
+    "notes": "Primary sector: Jones Act & Ocean Towage. Fleet: Ocean Cargo, Fuel Barges, Tugs & Offshore."
+  },
+  {
+    "id": "mar-crowley-maritime-222",
+    "company": "Crowley Maritime",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@crowley.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Jacksonville, FL, United States",
+    "careersUrl": "https://www.crowley.com",
+    "notes": "Primary sector: Jones Act & Ocean Towage. Fleet: Ocean Cargo, Fuel Barges, Tugs & Offshore."
+  },
+  {
+    "id": "mar-kirby-corporation-223",
+    "company": "Kirby Corporation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@kirbycorp.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Houston, TX, United States",
+    "careersUrl": "https://www.kirbycorp.com",
+    "notes": "Primary sector: Inland & Coastal Tank Barges. Fleet: Largest US Tank Barge & Marine Towing Fleet."
+  },
+  {
+    "id": "mar-kirby-corporation-224",
+    "company": "Kirby Corporation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@kirbycorp.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Houston, TX, United States",
+    "careersUrl": "https://www.kirbycorp.com",
+    "notes": "Primary sector: Inland & Coastal Tank Barges. Fleet: Largest US Tank Barge & Marine Towing Fleet."
+  },
+  {
+    "id": "mar-american-bureau-of-shipping-ab-225",
+    "company": "American Bureau of Shipping (ABS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@eagle.org",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Spring, TX, United States",
+    "careersUrl": "https://www.eagle.org",
+    "notes": "Primary sector: Classification Society. Fleet: Marine Classification, Safety & Tech Survey."
+  },
+  {
+    "id": "mar-american-bureau-of-shipping-ab-226",
+    "company": "American Bureau of Shipping (ABS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "abs-worldhq@eagle.org",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Spring, TX, United States",
+    "careersUrl": "https://www.eagle.org",
+    "notes": "Primary sector: Classification Society. Fleet: Marine Classification, Safety & Tech Survey."
+  },
+  {
+    "id": "mar-algoma-central-corporation-227",
+    "company": "Algoma Central Corporation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "marinehr@algonet.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "St. Catharines, ON, Canada",
+    "careersUrl": "https://www.algonet.com",
+    "notes": "Primary sector: Dry Bulk & Domestic Tankers. Fleet: Great Lakes & Coastal Self-Unloading Bulkers."
+  },
+  {
+    "id": "mar-algoma-central-corporation-228",
+    "company": "Algoma Central Corporation",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@algonet.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "St. Catharines, ON, Canada",
+    "careersUrl": "https://www.algonet.com",
+    "notes": "Primary sector: Dry Bulk & Domestic Tankers. Fleet: Great Lakes & Coastal Self-Unloading Bulkers."
+  },
+  {
+    "id": "mar-csl-group-canada-steamship-lin-229",
+    "company": "CSL Group (Canada Steamship Lines)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewcanada@cslships.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Montreal, QC, Canada",
+    "careersUrl": "https://www.cslships.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Specialized Self-Unloading Bulkers Worldwide."
+  },
+  {
+    "id": "mar-csl-group-canada-steamship-lin-230",
+    "company": "CSL Group (Canada Steamship Lines)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@cslships.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Montreal, QC, Canada",
+    "careersUrl": "https://www.cslships.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Specialized Self-Unloading Bulkers Worldwide."
+  },
+  {
+    "id": "mar-seaspan-marine-231",
+    "company": "Seaspan Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@seaspan.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "North Vancouver, BC, Canada",
+    "careersUrl": "https://www.seaspan.com",
+    "notes": "Primary sector: Coastal Towage & Shipyards. Fleet: Coastal Towing, Barging & Major Shipyards."
+  },
+  {
+    "id": "mar-seaspan-marine-232",
+    "company": "Seaspan Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@seaspan.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "North Vancouver, BC, Canada",
+    "careersUrl": "https://www.seaspan.com",
+    "notes": "Primary sector: Coastal Towage & Shipyards. Fleet: Coastal Towing, Barging & Major Shipyards."
+  },
+  {
+    "id": "mar-transpetro-petrobras-marine-233",
+    "company": "Transpetro (Petrobras Marine)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "rh@transpetro.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rio de Janeiro, Brazil",
+    "careersUrl": "https://www.transpetro.com.br",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude Oil, Fuel Oil, Clean Products & LPG."
+  },
+  {
+    "id": "mar-transpetro-petrobras-marine-234",
+    "company": "Transpetro (Petrobras Marine)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "faleconosco@transpetro.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rio de Janeiro, Brazil",
+    "careersUrl": "https://www.transpetro.com.br",
+    "notes": "Primary sector: Wet & Dry Bulk / Tankers. Fleet: Crude Oil, Fuel Oil, Clean Products & LPG."
+  },
+  {
+    "id": "mar-wilson-sons-235",
+    "company": "Wilson Sons",
+    "category": "Maritime / Offshore",
+    "contactEmail": "vagas@wilsonsons.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rio de Janeiro, Brazil",
+    "careersUrl": "https://www.wilsonsons.com.br",
+    "notes": "Primary sector: Harbor Towage & Offshore Ops. Fleet: Towage Fleets, Offshore Supply & Terminals."
+  },
+  {
+    "id": "mar-wilson-sons-236",
+    "company": "Wilson Sons",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contato@wilsonsons.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rio de Janeiro, Brazil",
+    "careersUrl": "https://www.wilsonsons.com.br",
+    "notes": "Primary sector: Harbor Towage & Offshore Ops. Fleet: Towage Fleets, Offshore Supply & Terminals."
+  },
+  {
+    "id": "mar-cbo-companhia-brasileira-de-of-237",
+    "company": "CBO (Companhia Brasileira de Offshore)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "rh@embarquecbo.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rio de Janeiro, Brazil",
+    "careersUrl": "https://www.embarquecbo.com.br",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Brazilian Flag AHTS, PSV & RSV Fleets."
+  },
+  {
+    "id": "mar-cbo-companhia-brasileira-de-of-238",
+    "company": "CBO (Companhia Brasileira de Offshore)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "cbo@embarquecbo.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Rio de Janeiro, Brazil",
+    "careersUrl": "https://www.embarquecbo.com.br",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Brazilian Flag AHTS, PSV & RSV Fleets."
+  },
+  {
+    "id": "mar-bram-offshore-239",
+    "company": "Bram Offshore",
+    "category": "Maritime / Offshore",
+    "contactEmail": "curriculo@bramoffshore.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Maca\u00e9, Brazil",
+    "careersUrl": "https://www.bramoffshore.com.br",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Deepwater PSVs Supporting Offshore Basins."
+  },
+  {
+    "id": "mar-bram-offshore-240",
+    "company": "Bram Offshore",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contato@bramoffshore.com.br",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Maca\u00e9, Brazil",
+    "careersUrl": "https://www.bramoffshore.com.br",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Deepwater PSVs Supporting Offshore Basins."
+  },
+  {
+    "id": "mar-marine-platforms-limited-mpl-241",
+    "company": "Marine Platforms Limited (MPL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@marineplatforms.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.marineplatforms.com",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: Deepwater MPSVs, ROV & Subsea Well Support."
+  },
+  {
+    "id": "mar-marine-platforms-limited-mpl-242",
+    "company": "Marine Platforms Limited (MPL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@marineplatforms.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.marineplatforms.com",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: Deepwater MPSVs, ROV & Subsea Well Support."
+  },
+  {
+    "id": "mar-caverton-offshore-support-grou-243",
+    "company": "Caverton Offshore Support Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@caverton-offshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.caverton-offshore.com",
+    "notes": "Primary sector: Offshore Support & Marine Logistics. Fleet: Offshore Crew Transport, Barges & Support."
+  },
+  {
+    "id": "mar-caverton-offshore-support-grou-244",
+    "company": "Caverton Offshore Support Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@caverton-offshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.caverton-offshore.com",
+    "notes": "Primary sector: Offshore Support & Marine Logistics. Fleet: Offshore Crew Transport, Barges & Support."
+  },
+  {
+    "id": "mar-ocean-marine-solutions-oms-245",
+    "company": "Ocean Marine Solutions (OMS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@oceanmarinesolutions.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.oceanmarinesolutions.com",
+    "notes": "Primary sector: Security Escort & Marine Patrol. Fleet: Secure Anchorage Area Patrol, Escort Vessels."
+  },
+  {
+    "id": "mar-ocean-marine-solutions-oms-246",
+    "company": "Ocean Marine Solutions (OMS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@oceanmarinesolutions.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.oceanmarinesolutions.com",
+    "notes": "Primary sector: Security Escort & Marine Patrol. Fleet: Secure Anchorage Area Patrol, Escort Vessels."
+  },
+  {
+    "id": "mar-pacific-maritime-services-247",
+    "company": "Pacific Maritime Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@pacificmaritimeservices.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.pacificmaritimeservices.com",
+    "notes": "Primary sector: Cabotage & Harbor Towage. Fleet: Port Towage, Mooring Crafts & Coastal Supply."
+  },
+  {
+    "id": "mar-pacific-maritime-services-248",
+    "company": "Pacific Maritime Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@pacificmaritimeservices.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.pacificmaritimeservices.com",
+    "notes": "Primary sector: Cabotage & Harbor Towage. Fleet: Port Towage, Mooring Crafts & Coastal Supply."
+  },
+  {
+    "id": "mar-starzs-marine-and-engineering-249",
+    "company": "Starzs Marine and Engineering",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@starzs-group.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://www.starzs-group.com",
+    "notes": "Primary sector: Offshore Support & Shipyards. Fleet: OSVs, Pilot Boats & Onne Naval Ship Repair."
+  },
+  {
+    "id": "mar-starzs-marine-and-engineering-250",
+    "company": "Starzs Marine and Engineering",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@starzs-group.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://www.starzs-group.com",
+    "notes": "Primary sector: Offshore Support & Shipyards. Fleet: OSVs, Pilot Boats & Onne Naval Ship Repair."
+  },
+  {
+    "id": "mar-tilone-subsea-limited-251",
+    "company": "Tilone Subsea Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@tilonesubsea.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://www.tilonesubsea.com",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: ROV Operations, Air & Mixed Gas Diving, DSV."
+  },
+  {
+    "id": "mar-tilone-subsea-limited-252",
+    "company": "Tilone Subsea Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@tilonesubsea.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://www.tilonesubsea.com",
+    "notes": "Primary sector: Offshore Support & Subsea. Fleet: ROV Operations, Air & Mixed Gas Diving, DSV."
+  },
+  {
+    "id": "mar-west-african-ventures-wav-253",
+    "company": "West African Ventures (WAV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@waventures.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.waventures.com",
+    "notes": "Primary sector: Marine Construction & Offshore. Fleet: Derrick Pipelay Barges, AHTS & Towing."
+  },
+  {
+    "id": "mar-west-african-ventures-wav-254",
+    "company": "West African Ventures (WAV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@waventures.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.waventures.com",
+    "notes": "Primary sector: Marine Construction & Offshore. Fleet: Derrick Pipelay Barges, AHTS & Towing."
+  },
+  {
+    "id": "mar-homeland-integrated-offshore-h-255",
+    "company": "Homeland Integrated Offshore (HIOS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment@homelandios.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.homelandios.com",
+    "notes": "Primary sector: Security Escort & Fast Crew. Fleet: Fast Patrol Boats, Escort & Platform Crew."
+  },
+  {
+    "id": "mar-homeland-integrated-offshore-h-256",
+    "company": "Homeland Integrated Offshore (HIOS)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@homelandios.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.homelandios.com",
+    "notes": "Primary sector: Security Escort & Fast Crew. Fleet: Fast Patrol Boats, Escort & Platform Crew."
+  },
+  {
+    "id": "mar-ab-offshore-marine-services-257",
+    "company": "AB Offshore Marine Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@aboffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.aboffshore.com",
+    "notes": "Primary sector: Offshore Support & Brokerage. Fleet: Platform Supply, Anchor Handling & Logistics."
+  },
+  {
+    "id": "mar-ab-offshore-marine-services-258",
+    "company": "AB Offshore Marine Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@aboffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.aboffshore.com",
+    "notes": "Primary sector: Offshore Support & Brokerage. Fleet: Platform Supply, Anchor Handling & Logistics."
+  },
+  {
+    "id": "mar-gog-marine-limited-259",
+    "company": "GOG Marine Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "operations@gogmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.gogmarine.com",
+    "notes": "Primary sector: Coastal Tankers & Bunkering. Fleet: Cabotage Bunkering, Fuel Supply & Tankers."
+  },
+  {
+    "id": "mar-gog-marine-limited-260",
+    "company": "GOG Marine Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@gogmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.gogmarine.com",
+    "notes": "Primary sector: Coastal Tankers & Bunkering. Fleet: Cabotage Bunkering, Fuel Supply & Tankers."
+  },
+  {
+    "id": "mar-coastal-marine-limited-261",
+    "company": "Coastal Marine Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@coastalmarine.ng",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.coastalmarine.ng",
+    "notes": "Primary sector: Coastal Tankers & Barges. Fleet: Petroleum Products Cabotage & Fuel Barges."
+  },
+  {
+    "id": "mar-coastal-marine-limited-262",
+    "company": "Coastal Marine Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@coastalmarine.ng",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.coastalmarine.ng",
+    "notes": "Primary sector: Coastal Tankers & Barges. Fleet: Petroleum Products Cabotage & Fuel Barges."
+  },
+  {
+    "id": "mar-fymak-marine-and-oil-services-263",
+    "company": "Fymak Marine and Oil Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr@fymakmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://www.fymakmarine.com",
+    "notes": "Primary sector: Towage & Offshore Barges. Fleet: Ocean-Going Tugboats, Cargo Barges & Crews."
+  },
+  {
+    "id": "mar-fymak-marine-and-oil-services-264",
+    "company": "Fymak Marine and Oil Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@fymakmarine.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Port Harcourt, Nigeria",
+    "careersUrl": "https://www.fymakmarine.com",
+    "notes": "Primary sector: Towage & Offshore Barges. Fleet: Ocean-Going Tugboats, Cargo Barges & Crews."
+  },
+  {
+    "id": "mar-utm-offshore-limited-265",
+    "company": "UTM Offshore Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@utmoffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.utmoffshore.com",
+    "notes": "Primary sector: Offshore Marine & FLNG. Fleet: Marine Support Services & Floating LNG Infrastructure."
+  },
+  {
+    "id": "mar-utm-offshore-limited-266",
+    "company": "UTM Offshore Limited",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@utmoffshore.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.utmoffshore.com",
+    "notes": "Primary sector: Offshore Marine & FLNG. Fleet: Marine Support Services & Floating LNG Infrastructure."
+  },
+  {
+    "id": "mar-nigerdock-267",
+    "company": "Nigerdock",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@nigerdock.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.nigerdock.com",
+    "notes": "Primary sector: Shipyard & Offshore Engineering. Fleet: Snake Island Integrated Drydock & Heavy Fab."
+  },
+  {
+    "id": "mar-nigerdock-268",
+    "company": "Nigerdock",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@nigerdock.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Lagos, Nigeria",
+    "careersUrl": "https://www.nigerdock.com",
+    "notes": "Primary sector: Shipyard & Offshore Engineering. Fleet: Snake Island Integrated Drydock & Heavy Fab."
+  },
+  {
+    "id": "mar-suez-canal-authority-fleet-div-269",
+    "company": "Suez Canal Authority (Fleet Division)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "marine@suezcanal.gov.eg",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Ismailia, Egypt",
+    "careersUrl": "https://www.suezcanal.gov.eg",
+    "notes": "Primary sector: Canal Operations & Towage. Fleet: Transit Escort Tugs, Dredgers & Salvage Fleet."
+  },
+  {
+    "id": "mar-suez-canal-authority-fleet-div-270",
+    "company": "Suez Canal Authority (Fleet Division)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@suezcanal.gov.eg",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Ismailia, Egypt",
+    "careersUrl": "https://www.suezcanal.gov.eg",
+    "notes": "Primary sector: Canal Operations & Towage. Fleet: Transit Escort Tugs, Dredgers & Salvage Fleet."
+  },
+  {
+    "id": "mar-maridive-oil-services-271",
+    "company": "Maridive & Oil Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@maridive.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Alexandria, Egypt",
+    "careersUrl": "https://www.maridive.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSVs, Workboats & Diving Marine Fleets."
+  },
+  {
+    "id": "mar-maridive-oil-services-272",
+    "company": "Maridive & Oil Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "contact@maridive.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Alexandria, Egypt",
+    "careersUrl": "https://www.maridive.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSVs, Workboats & Diving Marine Fleets."
+  },
+  {
+    "id": "mar-pan-marine-petroleum-services-273",
+    "company": "Pan Marine Petroleum Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@pan-marine.net",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Alexandria, Egypt",
+    "careersUrl": "https://www.pan-marine.net",
+    "notes": "Primary sector: Offshore Marine Logistics. Fleet: Offshore Supply Vessels, Shorebases & Logistics."
+  },
+  {
+    "id": "mar-pan-marine-petroleum-services-274",
+    "company": "Pan Marine Petroleum Services",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@pan-marine.net",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Alexandria, Egypt",
+    "careersUrl": "https://www.pan-marine.net",
+    "notes": "Primary sector: Offshore Marine Logistics. Fleet: Offshore Supply Vessels, Shorebases & Logistics."
+  },
+  {
+    "id": "mar-african-marine-solutions-amsol-275",
+    "company": "African Marine Solutions (AMSOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers@amsol.co.za",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Cape Town, South Africa",
+    "careersUrl": "https://www.amsol.co.za",
+    "notes": "Primary sector: Towage, Salvage & OSV. Fleet: Emergency Towing, Salvage, Offshore Tankers."
+  },
+  {
+    "id": "mar-african-marine-solutions-amsol-276",
+    "company": "African Marine Solutions (AMSOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@amsol.co.za",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Cape Town, South Africa",
+    "careersUrl": "https://www.amsol.co.za",
+    "notes": "Primary sector: Towage, Salvage & OSV. Fleet: Emergency Towing, Salvage, Offshore Tankers."
+  },
+  {
+    "id": "mar-grindrod-shipping-277",
+    "company": "Grindrod Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crew@grindrodshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Durban, South Africa",
+    "careersUrl": "https://www.grindrodshipping.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Handysize & Supramax Dry Bulk Fleet."
+  },
+  {
+    "id": "mar-grindrod-shipping-278",
+    "company": "Grindrod Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@grindrodshipping.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Durban, South Africa",
+    "careersUrl": "https://www.grindrodshipping.com",
+    "notes": "Primary sector: Dry Bulk Carrier. Fleet: Handysize & Supramax Dry Bulk Fleet."
+  },
+  {
+    "id": "mar-sonasurf-bourbon-sonangol-jv-279",
+    "company": "Sonasurf (Bourbon Sonangol JV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@sonasurf.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Luanda, Angola",
+    "careersUrl": "https://www.sonasurf.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSVs & Fast Crew Transit Launches."
+  },
+  {
+    "id": "mar-sonasurf-bourbon-sonangol-jv-280",
+    "company": "Sonasurf (Bourbon Sonangol JV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@sonasurf.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Luanda, Angola",
+    "careersUrl": "https://www.sonasurf.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: AHTS, PSVs & Fast Crew Transit Launches."
+  },
+  {
+    "id": "mar-sonatide-tidewater-sonangol-jv-281",
+    "company": "Sonatide (Tidewater Sonangol JV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@sonatide.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Luanda, Angola",
+    "careersUrl": "https://www.sonatide.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Offshore Supply Vessels Serving Angolan Basins."
+  },
+  {
+    "id": "mar-sonatide-tidewater-sonangol-jv-282",
+    "company": "Sonatide (Tidewater Sonangol JV)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@sonatide.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Vessel Superintendent"
+    ],
+    "location": "Luanda, Angola",
+    "careersUrl": "https://www.sonatide.com",
+    "notes": "Primary sector: Offshore Support (OSV). Fleet: Offshore Supply Vessels Serving Angolan Basins."
+  },
+  {
+    "id": "mar-nigeria-lng-limited-nlng-283",
+    "company": "Nigeria LNG Limited (NLNG)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "vendorservices@nlng.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://www.nlng.com/careers/",
+    "notes": "Segment: LNG / energy shipping. Supplier portal helpdesk (not recruitment)"
+  },
+  {
+    "id": "mar-sifax-group-sifax-marine-284",
+    "company": "SIFAX Group / SIFAX Marine",
+    "category": "Maritime / Offshore",
+    "contactEmail": "info@sifaxgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://sifaxgroup.com/contact-us/",
+    "notes": "Segment: Marine / offshore support / shipping. General corporate contact"
+  },
+  {
+    "id": "mar-hapag-lloyd-nigeria-shipping-l-285",
+    "company": "Hapag-Lloyd Nigeria Shipping Ltd",
+    "category": "Maritime / Offshore",
+    "contactEmail": "nigeria@service.hlag.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://www.hapag-lloyd.com/en/services-information/offices-localinfo/africa/nigeria/lagos.html",
+    "notes": "Segment: Container shipping. Customer service / sales"
+  },
+  {
+    "id": "mar-hapag-lloyd-nigeria-shipping-l-286",
+    "company": "Hapag-Lloyd Nigeria Shipping Ltd",
+    "category": "Maritime / Offshore",
+    "contactEmail": "nigeria@sales.hlag.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://www.hapag-lloyd.com/en/services-information/offices-localinfo/africa/nigeria/lagos.html",
+    "notes": "Segment: Container shipping. Customer service / sales"
+  },
+  {
+    "id": "mar-msc-nigeria-287",
+    "company": "MSC Nigeria",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ng401-info@msc.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://www.msc.com/-/media/files/msc-cargo/msc-solutions/trades/africa-intermodal-solutions.pdf",
+    "notes": "Segment: Container shipping. Lagos office / information"
+  },
+  {
+    "id": "mar-pacific-international-lines-pi-288",
+    "company": "Pacific International Lines (PIL) Nigeria",
+    "category": "Maritime / Offshore",
+    "contactEmail": "austin.aliu@lag.pilship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://www.pilship.com/find-your-local-offices/offices-detail-page/?port_code=NGLOS",
+    "notes": "Segment: Container shipping / seafaring. Nigeria office contacts"
+  },
+  {
+    "id": "mar-pacific-international-lines-pi-289",
+    "company": "Pacific International Lines (PIL) Nigeria",
+    "category": "Maritime / Offshore",
+    "contactEmail": "olalekan.mustafa@onn.pilship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Nigeria",
+    "careersUrl": "https://www.pilship.com/find-your-local-offices/offices-detail-page/?port_code=NGLOS",
+    "notes": "Segment: Container shipping / seafaring. Nigeria office contacts"
+  },
+  {
+    "id": "mar-pacific-basin-shipping-290",
+    "company": "Pacific Basin Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "pbcrewing.worldwide@pacificbasin.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.pacificbasin.com/en/careers/seajobs.php",
+    "notes": "Segment: Dry bulk / seafaring. Crewing / seafarer recruitment"
+  },
+  {
+    "id": "mar-pacific-basin-shipping-291",
+    "company": "Pacific Basin Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "pbcrewing.india@pacificbasin.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.pacificbasin.com/en/careers/seajobs.php",
+    "notes": "Segment: Dry bulk / seafaring. Crewing / seafarer recruitment"
+  },
+  {
+    "id": "mar-pacific-basin-shipping-292",
+    "company": "Pacific Basin Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "pbcrewing.philippines@pacificbasin.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.pacificbasin.com/en/careers/seajobs.php",
+    "notes": "Segment: Dry bulk / seafaring. Crewing / seafarer recruitment"
+  },
+  {
+    "id": "mar-pacific-basin-shipping-293",
+    "company": "Pacific Basin Shipping",
+    "category": "Maritime / Offshore",
+    "contactEmail": "pbcrewing.hksar@pacificbasin.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.pacificbasin.com/en/careers/seajobs.php",
+    "notes": "Segment: Dry bulk / seafaring. Crewing / seafarer recruitment"
+  },
+  {
+    "id": "mar-pacific-basin-shipping-shore-c-294",
+    "company": "Pacific Basin Shipping - Shore Careers",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@pacificbasin.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.pacificbasin.com/en/careers/vacancies.php",
+    "notes": "Segment: Dry bulk / shore careers. Human Resources / shore careers"
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-295",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment.molme@molgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Japan / Global",
+    "careersUrl": "https://www.mol.co.jp/en/contact/seafarer/",
+    "notes": "Segment: Deep-sea shipping / seafaring. Seafarer employment / recruitment"
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-296",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "molms@molgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Japan / Global",
+    "careersUrl": "https://www.mol.co.jp/en/contact/seafarer/",
+    "notes": "Segment: Deep-sea shipping / seafaring. Seafarer employment / recruitment"
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-297",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "molmi@molgroup.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Japan / Global",
+    "careersUrl": "https://www.mol.co.jp/en/contact/seafarer/",
+    "notes": "Segment: Deep-sea shipping / seafaring. Seafarer employment / recruitment"
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-298",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "mmm.portengineer@magmol.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Japan / Global",
+    "careersUrl": "https://www.mol.co.jp/en/contact/seafarer/",
+    "notes": "Segment: Deep-sea shipping / seafaring. Seafarer employment / recruitment"
+  },
+  {
+    "id": "mar-mitsui-o-s-k-lines-mol-299",
+    "company": "Mitsui O.S.K. Lines (MOL)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "crewing@mcmol-international.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Japan / Global",
+    "careersUrl": "https://www.mol.co.jp/en/contact/seafarer/",
+    "notes": "Segment: Deep-sea shipping / seafaring. Seafarer employment / recruitment"
+  },
+  {
+    "id": "mar-hmm-300",
+    "company": "HMM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruit@hmm21.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "South Korea",
+    "careersUrl": "https://careers.hmm21.com/",
+    "notes": "Segment: Container / bulk shipping. Recruitment"
+  },
+  {
+    "id": "mar-anglo-eastern-301",
+    "company": "Anglo-Eastern",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careers.sea@angloeastern.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.angloeastern.com/careers/",
+    "notes": "Segment: Ship management / seafaring. Maritime academy / seafarer training enquiries"
+  },
+  {
+    "id": "mar-anglo-eastern-302",
+    "company": "Anglo-Eastern",
+    "category": "Maritime / Offshore",
+    "contactEmail": "gme.recruitment@angloeastern.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Hong Kong / Global",
+    "careersUrl": "https://www.angloeastern.com/careers/",
+    "notes": "Segment: Ship management / seafaring. Maritime academy / seafarer training enquiries"
+  },
+  {
+    "id": "mar-v-group-303",
+    "company": "V.Group",
+    "category": "Maritime / Offshore",
+    "contactEmail": "enquiries@vgrouplimited.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Global",
+    "careersUrl": "https://vgrouplimited.com/join-our-group/careers/",
+    "notes": "Segment: Ship management / marine services / seafaring. General enquiries; applications via portal only"
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-304",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ua-csc-ode-man@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Global",
+    "careersUrl": "https://careersatsea.bs-shipmanagement.com/IdentityServer/Seafarer",
+    "notes": "Segment: Ship management / seafaring / offshore. Crew service centre recruitment"
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-305",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "pl-csc-crewing@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Global",
+    "careersUrl": "https://careersatsea.bs-shipmanagement.com/IdentityServer/Seafarer",
+    "notes": "Segment: Ship management / seafaring / offshore. Crew service centre recruitment"
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-306",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "ro-csc-recruitment@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Global",
+    "careersUrl": "https://careersatsea.bs-shipmanagement.com/IdentityServer/Seafarer",
+    "notes": "Segment: Ship management / seafaring / offshore. Crew service centre recruitment"
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-307",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "lv-csc-rig-man@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Global",
+    "careersUrl": "https://careersatsea.bs-shipmanagement.com/IdentityServer/Seafarer",
+    "notes": "Segment: Ship management / seafaring / offshore. Crew service centre recruitment"
+  },
+  {
+    "id": "mar-bernhard-schulte-shipmanagemen-308",
+    "company": "Bernhard Schulte Shipmanagement (BSM)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hr-csc-crewing@bs-shipmanagement.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Global",
+    "careersUrl": "https://careersatsea.bs-shipmanagement.com/IdentityServer/Seafarer",
+    "notes": "Segment: Ship management / seafaring / offshore. Crew service centre recruitment"
+  },
+  {
+    "id": "mar-columbia-shipmanagement-309",
+    "company": "Columbia Shipmanagement",
+    "category": "Maritime / Offshore",
+    "contactEmail": "csm.connect@csmcy.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Cyprus / Global",
+    "careersUrl": "https://crew-nt.connect-csm.com/Csm.CrewPortal.Web/Account/Contact",
+    "notes": "Segment: Ship management / crewing. Crew portal / support"
+  },
+  {
+    "id": "mar-columbia-shipmanagement-310",
+    "company": "Columbia Shipmanagement",
+    "category": "Maritime / Offshore",
+    "contactEmail": "support_crewconnect@csmcy.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Cyprus / Global",
+    "careersUrl": "https://crew-nt.connect-csm.com/Csm.CrewPortal.Web/Account/Contact",
+    "notes": "Segment: Ship management / crewing. Crew portal / support"
+  },
+  {
+    "id": "mar-torm-311",
+    "company": "TORM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment.india@torm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Denmark / Global",
+    "careersUrl": "https://www.torm.com/careers/careers-at-sea/careers-at-sea/default.aspx",
+    "notes": "Segment: Product tanker / seafaring. Seafarer recruitment by region"
+  },
+  {
+    "id": "mar-torm-312",
+    "company": "TORM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment.denmark@torm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Denmark / Global",
+    "careersUrl": "https://www.torm.com/careers/careers-at-sea/careers-at-sea/default.aspx",
+    "notes": "Segment: Product tanker / seafaring. Seafarer recruitment by region"
+  },
+  {
+    "id": "mar-torm-313",
+    "company": "TORM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruitment.manila@torm.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Denmark / Global",
+    "careersUrl": "https://www.torm.com/careers/careers-at-sea/careers-at-sea/default.aspx",
+    "notes": "Segment: Product tanker / seafaring. Seafarer recruitment by region"
+  },
+  {
+    "id": "mar-torm-314",
+    "company": "TORM",
+    "category": "Maritime / Offshore",
+    "contactEmail": "recruiting@zorovic.hr",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Denmark / Global",
+    "careersUrl": "https://www.torm.com/careers/careers-at-sea/careers-at-sea/default.aspx",
+    "notes": "Segment: Product tanker / seafaring. Seafarer recruitment by region"
+  },
+  {
+    "id": "mar-deme-315",
+    "company": "DEME",
+    "category": "Maritime / Offshore",
+    "contactEmail": "careerday@deme-group.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "Belgium",
+    "careersUrl": "https://wherenext.deme-group.com/careerday/",
+    "notes": "Segment: Dredging / offshore marine / engineering. Career enquiries / event contact"
+  },
+  {
+    "id": "mar-the-great-eastern-shipping-com-316",
+    "company": "The Great Eastern Shipping Company",
+    "category": "Maritime / Offshore",
+    "contactEmail": "hrd@greatship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "India",
+    "careersUrl": "https://greatship.com/careers.html",
+    "notes": "Segment: Tanker / bulk / offshore. HR / Fleet Personnel / Technical"
+  },
+  {
+    "id": "mar-the-great-eastern-shipping-com-317",
+    "company": "The Great Eastern Shipping Company",
+    "category": "Maritime / Offshore",
+    "contactEmail": "fleet@greatship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "India",
+    "careersUrl": "https://greatship.com/careers.html",
+    "notes": "Segment: Tanker / bulk / offshore. HR / Fleet Personnel / Technical"
+  },
+  {
+    "id": "mar-the-great-eastern-shipping-com-318",
+    "company": "The Great Eastern Shipping Company",
+    "category": "Maritime / Offshore",
+    "contactEmail": "technical@greatship.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer",
+      "Port Technical Engineer"
+    ],
+    "location": "India",
+    "careersUrl": "https://greatship.com/careers.html",
+    "notes": "Segment: Tanker / bulk / offshore. HR / Fleet Personnel / Technical"
+  },
+  {
+    "id": "mar-wilhelmsen-smith-bell-manning--319",
+    "company": "Wilhelmsen-Smith Bell Manning, Inc.",
+    "category": "Maritime / Offshore",
+    "contactEmail": "bsb-mnl-recruitment@wilhelmsen.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer"
+    ],
+    "location": "Manning agency",
+    "careersUrl": "https://www.google.com/search?q=Wilhelmsen-Smith+Bell+Manning,+Inc.+careers",
+    "notes": "Maritime operator contact."
+  },
+  {
+    "id": "mar-wilhmar-manning-philippines-in-320",
+    "company": "WilhMar Manning Philippines Inc.",
+    "category": "Maritime / Offshore",
+    "contactEmail": "wsm-mnl-info@wilhmar.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer"
+    ],
+    "location": "Manning agency",
+    "careersUrl": "https://www.google.com/search?q=WilhMar+Manning+Philippines+Inc.+careers",
+    "notes": "Maritime operator contact."
+  },
+  {
+    "id": "mar-anglo-eastern-ukraine-crewing--321",
+    "company": "Anglo-Eastern Ukraine (crewing & training centre)",
+    "category": "Maritime / Offshore",
+    "contactEmail": "aeua_recruiting@angloeastern.com",
+    "typicalRoles": [
+      "Engine Cadet",
+      "Marine Engineer Officer"
+    ],
+    "location": "Ship manager / crewing",
+    "careersUrl": "https://www.google.com/search?q=Anglo-Eastern+Ukraine+(crewing+&+training+centre)+careers",
+    "notes": "Maritime operator contact."
+  }
+]
