@@ -122,6 +122,33 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
               How it works
             </Button>
           </motion.div>
+
+          {/* ── Universal Industry Coverage Tags ── */}
+          <motion.div
+            variants={fadeUpVariants}
+            className="pt-3 flex flex-wrap items-center justify-center gap-1.5 max-w-2xl mx-auto"
+          >
+            <span className="text-[10px] font-semibold text-muted-foreground mr-1 uppercase tracking-wider">Universal Domains:</span>
+            {[
+              { label: 'Software & Cloud Systems', isCaseStudy: false },
+              { label: 'AI & Autonomous Robotics', isCaseStudy: false },
+              { label: 'Maritime & Offshore', isCaseStudy: true },
+              { label: 'Cybersecurity & Infosec', isCaseStudy: false },
+              { label: 'Healthcare Informatics', isCaseStudy: false },
+              { label: 'Industrial Automation', isCaseStudy: false }
+            ].map((tag) => (
+              <span
+                key={tag.label}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                  tag.isCaseStudy
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
+                    : 'border-border/70 bg-card/80 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tag.label}{tag.isCaseStudy ? ' (Case Study)' : ''}
+              </span>
+            ))}
+          </motion.div>
         </div>
       </div>
 

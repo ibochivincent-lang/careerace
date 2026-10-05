@@ -12,12 +12,13 @@ import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import {
   Sparkles, Database, Lock, Fingerprint, Cpu, Globe,
-  ShieldCheck, ArrowRight
+  ShieldCheck, ArrowRight, ExternalLink, Briefcase
 } from 'lucide-react'
 
 export default function CareerAceLandingPage() {
   const router = useRouter()
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
+  const [suinsDomain, setSuinsDomain] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -26,6 +27,11 @@ export default function CareerAceLandingPage() {
       if (hash.includes('access_token=') || hash.includes('id_token=') || search.includes('code=')) {
         router.push(`/signin${search}${hash}`)
         return
+      }
+
+      const storedDomain = localStorage.getItem('careerace_suins_domain')
+      if (storedDomain) {
+        setSuinsDomain(storedDomain)
       }
     }
 
@@ -77,6 +83,8 @@ export default function CareerAceLandingPage() {
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">
+            <a href="#about" className="hover:text-foreground transition-colors">About</a>
+            <a href="#domains" className="hover:text-foreground transition-colors">Industries</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#walrus" className="hover:text-foreground transition-colors">Walrus</a>
             <a href="#walrus-memory" className="hover:text-foreground transition-colors">Walrus Memory</a>
@@ -109,10 +117,23 @@ export default function CareerAceLandingPage() {
       {sessionAddress && (
         <div className="bg-primary/5 border-b border-primary/20 py-2.5 px-4">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 font-medium">
+            <div className="flex items-center gap-2 font-medium flex-wrap">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span>Sovereign Vault Active:</span>
               <span className="font-mono text-muted-foreground">{sessionAddress.slice(0, 10)}...{sessionAddress.slice(-6)}</span>
+              {suinsDomain && (
+                <a
+                  href={`/p/${suinsDomain}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors cursor-pointer"
+                  title="View Public SuiNS Passport"
+                >
+                  <Globe className="w-2.5 h-2.5" />
+                  <span>{suinsDomain}</span>
+                  <ExternalLink className="w-2 h-2 opacity-70" />
+                </a>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" className="h-7 text-xs gap-1.5" onClick={() => router.push('/dashboard')}>
@@ -132,6 +153,219 @@ export default function CareerAceLandingPage() {
       <div id="features">
         <ChatdeckFeatures />
       </div>
+
+      {/* ── ABOUT & UNIVERSAL TECHNICAL DOMAINS SECTION ── */}
+      <section id="about" className="max-w-7xl mx-auto px-4 py-16 scroll-mt-20">
+        <div className="text-center max-w-3xl mx-auto mb-12 space-y-3.5">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>About Career Ace &bull; Universal Technical Architecture</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            Engineered for every high-stakes technical discipline.
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Career Ace is a universal autonomous career agent and decentralized career vault. We eliminate ATS opacity, platform lock-in, and generic AI slop across software, artificial intelligence, robotics, healthcare, and engineering.
+          </p>
+        </div>
+
+        {/* Universal Technical Domains Grid with Tags */}
+        <div id="domains" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Domain 1 */}
+          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-3.5 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="border-border text-foreground font-mono text-[10px]">
+                  Sector 01
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Universal
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">Software &amp; Distributed Cloud</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Calibrated for fullstack, backend systems, cloud architects, and site reliability engineers. Automatically benchmarks against Workday and Greenhouse schemas.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['Distributed Systems', 'Kubernetes', 'Go / Rust', 'AWS / GCP', 'Microservices'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[10px] text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Verified Employers</span>
+              <span className="font-medium text-foreground">Stripe, AWS, Cloudflare</span>
+            </div>
+          </div>
+
+          {/* Domain 2 */}
+          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-3.5 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="border-border text-foreground font-mono text-[10px]">
+                  Sector 02
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Frontier
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">AI, Machine Learning &amp; Robotics</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Pulls research citations, model optimization metrics, CUDA kernel speedups, and autonomous robotics achievements directly into quantifiable STAR+R statements.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['PyTorch', 'LLM Fine-Tuning', 'ROS 2', 'CUDA Kernels', 'Computer Vision'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[10px] text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Verified Employers</span>
+              <span className="font-medium text-foreground">DeepMind, OpenAI, Boston Dynamics</span>
+            </div>
+          </div>
+
+          {/* Domain 3 - Flagship Case Study */}
+          <div className="p-5 rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/[0.03] space-y-3.5 flex flex-col justify-between relative shadow-lg shadow-emerald-500/5">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge className="bg-emerald-600 text-white font-mono text-[10px] font-bold">
+                  Flagship Case Study
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                  Regulated Rigor
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">Maritime &amp; Offshore Engineering</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Featured case study demonstrating Career Ace&apos;s ability to handle the world&apos;s strictest multi-credential standards: STCW licensures, physical discharge books, and sea-time audits.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['STCW BST', 'CoC Class 1-4', 'ENG1 Medical', 'Dynamic Positioning', 'BOSIET'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-emerald-500/20 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Verified Operators</span>
+              <span className="font-semibold text-foreground">Maersk, ABS, Tidewater, DNV</span>
+            </div>
+          </div>
+
+          {/* Domain 4 */}
+          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-3.5 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="border-border text-foreground font-mono text-[10px]">
+                  Sector 03
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Universal
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">Healthcare &amp; BioInformatics</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tailors clinical data workflows, HIPAA/FDA compliance histories, medical imaging pipelines, and genomics infrastructure with strict evidentiary precision.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['Clinical Data', 'FDA / HIPAA', 'EHR Pipelines', 'Medical Devices', 'Biomedical AI'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[10px] text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Verified Organizations</span>
+              <span className="font-medium text-foreground">Epic, Roche, Illumina, Mayo Clinic</span>
+            </div>
+          </div>
+
+          {/* Domain 5 */}
+          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-3.5 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="border-border text-foreground font-mono text-[10px]">
+                  Sector 04
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Universal
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">Industrial Automation &amp; Electrical</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Optimizes credentials for SCADA networks, PLC programming, power grid distribution, and heavy industrial automation across global manufacturing facilities.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['PLC / SCADA', 'IEEE Standards', 'Power Systems', 'Industrial IoT', 'Safety Sil 3'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[10px] text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Verified Manufacturers</span>
+              <span className="font-medium text-foreground">Siemens, ABB, Schneider, Rockwell</span>
+            </div>
+          </div>
+
+          {/* Domain 6 */}
+          <div className="p-5 rounded-2xl border border-border/80 bg-card/60 space-y-3.5 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="border-border text-foreground font-mono text-[10px]">
+                  Sector 05
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Universal
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">Cybersecurity &amp; Critical Infrastructure</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Structures incident response metrics, penetration test results, SOC 2 compliance milestones, and zero-trust identity architectures for security engineering roles.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['Zero-Trust', 'SOC 2 Type II', 'Threat Hunting', 'CISSP', 'Cloud Security'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-muted/40 border border-border/60 text-[10px] text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Verified Leaders</span>
+              <span className="font-medium text-foreground">CrowdStrike, Palo Alto, Cloudflare</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Case Study Callout Banner */}
+        <div className="mt-8 p-5 sm:p-6 rounded-2xl border border-emerald-500/30 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs uppercase tracking-wide text-emerald-600 dark:text-emerald-400">The Case Study Rationale</span>
+              <span className="text-xs text-muted-foreground">&bull; Why Maritime / STCW?</span>
+            </div>
+            <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
+              Maritime engineering represents the most stringent international credential auditing standard in the world. If Career Ace can deterministically parse, verify, and tailor STCW marine licenses, physical discharge books, and non-standard CV layouts, it can master any software, cloud, or engineering standard with ease.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => router.push('/signin?callbackUrl=/dashboard')}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shrink-0 cursor-pointer h-9 px-4"
+          >
+            Test Your Credentials
+          </Button>
+        </div>
+      </section>
 
       {/* ── Sovereign Architecture & Walrus Memory ──────────────────────────── */}
       <section className="max-w-7xl mx-auto px-4 py-12">

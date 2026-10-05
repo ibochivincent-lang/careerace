@@ -1,20 +1,39 @@
-# Career Ace
+# Career Ace: Universal Autonomous AI Career Copilot & Decentralized Vault
 
 **Author:** IboTV (`ibochivincent-lang`) — Sole Author and Maintainer.
 **Repository:** [https://github.com/ibochivincent-lang/careerace](https://github.com/ibochivincent-lang/careerace)
 **Stack:** Next.js 16 (Turbopack), React 19, TypeScript 5, Tailwind CSS, Walrus Protocol, Sui Blockchain, Mysten Labs SDK
+**Repository Topics & Tags:** `career-copilot`, `autonomous-agent`, `sui`, `walrus-protocol`, `suins`, `nextjs-16`, `ats-optimization`, `decentralized-identity`, `resume-tailor`, `interview-coach`, `software-engineering`, `cloud-systems`, `ai-robotics`, `maritime-case-study`, `zklogin`
 
 ---
 
 ## Overview
 
-Career Ace is an autonomous career copilot, dual-track application harvester, executive and maritime CV tailor, decentralized career vault, and STAR+R interview coach. It solves the critical problem of platform lock-in and opaque ATS screening by anchoring candidate career records into an encrypted, self-sovereign vault hosted on the [Walrus Protocol](https://walrus.xyz) and cryptographically anchored to the [Sui blockchain](https://sui.io) via Sui Move smart contracts and the Sui Name Service (SuiNS).
+Career Ace is a **universal autonomous AI career copilot, dual-track application automator, multi-industry CV tailor, decentralized career vault, and STAR+R interview coach**. It eliminates the chronic problems of platform lock-in, opaque applicant tracking system (ATS) algorithms, and generic AI slop by anchoring candidate career records into an encrypted, self-sovereign vault hosted on the [Walrus Protocol](https://walrus.xyz) and cryptographically anchored to the [Sui blockchain](https://sui.io) via Sui Move smart contracts and the Sui Name Service (SuiNS).
 
-Whether applying to global shipping conglomerates, subsea engineering operators, or frontier artificial intelligence labs, Career Ace provides candidates with end-to-end tooling: from heuristic multi-format CV ingestion and multi-ATS scoring simulation to a two-box dispatch console with decentralized attachment delivery and live inline application customization.
+Career Ace is built universally for all high-stakes technical, engineering, and digital disciplines—including **Software & Distributed Cloud Architecture, Artificial Intelligence & Robotics, Cybersecurity, Healthcare Informatics, Industrial Automation, and Maritime & Offshore Engineering (featured as a flagship case study)**.
 
 ---
 
-## Master Architecture
+## Universal Technical Domains & Industry Coverage
+
+Career Ace operates across six core technical sectors with tailored vocabulary models, certification validators, and direct corporate recruitment directories:
+
+| Sector | Target Roles | Verification & Credential Standards | Sample Employers (382+ Directory) |
+|---|---|---|---|
+| **Software & Distributed Cloud** | Staff Backend Engineer, Cloud Architect, Site Reliability Engineer | AWS / GCP / Azure Certifications, CKA (Kubernetes), CNCF, RFCs | Stripe, AWS, Cloudflare, Datadog, Snowflake |
+| **AI, ML & Autonomous Robotics** | AI Research Scientist, ML Engineer, Robotics Systems Architect | PyTorch, CUDA kernel optimizations, arXiv publications, ROS 2 | Google DeepMind, OpenAI, Boston Dynamics, Anduril |
+| **Maritime & Offshore Systems** *(Flagship Case Study)* | Chief Marine Engineer, DP Officer, Vessel Superintendent, Naval Architect | STCW Basic Safety (BST), CoC Class 1-4, ENG1 Medical, DP Maintenance, BOSIET | Maersk, ABS, Stolt-Nielsen, Bourbonese, Tidewater, Subsea 7, DNV |
+| **Healthcare & Biomedical Tech** | Health Informatics Lead, Clinical Data Engineer, Biomedical AI Specialist | FDA 21 CFR Part 11, HIPAA Compliance, HL7 / FHIR, GCP Clinical | Epic Systems, Roche, Illumina, Mayo Clinic |
+| **Industrial & Electrical Systems** | SCADA / PLC Engineer, Grid Automation Specialist, Instrumentation Lead | IEEE Standards, Siemens TIA, Rockwell ControlLogix, SIL 3 Safety | Siemens, ABB, Schneider Electric, Rockwell Automation |
+| **Cybersecurity & Infrastructure** | Threat Hunter, Penetration Tester, SecOps Lead, Zero-Trust Architect | CISSP, OSCP, SOC 2 Type II Auditing, NIST CSF, ISO 27001 | CrowdStrike, Palo Alto Networks, Cloudflare, Okta |
+
+### Flagship Case Study: Maritime & STCW Engineering
+*Why Maritime as a Case Study?* International maritime engineering represents the most stringent credential verification regime in the world under International Maritime Organization (IMO) and STCW conventions. Candidates must prove physical licenses (CoC Class 1-4), safety training (BST, BOSIET), dynamic positioning qualifications, and medical fitness (ENG1). By designing deterministic parsers and verifiers capable of handling these complex physical licenses and non-standard layout variations, Career Ace proves that its architecture can handle any complex certification or engineering standard across all modern industries.
+
+---
+
+## Master Architecture Topology
 
 ```
 =============================================================================================================
@@ -26,9 +45,9 @@ Whether applying to global shipping conglomerates, subsea engineering operators,
 |                                       Next.js 16 + React 19 + Tailwind                                    |
 |                                                                                                           |
 |  +---------------------------+   +---------------------------+   +-------------------------------------+  |
-|  | 1. Executive CV Ingestion |   | 2. Verified 382+ Directory|   | 3. Two-Box Dispatch Board           |  |
+|  | 1. Universal CV Ingestion |   | 2. Verified 382+ Directory|   | 3. Two-Box Dispatch Board           |  |
 |  |    & Multi-Format Parser  |   |    & Target Scraper       |   |    Box 1: Document Upload & Walrus  |  |
-|  |    (STCW Maritime Gating) |   |    (Zero Mock Contacts)   |   |    Box 2: Inline Pitch Editor       |  |
+|  |    (Industry & STCW Gating)   |    (Zero Mock Contacts)   |   |    Box 2: Inline Pitch Editor       |  |
 |  +-------------+-------------+   +-------------+-------------+   +------------------+------------------+  |
 +----------------|-------------------------------|------------------------------------|---------------------+
                  |                               |                                    |
@@ -40,7 +59,7 @@ Whether applying to global shipping conglomerates, subsea engineering operators,
 |                                         (App Router API Engine)                                           |
 +------------------------------------------------+----------------------------------------------------------+
 | - Heuristic Multi-Section CV Parser            | - Multi-ATS Benchmark Simulator (Workday, Taleo, Lever)  |
-| - STCW Maritime License Gating Engine          | - Evidence-Grounded CV Tailoring Engine (No AI Slop)     |
+| - Domain Credential Gating Engine              | - Evidence-Grounded CV Tailoring Engine (No AI Slop)     |
 | - Verified Hiring Directory Indexer (382+)     | - Authenticated Email Relay Agent (DKIM / SPF Signed)    |
 | - STAR+R Pedagogical Interview Coach           | - SuiNS Domain Resolver & Move Anchoring Service         |
 +-----------------------+------------------------+------------------------------------+---------------------+
@@ -76,19 +95,19 @@ For complete sequence diagrams, data schemas, and API contracts, see [ARCHITECTU
 
 ## Key Capabilities
 
-### 1. Heuristic Executive & Maritime CV Parser
-- **Multi-Format Extraction**: Parses diverse layout styles including Company-first, Role-first, inline expressions (`Role at Company (Dates)`), compound dash structures (`Company - Role`), and pipe-delimited multi-column rows.
-- **Non-Standard Section Handling**: Automatically identifies and structures non-traditional sections such as Leadership Activities, Academic Conferences, Maritime Licensure, Dynamic Positioning Logs, and Honors.
+### 1. Heuristic Multi-Format CV Parser
+- **Layout-Adaptive Extraction**: Parses diverse layout conventions including Company-first, Role-first, inline expressions (`Role at Company (Dates)`), compound dash structures (`Company - Role`), and pipe-delimited multi-column rows.
+- **Non-Standard Section Handling**: Automatically identifies and structures non-traditional sections such as Leadership Activities, Academic Conferences, Technical Licensures, Field Deployments, and Honors.
 - **Zero Placeholder Guarantee**: Rejects and sanitizes phantom strings like `"the Organization"`, defaulting strictly to extracted company identities or verified domain entities.
-- **STCW Marine Gating**: Automatically inspects credentials against Standards of Training, Certification and Watchkeeping (STCW) requirements, identifying Basic Safety Training (BST), Certificate of Competency (CoC Class 1/2/3/4), ENG1 Medical certificates, Seaman's Discharge Books, Dynamic Positioning (DP), and BOSIET survival certifications.
+- **Modular Credential Gating**: Inspects credentials across technical domains—validating cloud certifications, engineering licenses, and international standards (including STCW BST, CoC Class 1-4, ENG1 Medical, and BOSIET in the maritime case study).
 
 ### 2. Verified 382+ Employer Directory (Zero Mock Data)
-- Built-in index of 382+ verified maritime, offshore energy, and technology hiring departments across Rotterdam, Singapore, Houston, Aberdeen, Lagos, London, and Dubai.
-- Direct corporate crewing, technical recruitment, and engineering contacts for operators such as Maersk, American Bureau of Shipping (ABS), Stolt-Nielsen, Bourbonese, Tidewater, Subsea 7, TechnipFMC, DNV, Lloyd's Register, AWS, Google Cloud, Cloudflare, and Datadog.
-- Zero fake placeholder addresses (`example.com` or `test@test.com`).
+- Built-in index of 382+ verified hiring departments across London, San Francisco, Houston, Rotterdam, Singapore, Aberdeen, Lagos, and Dubai.
+- Direct corporate crewing, technical recruitment, and engineering contacts for operators such as Stripe, AWS, Cloudflare, DeepMind, Maersk, American Bureau of Shipping (ABS), Stolt-Nielsen, Bourbonese, Tidewater, Subsea 7, TechnipFMC, and DNV.
+- Strictly zero fake placeholder addresses (`example.com` or `test@test.com`).
 
 ### 3. Multi-ATS Benchmark Simulator
-- Simulates parsing and ranking algorithms across enterprise ATS platforms: Workday, Greenhouse, Taleo, and Lever.
+- Simulates evaluation engines across enterprise ATS platforms: Workday, Greenhouse, Taleo, and Lever.
 - Evaluates CV parseability, keyword match density, active verb frequency, and quantified metric density, providing concrete remediation steps before submission.
 
 ### 4. Two-Box Auto-Apply Dispatch Console
@@ -97,7 +116,7 @@ For complete sequence diagrams, data schemas, and API contracts, see [ARCHITECTU
   - Files are processed via `/api/attachment/upload`, stored as decentralized Walrus blobs, and cached in browser storage.
   - Displays file name, size in KB, Walrus storage status, and immediate removal controls.
   - Active CV version dropdown selector to toggle between uploaded CV drafts and Walrus snapshots.
-  - Credential quick-toggles for instant inclusion of BST, CoC, ENG1, Seaman's Book, DP, and BOSIET.
+  - Quick-toggles for instant inclusion of core technical and marine credentials.
 - **Box 2 (Cover Letter & Application Pitch)**:
   - Directly editable full-width textarea (`rows={11}`) with live character count.
   - Eliminated disruptive page redirects; candidates compose and customize their pitch directly on the board.
@@ -114,7 +133,8 @@ For complete sequence diagrams, data schemas, and API contracts, see [ARCHITECTU
 ### 5. Decentralized Career Vault & Onchain Identity
 - **Walrus Protocol Storage**: Encrypted resumes, tailored variations, and uploaded credential documents are permanently stored on decentralized Walrus storage nodes across multiple epochs.
 - **Sui Move Onchain Anchoring**: Cryptographic transaction digests anchor Walrus blob IDs directly to candidate sovereign addresses on the Sui blockchain.
-- **Sui Name Service (SuiNS)**: Resolves `.sui` human-readable handles (e.g., `maritime-chief.sui`) and serves verifiable public candidate passports at `/p/[username]`.
+- **Sui Name Service (SuiNS)**: Resolves `.sui` human-readable handles (e.g., `candidate.sui`) and serves verifiable public candidate passports at `/p/[username]`.
+- **Sovereign Profile Integration**: Claimed SuiNS passports are automatically displayed throughout the candidate workspace, including the right-hand Sovereign Profile & Walrus Vault card and header account chips.
 
 ### 6. STAR+R Pedagogical Interview Coach
 - Real-time multi-turn simulation framework evaluating candidate responses across:
@@ -204,7 +224,7 @@ GOOGLE_CLIENT_SECRET=...
 
 ## Testing & Verification
 
-The project includes an automated test suite verifying CV parsing, STCW gating, SuiNS normalization, Walrus anchoring, ATS scoring, and RFC 5545 calendar generation:
+The project includes an automated test suite verifying CV parsing, domain gating, SuiNS normalization, Walrus anchoring, ATS scoring, and RFC 5545 calendar generation:
 
 ```bash
 # Run full unit test suite (65 tests across 7 test suites)
@@ -264,7 +284,7 @@ To maintain and expand CareerAce as a global category leader in career automatio
    - Establish an inbound webhook endpoint (`/api/email/inbound`) that captures recruiter replies, parses interview requests, and automatically updates the Application Tracker status.
 
 2. **Decentralized Verifiable Credential Badges (W3C VC / Sui Kiosk)**:
-   - Allow maritime academies, universities, and classification societies to issue signed onchain Soulbound Tokens (SBT) directly into candidate Walrus vaults.
+   - Allow universities, professional boards, and classification societies to issue signed onchain Soulbound Tokens (SBT) directly into candidate Walrus vaults.
 
 3. **Multi-Recipient Crewing Dispatch**:
    - Enable candidates to dispatch applications simultaneously to both the vessel manager and the crewing superintendent while tracking distinct open and delivery rates.

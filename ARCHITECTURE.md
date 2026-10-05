@@ -8,7 +8,9 @@ Stack: Next.js 16 (Turbopack), React 19, TypeScript 5, Tailwind CSS, Walrus Prot
 
 ## 1. Executive Summary
 
-Career Ace is an autonomous career copilot, dual-track application harvester, executive and maritime CV tailor, decentralized career vault, and STAR+R interview coach. It eliminates platform lock-in by anchoring student and professional career records into a decentralized vault hosted on the Walrus Protocol and anchored to the Sui blockchain via Sui Move smart contracts and Sui Name Service (SuiNS).
+Career Ace is a universal autonomous career copilot, dual-track application harvester, multi-industry CV tailor, decentralized career vault, and STAR+R interview coach. It eliminates platform lock-in and ATS opacity by anchoring student and professional career records into a decentralized vault hosted on the Walrus Protocol and anchored to the Sui blockchain via Sui Move smart contracts and Sui Name Service (SuiNS).
+
+Career Ace is designed universally for all high-consequence technical, engineering, and digital disciplines—including Software & Distributed Systems, AI & Robotics, Healthcare Informatics, Industrial Automation, and Maritime & Offshore Engineering (featured as a flagship case study of rigorous multi-credential validation).
 
 This document details the end-to-end system topology, component interactions, cryptographic and data flow protocols, API route specifications, and deployment topologies.
 
@@ -23,8 +25,8 @@ This document details the end-to-end system topology, component interactions, cr
 |                                                                                                   |
 |  +------------------------+  +------------------------+  +------------------------------------+   |
 |  | Multi-Section CV Parser|  | Two-Box Dispatch Board |  | STAR+R Pedagogical Interview Coach |   |
-|  | (Executive & STCW Gated|  | (Box 1 Attachments +   |  | (Real-time Speech, Follow-up,      |   |
-|  | Multi-Format Extraction|  |  Box 2 Direct Message) |  |  Quantified Metric Validation)     |   |
+|  | (Universal Layout &    |  | (Box 1 Attachments +   |  | (Real-time Speech, Follow-up,      |   |
+|  |  Credential Gating)    |  |  Box 2 Direct Message) |  |  Quantified Metric Validation)     |   |
 |  +-----------+------------+  +-----------+------------+  +-----------------+------------------+   |
 +--------------|---------------------------|---------------------------------|----------------------+
                |                           |                                 |
@@ -55,7 +57,7 @@ This document details the end-to-end system topology, component interactions, cr
 
 ## 3. End-to-End Sequence & Data Flows
 
-### 3.1 Flow A: CV Ingestion, Multi-Format Extraction, and STCW Gating
+### 3.1 Flow A: CV Ingestion, Multi-Format Extraction, and Modular Credential Gating
 
 ```mermaid
 sequenceDiagram
@@ -63,7 +65,7 @@ sequenceDiagram
     actor Candidate as Candidate
     participant UI as CV Upload UI
     participant Parser as Heuristic CV Parser
-    participant Gating as STCW Maritime Gate
+    participant Gating as Domain Credential Gate
     participant ATS as Multi-ATS Simulator
     participant Walrus as Walrus Protocol Storage
 
@@ -71,11 +73,11 @@ sequenceDiagram
     UI->>Parser: parseExecutiveCvText(rawText)
     Parser->>Parser: Scan Layout Variations (Company-First, Role-First, Inline, Compound Dash, Pipe)
     Parser->>Parser: Extract Non-Standard Sections (Leadership, Conferences, Honors, Licenses)
-    Parser->>Gating: evaluateMaritimeStcwGating(experience, education, certifications)
-    alt Candidate has Maritime Credentials (STCW, BST, CoC, ENG1, Marine Degree)
+    Parser->>Gating: evaluateDomainCredentialGating(experience, education, certifications)
+    alt Candidate has Maritime Credentials (STCW, BST, CoC, ENG1, Marine Degree) [Flagship Case Study]
         Gating-->>Parser: isMaritime = true (Enable Fleet Intelligence & STCW Badges)
-    else Standard Professional Candidate
-        Gating-->>Parser: isMaritime = false (Standard Professional Track)
+    else Standard Professional Candidate (Software, AI, Healthcare, Industrial)
+        Gating-->>Parser: isMaritime = false (Domain-Specific Technical Track)
     end
     Parser->>ATS: simulateAtsBenchmark(parsedCv, targetRole)
     ATS-->>UI: Return ATS Score (Workday, Greenhouse, Taleo, Lever)
@@ -144,7 +146,7 @@ sequenceDiagram
 
 ## 4. Architectural Components Detail
 
-### 4.1 Heuristic Executive & Maritime CV Parser (`lib/heuristic_cv_parser.ts`)
+### 4.1 Heuristic Universal Multi-Section CV Parser (`lib/heuristic_cv_parser.ts`)
 The parsing engine operates deterministically without relying on third-party opaque AI models for initial structural discovery:
 - **Layout Recognition**: Automatically detects and parses:
   1. Multi-line blocks where Company occupies Line 1, Role occupies Line 2, and Dates occupy Line 3.
@@ -153,12 +155,11 @@ The parsing engine operates deterministically without relying on third-party opa
   4. Compound dash patterns: `Company - Role (Dates)`.
   5. Pipe-delimited multi-column rows: `Role | Company | Location | Dates`.
 - **Zero Placeholder Guarantee**: Rejects and sanitizes phantom strings like `"the Organization"`, defaulting strictly to extracted company identities or contextual role entities.
-- **Section Extensibility**: Extracts non-traditional sections including Leadership Activities, Academic Conferences, Maritime Licensure, Dynamic Positioning Logs, and Honors.
+- **Section Extensibility**: Extracts non-traditional sections including Leadership Activities, Academic Conferences, Technical Licensure, Dynamic Positioning Logs, and Honors.
 
-### 4.2 STCW Marine Gating Engine (`lib/multisection_gating_test.ts`)
-- Evaluates candidate text against international Standards of Training, Certification and Watchkeeping (STCW).
-- Identifies maritime competencies: Basic Safety Training (BST), Certificate of Competency (CoC Class 1/2/3/4), ENG1 Medical fitness, Seaman's Discharge Book, Dynamic Positioning (DP Maintenance/Advanced), and BOSIET offshore survival.
-- Automatically gates maritime-specific dispatch credentials in the Application Board.
+### 4.2 Domain Credential Gating & Maritime Case Study (`lib/multisection_gating_test.ts`)
+- **Universal Credential Architecture**: Modular gating layer that evaluates candidate qualifications against industry certification standards (cloud architect certifications, IEEE, medical licensing).
+- **Flagship Case Study (STCW Maritime Licensure)**: International maritime engineering imposes the most stringent credential verification regime in the world (BST, CoC Class 1-4, ENG1 Medical, Seaman's Book, DP, BOSIET). Demonstrates Career Ace's capability to parse, gate, and verify complex physical and statutory licenses without error.
 
 ### 4.3 Verified Employer Directory (`lib/company_directory.ts`)
 - Features 382+ verified real-world hiring contacts and technical crewing departments across:

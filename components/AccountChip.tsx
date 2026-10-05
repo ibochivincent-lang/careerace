@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getClientSessionAddress, signOutClient } from '@/lib/client_auth'
-import { ShieldCheck, Settings, LogOut, Copy, Check, ArrowRight } from 'lucide-react'
+import { ShieldCheck, Settings, LogOut, Copy, Check, ArrowRight, Globe, ExternalLink } from 'lucide-react'
 
 function short(address: string) {
   if (!address) return ''
@@ -21,6 +21,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
   const [copied, setCopied] = useState(false)
   const [currentAddress, setCurrentAddress] = useState<string | null>(propAddress || null)
   const [username, setUsername] = useState<string | null>(null)
+  const [suinsDomain, setSuinsDomain] = useState<string | null>(null)
 
   // Resolve session address from prop, client cache or API
   useEffect(() => {
@@ -46,16 +47,24 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
       if (storedName && storedName.trim()) {
         setUsername(storedName.trim())
       }
+
+      // Check stored SuiNS domain passport
+      const storedDomain = localStorage.getItem('careerace_suins_domain')
+      if (storedDomain && storedDomain.trim()) {
+        setSuinsDomain(storedDomain.trim())
+      }
     }
 
     resolveSession()
 
-    // Listen for cross-tab or component auth changes
+    // Listen for cross-tab, component auth changes, or SuiNS claim
     window.addEventListener('careerace_auth_changed', resolveSession)
+    window.addEventListener('careerace_suins_changed', resolveSession)
     window.addEventListener('storage', resolveSession)
 
     return () => {
       window.removeEventListener('careerace_auth_changed', resolveSession)
+      window.removeEventListener('careerace_suins_changed', resolveSession)
       window.removeEventListener('storage', resolveSession)
     }
   }, [propAddress])
@@ -116,14 +125,23 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
           {initial}
         </span>
         <div className="flex items-center gap-1 text-xs">
-          {username && (
-            <span className="font-semibold text-foreground tracking-tight max-w-[85px] sm:max-w-[120px] truncate">
-              {username}
+          {suinsDomain ? (
+            <span className="font-mono text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+              <Globe className="w-2.5 h-2.5" />
+              <span>{suinsDomain}</span>
             </span>
+          ) : (
+            <>
+              {username && (
+                <span className="font-semibold text-foreground tracking-tight max-w-[85px] sm:max-w-[120px] truncate">
+                  {username}
+                </span>
+              )}
+              <span className="font-mono text-[10px] sm:text-[11px] text-muted-foreground">
+                ({short(currentAddress)})
+              </span>
+            </>
           )}
-          <span className="font-mono text-[10px] sm:text-[11px] text-muted-foreground">
-            ({short(currentAddress)})
-          </span>
         </div>
       </button>
 
@@ -142,7 +160,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
                 <button
                   type="button"
                   onClick={handleCopyAddress}
-                  className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/60 hover:bg-background"
+                  className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/60 hover:bg-background cursor-pointer"
                   title="Copy address"
                 >
                   {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
@@ -150,8 +168,20 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
                 </button>
               </div>
 
+              {suinsDomain && (
+                <div className="mt-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 text-emerald-500" />
+                    <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">{suinsDomain}</span>
+                  </div>
+                  <span className="text-[9px] font-mono font-medium px-1 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                    Sui Passport
+                  </span>
+                </div>
+              )}
+
               {username && (
-                <p className="mt-1 font-bold text-sm text-foreground truncate">{username}</p>
+                <p className="mt-1.5 font-bold text-sm text-foreground truncate">{username}</p>
               )}
               <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground/90 bg-background/50 p-1.5 rounded-md border border-border/40">
                 {currentAddress}
@@ -159,6 +189,22 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
             </div>
 
             <div className="p-1 space-y-0.5">
+              {suinsDomain && (
+                <a
+                  href={`/p/${suinsDomain}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Public Recruiter Passport</span>
+                  </div>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              )}
+
               <Link
                 href="/settings"
                 onClick={() => setOpen(false)}
