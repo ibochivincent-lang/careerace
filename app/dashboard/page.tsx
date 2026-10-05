@@ -938,7 +938,7 @@ function DashboardContent() {
       toast.success(`Target calibrated: ${role || 'Role'} ${company ? `@ ${company}` : ''}!`, { id: 'scrape-job' })
 
       const skillsList = Array.isArray(skills) && skills.length > 0 ? skills.slice(0, 8).join(', ') : 'Not specified'
-      const feedback = `🎯 **Auto-Targeted from Job Posting URL**\n\n• **Target Role**: ${role || 'Target Role'}\n• **Company / Org**: ${company || 'Target Organization'}\n• **Seniority / Level**: ${experience_level || 'Mid-Senior'}\n• **Required Competencies**: ${skillsList}\n\n${summary ? `*Summary*: ${summary}\n\n` : ''}✅ *Target parameters populated for Cover Letter Studio and keyword suggestions.*`
+      const feedback = `**Auto-Targeted from Job Posting URL**\n\n• **Target Role**: ${role || 'Target Role'}\n• **Company / Org**: ${company || 'Target Organization'}\n• **Seniority / Level**: ${experience_level || 'Mid-Senior'}\n• **Required Competencies**: ${skillsList}\n\n${summary ? `*Summary*: ${summary}\n\n` : ''}*Target parameters populated for Cover Letter Studio and keyword suggestions.*`
 
       setResumeAssistantMessages((prev) => [...prev, { role: 'assistant', content: feedback }])
     } catch (err: any) {
@@ -2151,9 +2151,6 @@ function DashboardContent() {
                                   MemWal
                                 </Badge>
                               </div>
-                              <p className="text-[10px] text-muted-foreground">
-                                Bullet polishing, action verbs &amp; Walrus commits
-                              </p>
                             </div>
                           </div>
 
@@ -2279,9 +2276,6 @@ function DashboardContent() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Generate tailored cover letters grounded strictly in your real skills and the specific problems you can solve.
-                </p>
               </div>
               <Button
                 variant="outline"

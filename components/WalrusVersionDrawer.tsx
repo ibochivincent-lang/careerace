@@ -12,7 +12,8 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Trash2
+  Trash2,
+  Anchor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -153,7 +154,8 @@ export function WalrusVersionDrawer({
                         className="inline-flex items-center gap-1 font-medium text-sky-600 dark:text-sky-400 hover:underline"
                         title="View verifiable Sui Move on-chain transaction anchor"
                       >
-                        ⚓ Sui Anchored ({ver.suiTxDigest.slice(0, 8)}...)
+                        <Anchor className="w-3 h-3 text-sky-500" />
+                        <span>Sui Anchored ({ver.suiTxDigest.slice(0, 8)}...)</span>
                       </a>
                     )}
                   </div>
@@ -165,10 +167,11 @@ export function WalrusVersionDrawer({
                       variant="outline"
                       size="sm"
                       onClick={() => onAnchorToSui(ver)}
-                      className="h-7 px-2 text-[11px] border-sky-500/40 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10"
+                      className="h-7 px-2 text-[11px] border-sky-500/40 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 flex items-center gap-1"
                       title="Anchor this Walrus blob on the Sui blockchain"
                     >
-                      ⚓ Anchor Sui
+                      <Anchor className="w-3 h-3" />
+                      <span>Anchor Sui</span>
                     </Button>
                   )}
 

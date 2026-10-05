@@ -654,17 +654,11 @@ export default function CoverLetterStudioPage() {
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
                 Cover Letter Studio
               </h1>
-              <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 font-mono">
-                Target Role Intelligence
-              </Badge>
               <Badge variant="secondary" className="text-[10px] font-mono flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-emerald-500" />
                 <span>{liveDateString}</span>
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-              Tailors every sentence around the verified problems and operational standards of your target role. Zero AI slop, instant company calibration, and direct auto-apply dispatch.
-            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -691,29 +685,18 @@ export default function CoverLetterStudioPage() {
           </div>
         </div>
 
-        {/* 1. DISCIPLINE & TARGET ROLE SELECTOR BOX (Roll-Down Dropdowns, Zero Emojis) */}
+        {/* 1. DISCIPLINE & TARGET ROLE SELECTOR */}
         <Card className="p-4 sm:p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/70">
-            <div className="flex items-center gap-2">
-              <Compass className="w-4 h-4 text-emerald-500 shrink-0" />
-              <h2 className="text-sm font-bold text-foreground">Discipline and Target Role Selector</h2>
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              Select discipline and calibrated role to instantly align tone, role scope, and employer matching.
-            </span>
+          <div className="flex items-center justify-between pb-3 border-b border-border/70">
+            <h2 className="text-sm font-bold text-foreground">Discipline and Target Role Selector</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Discipline Dropdown */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-muted-foreground">
-                  Target Discipline
-                </label>
-                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                  {DISCIPLINE_DEFINITIONS.length} Available
-                </span>
-              </div>
+              <label className="text-xs font-semibold text-muted-foreground block">
+                Target Discipline
+              </label>
               <select
                 value={selectedDisciplineId}
                 onChange={(e) => handleSelectDiscipline(e.target.value)}
@@ -721,7 +704,7 @@ export default function CoverLetterStudioPage() {
               >
                 {DISCIPLINE_DEFINITIONS.map((def) => (
                   <option key={def.id} value={def.id}>
-                    {def.name} ({def.roles.length} Roles)
+                    {def.name}
                   </option>
                 ))}
               </select>
@@ -729,14 +712,9 @@ export default function CoverLetterStudioPage() {
 
             {/* Target Role Dropdown */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-muted-foreground">
-                  Calibrated Target Role
-                </label>
-                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                  {activeDiscipline.roles.length} in {activeDiscipline.name}
-                </span>
-              </div>
+              <label className="text-xs font-semibold text-muted-foreground block">
+                Calibrated Target Role
+              </label>
               <select
                 value={customRoleInput.trim() ? 'custom' : targetRole}
                 onChange={(e) => {
@@ -752,7 +730,7 @@ export default function CoverLetterStudioPage() {
                 }}
                 className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
               >
-                <optgroup label={`Calibrated Roles (${activeDiscipline.name})`}>
+                <optgroup label={activeDiscipline.name}>
                   {activeDiscipline.roles.map((r) => (
                     <option key={r} value={r}>
                       {r}
@@ -799,10 +777,7 @@ export default function CoverLetterStudioPage() {
           <div className="lg:col-span-5 space-y-5">
             <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-emerald-500" />
-                  <h2 className="font-bold text-sm text-foreground">Target Role Intelligence</h2>
-                </div>
+                <h2 className="font-bold text-sm text-foreground">Target Role Intelligence</h2>
                 <Badge variant="secondary" className="text-[10px] font-mono">
                   {roleScope.discipline}
                 </Badge>
@@ -811,14 +786,9 @@ export default function CoverLetterStudioPage() {
               {/* Company Picker & Custom Input (Real-time dynamic calibration, NO EMOJIS) */}
               <div className="space-y-3.5 text-xs">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-muted-foreground">
-                      Target Company (Verified Directory or Custom)
-                    </label>
-                    <span className="text-[10px] text-muted-foreground">
-                      Auto-calibrates letter on change
-                    </span>
-                  </div>
+                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                    Target Company
+                  </label>
 
                   <div className="flex flex-col gap-2">
                     {/* Select from discipline corporate directory */}

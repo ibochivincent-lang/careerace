@@ -310,8 +310,8 @@ export async function POST(req: Request) {
           const daysAgo = Math.max(0, Math.floor((now - appliedTime) / (1000 * 60 * 60 * 24)));
           const isDue = daysAgo >= 7;
           const statusText = isDue
-            ? `⚠️ 7-Day Follow-Up Due (${daysAgo} days elapsed)`
-            : `⏳ Follow-up milestone in ${7 - daysAgo} day(s)`;
+            ? `[Follow-Up Due] (${daysAgo} days elapsed)`
+            : `[Pending Follow-Up] (Milestone in ${7 - daysAgo} day(s))`;
           return `${i + 1}. **${j.role || j.title || "Target Role"}** at **${j.company || "Company"}**\n   • Applied: ${j.appliedAt ? new Date(j.appliedAt).toLocaleDateString() : "Recently"}\n   • Contact: ${j.contactEmail || j.email || "HR / Recruiter on file"}\n   • Status: ${statusText}`;
         }).join("\n\n");
 

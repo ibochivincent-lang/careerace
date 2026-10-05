@@ -1063,13 +1063,8 @@ export default function ApplicationBoardPage() {
   const [customEmailBody, setCustomEmailBody] = useState('')
   const [copiedDraft, setCopiedDraft] = useState(false)
 
-  // Attachable credentials, uploaded files & STCW marine certifications state
-  const [selectedAttachments, setSelectedAttachments] = useState<string[]>([
-    'stcw_bst',
-    'eng1_med',
-    'seamans_book',
-    'walrus_proof',
-  ])
+  // Attachable credentials and uploaded files state
+  const [selectedAttachments, setSelectedAttachments] = useState<string[]>([])
   const [uploadedDocuments, setUploadedDocuments] = useState<{
     id: string
     name: string
@@ -1460,11 +1455,9 @@ export default function ApplicationBoardPage() {
     return null
   }
 
-  // Merged available attachments list (STCW, sea time, certificates, uploaded files, proofs)
+  // Merged available attachments list (uploaded documents and custom additions)
   const allAvailableAttachments = useMemo(() => {
-    const list: { id: string; label: string; category: string; isUploaded?: boolean; walrusUrl?: string; size?: number }[] = [
-      ...DEFAULT_ATTACHABLE_CREDENTIALS,
-    ]
+    const list: { id: string; label: string; category: string; isUploaded?: boolean; walrusUrl?: string; size?: number }[] = []
     if (activeProfileData?.certifications && Array.isArray(activeProfileData.certifications)) {
       activeProfileData.certifications.forEach((c, idx) => {
         if (!list.some((item) => item.label.toLowerCase() === c.toLowerCase())) {
@@ -2193,9 +2186,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         Walrus Sovereign Storage
                       </Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Universal snapshot selector: switch between Active Draft and Walrus anchored CV profiles.
-                    </p>
                   </div>
                 </div>
 
@@ -2230,20 +2220,13 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             </Card>
 
             {/* Top Auto Apply Banner */}
-            <Card className="p-4 sm:p-6 rounded-2xl border bg-card">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-border/60">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Bot className="w-5 h-5 text-emerald-500" />
-                    <h2 className="text-base font-bold text-foreground">Corporate Email Application Dispatch</h2>
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                      {categoryCounts.all} Verified Hiring Contacts
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-                    Dispatches applications directly to verified corporate recruitment emails (crewing@, careers@) with 5-working-day anti-duplicate protection. 
-                    Includes your tailored CV snapshot, cryptographic Walrus proof attestation, and attached STCW maritime certifications.
-                  </p>
+            <Card className="p-4 sm:p-5 rounded-2xl border bg-card">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/60">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground">Corporate Email Application Dispatch</h2>
+                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                    {categoryCounts.all} Verified Hiring Contacts
+                  </Badge>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -2319,16 +2302,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </Badge>
                     </div>
 
-                    {/* Maritime Priority Callout */}
-                    <div className="p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-[11px] text-emerald-800 dark:text-emerald-300 space-y-0.5">
-                      <div className="font-semibold flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span>{categoryCounts['Maritime / Offshore']} Verified Maritime & Crewing Contacts</span>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground leading-normal">
-                        Direct crewing desks at Maersk, ABS, Chevron Shipping, Subsea 7, ONE, PIL, V.Ships, BSM, Anglo-Eastern, NLNG, and more.
-                      </p>
-                    </div>
 
                     {/* Search Input */}
                     <div className="relative">
@@ -2498,20 +2471,8 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
                 {/* Right Column (7 cols): Clean Application Dispatch Console */}
                 <div className="lg:col-span-7 space-y-4">
-                  {/* Console Header & Target Recipient Box */}
-                  <div className="p-5 rounded-xl border border-border bg-card space-y-4 shadow-xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/60">
-                      <div>
-                        <h3 className="text-xs font-bold text-foreground">Application Package Dispatch Console</h3>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Direct transmission with verified credentials, attached certifications, and anti-duplicate cooldown.
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
-                        Sovereign Transmission
-                      </Badge>
-                    </div>
-
+                  {/* Console Container & Target Recipient Box */}
+                  <div className="p-4 sm:p-5 rounded-xl border border-border bg-card space-y-4 shadow-xs">
                     {/* Target Recipient Card */}
                     <div className="p-3.5 rounded-xl border border-border/80 bg-muted/20 space-y-2">
                       <div className="flex items-center justify-between">
@@ -2571,12 +2532,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           <div>
                             <h4 className="text-xs font-bold text-foreground">CV & Document Attachments</h4>
                             <p className="text-[10px] text-muted-foreground">
-                              Select your active CV and attach scanned licenses, certificates, or transcripts.
+                              Select an active CV and attach documents.
                             </p>
                           </div>
                         </div>
                         <Badge variant="secondary" className="text-[10px] font-mono">
-                          {selectedAttachments.length} Selected
+                          {uploadedDocuments.length} Attached
                         </Badge>
                       </div>
 
@@ -2589,7 +2550,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               CV Snapshot: {selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Working Draft'}
                             </span>
                             <span className="text-[10px] text-muted-foreground block truncate">
-                              {selectedVersionMeta?.blobId ? `Walrus: ${selectedVersionMeta.blobId.slice(0, 10)}...` : 'Ready for verification attestation'}
+                              {selectedVersionMeta?.blobId ? `Walrus: ${selectedVersionMeta.blobId.slice(0, 10)}...` : 'Active Working Draft'}
                             </span>
                           </div>
                         </div>
@@ -2613,11 +2574,11 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </div>
 
                       {/* Document Upload & File Attachment Section */}
-                      <div className="space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
                           <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
                             <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>Attach Documents (PDF, DOCX, Image Proofs)</span>
+                            <span>Attached Documents (PDF, DOCX)</span>
                           </label>
 
                           {/* Hidden File Input */}
@@ -2652,97 +2613,45 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         </div>
 
                         {/* Uploaded Files Grid */}
-                        {uploadedDocuments.length > 0 && (
-                          <div className="space-y-1.5 pt-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block font-mono">
-                              Uploaded Application Files ({uploadedDocuments.length})
-                            </span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
-                              {uploadedDocuments.map((doc) => {
-                                const isChecked = selectedAttachments.includes(doc.id)
-                                return (
-                                  <div
-                                    key={doc.id}
-                                    className={`p-2 rounded-lg border text-xs flex items-center justify-between gap-2 transition-colors ${
-                                      isChecked
-                                        ? 'border-emerald-500/40 bg-emerald-500/5 text-foreground'
-                                        : 'border-border bg-muted/20 text-muted-foreground'
-                                    }`}
-                                  >
-                                    <div
-                                      onClick={() => {
-                                        if (isChecked) {
-                                          setSelectedAttachments(selectedAttachments.filter((id) => id !== doc.id))
-                                        } else {
-                                          setSelectedAttachments([...selectedAttachments, doc.id])
-                                        }
-                                      }}
-                                      className="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
-                                    >
-                                      <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                      <div className="min-w-0">
-                                        <span className="text-[11px] font-medium block truncate text-foreground">
-                                          {doc.name}
-                                        </span>
-                                        <span className="text-[9px] text-muted-foreground font-mono">
-                                          {doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'} · Walrus Stored
-                                        </span>
-                                      </div>
+                        {uploadedDocuments.length > 0 ? (
+                          <div className="space-y-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                              {uploadedDocuments.map((doc) => (
+                                <div
+                                  key={doc.id}
+                                  className="p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/5 text-foreground text-xs flex items-center justify-between gap-2"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                    <div className="min-w-0">
+                                      <span className="text-[11px] font-medium block truncate text-foreground">
+                                        {doc.name}
+                                      </span>
+                                      <span className="text-[9px] text-muted-foreground font-mono">
+                                        {doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'} · Walrus Stored
+                                      </span>
                                     </div>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveUploadedDoc(doc.id, doc.name)}
-                                      title="Remove uploaded document"
-                                      className="p-1 rounded text-muted-foreground hover:text-red-500 cursor-pointer shrink-0"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
                                   </div>
-                                )
-                              })}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveUploadedDoc(doc.id, doc.name)}
+                                    title="Remove uploaded document"
+                                    className="p-1 rounded text-muted-foreground hover:text-red-500 cursor-pointer shrink-0"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           </div>
+                        ) : (
+                          <div className="p-3 rounded-lg border border-dashed border-border/80 bg-muted/10 text-center">
+                            <p className="text-[11px] text-muted-foreground">
+                              No additional documents attached. Click <strong className="text-foreground">Upload Document</strong> to attach your PDF resume, licenses, or transcripts.
+                            </p>
+                          </div>
                         )}
-
-                        {/* Quick-toggle Standard Marine & Technical Certifications */}
-                        <div className="pt-2 border-t border-border/50">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground font-mono">
-                              Quick Professional Certifications (Click to Include)
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                            {DEFAULT_ATTACHABLE_CREDENTIALS.map((cred) => {
-                              const isChecked = selectedAttachments.includes(cred.id)
-                              return (
-                                <button
-                                  key={cred.id}
-                                  type="button"
-                                  onClick={() => {
-                                    if (isChecked) {
-                                      setSelectedAttachments(selectedAttachments.filter((id) => id !== cred.id))
-                                    } else {
-                                      setSelectedAttachments([...selectedAttachments, cred.id])
-                                    }
-                                  }}
-                                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all flex items-center gap-1.5 cursor-pointer border ${
-                                    isChecked
-                                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
-                                      : 'border-border/70 bg-muted/30 text-muted-foreground hover:bg-muted/60'
-                                  }`}
-                                >
-                                  {isChecked ? (
-                                    <Check className="w-3 h-3 text-emerald-500" />
-                                  ) : (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-                                  )}
-                                  <span>{cred.label.split('(')[0].trim()}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
                       </div>
                     </div>
 
