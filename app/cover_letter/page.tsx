@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/card';
@@ -18,17 +18,9 @@ import {
   Target,
   FileText,
   Briefcase,
-  Layers,
   RefreshCw,
-  ExternalLink,
-  ChevronRight,
-  Building2,
   Calendar,
-  Search,
-  Filter,
-  SlidersHorizontal,
   Compass,
-  CheckCircle2,
   Send
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -58,38 +50,36 @@ export const DISCIPLINE_DEFINITIONS: DisciplineDefinition[] = [
       '3rd Marine Engineer Officer',
       'Vessel Technical Superintendent',
       'Ship Captain / Master Mariner (Navigation & Bridge)',
-      'Naval Architect & Marine Structural Analyst',
-      'Offshore Subsea Systems Engineer'
+      'Offshore DP & Subsea Systems Specialist'
     ],
     defaultRole: 'Engine Cadet / Trainee Marine Engineer',
-    description: 'Propulsion watchkeeping, 2/4-stroke prime movers, auxiliary boilers, SOLAS/MARPOL compliance, and marine power plants.'
+    description: 'Propulsion telemetry, auxiliary plant, SOLAS/MARPOL compliance, bridge management, and offshore vessel uptime.'
   },
   {
     id: 'software',
-    name: 'Software, Web & Cloud Systems',
+    name: 'Software & Cloud Engineering',
     category: 'Software / Cloud',
     roles: [
       'Full Stack Software Engineer',
-      'Frontend / React Specialist',
-      'Backend Distributed Systems Engineer',
-      'Edge Infrastructure & DevOps Engineer',
-      'Protocol & Distributed Storage Engineer'
+      'Distributed Systems & Cloud Architect',
+      'Frontend / UX Infrastructure Engineer',
+      'Reliability & DevOps Platform Engineer'
     ],
     defaultRole: 'Full Stack Software Engineer',
-    description: 'Next.js App Router, TypeScript, high-concurrency APIs, distributed databases, caching, and CI/CD pipelines.'
+    description: 'High-concurrency APIs, distributed microservices, TypeScript/Next.js architectures, and cloud resilience.'
   },
   {
     id: 'ai',
-    name: 'AI, Robotics & Autonomous Systems',
+    name: 'AI & Autonomous Systems',
     category: 'AI / Robotics',
     roles: [
       'Autonomous Systems & ML Engineer',
-      'AI Research Engineer (LLMs & Frontier Models)',
-      'Robotics Software & Motion Control Engineer',
-      'Supercomputing Infrastructure Engineer'
+      'Computer Vision & Sensor Fusion Specialist',
+      'LLM & Agentic Systems Engineer',
+      'Robotics Software Architect'
     ],
     defaultRole: 'Autonomous Systems & ML Engineer',
-    description: 'PyTorch, TensorRT, vLLM, low-latency inference, computer vision pipelines, and multi-agent systems.'
+    description: 'Deep neural models, sensor fusion, real-time edge inference, and high-safety autonomous feedback loops.'
   },
   {
     id: 'medical',
@@ -97,12 +87,12 @@ export const DISCIPLINE_DEFINITIONS: DisciplineDefinition[] = [
     category: 'Medical / Healthcare',
     roles: [
       'Lead Healthcare Systems & Informatics Engineer',
-      'Clinical Integration Engineer (HL7 / FHIR)',
-      'Bioinformatics & Genomic Pipeline Engineer',
-      'Medical Device Telemetry Specialist'
+      'Clinical Decision Support & EHR Specialist',
+      'Biomedical Device Integration Engineer',
+      'Healthcare Data Compliance Architect'
     ],
     defaultRole: 'Lead Healthcare Systems & Informatics Engineer',
-    description: 'HL7/FHIR APIs, EHR interoperability (Epic/Cerner), HIPAA compliance, and clinical decision support telemetry.'
+    description: 'HL7 FHIR pipelines, HIPAA-compliant clinical systems, telemedicine security, and zero diagnostic latency.'
   },
   {
     id: 'management',
@@ -110,47 +100,54 @@ export const DISCIPLINE_DEFINITIONS: DisciplineDefinition[] = [
     category: 'Management / Operations',
     roles: [
       'Global Fleet Operations & Decarbonization Manager',
-      'Vessel Superintendent & Technical Manager',
-      'Industrial Operations Director',
-      'Semiconductor Manufacturing Operations Lead'
+      'Technical Superintendent & Compliance Director',
+      'Maritime Logistics & Voyage Planning Director',
+      'HSE & Maritime Operations Auditor'
     ],
     defaultRole: 'Global Fleet Operations & Decarbonization Manager',
-    description: 'Fleet logistics, drydock budgets, SIRE 2.0 / ISM vetting, IMO CII compliance, and operational cost governance.'
+    description: 'Commercial voyage efficiency, CII emissions compliance, OPEX budget control, and maritime safety governance.'
   },
   {
     id: 'industrial',
-    name: 'Industrial, Hardware & Quality',
+    name: 'Industrial & Hardware Engineering',
     category: 'Engineering / Industrial',
     roles: [
-      'Manufacturing & Transducer Quality Engineer',
-      'Environmental Test Engineering Specialist',
-      'Satellite Systems & Hardware Engineer',
-      'Statistical Process Control (SPC) Engineer'
+      'Industrial Automation & Test Systems Engineer',
+      'Hardware Quality & Sensor Calibration Specialist',
+      'PLC & SCADA Control Systems Architect',
+      'Embedded Firmware Reliability Engineer'
     ],
-    defaultRole: 'Manufacturing & Transducer Quality Engineer',
-    description: 'Sensor instrumentation, transducer calibration, AS9100 / ISO 9001 compliance, and first-pass yield optimization.'
+    defaultRole: 'Industrial Automation & Test Systems Engineer',
+    description: 'High-throughput manufacturing lines, PLC/SCADA control loops, hardware transducer calibration, and Six Sigma rigor.'
+  },
+  {
+    id: 'custom',
+    name: 'Custom Discipline & Role',
+    category: 'Maritime / Offshore',
+    roles: [
+      'Custom Role Specified by Candidate'
+    ],
+    defaultRole: 'Custom Engineering Specialist',
+    description: 'Define your exact role title and industry focus for custom-tailored cover letter synthesis.'
   }
 ];
 
 function getFilteredCvHighlights(profile: ParsedCv | null, disciplineId: string): string[] {
   if (!profile) return [];
-  const marineKeywords = ['marine', 'cadet', 'vessel', 'engine', 'propulsion', 'boiler', 'ship', 'bunkering', 'marpol', 'solas', 'stcw', 'offshore', 'voyage', 'sea'];
-  const techKeywords = ['software', 'frontend', 'backend', 'api', 'react', 'next.js', 'typescript', 'javascript', 'database', 'cloud', 'aws', 'python', 'code', 'git', 'full stack'];
-  const aiKeywords = ['ai', 'ml', 'machine learning', 'model', 'neural', 'vision', 'robot', 'autonomous', 'inference', 'pytorch', 'tensor'];
-  const healthKeywords = ['health', 'medical', 'clinical', 'ehr', 'fhir', 'hl7', 'patient', 'hipaa', 'informatics', 'genomic'];
-  const mgtKeywords = ['fleet', 'manager', 'lead', 'operations', 'budget', 'schedule', 'superintendent', 'logistics', 'vetting'];
-  const indKeywords = ['industrial', 'manufacturing', 'quality', 'transducer', 'calibration', 'spc', 'fmea', 'yield', 'hardware'];
 
-  let targetFilter = marineKeywords;
-  if (disciplineId === 'software') targetFilter = techKeywords;
-  else if (disciplineId === 'ai') targetFilter = aiKeywords;
-  else if (disciplineId === 'medical') targetFilter = healthKeywords;
-  else if (disciplineId === 'management') targetFilter = mgtKeywords;
-  else if (disciplineId === 'industrial') targetFilter = indKeywords;
+  const disciplineKeywords: Record<string, string[]> = {
+    marine: ['marine', 'cadet', 'vessel', 'engine', 'propulsion', 'boiler', 'generator', 'auxiliary', 'pump', 'solas', 'marpol', 'stcw', 'ship', 'bunkering', 'ballast', 'offshore', 'voyage', 'captain', 'bridge'],
+    software: ['software', 'react', 'next.js', 'typescript', 'api', 'database', 'frontend', 'backend', 'full stack', 'cloud', 'aws', 'docker', 'kubernetes', 'node', 'ui', 'ux'],
+    ai: ['machine learning', 'ai', 'neural', 'vision', 'sensor', 'model', 'inference', 'python', 'pytorch', 'tensorflow', 'robotics', 'cuda'],
+    medical: ['health', 'medical', 'clinical', 'fhir', 'ehr', 'hipaa', 'biomedical', 'patient', 'hospital', 'telehealth'],
+    management: ['fleet', 'operations', 'superintendent', 'cii', 'management', 'logistics', 'charter', 'budget', 'audit', 'compliance'],
+    industrial: ['automation', 'plc', 'scada', 'hardware', 'transducer', 'calibration', 'manufacturing', 'quality', 'six sigma', 'sensor'],
+    custom: ['engineer', 'lead', 'operations', 'systems', 'management', 'specialist']
+  };
 
+  const targetFilter = disciplineKeywords[disciplineId] || disciplineKeywords.marine;
   const highlights: string[] = [];
 
-  // Inspect work experience highlights
   profile.work_experience?.forEach((w) => {
     w.highlights?.forEach((h) => {
       const lower = h.toLowerCase();
@@ -160,7 +157,6 @@ function getFilteredCvHighlights(profile: ParsedCv | null, disciplineId: string)
     });
   });
 
-  // If no discipline-specific highlights found, fall back to recent top accomplishments
   if (highlights.length === 0 && profile.work_experience?.[0]?.highlights) {
     profile.work_experience[0].highlights.slice(0, 3).forEach((h) => {
       highlights.push(`${profile.work_experience[0].role}: ${h}`);
@@ -199,7 +195,6 @@ function generateLocalDraft(params: {
   const topKeywords = intel.technicalKeywords.slice(0, 6).join(', ');
   const verifiedMetric = intel.measurableImpactMetrics[0] || 'Maintained consistent operational uptime and verified technical rigor';
 
-  // Discipline-calibrated experience narrative
   let recentExpSummary = '';
   if (params.filteredHighlights && params.filteredHighlights.length > 0) {
     recentExpSummary = `In demonstrated practice: ${params.filteredHighlights[0]}`;
@@ -216,7 +211,6 @@ function generateLocalDraft(params: {
     ? `My verified work attestations, cryptographic credentials, and tailored portfolio are permanently anchored on Mysten Labs Walrus storage at: https://walruscan.com/testnet/blob/${params.walrusBlobId}`
     : `My verified credentials and technical portfolio are registered through the CareerAce sovereign proof network.`;
 
-  // Always live current date formatted cleanly
   const todayDate = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -233,11 +227,6 @@ ${recipientHeader}
 ${salutation}
 
 I am writing to formally submit my application for the position of ${params.role} with ${companyDisplay}. With a foundation centered on ${topKeywords}, I take direct accountability for technical execution, operational discipline, and high-stakes reliability.
-
-The scope of the ${params.role} role demands disciplined execution across critical priorities:
-• ${intel.coreResponsibilities[0] || 'Execution of mission-critical systems and verified workflows'}
-• ${intel.coreResponsibilities[1] || 'Ensuring continuous compliance, operational availability, and safety'}
-• ${intel.coreResponsibilities[2] || 'Troubleshooting and rapid resolution of complex operational anomalies'}
 
 Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact ${companyDisplay}:
 1. ${problems[0] || 'Mitigating system downtime through predictive diagnostics and rigorous preventive maintenance'}
@@ -257,7 +246,7 @@ ${params.candidateName || 'Candidate'}`;
 export default function CoverLetterStudioPage() {
   const router = useRouter();
 
-  // 1. Discipline & Role Box Selector State
+  // Discipline & Role Selector State
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>('marine');
   const [targetRole, setTargetRole] = useState<string>('Engine Cadet / Trainee Marine Engineer');
   const [customRoleInput, setCustomRoleInput] = useState<string>('');
@@ -265,33 +254,33 @@ export default function CoverLetterStudioPage() {
   const [jobDescription, setJobDescription] = useState<string>('');
   const [keyProblemsInput, setKeyProblemsInput] = useState<string>('');
 
-  // 2. Profile & Walrus Sovereign Memory
+  // Profile & Walrus Sovereign Memory State
   const [profile, setProfile] = useState<ParsedCv | null>(null);
   const [walrusBlobId, setWalrusBlobId] = useState<string>('');
 
-  // 3. Generated outputs & intelligence
+  // Output & Generation State
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingToWalrus, setIsSavingToWalrus] = useState(false);
   const [roleScope, setRoleScope] = useState<RoleIntelligenceProfile>(() => getRoleIntelligence('Engine Cadet'));
   const [coverLetterText, setCoverLetterText] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
-  // Active discipline definition object
+  // Active discipline definition
   const activeDiscipline = useMemo(() => {
     return DISCIPLINE_DEFINITIONS.find((d) => d.id === selectedDisciplineId) || DISCIPLINE_DEFINITIONS[0];
   }, [selectedDisciplineId]);
 
-  // Verified companies filtered by selected discipline
+  // Verified companies for current discipline
   const availableCompanies = useMemo(() => {
     return VERIFIED_COMPANY_HIRING_CONTACTS.filter((c) => c.category === activeDiscipline.category);
   }, [activeDiscipline]);
 
-  // Filtered CV highlights tailored strictly to active discipline
+  // Filtered CV highlights
   const activeCvHighlights = useMemo(() => {
     return getFilteredCvHighlights(profile, selectedDisciplineId);
   }, [profile, selectedDisciplineId]);
 
-  // Dynamic live current date
+  // Live date string
   const liveDateString = useMemo(() => {
     return new Date().toLocaleDateString('en-US', {
       month: 'long',
@@ -300,7 +289,38 @@ export default function CoverLetterStudioPage() {
     });
   }, []);
 
-  // Load sovereign profile & initial cover letter draft on mount
+  // Real-time draft generator helper
+  const updateDraft = useCallback((
+    role: string,
+    company: string,
+    disciplineId: string,
+    prof: ParsedCv | null,
+    blobId: string,
+    jd: string,
+    kp: string
+  ) => {
+    const draft = generateLocalDraft({
+      role: role.trim() || 'Engineering Specialist',
+      company: company,
+      jobDescription: jd,
+      keyProblems: kp,
+      candidateName: prof?.applicant_name || 'Candidate',
+      candidateEmail: prof?.email || '',
+      candidatePhone: prof?.phone || '',
+      candidateLocation: prof?.location || 'Global Remote',
+      recentExperience: prof?.work_experience?.[0],
+      walrusBlobId: blobId,
+      disciplineId: disciplineId,
+      filteredHighlights: getFilteredCvHighlights(prof, disciplineId)
+    });
+    setCoverLetterText(draft);
+    try {
+      localStorage.setItem('careerace_tailored_cover_letter', draft);
+      syncCandidateDataToCloud({ coverLetter: draft });
+    } catch {}
+  }, []);
+
+  // Load profile & initial state on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem('careerace_sovereign_profile');
@@ -314,7 +334,7 @@ export default function CoverLetterStudioPage() {
         setWalrusBlobId(storedBlob);
       }
 
-      // Check if user has target roles in parsed profile
+      // Check detected role
       const detectedRole = loadedProfile?.target_roles?.[0] || loadedProfile?.work_experience?.[0]?.role || '';
       let initialDisciplineId = 'marine';
       let initialRole = 'Engine Cadet / Trainee Marine Engineer';
@@ -365,7 +385,7 @@ export default function CoverLetterStudioPage() {
         return;
       }
 
-      // Generate instant initial draft tailored to discipline
+      // Initial draft
       const instant = generateLocalDraft({
         role: initialRole,
         company: initialCompany,
@@ -385,19 +405,13 @@ export default function CoverLetterStudioPage() {
       console.error('Error during Cover Letter Studio initialization:', e);
     }
 
-    // Cross-device cloud restore
     restoreCandidateDataFromCloud().then((cloudData) => {
       if (cloudData) {
-        if (cloudData.profile) {
-          setProfile((prev) => prev || cloudData.profile);
-        }
-        if (cloudData.coverLetter) {
-          setCoverLetterText((prev) => prev || cloudData.coverLetter!);
-        }
+        if (cloudData.profile) setProfile((prev) => prev || cloudData.profile);
+        if (cloudData.coverLetter) setCoverLetterText((prev) => prev || cloudData.coverLetter!);
       }
     });
 
-    // Realtime WebSocket channel for cross-device live updates (<50ms)
     const activeAddress = localStorage.getItem('careerace_session_address') || '';
     let unsubscribeRealtime = () => {};
     if (activeAddress) {
@@ -435,65 +449,46 @@ export default function CoverLetterStudioPage() {
     setTargetRole(def.defaultRole);
     setCustomRoleInput('');
 
-    // Pre-select first verified company in that category
-    const companies = VERIFIED_COMPANY_HIRING_CONTACTS.filter((c) => c.category === def.category);
-    const newCompany = companies[0]?.company || '';
+    let newCompany = '';
+    if (disciplineId !== 'custom') {
+      const companies = VERIFIED_COMPANY_HIRING_CONTACTS.filter((c) => c.category === def.category);
+      newCompany = companies[0]?.company || '';
+    }
     setTargetCompany(newCompany);
 
     toast.info(`Switched discipline to ${def.name}`);
-
-    // Regenerate letter immediately
-    const draft = generateLocalDraft({
-      role: def.defaultRole,
-      company: newCompany,
-      jobDescription,
-      keyProblems: keyProblemsInput,
-      candidateName: profile?.applicant_name || 'Candidate',
-      candidateEmail: profile?.email || '',
-      candidatePhone: profile?.phone || '',
-      candidateLocation: profile?.location || 'Global Remote',
-      recentExperience: profile?.work_experience?.[0],
-      walrusBlobId,
-      disciplineId,
-      filteredHighlights: getFilteredCvHighlights(profile, disciplineId)
-    });
-    setCoverLetterText(draft);
-    try {
-      localStorage.setItem('careerace_tailored_cover_letter', draft);
-      syncCandidateDataToCloud({ coverLetter: draft });
-    } catch {}
+    updateDraft(def.defaultRole, newCompany, disciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
   }
 
-  // Handle role selection within discipline
+  // Handle role selection
   function handleSelectRole(roleName: string) {
     setTargetRole(roleName);
     setCustomRoleInput('');
     toast.success(`Role updated: ${roleName}`);
-
-    // Auto update draft
-    const draft = generateLocalDraft({
-      role: roleName,
-      company: targetCompany,
-      jobDescription,
-      keyProblems: keyProblemsInput,
-      candidateName: profile?.applicant_name || 'Candidate',
-      candidateEmail: profile?.email || '',
-      candidatePhone: profile?.phone || '',
-      candidateLocation: profile?.location || 'Global Remote',
-      recentExperience: profile?.work_experience?.[0],
-      walrusBlobId,
-      disciplineId: selectedDisciplineId,
-      filteredHighlights: activeCvHighlights
-    });
-    setCoverLetterText(draft);
-    try {
-      localStorage.setItem('careerace_tailored_cover_letter', draft);
-      syncCandidateDataToCloud({ coverLetter: draft });
-    } catch {}
+    updateDraft(roleName, targetCompany, selectedDisciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
   }
 
-  // Generate / Synthesize Tailored Cover Letter
-  async function handleGenerate() {
+  // Handle custom role typing
+  function handleCustomRoleChange(newRole: string) {
+    setCustomRoleInput(newRole);
+    const effectiveRole = newRole.trim() || targetRole;
+    updateDraft(effectiveRole, targetCompany, selectedDisciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
+  }
+
+  // Handle company selection / typing with immediate real-time calibration
+  function handleCompanyChange(newCompany: string) {
+    setTargetCompany(newCompany);
+    const effectiveRole = customRoleInput.trim() || targetRole;
+    updateDraft(effectiveRole, newCompany, selectedDisciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
+  }
+
+  // Generate / Synthesize Tailored Cover Letter (Strict client-side execution, no redirect, no 404)
+  async function handleGenerate(e?: React.MouseEvent) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     const role = customRoleInput.trim() || targetRole.trim() || 'Engineering Specialist';
     const company = targetCompany.trim();
 
@@ -519,8 +514,12 @@ export default function CoverLetterStudioPage() {
         })
       });
 
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
       const data = await res.json();
-      if (!res.ok || !data.success) {
+      if (!data.success || !data.coverLetter) {
         throw new Error(data.error || 'Failed to generate cover letter.');
       }
 
@@ -529,13 +528,14 @@ export default function CoverLetterStudioPage() {
         localStorage.setItem('careerace_tailored_cover_letter', data.coverLetter);
         syncCandidateDataToCloud({ coverLetter: data.coverLetter });
       } catch {}
+
       if (data.roleScope) {
         setRoleScope(data.roleScope);
       }
 
-      toast.success(company ? `Tailored cover letter generated for ${company}!` : 'Tailored cover letter synthesized for batch application!', { id: toastId });
+      toast.success(company ? `Tailored cover letter calibrated for ${company}!` : 'Tailored cover letter synthesized for batch application!', { id: toastId });
     } catch (err: any) {
-      // Local sovereign fallback
+      // Local sovereign fallback ensures zero downtime and no 404
       const fallbackDraft = generateLocalDraft({
         role,
         company,
@@ -585,7 +585,6 @@ export default function CoverLetterStudioPage() {
     toast.success('Cover letter text file downloaded!');
   }
 
-  // Anchor to Walrus Sovereign Memory Vault
   async function handleAnchorToWalrusVault() {
     if (!coverLetterText) return;
     setIsSavingToWalrus(true);
@@ -595,10 +594,8 @@ export default function CoverLetterStudioPage() {
       const role = customRoleInput.trim() || targetRole;
       const comp = targetCompany.trim() || 'Batch Application';
 
-      // 1. Record in sovereign memory contract
       await saveFact('tailored_cv', `Tailored Cover Letter for ${role} at ${comp}: ${coverLetterText.slice(0, 300)}...`);
 
-      // 2. Save into local vault
       const records = JSON.parse(localStorage.getItem('careerace_saved_letters') || '[]');
       records.unshift({
         id: `cl-${Date.now()}`,
@@ -610,8 +607,7 @@ export default function CoverLetterStudioPage() {
       localStorage.setItem('careerace_saved_letters', JSON.stringify(records.slice(0, 15)));
 
       toast.success('Cover letter permanently anchored into Walrus Sovereign Memory!', { id: toastId });
-    } catch (err: any) {
-      // Local fallback record
+    } catch {
       try {
         const records = JSON.parse(localStorage.getItem('careerace_saved_letters') || '[]');
         records.unshift({
@@ -631,12 +627,10 @@ export default function CoverLetterStudioPage() {
     }
   }
 
-  // Direct Handoff to Auto-Apply on Job Board
   function handleGoToAutoApply() {
     const role = customRoleInput.trim() || targetRole;
     const company = targetCompany.trim();
 
-    // Store tailored cover letter in storage for auto-apply ingestion
     try {
       localStorage.setItem('careerace_tailored_cover_letter', coverLetterText);
     } catch {}
@@ -653,7 +647,7 @@ export default function CoverLetterStudioPage() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
           <div>
@@ -670,12 +664,13 @@ export default function CoverLetterStudioPage() {
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-              Tailors every sentence around the exact problems and operational responsibilities of your target discipline. Filtered strictly to relevant verified experience with zero AI slop, permanent Walrus memory commit, and instant 1-click Auto-Apply dispatch.
+              Tailors every sentence around the verified problems and operational standards of your target role. Zero AI slop, instant company calibration, and direct auto-apply dispatch.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => router.push('/application_board')}
@@ -686,6 +681,7 @@ export default function CoverLetterStudioPage() {
             </Button>
 
             <Button
+              type="button"
               size="sm"
               onClick={handleGoToAutoApply}
               className="text-xs gap-1.5 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs cursor-pointer"
@@ -696,20 +692,20 @@ export default function CoverLetterStudioPage() {
           </div>
         </div>
 
-        {/* 1. DISCIPLINE & TARGET ROLE SELECTOR BOX (UI/UX Pro Max) */}
+        {/* 1. DISCIPLINE & TARGET ROLE SELECTOR BOX (Clean Rectangular Box, Zero Emojis) */}
         <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/70">
             <div className="flex items-center gap-2">
               <Compass className="w-4 h-4 text-emerald-500" />
-              <h2 className="text-sm font-bold text-foreground">Discipline & Target Role Intelligence Selector</h2>
+              <h2 className="text-sm font-bold text-foreground">Discipline and Target Role Selector</h2>
             </div>
             <span className="text-[11px] text-muted-foreground">
-              Select or customize your career discipline to calibrate role scope, CV highlights & corporate contacts.
+              Select discipline to instantly calibrate role scope, CV highlights, and employer directory.
             </span>
           </div>
 
           {/* Discipline Selector Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
             {DISCIPLINE_DEFINITIONS.map((def) => {
               const isSelected = selectedDisciplineId === def.id;
               return (
@@ -738,7 +734,7 @@ export default function CoverLetterStudioPage() {
             })}
           </div>
 
-          {/* Role Pills inside Selected Discipline + Custom Role Input */}
+          {/* Calibrated Role Selection & Custom Role Input */}
           <div className="pt-2 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -769,7 +765,7 @@ export default function CoverLetterStudioPage() {
               })}
             </div>
 
-            {/* Custom Target Role input if user wants something specific (e.g. Engine Cadet, 3rd Engineer, Captain) */}
+            {/* Custom Target Role input if user wants something specific */}
             <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="text-xs font-semibold text-muted-foreground shrink-0">
                 Or Type Custom Target Role:
@@ -777,18 +773,22 @@ export default function CoverLetterStudioPage() {
               <input
                 type="text"
                 value={customRoleInput}
-                onChange={(e) => setCustomRoleInput(e.target.value)}
+                onChange={(e) => handleCustomRoleChange(e.target.value)}
                 placeholder={`e.g. ${activeDiscipline.defaultRole}`}
                 className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               {customRoleInput && (
                 <Button
+                  type="button"
                   size="sm"
                   variant="ghost"
-                  onClick={() => setCustomRoleInput('')}
-                  className="text-xs h-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setCustomRoleInput('');
+                    updateDraft(targetRole, targetCompany, selectedDisciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
+                  }}
+                  className="text-xs h-9 text-muted-foreground hover:text-foreground cursor-pointer"
                 >
-                  Clear Custom
+                  Reset to Calibrated Role
                 </Button>
               )}
             </div>
@@ -796,10 +796,10 @@ export default function CoverLetterStudioPage() {
         </Card>
 
         {/* Main 2-Column Split: Intelligence Engine & Editor */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column (5 Cols): Role Intelligence Parameters & Company Directory */}
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="p-6 border border-border shadow-sm rounded-2xl bg-card space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column (5 Cols): Role Intelligence Parameters & Company Selector */}
+          <div className="lg:col-span-5 space-y-5">
+            <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Target className="w-4 h-4 text-emerald-500" />
@@ -810,55 +810,53 @@ export default function CoverLetterStudioPage() {
                 </Badge>
               </div>
 
-              {/* Company Picker & Custom Input */}
-              <div className="space-y-4 text-xs">
-                {/* Available Companies Dropdown & Batch Apply Option */}
+              {/* Company Picker & Custom Input (Real-time dynamic calibration, NO EMOJIS) */}
+              <div className="space-y-3.5 text-xs">
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-muted-foreground">
-                      Target Company (Verified or Custom)
+                      Target Company (Verified Directory or Custom)
                     </label>
                     <span className="text-[10px] text-muted-foreground">
-                      Leave empty for general batch apply
+                      Auto-calibrates letter on change
                     </span>
                   </div>
 
                   <div className="flex flex-col gap-2">
                     {/* Select from discipline corporate directory */}
                     {availableCompanies.length > 0 && (
-                      <div className="relative">
-                        <select
-                          value={availableCompanies.some((c) => c.company === targetCompany) ? targetCompany : 'custom'}
-                          onChange={(e) => {
-                            if (e.target.value === 'general_batch') {
-                              setTargetCompany('');
-                              toast.info('Configured for batch application: "Dear Hiring Team"');
-                            } else if (e.target.value !== 'custom') {
-                              setTargetCompany(e.target.value);
-                              toast.info(`Selected verified employer: ${e.target.value}`);
-                            }
-                          }}
-                          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-                        >
-                          <option value="general_batch">⚡ General Application (Dear Hiring Team — Batch Ready)</option>
-                          <optgroup label={`Verified ${activeDiscipline.name} Employers`}>
-                            {availableCompanies.map((c) => (
-                              <option key={c.id} value={c.company}>
-                                {c.company} · {c.location}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <option value="custom">Enter Custom Employer Name...</option>
-                        </select>
-                      </div>
+                      <select
+                        value={availableCompanies.some((c) => c.company === targetCompany) ? targetCompany : targetCompany === '' ? 'general_batch' : 'custom'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'general_batch') {
+                            handleCompanyChange('');
+                            toast.info('Configured for batch application: Dear Hiring Team');
+                          } else if (val !== 'custom') {
+                            handleCompanyChange(val);
+                            toast.info(`Calibrated to verified employer: ${val}`);
+                          }
+                        }}
+                        className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                      >
+                        <option value="general_batch">General Application (Dear Hiring Team - Batch Ready)</option>
+                        <optgroup label={`Verified ${activeDiscipline.name} Employers`}>
+                          {availableCompanies.map((c) => (
+                            <option key={c.id} value={c.company}>
+                              {c.company} · {c.location}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <option value="custom">Enter Custom Employer Name...</option>
+                      </select>
                     )}
 
                     {/* Text input for manual or edited company name */}
                     <input
                       type="text"
                       value={targetCompany}
-                      onChange={(e) => setTargetCompany(e.target.value)}
-                      placeholder="e.g. Maersk, Chevron Shipping, Stolt Tankers (or leave blank)"
+                      onChange={(e) => handleCompanyChange(e.target.value)}
+                      placeholder="e.g. Maersk, Chevron Shipping, Stolt Tankers (or leave empty for general)"
                       className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
@@ -872,9 +870,7 @@ export default function CoverLetterStudioPage() {
                   <input
                     type="text"
                     value={customRoleInput.trim() || targetRole}
-                    onChange={(e) => {
-                      setCustomRoleInput(e.target.value);
-                    }}
+                    onChange={(e) => handleCustomRoleChange(e.target.value)}
                     placeholder="e.g. Engine Cadet / Trainee Marine Engineer"
                     className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
                   />
@@ -922,25 +918,9 @@ export default function CoverLetterStudioPage() {
                 )}
               </div>
 
-              {/* Auto-Extracted Role Intelligence Scope */}
+              {/* Role Scope Parameters (Cleaned up: Core Responsibilities Scope Removed as requested) */}
               <div className="space-y-3 pt-2 border-t border-border">
-                {/* 1. Core Responsibilities Scope */}
-                <div className="p-3.5 rounded-xl border border-border/80 bg-muted/30 space-y-2">
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                    <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Core Responsibilities Scope</span>
-                  </div>
-                  <ul className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed pl-1">
-                    {roleScope.coreResponsibilities.map((resp, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-emerald-500 mt-0.5 shrink-0">•</span>
-                        <span>{resp}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* 2. Key Industry Problems That Role Solves */}
+                {/* 1. Key Industry Problems That Role Solves */}
                 <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-amber-900 dark:text-amber-300">
                     <Target className="w-3.5 h-3.5 text-amber-500" />
@@ -958,7 +938,7 @@ export default function CoverLetterStudioPage() {
                   </ul>
                 </div>
 
-                {/* 3. Calibrated ATS Impact Metrics */}
+                {/* 2. Calibrated ATS Impact Metrics */}
                 <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-800 dark:text-emerald-300">
                     <Zap className="w-3.5 h-3.5 text-emerald-500" />
@@ -970,8 +950,9 @@ export default function CoverLetterStudioPage() {
                 </div>
               </div>
 
-              {/* Action Button */}
+              {/* Action Button: Safe client execution, no page reload or 404 */}
               <Button
+                type="button"
                 onClick={handleGenerate}
                 disabled={isGenerating}
                 className="w-full h-10 rounded-xl text-xs font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
@@ -993,11 +974,11 @@ export default function CoverLetterStudioPage() {
 
           {/* Right Column (7 Cols): Generated Cover Letter Viewer & Toolbar */}
           <div className="lg:col-span-7 space-y-4">
-            <Card className="p-6 border border-border shadow-sm rounded-2xl bg-card space-y-4">
+            <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-emerald-500" />
-                  <h3 className="font-bold text-sm text-foreground">Generated Sovereign Cover Letter</h3>
+                  <h3 className="font-bold text-sm text-foreground">Tailored Sovereign Cover Letter</h3>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono">
@@ -1020,7 +1001,7 @@ export default function CoverLetterStudioPage() {
                     } catch {}
                   }}
                   rows={20}
-                  className="w-full p-5 rounded-xl border border-border bg-background text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
+                  className="w-full p-4 rounded-xl border border-border bg-background text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
                   placeholder="Your tailored cover letter will render here..."
                 />
               </div>
@@ -1029,6 +1010,7 @@ export default function CoverLetterStudioPage() {
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border">
                 <div className="flex items-center gap-2">
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
                     onClick={handleCopy}
@@ -1037,7 +1019,7 @@ export default function CoverLetterStudioPage() {
                     {copied ? (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Copied to Clipboard!</span>
+                        <span>Copied to Clipboard</span>
                       </>
                     ) : (
                       <>
@@ -1048,6 +1030,7 @@ export default function CoverLetterStudioPage() {
                   </Button>
 
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
                     onClick={handleDownload}
@@ -1060,6 +1043,7 @@ export default function CoverLetterStudioPage() {
 
                 <div className="flex items-center gap-2">
                   <Button
+                    type="button"
                     size="sm"
                     onClick={handleAnchorToWalrusVault}
                     disabled={isSavingToWalrus}
@@ -1071,6 +1055,7 @@ export default function CoverLetterStudioPage() {
                   </Button>
 
                   <Button
+                    type="button"
                     size="sm"
                     onClick={handleGoToAutoApply}
                     className="text-xs gap-1.5 h-9 bg-foreground text-background hover:bg-foreground/90 font-semibold shadow-xs cursor-pointer"
