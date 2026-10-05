@@ -6,6 +6,8 @@ export interface FreeLlmOptions {
   custom_keys?: {
     google?: string;
     groq?: string;
+    cerebras?: string;
+    deepseek?: string;
     openrouter?: string;
     openai?: string;
     opencode?: string;
@@ -34,6 +36,18 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     options.custom_keys?.groq?.trim() ||
     cookieKeys.groq ||
     process.env.GROQ_API_KEY ||
+    "";
+
+  const cerebrasKey =
+    options.custom_keys?.cerebras?.trim() ||
+    cookieKeys.cerebras ||
+    process.env.CEREBRAS_API_KEY ||
+    "";
+
+  const deepseekKey =
+    options.custom_keys?.deepseek?.trim() ||
+    cookieKeys.deepseek ||
+    process.env.DEEPSEEK_API_KEY ||
     "";
 
   const openRouterKey =
@@ -73,7 +87,109 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     chatMessages.push({ role: "user", content: options.prompt });
   }
 
-  // 1. Try Google Gemini API (gemini-3.5-flash / gemini-3.1-flash-lite / gemini-3.8-flash)
+  // 1. Try Groq Cloud (Ultra-fast open-source inference: Qwen, Llama 3.3, GPT-OSS)
+  if (groqKey) {
+    const groqPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: groqPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] Groq (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+        }
+      } catch (err) {
+        console.warn(`[careerace] Groq (${model}) connection notice:`, err);
+      }
+    }
+  }
+
+  // 2. Try Cerebras API if configured (Fast Llama 3.3 / 3.1)
+  if (cerebrasKey) {
+    const cerebrasPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["llama-3.3-70b", "llama3.1-70b", "llama3.1-8b"]) {
+      try {
+        const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${cerebrasKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: cerebrasPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] Cerebras (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+        }
+      } catch (err) {
+        console.warn(`[careerace] Cerebras (${model}) connection notice:`, err);
+      }
+    }
+  }
+
+  // 3. Try DeepSeek direct API if configured
+  if (deepseekKey) {
+    const deepseekPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["deepseek-chat", "deepseek-reasoner"]) {
+      try {
+        const res = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${deepseekKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: deepseekPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] DeepSeek (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+        }
+      } catch (err) {
+        console.warn(`[careerace] DeepSeek (${model}) connection notice:`, err);
+      }
+    }
+  }
+
+  // 4. Try Google Gemini API (gemini-3.5-flash / gemini-3.1-flash-lite / gemini-3.8-flash)
   if (geminiKey) {
     const geminiContents = chatMessages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -106,49 +222,23 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           const data = await res.json();
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) return text;
+        } else {
+          console.warn(`[careerace] Gemini (${modelName}) returned HTTP ${res.status}. Rotating to next model/provider...`);
         }
-      } catch (_e) {}
+      } catch (err) {
+        console.warn(`[careerace] Gemini (${modelName}) connection notice:`, err);
+      }
     }
   }
 
-  // 2. Try Groq Cloud if configured (qwen/qwen3.8-27b / openai/gpt-oss-120b / llama-3.3-70b-versatile)
-  if (groqKey) {
-    const groqPayloadMessages = [
-      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-      ...chatMessages,
-    ];
-
-    for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
-      try {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${groqKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: groqPayloadMessages,
-            max_tokens: options.max_tokens || 1000,
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        }
-      } catch (_e) {}
-    }
-  }
-
-  // 3. Try OpenRouter (qwen/qwen3.8-27b:free / nvidia/nemotron-3.5-lightning:free / gemma-4-31b-it:free)
+  // 5. Try OpenRouter (Free open-source models: Qwen, Nemotron, Gemma, DeepSeek R1, Mistral)
   if (openRouterKey) {
     const openRouterPayloadMessages = [
       ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
       ...chatMessages,
     ];
 
-    for (const model of ["qwen/qwen3.8-27b:free", "nvidia/nemotron-3.5-lightning:free", "google/gemma-4-31b-it:free", "deepseek/deepseek-r1:free"]) {
+    for (const model of ["qwen/qwen3.8-27b:free", "nvidia/nemotron-3.5-lightning:free", "google/gemma-4-31b-it:free", "deepseek/deepseek-r1:free", "mistralai/mistral-7b-instruct:free"]) {
       try {
         const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
@@ -156,25 +246,29 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             "Authorization": `Bearer ${openRouterKey}`,
             "Content-Type": "application/json",
             "HTTP-Referer": "https://careerace.online",
-            "X-Title": "Career Ace"
+            "X-Title": "Career Ace",
           },
           body: JSON.stringify({
             model,
             messages: openRouterPayloadMessages,
             max_tokens: options.max_tokens || 1000,
-          })
+          }),
         });
 
         if (res.ok) {
           const data = await res.json();
           const content = data.choices?.[0]?.message?.content;
           if (content) return content;
+        } else {
+          console.warn(`[careerace] OpenRouter (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
         }
-      } catch (_e) {}
+      } catch (err) {
+        console.warn(`[careerace] OpenRouter (${model}) connection notice:`, err);
+      }
     }
   }
 
-  // 4. Try OpenCode Zen/Go API if present
+  // 6. Try OpenCode Zen/Go API if present
   if (openCodeKey) {
     for (const model of ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash"]) {
       try {
@@ -183,53 +277,63 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           headers: {
             "Authorization": `Bearer ${openCodeKey}`,
             "Content-Type": "application/json",
-            "x-opencode-session": "careerace_session"
+            "x-opencode-session": "careerace_session",
           },
           body: JSON.stringify({
             model,
             messages: [
               ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-              { role: "user", content: options.prompt }
+              { role: "user", content: options.prompt },
             ],
-            max_tokens: options.max_tokens || 800
-          })
+            max_tokens: options.max_tokens || 800,
+          }),
         });
         if (res.ok) {
           const data = await res.json();
           const content = data.choices?.[0]?.message?.content;
           if (content) return content;
+        } else {
+          console.warn(`[careerace] OpenCode (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
         }
-      } catch (_e) {}
+      } catch (err) {
+        console.warn(`[careerace] OpenCode (${model}) connection notice:`, err);
+      }
     }
   }
 
-  // 5. Try OpenAI API if present
+  // 7. Try OpenAI API if present
   if (openaiKey) {
-    try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openaiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-            { role: "user", content: options.prompt }
-          ],
-          max_tokens: options.max_tokens || 800
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
+    for (const model of ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"]) {
+      try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+              { role: "user", content: options.prompt },
+            ],
+            max_tokens: options.max_tokens || 800,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] OpenAI (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+        }
+      } catch (err) {
+        console.warn(`[careerace] OpenAI (${model}) connection notice:`, err);
       }
-    } catch (_e) {}
+    }
   }
 
-  // 5. Try Local Ollama Instance (http://localhost:11434)
+  // 8. Try Local Ollama Instance (http://localhost:11434)
   try {
     const res = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
@@ -237,8 +341,8 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
       body: JSON.stringify({
         model: "llama3",
         prompt: `${options.system_prompt ? options.system_prompt + "\n\n" : ""}${options.prompt}`,
-        stream: false
-      })
+        stream: false,
+      }),
     });
     if (res.ok) {
       const data = await res.json();

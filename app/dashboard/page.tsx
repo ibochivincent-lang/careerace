@@ -34,7 +34,7 @@ import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime, type RealtimeSyncEvent } from '@/lib/cloud_sync'
 import { ComingSoonModal, type ComingSoonFeature } from '@/components/ComingSoonModal'
 import { cn } from '@/components/ui/utils'
-import { getClientSessionAddress } from '@/lib/client_auth'
+import { getClientSessionAddress, setClientSession } from '@/lib/client_auth'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -111,6 +111,11 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
 }
 
 const OVERVIEW_KEYWORD_PILLS = [
+  'How many jobs can I apply in a day?',
+  'Can I apply with other disciplines?',
+  'How many jobs did I apply yesterday?',
+  'My course of study is not here',
+  'Show me the names of the jobs I applied for',
   'Available Jobs for Me',
   "Today's Application Goal",
   'CV & Background',
@@ -208,8 +213,13 @@ function DashboardContent() {
             setSessionAddress(data.address)
           } else {
             const stored = getClientSessionAddress()
-            if (stored) setSessionAddress(stored)
-            else setSessionAddress('')
+            if (stored) {
+              setSessionAddress(stored)
+            } else {
+              const anonAddr = '0x' + Array.from(crypto.getRandomValues(new Uint8Array(20))).map((b) => b.toString(16).padStart(2, '0')).join('')
+              setClientSession(anonAddr)
+              setSessionAddress(anonAddr)
+            }
           }
         })
         .catch(() => {})
@@ -966,6 +976,8 @@ function DashboardContent() {
       const customAiKeys = {
         google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
         groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
+        cerebras: typeof window !== 'undefined' ? localStorage.getItem('careerace_cerebras_key') || undefined : undefined,
+        deepseek: typeof window !== 'undefined' ? localStorage.getItem('careerace_deepseek_key') || undefined : undefined,
         openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
         opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
       }
@@ -1089,6 +1101,8 @@ function DashboardContent() {
       const customAiKeys = {
         google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
         groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
+        cerebras: typeof window !== 'undefined' ? localStorage.getItem('careerace_cerebras_key') || undefined : undefined,
+        deepseek: typeof window !== 'undefined' ? localStorage.getItem('careerace_deepseek_key') || undefined : undefined,
         openrouter: typeof window !== 'undefined' ? localStorage.getItem('careerace_openrouter_key') || undefined : undefined,
         opencode: typeof window !== 'undefined' ? localStorage.getItem('careerace_opencode_key') || undefined : undefined,
       }
