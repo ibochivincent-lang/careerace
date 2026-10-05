@@ -55,6 +55,18 @@ CREATE TABLE IF NOT EXISTS public.interview_evaluations (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 5. Intent Knowledge Base (200 Fine-Tuned Variations & Categorized Taxonomies)
+CREATE TABLE IF NOT EXISTS public.intent_knowledge_base (
+    id SERIAL PRIMARY KEY,
+    category TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    action_prompt TEXT NOT NULL,
+    chip_label TEXT NOT NULL,
+    question_variation TEXT NOT NULL,
+    keywords TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ==============================================================================
 -- INDEXES FOR HIGH-THROUGHPUT ZERO-INTERFERENCE QUERIES
 -- ==============================================================================
@@ -63,6 +75,8 @@ CREATE INDEX IF NOT EXISTS idx_memories_wallet ON public.candidate_memories(cand
 CREATE INDEX IF NOT EXISTS idx_memories_namespace ON public.candidate_memories(namespace);
 CREATE INDEX IF NOT EXISTS idx_applications_wallet ON public.job_applications(candidate_wallet);
 CREATE INDEX IF NOT EXISTS idx_evaluations_wallet ON public.interview_evaluations(candidate_wallet);
+CREATE INDEX IF NOT EXISTS idx_intent_kb_category ON public.intent_knowledge_base(category);
+CREATE INDEX IF NOT EXISTS idx_intent_kb_slug ON public.intent_knowledge_base(slug);
 
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
@@ -72,6 +86,7 @@ ALTER TABLE public.candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.candidate_memories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.interview_evaluations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.intent_knowledge_base ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read/write by matching wallet_address or service role
 CREATE POLICY "Allow sovereign read access on candidates" ON public.candidates
@@ -97,3 +112,6 @@ CREATE POLICY "Allow sovereign read access on evaluations" ON public.interview_e
 
 CREATE POLICY "Allow sovereign write access on evaluations" ON public.interview_evaluations
     FOR ALL USING (true);
+
+CREATE POLICY "Allow public read access on intent_knowledge_base" ON public.intent_knowledge_base
+    FOR SELECT USING (true);

@@ -11,6 +11,7 @@ import {
 } from "./facts.ts";
 import { callFreeLlm } from "./free_llm.ts";
 import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "./no_slop.ts";
+import { classifyUserIntent, generateIntentMemoryResponse } from "./user_intent_knowledge.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -392,7 +393,20 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     lowerLatest.includes("how can you assist") ||
     lowerLatest.includes("get started");
 
-  if (isHowManyJobsInADay) {
+  // Fine-Tuned Intent Classification & Grounded Walrus Sovereign Memory Recall
+  const userIntent = classifyUserIntent(latest);
+  const activeProfileData = cv_profile || body.profile;
+
+  if (!hasUploadedResume && isPersonalOrProfileQuery) {
+    directReply =
+      `Welcome to CareerAce! You haven't uploaded or calibrated your resume yet.\n\n` +
+      `To give you tailored career intelligence, match you with verified openings, and track your applications, the very first step is to upload your resume in **Resume Studio**.\n\n` +
+      `Once uploaded, our sovereign AI will:\n` +
+      `1. Calibrate your target roles and seniority level to match live hiring standards\n` +
+      `2. Extract and index your verified technical competencies and work experience into your decentralized Walrus Memory vault\n` +
+      `3. Format and quantify your achievements to pass ATS screening algorithms\n\n` +
+      `Please head over to **Resume Studio** to upload your resume to get started!`;
+  } else if (isHowManyJobsInADay) {
     directReply =
       `You can apply to as many jobs as possible in a day. CareerAce does not place an artificial limit on your daily dispatches.\n\n` +
       `To ensure maximum delivery success, protect your candidate reputation, and adhere to recruiter compliance standards, our Universal Application Board and Auto-Apply engine implement two key safeguards:\n` +
@@ -687,6 +701,13 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     directReply = `ATS Audit Complete for ${currentName || "Candidate"}:\n\n- Overall ATS Compatibility: ${score}/100\n- Contact & Header: Clean and parseable\n- Target Role: ${profileRole}\n- Core Competencies: ${profileSkills.length} verified skills\n- Experience Entries: ${Array.isArray(profileExperience) ? profileExperience.length : 1} position(s)\n- Recommendation: Ensure every work accomplishment starts with a strong action verb and includes quantifiable metrics (% growth, revenue, speed, or team size).`;
   }
 
+  if (!directReply) {
+    const intentMemoryReply = !isGreeting ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest) : null;
+    if (intentMemoryReply) {
+      directReply = intentMemoryReply;
+    }
+  }
+
   let reply = directReply;
 
   if (!reply) {
@@ -715,6 +736,11 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     const systemPrompt = `You are Career Ace AI Copilot, a direct, highly effective career strategist, resume builder, and job matcher powered by Walrus Sovereign Memory.
 
 ${NO_SLOP_PROMPT_DIRECTIVE}
+
+CLASSIFIED USER INTENT & CONTEXT:
+- Category: ${userIntent.category}
+- Action Guidance: ${userIntent.actionPrompt}
+- Matched Keywords: ${userIntent.matchedKeywords.join(", ") || "Direct inquiry"}
 
 DATA PRIVACY & STRICT SOVEREIGN ISOLATION:
 You are strictly scoped to the active candidate's own verified CV, credentials, and application records. Under no circumstances can you reveal, reference, or cross-pollinate data, applications, or credentials belonging to another user.

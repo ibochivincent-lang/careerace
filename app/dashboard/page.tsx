@@ -35,6 +35,7 @@ import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandi
 import { ComingSoonModal, type ComingSoonFeature } from '@/components/ComingSoonModal'
 import { cn } from '@/components/ui/utils'
 import { getClientSessionAddress, setClientSession } from '@/lib/client_auth'
+import { STREAMLINED_PROMPT_CHIPS } from '@/lib/user_intent_knowledge'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -110,27 +111,10 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
   )
 }
 
-const OVERVIEW_KEYWORD_PILLS = [
-  'How many jobs can I apply in a day?',
-  'Can I apply with other disciplines?',
-  'How many jobs did I apply yesterday?',
-  'My course of study is not here',
-  'Show me the names of the jobs I applied for',
-  'Available Jobs for Me',
-  "Today's Application Goal",
-  'CV & Background',
-  'Study & Education',
-  'Work Experience',
-  'Skills & Tools',
-  'Certifications & Licenses',
-  'Applied Jobs & 7-Day Follow-ups',
-  'Career Feedback'
-]
-
 const FRESH_OVERVIEW_WELCOME_MESSAGE = {
   role: 'assistant' as const,
   content:
-    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\nHere is how I can assist you across our ecosystem:\n• **Resume Studio:** Upload your CV, maintain 2 or 3 tailored versions for different industries, polish bullet points with active verbs, and seal tamper-proof snapshots to Walrus storage.\n• **Cover Letter Studio:** Generate laser-targeted, problem-solving cover letters calibrated directly to any job requirements without AI slop.\n• **Application Board:** Discover verified corporate openings, track your applications across Discovery, Saved, and Applied stages, and manage 7-day recruiter follow-up milestones.\n\nType **\"hello\"** to review your profile status, click a topic below, or ask any question about your career journey!"
+    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\nHere is how I can assist you across our ecosystem:\n• **Resume Studio:** Upload your CV, maintain 2 or 3 tailored versions for different industries, polish bullet points with active verbs, and seal tamper-proof snapshots to Walrus storage.\n• **Cover Letter Studio:** Generate laser-targeted, problem-solving cover letters calibrated directly to any job requirements without AI slop.\n• **Application Board:** Discover verified corporate openings, track your applications across Discovery, Applied, and Auto Apply stages, and manage 7-day recruiter follow-up milestones.\n\nType **\"hello\"** to review your profile status, click a topic below, or ask any question about your career journey!"
 }
 
 const FRESH_RESUME_ASSISTANT_WELCOME = {
@@ -1601,18 +1585,24 @@ function DashboardContent() {
                   <div ref={overviewChatEndRef} />
                 </div>
 
-                {/* Prominent Keyword Topic Pills on Overview */}
-                <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1.5 overflow-x-auto">
-                  {OVERVIEW_KEYWORD_PILLS.map((pill, idx) => (
+                {/* Streamlined Fine-Tuned Prompt Chips (8 curated action pills) */}
+                <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-2 overflow-x-auto">
+                  {STREAMLINED_PROMPT_CHIPS.map((chip) => (
                     <button
-                      key={idx}
+                      key={chip.id}
                       type="button"
-                      onClick={() => handleSendOverviewMessage(pill)}
+                      onClick={() => handleSendOverviewMessage(chip.prompt)}
                       disabled={isOverviewSending}
-                      className="text-[11px] px-2.5 py-1 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left cursor-pointer"
+                      title={chip.prompt}
+                      className="text-[11px] px-3 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 font-medium text-left cursor-pointer shadow-2xs group shrink-0"
                     >
-                      <span>{pill}</span>
-                      <ArrowRight className="w-3 h-3 text-emerald-500 opacity-70 shrink-0" />
+                      <span className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{chip.label}</span>
+                      {chip.badge && (
+                        <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground font-mono">
+                          {chip.badge}
+                        </span>
+                      )}
+                      <ArrowRight className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-opacity" />
                     </button>
                   ))}
                 </div>
