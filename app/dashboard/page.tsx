@@ -18,7 +18,7 @@ import {
   TrendingUp, Target, AlertTriangle, FileCheck,
   RotateCcw, RotateCw, ArrowUp, ArrowDown, Layers, Anchor,
   Cpu, Flame, ChevronDown, ChevronUp, History,
-  Globe, Loader2, Bell
+  Globe, Loader2, Bell, Compass
 } from 'lucide-react'
 import { AtsXRayDialog } from '@/components/AtsXRayDialog'
 import { generateDocxBlob } from '@/lib/docx_exporter'
@@ -32,6 +32,7 @@ import { WalrusVersionDrawer, type WalrusResumeVersionItem } from '@/components/
 import { SaveWalrusSnapshotModal } from '@/components/SaveWalrusSnapshotModal'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime, type RealtimeSyncEvent } from '@/lib/cloud_sync'
+import { ComingSoonModal, type ComingSoonFeature } from '@/components/ComingSoonModal'
 import { cn } from '@/components/ui/utils'
 import { getClientSessionAddress } from '@/lib/client_auth'
 
@@ -166,6 +167,7 @@ function DashboardContent() {
 
   const [isWalrusHistoryModalOpen, setIsWalrusHistoryModalOpen] = useState(false)
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false)
+  const [comingSoonFeature, setComingSoonFeature] = useState<ComingSoonFeature | null>(null)
 
   // Dynamic Split Screen Resizing state (Left Canvas vs Right Copilot)
   const [splitRatio, setSplitRatio] = useState(65)
@@ -1615,276 +1617,107 @@ function DashboardContent() {
               </Card>
             </div>
 
-            {/* 2. COMPACT SUMMARY ROW BELOW CHATBOT: Left (Compact SuiNS Passport) + Right (Compact Sovereign Profile & Walrus Vault) */}
+            {/* 2. CAREER PATHWAYS & UPSKILLING ROADMAP (Replaces SuiNS Passport & Vault, which are fully housed in Settings) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-              {/* Left Column: Compact Sui Name Service (.sui) Passport (replaces ATS score, small & sleek) */}
-              <Card className="p-4 sm:p-5 border border-emerald-500/25 shadow-xs rounded-xl bg-card space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-emerald-500" />
-                    <h3 className="font-bold text-xs sm:text-sm text-foreground">Sui Name Service (.sui) Passport</h3>
-                  </div>
-                  {activeSuinsDomain ? (
-                    <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[9px] font-mono py-0">
-                      Active &bull; Verified
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground border-border/80 py-0">
-                      Unclaimed
-                    </Badge>
-                  )}
-                </div>
-
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Map your zkLogin address to a human-readable <span className="font-mono text-foreground font-semibold">.sui</span> domain for recruiters.
-                </p>
-
-                {/* Compact Domain Claim Form */}
-                <form onSubmit={handleBindSuinsDomain} className="flex items-center gap-2 pt-0.5">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={suinsDomainInput}
-                      onChange={(e) => setSuinsDomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                      placeholder="e.g. vincent"
-                      className="w-full h-8 pl-2.5 pr-10 rounded-lg border border-border bg-background text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    />
-                    <span className="absolute right-2.5 top-2 text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 pointer-events-none">
-                      .sui
-                    </span>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={isBindingSuins || !suinsDomainInput.trim()}
-                    className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium shrink-0 cursor-pointer"
-                  >
-                    {isBindingSuins ? (
-                      <>
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Binding...
-                      </>
-                    ) : activeSuinsDomain === `${suinsDomainInput}.sui` ? (
-                      <>
-                        <Check className="w-3 h-3 mr-1" /> Bound
-                      </>
-                    ) : (
-                      'Claim'
-                    )}
-                  </Button>
-                </form>
-
-                {/* Live Recruiter Sharing Details */}
-                {activeSuinsDomain && (
-                  <div className="p-2.5 rounded-lg bg-muted/20 border border-border/70 space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">Handle</span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        {activeSuinsDomain}
-                      </span>
-                    </div>
-                    <div className="pt-1.5 border-t border-border/50 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCopySuinsRecruiterLink}
-                        className="h-7 text-[11px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer gap-1 flex-1 py-0"
-                      >
-                        {isCopiedSuinsLink ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                        {isCopiedSuinsLink ? 'Copied' : 'Copy Link'}
-                      </Button>
-                      <a
-                        href={`/p/${activeSuinsDomain}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-1 h-7 text-[11px] px-2.5 rounded-md border border-border bg-background hover:bg-muted text-foreground font-medium transition-colors shrink-0"
-                      >
-                        <span>Passport</span>
-                        <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </Card>
-
-              {/* Right Column: Compact Sovereign Profile & Walrus Vault Summary */}
+              {/* Left Column: Career Pathways & Upskill Roadmap */}
               <Card className="p-4 sm:p-5 border border-border/80 shadow-xs rounded-xl bg-card space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-border/60">
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <h3 className="font-bold text-xs sm:text-sm text-foreground">Sovereign Profile &amp; Walrus Vault</h3>
+                    <Compass className="w-4 h-4 text-emerald-500" />
+                    <h3 className="font-bold text-xs sm:text-sm text-foreground">Career Pathways &amp; Upskill Roadmap</h3>
                   </div>
-                  {activeSuinsDomain ? (
-                    <a
-                      href={`/p/${activeSuinsDomain}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-mono font-bold hover:bg-emerald-500/20 transition-colors"
-                      title="View Public SuiNS Passport"
-                    >
-                      <Globe className="w-3 h-3 text-emerald-500" />
-                      <span>{activeSuinsDomain}</span>
-                      <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-                    </a>
-                  ) : (
-                    <Badge variant="outline" className="text-[9px] font-mono text-muted-foreground border-border/80 py-0">
-                      {sessionAddress ? `${sessionAddress.slice(0, 6)}...${sessionAddress.slice(-4)}` : 'Decentralized Vault'}
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-[9px] font-mono py-0">
+                    Coming Soon
+                  </Badge>
                 </div>
 
-                {/* Prominent Sui Passport Status Strip */}
-                {activeSuinsDomain && (
-                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                        <Globe className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-bold text-foreground flex items-center gap-1.5 flex-wrap">
-                          <span>Sui Passport:</span>
-                          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold truncate">{activeSuinsDomain}</span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono font-medium shrink-0">Verified</span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground font-mono truncate">
-                          {typeof window !== 'undefined' ? `${window.location.origin}/p/${activeSuinsDomain}` : `/p/${activeSuinsDomain}`}
-                        </div>
-                      </div>
-                    </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Autonomous milestone mapping for maritime engineers, software developers, and technical leaders. Track the exact certifications and competency milestones required for your next career promotion.
+                </p>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={handleCopySuinsRecruiterLink}
-                        className="p-1 rounded-md border border-border/80 bg-background hover:bg-muted text-muted-foreground hover:text-foreground text-[10px] cursor-pointer"
-                        title="Copy passport URL"
-                      >
-                        {isCopiedSuinsLink ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                      <a
-                        href={`/p/${activeSuinsDomain}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer"
-                      >
-                        <span>Open</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
+                <div className="space-y-2 pt-1">
+                  <div className="p-2.5 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="font-medium text-foreground text-[11px]">Rank &amp; Role Progression Ladder</span>
                     </div>
+                    <span className="text-[10px] font-mono text-muted-foreground">In Development</span>
                   </div>
-                )}
 
-                {parsedProfile ? (
-                  <div className="space-y-2.5 text-xs">
-                    {/* Compact Identity details */}
-                    <div className="p-2.5 rounded-lg bg-muted/20 border border-border/60 flex flex-wrap items-center justify-between gap-1 text-[11px]">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-muted-foreground mr-1">Candidate:</span>
-                        <span className="font-bold text-foreground">{parsedProfile.applicant_name || (activeSuinsDomain ? activeSuinsDomain.replace(/\.sui$/, '') : 'Candidate')}</span>
-                        {activeSuinsDomain && (
-                          <a
-                            href={`/p/${activeSuinsDomain}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-colors cursor-pointer"
-                            title="View Public SuiNS Passport"
-                          >
-                            <Globe className="w-2.5 h-2.5" />
-                            <span>{activeSuinsDomain}</span>
-                            <ExternalLink className="w-2 h-2 opacity-70" />
-                          </a>
-                        )}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground mr-1.5">Role:</span>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          {tailorRole || parsedProfile.target_roles?.[0] || 'General'}
-                        </span>
-                      </div>
+                  <div className="p-2.5 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span className="font-medium text-foreground text-[11px]">Industry Compensation &amp; Salary Bands</span>
                     </div>
+                    <span className="text-[10px] font-mono text-muted-foreground">Calibrating</span>
+                  </div>
+                </div>
 
-                    {/* Compact stats: Positions, Skills & Academics */}
-                    <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-                      <div className="p-2 rounded-lg bg-muted/20 border border-border/60">
-                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wide">Skills</span>
-                        <span className="font-bold text-xs text-foreground mt-0.5 block">{parsedProfile.skills?.length || 0}</span>
-                      </div>
-                      <div className="p-2 rounded-lg bg-muted/20 border border-border/60">
-                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wide">Positions</span>
-                        <span className="font-bold text-xs text-foreground mt-0.5 block">{parsedProfile.work_experience?.length || 0}</span>
-                      </div>
-                      <div className="p-2 rounded-lg bg-muted/20 border border-border/60">
-                        <span className="text-muted-foreground block text-[9px] uppercase tracking-wide">Education</span>
-                        <span className="font-bold text-xs text-foreground mt-0.5 block">
-                          {parsedProfile.academic_history?.length || (parsedProfile.education ? 1 : 0)}
-                        </span>
-                      </div>
-                    </div>
+                <div className="pt-2 border-t border-border/50 flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">SuiNS Passport &amp; Vault in Settings</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setComingSoonFeature('career_pathway')}
+                    className="h-7 text-[11px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                  >
+                    View Pathway Preview
+                  </Button>
+                </div>
+              </Card>
 
-                    {/* Compact Walrus Storage status */}
-                    <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Database className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-[11px] text-muted-foreground">
-                          {walrusVersions.length > 0
-                            ? `${walrusVersions.length} Walrus version(s) anchored`
-                            : 'Decentralized local vault active'}
-                        </span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => router.push('/memory')}
-                        className="text-[11px] h-6 px-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
-                      >
-                        Manage →
-                      </Button>
+              {/* Right Column: Career Upgrade & Certification Matrix */}
+              <Card className="p-4 sm:p-5 border border-border/80 shadow-xs rounded-xl bg-card space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-500" />
+                    <h3 className="font-bold text-xs sm:text-sm text-foreground">Career Upgrade &amp; Certifications</h3>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] font-mono border-primary/30 text-primary bg-primary/5 py-0">
+                    Coming Soon
+                  </Badge>
+                </div>
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Tailored learning roadmaps and license upgrade paths (e.g. STCW Officer of the Watch to Chief Engineer, or Fullstack to Distributed Systems Lead).
+                </p>
+
+                <div className="space-y-2 pt-1">
+                  <div className="p-2.5 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span className="font-medium text-foreground text-[11px]">Mandatory Maritime &amp; Cloud Licensing</span>
                     </div>
+                    <span className="text-[10px] font-mono text-muted-foreground">Cataloging</span>
                   </div>
-                ) : activeSuinsDomain ? (
-                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-left space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-xs font-bold text-foreground">Sui Passport Active</span>
-                      </div>
-                      <a
-                        href={`/p/${activeSuinsDomain}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                      >
-                        <span>{activeSuinsDomain}</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
+
+                  <div className="p-2.5 rounded-lg border border-border/60 bg-muted/20 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="font-medium text-foreground text-[11px]">STAR+R Autonomous Interview Prep</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Your sovereign career passport is active under <strong className="font-mono text-foreground">{activeSuinsDomain}</strong>. Attach your CV below to seal your work experience and achievements to this passport.
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-7.5 font-medium cursor-pointer w-full mt-1 flex items-center justify-center gap-1.5"
-                    >
-                      <Upload className="w-3 h-3" />
-                      <span>Upload CV to Complete Passport</span>
-                    </Button>
+                    <span className="text-[10px] font-mono text-muted-foreground">Under Review</span>
                   </div>
-                ) : (
-                  <div className="text-center py-4 space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      No CV attached yet. Upload to index work history into Walrus.
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-7 font-medium cursor-pointer"
-                    >
-                      <Upload className="w-3 h-3 mr-1" /> Attach CV
-                    </Button>
-                  </div>
-                )}
+                </div>
+
+                <div className="pt-2 border-t border-border/50 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/settings')}
+                    className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
+                  >
+                    Open Settings &amp; Vault →
+                  </button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setComingSoonFeature('interview_room')}
+                    className="h-7 text-[11px] bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                  >
+                    Interview Room Soon
+                  </Button>
+                </div>
               </Card>
             </div>
           </motion.div>
@@ -2505,6 +2338,13 @@ function DashboardContent() {
           defaultCompany={tailorCompany || 'General'}
           isSaving={isSavingWalrusVersion}
           onConfirmSave={handleExecuteCommitWalrusVersion}
+        />
+
+        {/* Coming Soon Feature Modal */}
+        <ComingSoonModal
+          open={!!comingSoonFeature}
+          onOpenChange={(open) => !open && setComingSoonFeature(null)}
+          feature={comingSoonFeature}
         />
       </div>
     </AppShell>

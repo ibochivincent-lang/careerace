@@ -21,7 +21,8 @@ import {
   Building2,
   Compass,
   Database,
-  Bell
+  Bell,
+  Target
 } from 'lucide-react'
 import { ComingSoonModal } from '@/components/ComingSoonModal'
 
@@ -197,6 +198,47 @@ export default function InterviewRoomPage() {
     <AppShell>
       <div className="flex min-h-screen flex-col">
         <div className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-6">
+          {/* Prominent Coming Soon Hero Banner */}
+          <div className="mb-6 p-5 sm:p-6 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-background to-emerald-500/10 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-foreground">Interview Simulation Room</h2>
+                    <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary font-mono text-[10px]">
+                      Coming Soon · Under Calibration
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Real-time STAR+R autonomous practice simulator with multi-modal voice rubrics and maritime/cloud question banks.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => setShowComingSoon(true)}
+                  className="text-xs h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                >
+                  <Bell className="w-3.5 h-3.5 mr-1.5" />
+                  Notify Me
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/application_board')}
+                  className="text-xs h-8 px-3 border-border hover:bg-muted cursor-pointer"
+                >
+                  Return to Job Board
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => router.push('/application_board')}>

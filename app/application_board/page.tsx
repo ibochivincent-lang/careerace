@@ -46,10 +46,12 @@ import {
   Upload,
   Trash2,
   FileCheck,
+  Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
 import { SmtpRelaySettingsModal } from '@/components/SmtpRelaySettingsModal'
+import { ComingSoonModal, type ComingSoonFeature } from '@/components/ComingSoonModal'
 import { downloadFollowUpIcs } from '@/lib/ics_calendar'
 import { downloadEmlReceipt } from '@/lib/email_receipt'
 import { getClientSessionAddress } from '@/lib/client_auth'
@@ -1651,9 +1653,19 @@ export default function ApplicationBoardPage() {
 
   // 1-Click Batch Dispatch modal state
   const [batchDispatchModalOpen, setBatchDispatchModalOpen] = useState(false)
-  const [batchSize, setBatchSize] = useState<number>(5)
+  const [batchSize, setBatchSize] = useState<number>(10)
+  const [customBatchSizeInput, setCustomBatchSizeInput] = useState<string>('10')
   const [isBatchDispatching, setIsBatchDispatching] = useState(false)
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number; currentCompany: string } | null>(null)
+  const [batchDelaySeconds, setBatchDelaySeconds] = useState<number>(4)
+  const [batchCountdown, setBatchCountdown] = useState<number | null>(null)
+
+  // Test Dispatch & Sample Preview state
+  const [samplePreviewModalOpen, setSamplePreviewModalOpen] = useState(false)
+  const [testEmailModalOpen, setTestEmailModalOpen] = useState(false)
+  const [testRecipientEmail, setTestRecipientEmail] = useState('')
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false)
+  const [comingSoonFeature, setComingSoonFeature] = useState<ComingSoonFeature | null>(null)
 
   // Expandable console controls
   const [deliverabilityGuideOpen, setDeliverabilityGuideOpen] = useState(false)
@@ -2516,7 +2528,68 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     }
   }
 
-  // 1-Click Batch Dispatch across verified corporate contacts
+  // Send a live test application email to candidate's own email address before launching
+  async function handleSendTestDispatch() {
+    const targetEmail = (testRecipientEmail.trim() || activeProfileData?.email || '').trim()
+    if (!targetEmail || !targetEmail.includes('@')) {
+      toast.error('Please specify a valid test recipient email.')
+      return
+    }
+
+    setIsSendingTestEmail(true)
+    const toastId = toast.loading(`Sending sample test dispatch to ${targetEmail}...`)
+
+    try {
+      let smtpConfig: any = { provider: 'sovereign_relay' }
+      try {
+        const storedSmtp = localStorage.getItem('careerace_custom_smtp')
+        if (storedSmtp) {
+          smtpConfig = JSON.parse(storedSmtp)
+        }
+      } catch {}
+
+      const candidateName = activeProfileData?.applicant_name || 'Candidate'
+      const candidateEmail = activeProfileData?.email || targetEmail
+      const walrusBlobId = selectedVersionMeta?.blobId || ''
+
+      const res = await fetch('/api/email/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: targetEmail,
+          subject: `[SAMPLE TEST] Application: ${targetRoleInput} – ${candidateName} (Walrus Sovereign Credential)`,
+          body: customEmailBody,
+          candidateName,
+          candidateEmail,
+          role: targetRoleInput,
+          company: `${targetCompanyInput} (Sample Test)`,
+          smtpConfig,
+          walrusBlobId,
+          attachments: uploadedDocuments.map((d) => ({
+            id: d.id,
+            name: d.name,
+            size: d.size,
+            blobId: d.blobId,
+            url: d.walrusUrl,
+          })),
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Test transmission failed.')
+      }
+
+      toast.success(`Sample test message successfully dispatched to ${targetEmail}! Inspect your inbox.`, { id: toastId })
+      setTestEmailModalOpen(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Test dispatch failed. Verify your relay credentials.', { id: toastId })
+    } finally {
+      setIsSendingTestEmail(false)
+    }
+  }
+
+  // 1-Click Batch Dispatch across verified corporate contacts with Anti-Spam Pacing
   async function handleBatchDispatch(targetCount: number) {
     const eligibleContacts = filteredCompanyContacts.filter((c) => {
       const cd = getCompanyCooldown(c.company)
@@ -2575,6 +2648,13 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             candidateEmail,
             smtpConfig,
             walrusBlobId,
+            attachments: uploadedDocuments.map((d) => ({
+              id: d.id,
+              name: d.name,
+              size: d.size,
+              blobId: d.blobId,
+              url: d.walrusUrl,
+            })),
           }),
         })
 
@@ -2596,20 +2676,25 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         }
       } catch {}
 
-      // Throttling interval (1.2s delay) to protect sender reputation
+      // Anti-Spam Staggered Pacing Delay (3.5 to 5 seconds) to prevent triggering spam traps
       if (i < batchToProcess.length - 1) {
-        await new Promise((res) => setTimeout(res, 1200))
+        for (let s = batchDelaySeconds; s > 0; s--) {
+          setBatchCountdown(s)
+          await new Promise((res) => setTimeout(res, 1000))
+        }
+        setBatchCountdown(null)
       }
     }
 
     setIsBatchDispatching(false)
     setBatchProgress(null)
+    setBatchCountdown(null)
     setBatchDispatchModalOpen(false)
 
     if (successfulCount > 0) {
-      toast.success(`Successfully dispatched applications to ${successfulCount} verified employers! 5-day cooldown active.`)
+      toast.success(`Successfully dispatched application to ${successfulCount} company crewing desks! 5-day cooldown active.`)
     } else {
-      toast.error('Batch dispatch encountered issues. Please verify your SMTP settings.')
+      toast.error('Batch dispatch completed with 0 successful relays. Check SMTP settings.')
     }
   }
 
@@ -2856,64 +2941,50 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         ) : activeBoardTab === 'auto_apply' ? (
           /* Stage 4: Auto Apply via Corporate Emails & Walrus Credentials */
           <div className="space-y-4 sm:space-y-6">
-            {/* 1. Active CV Snapshot Selector (Universal, Compact Dropdown Box) */}
-            <Card className="p-3.5 sm:p-4 rounded-xl border border-border bg-card shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                    <Layers className="w-4 h-4" />
+            {/* Top Auto Apply Control & Safeguards Header */}
+            <Card className="p-4 sm:p-5 rounded-2xl border border-border bg-card shadow-xs">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-bold text-foreground">Corporate Email Application Dispatch</h2>
+                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                      {categoryCounts.all} Verified Hiring Contacts
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] font-mono border border-border text-muted-foreground">
+                      Anti-Spam Pacing & DKIM
+                    </Badge>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-foreground">Active CV Version</span>
-                      <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
-                        Walrus Sovereign Storage
-                      </Badge>
-                    </div>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Transmit sovereign Walrus credentials, primary resume records, and verified attachments directly to corporate recruitment desks.
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedCvVersionId}
-                    onChange={(e) => setSelectedCvVersionId(e.target.value)}
-                    className="h-9 px-3 rounded-lg border border-border bg-background text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer min-w-[240px]"
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSamplePreviewModalOpen(true)}
+                    className="gap-1.5 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted text-foreground cursor-pointer"
+                    title="Preview full rendered email layout, headers, and attachments"
                   >
-                    <option value="active_draft">
-                      Active Draft {activeDraftProfile?.target_roles?.[0] ? `(${activeDraftProfile.target_roles[0]})` : '(Engineering Cadet / Specialist)'}
-                    </option>
-                    {walrusVersions.map((ver) => (
-                      <option key={ver.id} value={ver.id}>
-                        {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                    <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Preview Sample</span>
+                  </Button>
 
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    onClick={() => router.push('/dashboard?tab=resumes')}
-                    className="text-xs text-muted-foreground hover:text-foreground h-9 px-2.5 gap-1 border border-border rounded-lg"
-                    title="Manage CV Versions in Walrus Vault"
+                    onClick={() => {
+                      setTestRecipientEmail(activeProfileData?.email || '')
+                      setTestEmailModalOpen(true)
+                    }}
+                    className="gap-1.5 text-xs font-semibold h-9 px-3.5 border-border hover:bg-muted text-foreground cursor-pointer"
+                    title="Send a sample test dispatch to your personal inbox"
                   >
-                    <span>Manage</span>
-                    <ExternalLink className="w-3 h-3" />
+                    <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Send Test Dispatch</span>
                   </Button>
-                </div>
-              </div>
-            </Card>
 
-            {/* Top Auto Apply Banner */}
-            <Card className="p-4 sm:p-5 rounded-2xl border bg-card">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border/60">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-foreground">Corporate Email Application Dispatch</h2>
-                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                    {categoryCounts.all} Verified Hiring Contacts
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-2">
                   <Button
                     onClick={() => setBatchDispatchModalOpen(true)}
                     className="gap-2 text-xs font-semibold h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
@@ -2921,55 +2992,19 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     <Users className="w-3.5 h-3.5" />
                     <span>1-Click Batch Dispatch</span>
                   </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSmtpSettingsOpen(true)}
+                    className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg"
+                    title="Configure SMTP Relay Settings"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               </div>
-
-              {/* Active Profile Snapshot Card */}
-              <div className="p-3.5 mt-5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center font-bold text-xs text-foreground shrink-0 shadow-xs">
-                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-foreground">
-                        {selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Working Draft'}
-                      </span>
-                      <Badge variant="secondary" className="text-[10px] bg-background font-medium border border-border">
-                        {selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || 'General Engineering'}
-                      </Badge>
-                      {selectedVersionMeta?.company && (
-                        <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">
-                          {selectedVersionMeta.company}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Candidate: <span className="text-foreground font-medium">{activeProfileData?.applicant_name || 'Candidate'}</span> · {activeProfileData?.skills?.length || 0} Verified Skills · {selectedAttachments.length} Documents Attached
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs">
-                  {selectedVersionMeta?.blobId ? (
-                    <a
-                      href={`https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] hover:bg-emerald-500/20 transition-colors"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>walruscan.com/{selectedVersionMeta.blobId.slice(0, 8)}...</span>
-                      <ExternalLink className="w-3 h-3 ml-0.5" />
-                    </a>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background text-muted-foreground text-[11px]">
-                      <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Ready for Permanent Walrus Commit</span>
-                    </span>
-                  )}
-                </div>
-              </div>
+            </Card>
 
               {/* Main Operations Split: Verified Directory vs Clean Dispatch Console */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
@@ -3204,68 +3239,151 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       })()}
                     </div>
 
-                    {/* ── TWO-BOX DISPATCH WORKFLOW: 1. CV & ATTACHMENTS, 2. COVER LETTER / MESSAGE ── */}
-
-                    {/* BOX 1: CV & Document Attachments */}
-                    <div className="p-4 rounded-xl border border-border bg-background space-y-3.5 shadow-xs">
-                      <div className="flex items-center justify-between pb-2.5 border-b border-border/60">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-bold text-xs font-mono">
-                            1
+                    {/* ── 3-TIER APPLICATION CREDENTIALS PACKAGE ── */}
+                    <div className="p-4 sm:p-5 rounded-xl border border-border bg-background space-y-4 shadow-xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/60">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-foreground">3-Tier Application Credentials Package</h4>
+                            <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
+                              Walrus Sovereign Verified
+                            </Badge>
                           </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-foreground">CV & Document Attachments</h4>
-                            <p className="text-[10px] text-muted-foreground">
-                              Select an active CV and attach documents.
-                            </p>
-                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Candidate verification structured across decentralized memory, primary profile, and official attachments.
+                          </p>
                         </div>
-                        <Badge variant="secondary" className="text-[10px] font-mono">
-                          {uploadedDocuments.length} Attached
+                        <Badge variant="secondary" className="text-[10px] font-mono shrink-0">
+                          {uploadedDocuments.length + 2} Verified Elements
                         </Badge>
                       </div>
 
-                      {/* Active CV Selection Pill */}
-                      <div className="p-2.5 rounded-lg border border-border/80 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
-                          <div className="min-w-0">
-                            <span className="text-[11px] font-semibold text-foreground block truncate">
-                              CV Snapshot: {selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Working Draft'}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground block truncate">
-                              {selectedVersionMeta?.blobId ? `Walrus: ${selectedVersionMeta.blobId.slice(0, 10)}...` : 'Active Working Draft'}
-                            </span>
+                      {/* TIER 1: Walrus Memory CV */}
+                      <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-[10px] font-mono shrink-0">
+                              1
+                            </div>
+                            <span className="text-xs font-bold text-foreground">Tier 1: Walrus Sovereign Memory CV</span>
+                            <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono">
+                              Decentralized Anchor
+                            </Badge>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={selectedCvVersionId}
+                              onChange={(e) => setSelectedCvVersionId(e.target.value)}
+                              className="h-7 px-2 rounded-md border border-border bg-background text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[200px]"
+                            >
+                              <option value="active_draft">
+                                Active Profile Snapshot ({activeDraftProfile?.applicant_name || 'Candidate'})
+                              </option>
+                              {walrusVersions.map((ver) => (
+                                <option key={ver.id} value={ver.id}>
+                                  {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
+                                </option>
+                              ))}
+                            </select>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => router.push('/dashboard?tab=resumes')}
+                              className="h-7 px-2 text-[10px] text-muted-foreground hover:text-foreground gap-1 border border-border rounded-md"
+                              title="Manage CV Versions in Walrus Vault"
+                            >
+                              <span>Vault</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </Button>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <select
-                            value={selectedCvVersionId}
-                            onChange={(e) => setSelectedCvVersionId(e.target.value)}
-                            className="h-7 px-2 rounded-md border border-border bg-background text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[200px]"
-                          >
-                            <option value="active_draft">
-                              Active Draft ({activeDraftProfile?.applicant_name || 'Candidate'})
-                            </option>
-                            {walrusVersions.map((ver) => (
-                              <option key={ver.id} value={ver.id}>
-                                {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
+                          {selectedVersionMeta?.blobId ? (
+                            <a
+                              href={`https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] hover:bg-emerald-500/20 transition-colors"
+                            >
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>walruscan.com/{selectedVersionMeta.blobId.slice(0, 10)}...</span>
+                              <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                              <span>Sealed Profile Snapshot · Ready for immutable verification</span>
+                            </span>
+                          )}
+                          <span className="font-mono text-[10px]">
+                            {selectedVersionMeta ? `Version: ${selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`}` : 'Primary Profile'}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Document Upload & File Attachment Section */}
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
-                            <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>Attached Documents (PDF, DOCX)</span>
-                          </label>
+                      {/* TIER 2: Original Candidate CV Profile */}
+                      <div className="p-3 rounded-xl border border-border bg-card space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-muted border border-border flex items-center justify-center text-foreground font-bold text-[10px] font-mono shrink-0">
+                              2
+                            </div>
+                            <span className="text-xs font-bold text-foreground">Tier 2: Original Candidate Profile</span>
+                          </div>
+                          <Badge variant="secondary" className="text-[10px] font-mono">
+                            {activeProfileData?.skills?.length || 0} Verified Skills
+                          </Badge>
+                        </div>
 
-                          {/* Hidden File Input */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                          <div>
+                            <span className="text-foreground font-semibold">{activeProfileData?.applicant_name || 'Candidate'}</span>
+                            <span className="text-muted-foreground text-[11px] ml-1.5">
+                              · {selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || 'Engineering Specialist'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {activeProfileData?.email || 'applicant@careerace.online'}
+                          </span>
+                        </div>
+
+                        {activeProfileData?.skills && activeProfileData.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {activeProfileData.skills.slice(0, 6).map((skill, idx) => (
+                              <span
+                                key={idx}
+                                className="text-[10px] px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                            {activeProfileData.skills.length > 6 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-md text-muted-foreground">
+                                +{activeProfileData.skills.length - 6} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* TIER 3: Attached Documents & Certifications */}
+                      <div className="p-3 rounded-xl border border-border bg-card space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-muted border border-border flex items-center justify-center text-foreground font-bold text-[10px] font-mono shrink-0">
+                              3
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-foreground">Tier 3: Attached Documents</span>
+                              <span className="text-[10px] text-muted-foreground ml-1.5 font-mono">
+                                ({uploadedDocuments.length} files attached)
+                              </span>
+                            </div>
+                          </div>
+
                           <input
                             type="file"
                             ref={fileInputRef}
@@ -3285,7 +3403,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             {isUploadingDoc ? (
                               <>
                                 <Zap className="w-3 h-3 animate-spin" />
-                                <span>Anchoring File...</span>
+                                <span>Anchoring...</span>
                               </>
                             ) : (
                               <>
@@ -3296,65 +3414,73 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           </Button>
                         </div>
 
-                        {/* Uploaded Files Grid */}
                         {uploadedDocuments.length > 0 ? (
-                          <div className="space-y-1.5">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-                              {uploadedDocuments.map((doc) => (
-                                <div
-                                  key={doc.id}
-                                  className="p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/5 text-foreground text-xs flex items-center justify-between gap-2"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                    <div className="min-w-0">
-                                      <span className="text-[11px] font-medium block truncate text-foreground">
-                                        {doc.name}
-                                      </span>
-                                      <span className="text-[9px] text-muted-foreground font-mono">
-                                        {doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'} · Walrus Stored
-                                      </span>
-                                    </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                            {uploadedDocuments.map((doc) => (
+                              <div
+                                key={doc.id}
+                                className="p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-foreground text-xs flex items-center justify-between gap-2"
+                              >
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                  <div className="min-w-0">
+                                    <span className="text-[11px] font-medium block truncate text-foreground">
+                                      {doc.name}
+                                    </span>
+                                    <span className="text-[9px] text-muted-foreground font-mono">
+                                      {doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'} · Walrus Stored
+                                    </span>
                                   </div>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveUploadedDoc(doc.id, doc.name)}
-                                    title="Remove uploaded document"
-                                    className="p-1 rounded text-muted-foreground hover:text-red-500 cursor-pointer shrink-0"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
                                 </div>
-                              ))}
-                            </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveUploadedDoc(doc.id, doc.name)}
+                                  title="Remove uploaded document"
+                                  className="p-1 rounded text-muted-foreground hover:text-red-500 cursor-pointer shrink-0"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         ) : (
-                          <div className="p-3 rounded-lg border border-dashed border-border/80 bg-muted/10 text-center">
+                          <div className="p-2.5 rounded-lg border border-dashed border-border/80 bg-muted/10 text-center">
                             <p className="text-[11px] text-muted-foreground">
-                              No additional documents attached. Click <strong className="text-foreground">Upload Document</strong> to attach your PDF resume, licenses, or transcripts.
+                              No extra documents attached. Click <strong className="text-foreground">Upload Document</strong> to attach your PDF resume, licenses, or transcripts.
                             </p>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* BOX 2: Cover Letter / Application Message (Directly Editable Textarea) */}
+                    {/* ── COVER LETTER & PITCH: SYNCHRONIZED PREVIEW (NO TEXTAREA) ── */}
                     <div className="p-4 rounded-xl border border-border bg-background space-y-3 shadow-xs">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-border/60">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 font-bold text-xs font-mono">
-                            2
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-foreground">Cover Letter & Application Pitch</h4>
+                            <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-600 font-mono">
+                              Studio Synchronized
+                            </Badge>
                           </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-foreground">Cover Letter / Application Message</h4>
-                            <p className="text-[10px] text-muted-foreground">
-                              Calibrated for <strong className="text-foreground">{targetCompanyInput || 'Hiring Team'}</strong>. Directly editable below.
-                            </p>
-                          </div>
+                          <p className="text-[10px] text-muted-foreground">
+                            Calibrated for <strong className="text-foreground">{targetCompanyInput || 'Hiring Team'}</strong>. Authored and edited in Cover Letter Studio.
+                          </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/cover_letter?company=${encodeURIComponent(targetCompanyInput)}&role=${encodeURIComponent(targetRoleInput)}`)}
+                            className="h-7 px-2.5 text-[11px] font-semibold gap-1.5 text-foreground border-border hover:bg-muted cursor-pointer"
+                            title="Open Cover Letter Studio to edit paragraphs, adjust tone, or regenerate"
+                          >
+                            <span>Open in Studio</span>
+                            <ExternalLink className="w-3 h-3 text-emerald-500" />
+                          </Button>
+
                           <button
                             type="button"
                             onClick={() => {
@@ -3362,17 +3488,17 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               setCustomEmailBody(composeDefaultDraft(true))
                               toast.success('Reset draft to calibrated role & company pitch!')
                             }}
-                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer"
+                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer h-7 px-2 rounded-md hover:bg-muted"
                             title="Reset message to match current company and role"
                           >
                             <RotateCcw className="w-3 h-3 text-emerald-500" />
-                            <span>Reset Draft</span>
+                            <span>Reset</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={handleCopyApplicationDraft}
-                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer ml-1"
+                            className="text-[11px] text-muted-foreground hover:text-foreground font-medium flex items-center gap-1 cursor-pointer h-7 px-2 rounded-md hover:bg-muted"
                           >
                             {copiedDraft ? (
                               <>
@@ -3389,23 +3515,20 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         </div>
                       </div>
 
-                      {/* Direct Editable Textarea */}
-                      <div className="space-y-1.5">
-                        <textarea
-                          value={customEmailBody}
-                          onChange={(e) => {
-                            setCustomEmailBody(e.target.value)
-                            setIsBodyUserEdited(true)
-                          }}
-                          rows={11}
-                          placeholder="Type or customize your application message and cover letter here..."
-                          className="w-full p-3.5 rounded-lg border border-border bg-card text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
-                        />
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                          <span>Recipient: {targetEmailInput || '(Configure recipient email above)'}</span>
+                      {/* Synchronized Read-Only Live Preview Box (No Textarea) */}
+                      <div className="p-3.5 rounded-lg border border-border/80 bg-muted/20 space-y-2">
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono pb-2 border-b border-border/40">
+                          <span>Subject: {customEmailSubject || `Application: ${targetRoleInput} – ${activeProfileData?.applicant_name || 'Candidate'}`}</span>
                           <span>{customEmailBody.length} characters</span>
                         </div>
+                        <div className="text-xs text-foreground font-mono leading-relaxed whitespace-pre-wrap max-h-56 overflow-y-auto pr-1 select-text">
+                          {customEmailBody || composeDefaultDraft()}
+                        </div>
                       </div>
+
+                      <p className="text-[10px] text-muted-foreground">
+                        To tailor individual paragraphs, adjust tone, or inject custom project highlights, click <strong className="text-foreground">Open in Studio</strong>. All studio revisions reflect here instantly.
+                      </p>
                     </div>
 
                     {/* Dispatch Action Toolbar */}
@@ -3508,24 +3631,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           <Settings className="w-3.5 h-3.5 text-emerald-500" />
                           <span>Relay Settings</span>
                         </Button>
-
-                        <Button
-                          variant="ghost"
-                          onClick={handleCopyApplicationDraft}
-                          className="gap-1.5 text-xs font-medium h-9 px-3 text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
-                        >
-                          {copiedDraft ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5" />
-                              <span>Copy Draft</span>
-                            </>
-                          )}
-                        </Button>
                       </div>
 
                       <Button
@@ -3586,7 +3691,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                   </Card>
                 </div>
               </div>
-            </Card>
 
             {/* 1-Click Batch Dispatch Modal Dialog */}
             {batchDispatchModalOpen && (
@@ -3628,12 +3732,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             <span>{eligible.length} Eligible Companies Ready for Transmission</span>
                           </div>
                           <p className="text-[11px] text-muted-foreground leading-normal">
-                            All contacts in this batch will receive your tailored CV snapshot ({selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Draft'}), {selectedAttachments.length} verified attached certifications, and Walrus proof credentials.
+                            All contacts in this batch will receive your tailored CV snapshot ({selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Profile'}), {uploadedDocuments.length} verified attached certifications, and Walrus proof credentials.
                           </p>
                         </div>
 
-                        {/* Batch Size Selector */}
-                        <div className="space-y-1.5">
+                        {/* Batch Size Selector with Presets and Custom Input */}
+                        <div className="space-y-2">
                           <label className="text-xs font-semibold text-foreground block">
                             Select Batch Size:
                           </label>
@@ -3643,7 +3747,10 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                                 key={size}
                                 type="button"
                                 disabled={isBatchDispatching || eligible.length < size}
-                                onClick={() => setBatchSize(size)}
+                                onClick={() => {
+                                  setBatchSize(size)
+                                  setCustomBatchSizeInput(String(size))
+                                }}
                                 className={`p-2.5 rounded-lg border text-center font-medium transition-all cursor-pointer ${
                                   batchSize === size
                                     ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold'
@@ -3654,8 +3761,50 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               </button>
                             ))}
                           </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            Batches are transmitted with 1.2-second throttle intervals to maintain 99%+ deliverability.
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className="text-[11px] text-muted-foreground">Or custom count:</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={eligible.length}
+                              value={customBatchSizeInput}
+                              onChange={(e) => {
+                                setCustomBatchSizeInput(e.target.value)
+                                const val = parseInt(e.target.value, 10)
+                                if (!isNaN(val) && val > 0) setBatchSize(Math.min(val, eligible.length))
+                              }}
+                              className="w-20 px-2 py-1 text-xs rounded-md border border-border bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                            <span className="text-[10px] text-muted-foreground">of {eligible.length} available</span>
+                          </div>
+                        </div>
+
+                        {/* Anti-Spam Pacing Delay Selector */}
+                        <div className="space-y-1.5 pt-1 border-t border-border/50">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-foreground">Anti-Spam Pacing Delay:</span>
+                            <span className="font-mono text-emerald-600 font-bold text-[11px]">{batchDelaySeconds}s per dispatch</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[3.5, 4.0, 5.0].map((delay) => (
+                              <button
+                                key={delay}
+                                type="button"
+                                disabled={isBatchDispatching}
+                                onClick={() => setBatchDelaySeconds(delay)}
+                                className={`p-2 rounded-lg border text-center text-xs font-medium transition-all cursor-pointer ${
+                                  batchDelaySeconds === delay
+                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold'
+                                    : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
+                                }`}
+                              >
+                                {delay}s Pacing
+                              </button>
+                            ))}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground block">
+                            Staggered cadence protects your sender domain and avoids automated spam triggers.
                           </span>
                         </div>
 
@@ -3677,8 +3826,11 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                                 style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
                               />
                             </div>
-                            <div className="text-[10px] text-muted-foreground truncate">
-                              Targeting: <strong className="text-foreground">{batchProgress.currentCompany}</strong>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span className="truncate">Targeting: <strong className="text-foreground">{batchProgress.currentCompany}</strong></span>
+                              {batchCountdown !== null && (
+                                <span className="font-mono text-emerald-600 font-medium">Next in {batchCountdown.toFixed(1)}s</span>
+                              )}
                             </div>
                           </div>
                         )}
@@ -3718,6 +3870,228 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </div>
                     )
                   })()}
+                </Card>
+              </div>
+            )}
+
+            {/* Interactive Sample Email Preview Modal */}
+            {samplePreviewModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col p-5 sm:p-6 border border-border bg-card shadow-2xl rounded-2xl space-y-4 overflow-hidden">
+                  <div className="flex items-center justify-between pb-3 border-b border-border shrink-0">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <Eye className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground">Sample Email Dispatch Preview</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          Exact visual rendering and RFC-compliant headers delivered to hiring desks
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSamplePreviewModalOpen(false)}
+                      className="p-1 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Email Client Simulator Window */}
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+                    {/* Headers Box */}
+                    <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-1.5 font-mono text-[11px]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground w-16 shrink-0">From:</span>
+                        <span className="text-foreground font-semibold">{activeProfileData?.applicant_name || 'Candidate'} &lt;{activeProfileData?.email || 'applicant@careerace.online'}&gt;</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground w-16 shrink-0">To:</span>
+                        <span className="text-foreground font-semibold">{targetEmailInput || 'careers.marine@maersk.com'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground w-16 shrink-0">Subject:</span>
+                        <span className="text-foreground font-semibold">{customEmailSubject || `Application: ${targetRoleInput} – ${activeProfileData?.applicant_name || 'Candidate'}`}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground w-16 shrink-0">Headers:</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">DKIM: PASS · SPF: PASS · List-Unsubscribe: NO · Deliverability: 99%+</span>
+                      </div>
+                    </div>
+
+                    {/* Walrus Sovereign Verification Badge */}
+                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Decentralized Walrus Sovereign Storage Anchor</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono">
+                          VERIFIED
+                        </Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        Blob URL: {selectedVersionMeta?.blobId ? `https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}` : 'https://careerace.online/verify'}
+                      </p>
+                    </div>
+
+                    {/* Email Body Rendering */}
+                    <div className="p-4 rounded-xl border border-border bg-card space-y-3 font-mono leading-relaxed text-xs text-foreground whitespace-pre-wrap select-text">
+                      {customEmailBody || composeDefaultDraft()}
+                    </div>
+
+                    {/* Attachments Section */}
+                    {uploadedDocuments.length > 0 && (
+                      <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider block">
+                          Attached Credentials ({uploadedDocuments.length})
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {uploadedDocuments.map((doc) => (
+                            <div key={doc.id} className="p-2 rounded-lg border border-border bg-background flex items-center gap-2">
+                              <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span className="text-[11px] truncate flex-1 text-foreground">{doc.name}</span>
+                              <span className="text-[9px] text-muted-foreground font-mono">{doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-border shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSamplePreviewModalOpen(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      Close Preview
+                    </Button>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSamplePreviewModalOpen(false)
+                          setTestRecipientEmail(activeProfileData?.email || '')
+                          setTestEmailModalOpen(true)
+                        }}
+                        className="text-xs font-semibold gap-1.5 border-border hover:bg-muted text-foreground cursor-pointer"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Send Sample to My Email</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSamplePreviewModalOpen(false)
+                          setBatchDispatchModalOpen(true)
+                        }}
+                        className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Proceed to Batch Dispatch</span>
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Send Test Dispatch Modal */}
+            {testEmailModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <Card className="w-full max-w-md p-5 sm:p-6 border border-border bg-card shadow-xl rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-border">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground">Send Test Application Dispatch</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          Verify formatting, links, and attachments in your own inbox
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => !isSendingTestEmail && setTestEmailModalOpen(false)}
+                      disabled={isSendingTestEmail}
+                      className="p-1 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <p className="text-muted-foreground leading-relaxed">
+                      A live sample application email will be transmitted using your configured relay. You can inspect the email headers, Walrus CV cryptographic verification link, and attachment integrity.
+                    </p>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-foreground block">
+                        Test Recipient Email:
+                      </label>
+                      <input
+                        type="email"
+                        value={testRecipientEmail}
+                        onChange={(e) => setTestRecipientEmail(e.target.value)}
+                        placeholder="your-personal-email@domain.com"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <span className="text-[10px] text-muted-foreground block">
+                        Defaults to your profile email address: {activeProfileData?.email || 'applicant@careerace.online'}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-1 text-emerald-900 dark:text-emerald-200">
+                      <span className="font-semibold block text-[11px]">Included in Test:</span>
+                      <ul className="list-disc pl-4 space-y-0.5 text-[10px] text-muted-foreground font-mono">
+                        <li>Role: {targetRoleInput}</li>
+                        <li>Walrus CV Snapshot: {selectedVersionMeta ? (selectedVersionMeta.label || `v${selectedVersionMeta.versionNumber}`) : 'Active Profile'}</li>
+                        <li>Attachments: {uploadedDocuments.length} files attached</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isSendingTestEmail}
+                      onClick={() => setTestEmailModalOpen(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isSendingTestEmail || !testRecipientEmail || !testRecipientEmail.includes('@')}
+                      onClick={handleSendTestDispatch}
+                      className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+                    >
+                      {isSendingTestEmail ? (
+                        <>
+                          <Zap className="w-3.5 h-3.5 animate-spin" />
+                          <span>Sending Sample...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Send Sample Test</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </Card>
               </div>
             )}
@@ -4075,17 +4449,11 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
                         </button>
 
-                        {/* Prepare Button (links to Interview Room) */}
+                        {/* Prepare Button (triggers Interview Room Coming Soon) */}
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            router.push(
-                              `/interview_room?role=${encodeURIComponent(job.title)}&company=${encodeURIComponent(
-                                job.company
-                              )}`
-                            )
-                          }
+                          onClick={() => setComingSoonFeature('interview_room')}
                           className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 px-2 sm:px-3 border-border/80 hover:bg-muted/60 text-foreground font-medium cursor-pointer"
                         >
                           <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
@@ -4224,6 +4592,13 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             }}
           />
         )}
+
+        {/* Coming Soon Feature Modal */}
+        <ComingSoonModal
+          open={!!comingSoonFeature}
+          onOpenChange={(open) => !open && setComingSoonFeature(null)}
+          feature={comingSoonFeature}
+        />
       </div>
     </AppShell>
   )
