@@ -174,22 +174,28 @@ test("Email Dispatch: getResendApiKeys extracts multiple keys from comma-separat
   }
 });
 
-test("Email Dispatch: getResendFromEmail supports dedicated RESEND_FROM_EMAIL_2 for secondary key", () => {
+test("Email Dispatch: getResendFromEmail supports dedicated RESEND_FROM_EMAIL_2 and RESEND_FROM_EMAIL_3 for secondary and tertiary keys", () => {
   const origFrom1 = process.env.RESEND_FROM_EMAIL;
   const origFrom2 = process.env.RESEND_FROM_EMAIL_2;
+  const origFrom3 = process.env.RESEND_FROM_EMAIL_3;
 
   try {
     process.env.RESEND_FROM_EMAIL = "Career Ace <notifications@careerace.online>";
     process.env.RESEND_FROM_EMAIL_2 = "Career Ace Relay <backup@careerace.online>";
+    process.env.RESEND_FROM_EMAIL_3 = "Career Ace Tertiary <support@careerace.online>";
 
     assert.equal(getResendFromEmail(1), "Career Ace <notifications@careerace.online>");
     assert.equal(getResendFromEmail(2), "Career Ace Relay <backup@careerace.online>");
+    assert.equal(getResendFromEmail(3), "Career Ace Tertiary <support@careerace.online>");
 
     delete process.env.RESEND_FROM_EMAIL_2;
+    delete process.env.RESEND_FROM_EMAIL_3;
     assert.equal(getResendFromEmail(2), "Career Ace <notifications@careerace.online>");
+    assert.equal(getResendFromEmail(3), "Career Ace <notifications@careerace.online>");
   } finally {
     if (origFrom1) process.env.RESEND_FROM_EMAIL = origFrom1; else delete process.env.RESEND_FROM_EMAIL;
     if (origFrom2) process.env.RESEND_FROM_EMAIL_2 = origFrom2; else delete process.env.RESEND_FROM_EMAIL_2;
+    if (origFrom3) process.env.RESEND_FROM_EMAIL_3 = origFrom3; else delete process.env.RESEND_FROM_EMAIL_3;
   }
 });
 

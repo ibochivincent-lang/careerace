@@ -48,6 +48,8 @@ export function getResendApiKeys(): string[] {
   addKey(process.env.RESEND_API_KEY);
   addKey(process.env.RESEND_API_KEY_2);
   addKey(process.env.RESEND_API_KEY_3);
+  addKey(process.env.RESEND_API_KEY_4);
+  addKey(process.env.RESEND_API_KEY_5);
   addKey(process.env.RESEND_API_KEY_SECONDARY);
   addKey(process.env.RESEND_BACKUP_API_KEY);
 
@@ -56,14 +58,12 @@ export function getResendApiKeys(): string[] {
 
 /**
  * Resolves the from-email address configured for a specific Resend key index.
- * Supports dedicated sender identities per key (e.g. RESEND_FROM_EMAIL_2).
+ * Dynamically supports RESEND_FROM_EMAIL_2, RESEND_FROM_EMAIL_3, etc.
  */
 export function getResendFromEmail(keyIndex: number = 1): string {
-  if (keyIndex === 2 && process.env.RESEND_FROM_EMAIL_2) {
-    return process.env.RESEND_FROM_EMAIL_2.trim();
-  }
-  if (keyIndex === 3 && process.env.RESEND_FROM_EMAIL_3) {
-    return process.env.RESEND_FROM_EMAIL_3.trim();
+  const dynamicEnv = (process.env as Record<string, string | undefined>)[`RESEND_FROM_EMAIL_${keyIndex}`];
+  if (dynamicEnv && dynamicEnv.trim()) {
+    return dynamicEnv.trim();
   }
   return (
     process.env.RESEND_FROM_EMAIL ||
