@@ -161,3 +161,92 @@ export async function sendApplicationDispatchEmail({
     reply_to: candidateEmail,
   });
 }
+
+/**
+ * Triggers an autonomous webhook (Zapier, Make, n8n, or custom CRM endpoint)
+ * when an application is dispatched.
+ */
+export async function triggerZapierDispatchWebhook(payload: {
+  candidateName: string;
+  candidateEmail?: string;
+  candidateAddress?: string | null;
+  jobTitle: string;
+  company: string;
+  recruiterEmail: string;
+  fitScore: number;
+  coverLetter: string;
+  passportUrl: string;
+  walrusBlobId?: string | null;
+  dispatchedAt?: string;
+}): Promise<{ triggered: boolean; error?: string }> {
+  const webhookUrl =
+    process.env.ZAPIER_WEBHOOK_URL ||
+    process.env.NEXT_PUBLIC_ZAPIER_WEBHOOK_URL ||
+    "";
+
+  if (!webhookUrl) {
+    return { triggered: false, error: "No ZAPIER_WEBHOOK_URL configured." };
+  }
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "CareerAce-Autonomous-Dispatcher/2.0",
+      },
+      body: JSON.stringify({
+        event: "candidate_application_dispatched",
+        timestamp: payload.dispatchedAt || new Date().toISOString(),
+        candidate: {
+          name: payload.candidateName,
+          email: payload.candidateEmail || "not_provided",
+          sui_address: payload.candidateAddress || "sovereign_identity",
+          passport_url: payload.passportUrl,
+        },
+        job: {
+          title: payload.jobTitle,
+          company: payload.company,
+          recruiter_email: payload.recruiterEmail,
+          fit_score: payload.fitScore,
+        },
+        application: {
+          cover_letter: payload.coverLetter,
+          walrus_blob_id: payload.walrusBlobId || null,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      return { triggered: false, error: `Webhook returned status ${res.status}` };
+    }
+
+    return { triggered: true };
+  } catch (err: any) {
+    console.warn("[webhook/zapier] Failed to post to webhook:", err.message);
+    return { triggered: false, error: err.message };
+  }
+}
+
+/**
+ * Generates an RFC-compliant mailto URI for instant 1-click desktop/mobile client dispatch.
+ */
+export function generateMailtoUrl({
+  to,
+  subject,
+  body,
+  cc,
+}: {
+  to: string;
+  subject: string;
+  body: string;
+  cc?: string;
+}): string {
+  const params: string[] = [];
+  if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+  if (body) params.push(`body=${encodeURIComponent(body)}`);
+  if (cc) params.push(`cc=${encodeURIComponent(cc)}`);
+
+  const query = params.length > 0 ? `?${params.join("&")}` : "";
+  return `mailto:${encodeURIComponent(to)}${query}`;
+}
