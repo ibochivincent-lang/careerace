@@ -19,7 +19,39 @@ export interface SendEmailResult {
   id?: string;
   error?: string;
   provider: "resend" | "brevo" | "sendgrid" | "mailersend";
+  keyIndex?: number;
+  totalKeysAttempted?: number;
   failoverOccurred?: boolean;
+}
+
+/**
+ * Extracts and deduplicates all configured Resend API keys.
+ * Supports:
+ * - Comma-separated RESEND_API_KEYS (e.g. "re_key1,re_key2")
+ * - Comma-separated RESEND_API_KEY (e.g. "re_key1,re_key2")
+ * - Numbered/Secondary keys: RESEND_API_KEY_2, RESEND_API_KEY_3, RESEND_API_KEY_SECONDARY, RESEND_BACKUP_API_KEY
+ */
+export function getResendApiKeys(): string[] {
+  const keys: string[] = [];
+
+  const addKey = (raw?: string) => {
+    if (!raw) return;
+    for (const part of raw.split(",")) {
+      const trimmed = part.trim();
+      if (trimmed && !keys.includes(trimmed)) {
+        keys.push(trimmed);
+      }
+    }
+  };
+
+  addKey(process.env.RESEND_API_KEYS);
+  addKey(process.env.RESEND_API_KEY);
+  addKey(process.env.RESEND_API_KEY_2);
+  addKey(process.env.RESEND_API_KEY_3);
+  addKey(process.env.RESEND_API_KEY_SECONDARY);
+  addKey(process.env.RESEND_BACKUP_API_KEY);
+
+  return keys;
 }
 
 /**
@@ -245,7 +277,7 @@ async function sendViaResend(
 }
 
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
-  const resendKey = (process.env.RESEND_API_KEY || "").trim();
+  const resendKeys = getResendApiKeys();
   const sendgridKey = (process.env.SENDGRID_API_KEY || "").trim();
   const mailersendKey = (process.env.MAILERSEND_API_KEY || "").trim();
   const brevoKey = (process.env.BREVO_API_KEY || process.env.SIB_API_KEY || "").trim();
@@ -267,27 +299,40 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     process.env.EMAIL_FROM_NAME ||
     (configuredFrom.includes("<") ? configuredFrom.split("<")[0].trim() : "Career Ace");
 
-  if (!resendKey && !sendgridKey && !mailersendKey && !brevoKey) {
+  if (resendKeys.length === 0 && !sendgridKey && !mailersendKey && !brevoKey) {
     console.warn("[email] No email provider API keys configured in environment. Refusing to send mock data.");
     return {
       success: false,
-      error: "No email provider configured. Configure RESEND_API_KEY, SENDGRID_API_KEY, or MAILERSEND_API_KEY in Vercel or .env.local to enable live transactional email delivery.",
+      error: "No email provider configured. Configure RESEND_API_KEY (or multiple keys like RESEND_API_KEY_2) in Vercel or .env.local to enable live transactional email delivery.",
       provider: "resend",
     };
   }
 
-  // 1. Primary path: Resend (3,000 free emails/month)
-  if (resendKey) {
-    const resendResult = await sendViaResend(resendKey, options, configuredFrom);
-    if (resendResult.success) {
-      return {
-        success: true,
-        id: resendResult.id,
-        provider: "resend",
-      };
+  // 1. Primary path: Resend (with multi-key rotation and failover)
+  if (resendKeys.length > 0) {
+    let lastResendError = "";
+    for (let i = 0; i < resendKeys.length; i++) {
+      const currentKey = resendKeys[i];
+      const resendResult = await sendViaResend(currentKey, options, configuredFrom);
+      if (resendResult.success) {
+        return {
+          success: true,
+          id: resendResult.id,
+          provider: "resend",
+          keyIndex: i + 1,
+          totalKeysAttempted: i + 1,
+          failoverOccurred: i > 0,
+        };
+      }
+
+      lastResendError = resendResult.error || "Resend API error";
+      console.warn(`[email/resend] Key #${i + 1} of ${resendKeys.length} failed (${lastResendError}).`);
+      if (i + 1 < resendKeys.length) {
+        console.info(`[email/resend] Rotating to Resend Key #${i + 2}...`);
+      }
     }
 
-    console.warn(`[email] Resend delivery failed (${resendResult.error}). Checking for fallback provider...`);
+    console.warn(`[email] All ${resendKeys.length} Resend key(s) failed. Checking fallback providers...`);
 
     // Fallback A: SendGrid (100 free emails/day)
     if (sendgridKey) {
@@ -333,8 +378,9 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
     return {
       success: false,
-      error: resendResult.error,
+      error: `All ${resendKeys.length} Resend key(s) failed: ${lastResendError}`,
       provider: "resend",
+      totalKeysAttempted: resendKeys.length,
     };
   }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, getResendApiKeys } from '@/lib/email';
 import { rememberFact } from '@/lib/memory_contract';
 
 export interface SmtpRelayConfig {
@@ -41,7 +41,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const hasResend = !!(process.env.RESEND_API_KEY || '').trim();
+    const resendKeys = getResendApiKeys();
+    const hasResend = resendKeys.length > 0;
     const hasSendgrid = !!(process.env.SENDGRID_API_KEY || '').trim();
     const hasMailersend = !!(process.env.MAILERSEND_API_KEY || '').trim();
     const hasBrevo = !!(process.env.BREVO_API_KEY || process.env.SIB_API_KEY || '').trim();
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'No transactional email provider is configured in environment variables. Please add RESEND_API_KEY, SENDGRID_API_KEY, or MAILERSEND_API_KEY to your Vercel project settings or .env.local to enable live email delivery.',
+          error: 'No transactional email provider is configured in environment variables. Please add RESEND_API_KEY (or multiple keys like RESEND_API_KEY_2) to your Vercel project settings or .env.local to enable live email delivery.',
           provider: 'none',
         },
         { status: 503 }
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
     const timestampStr = new Date(now).toISOString();
     const attachedCount = Array.isArray(attachments) ? attachments.length : 0;
 
-    // Dispatch real transactional email with multi-provider automated failover
+    // Dispatch real transactional email with multi-key Resend rotation and automated failover
     const result = await sendEmail({
       to,
       subject,
@@ -84,7 +85,13 @@ export async function POST(req: Request) {
     }
 
     let providerLabel = 'Resend Sovereign Transactional Relay';
-    if (result.provider === 'sendgrid') {
+    if (result.provider === 'resend') {
+      if (result.failoverOccurred) {
+        providerLabel = `Resend Sovereign Transactional Relay (Key #${result.keyIndex} Failover)`;
+      } else if (resendKeys.length > 1) {
+        providerLabel = `Resend Sovereign Transactional Relay (Key #${result.keyIndex || 1})`;
+      }
+    } else if (result.provider === 'sendgrid') {
       providerLabel = result.failoverOccurred ? 'SendGrid Transactional Relay (Failover)' : 'SendGrid Transactional Relay';
     } else if (result.provider === 'mailersend') {
       providerLabel = result.failoverOccurred ? 'MailerSend Transactional Relay (Failover)' : 'MailerSend Transactional Relay';
