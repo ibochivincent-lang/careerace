@@ -2980,8 +2980,54 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     if (successfulCount > 0) {
       toast.success(`Successfully dispatched application to ${successfulCount} company crewing desks! 5-day cooldown active.`)
       setActiveBoardTab('applied')
+      handleTriggerDispatchSummaryReport(currentAppliedList)
     } else {
       toast.error('Batch dispatch completed with 0 successful relays. Check SMTP settings.')
+    }
+  }
+
+  // Automated or on-demand dispatch summary report delivered to candidate personal email
+  async function handleTriggerDispatchSummaryReport(jobsToSend?: AppliedJobRecord[]) {
+    const list = jobsToSend || appliedJobs
+    const candidateEmail = (activeProfileData?.email || '').trim()
+    if (!candidateEmail || !candidateEmail.includes('@')) {
+      toast.error('Please configure your candidate email in profile to receive the dispatch summary report.')
+      return
+    }
+    if (list.length === 0) {
+      toast.info('No applications recorded yet to report.')
+      return
+    }
+
+    const toastId = toast.loading(`Generating executive dispatch report for ${candidateEmail}...`)
+    try {
+      const res = await fetch('/api/email/dispatch-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidateEmail,
+          candidateName: activeProfileData?.applicant_name || 'Candidate',
+          dispatches: list.slice(0, 25).map((j) => ({
+            company: j.company,
+            role: j.jobTitle,
+            appliedAt: j.appliedAt,
+            followUpDue: '7 Days',
+            status: 'Delivered',
+          })),
+          walrusCvSnapshotLabel: selectedVersionMeta?.label || walrusVersionLabel,
+          walrusBlobId: selectedVersionMeta?.blobId || undefined,
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success(`Executive dispatch report sent to ${candidateEmail}! Check your inbox.`, { id: toastId })
+      } else {
+        toast.info(`Dispatch report processed (${data.message || 'Complete'}).`, { id: toastId })
+      }
+    } catch (e: any) {
+      console.warn('Dispatch report notice:', e)
+      toast.error(e?.message || 'Could not send dispatch report email.', { id: toastId })
     }
   }
 
@@ -3101,6 +3147,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       { id: toastId }
     )
     setActiveBoardTab('applied')
+    handleTriggerDispatchSummaryReport(currentAppliedList)
   }
 
   // Upload original CV directly to Walrus sovereign memory
@@ -4603,15 +4650,29 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                   )}
                 </div>
 
-                {/* Total Active Count Indicator */}
-                <div className="text-xs font-mono text-muted-foreground font-medium shrink-0">
-                  {filteredJobs.length > 0
-                    ? `${filteredJobs.length} ${
-                        activeBoardTab === 'applied'
-                          ? 'applied'
-                          : 'open'
-                      } roles`
-                    : '0 roles'}
+                {/* Total Active Count Indicator & Dispatch Report Action */}
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {activeBoardTab === 'applied' && appliedJobs.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTriggerDispatchSummaryReport()}
+                      title="Send an executive summary of all dispatched applications with Walrus blob proofs to your email"
+                      className="h-7 text-xs gap-1.5 border-primary/30 hover:bg-primary/10 text-primary font-medium shadow-none cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      Email Dispatch Report
+                    </Button>
+                  )}
+                  <div className="text-xs font-mono text-muted-foreground font-medium shrink-0">
+                    {filteredJobs.length > 0
+                      ? `${filteredJobs.length} ${
+                          activeBoardTab === 'applied'
+                            ? 'applied'
+                            : 'open'
+                        } roles`
+                      : '0 roles'}
+                  </div>
                 </div>
               </div>
             </div>

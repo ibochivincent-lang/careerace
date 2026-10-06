@@ -10,15 +10,19 @@ import { AccountChip } from '@/components/AccountChip'
 import { ChatdeckHero } from '@/components/blocks/chatdeck_hero'
 import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
+import { WalrusCentralArchitectureChart } from '@/components/WalrusCentralArchitectureChart'
+import { ProjectRoadmapSection } from '@/components/ProjectRoadmapSection'
+import { FeedbackModal } from '@/components/FeedbackModal'
 import {
   Sparkles, Database, Lock, Fingerprint, Cpu, Globe,
-  ShieldCheck, ArrowRight, ExternalLink, Briefcase
+  ShieldCheck, ArrowRight, ExternalLink, Briefcase, MessageSquare, Compass
 } from 'lucide-react'
 
 export default function CareerAceLandingPage() {
   const router = useRouter()
   const [sessionAddress, setSessionAddress] = useState<string | null>(null)
   const [suinsDomain, setSuinsDomain] = useState<string | null>(null)
+  const [feedbackOpen, setFeedbackOpen] = useState<boolean>(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,16 +86,26 @@ export default function CareerAceLandingPage() {
             <span className="font-bold text-lg">Career Ace</span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium">
+          <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground font-medium">
             <a href="#about" className="hover:text-foreground transition-colors">About</a>
             <a href="#domains" className="hover:text-foreground transition-colors">Industries</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#walrus" className="hover:text-foreground transition-colors">Walrus</a>
-            <a href="#walrus-memory" className="hover:text-foreground transition-colors">Walrus Memory</a>
+            <a href="#architecture" className="hover:text-foreground transition-colors">Architecture</a>
+            <a href="#roadmap" className="hover:text-foreground transition-colors">Roadmap</a>
             <a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFeedbackOpen(true)}
+              className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-8 px-2.5 hidden sm:flex cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Feedback</span>
+            </Button>
+
             <ThemeToggle />
             {sessionAddress ? (
               <div className="flex items-center gap-2">
@@ -344,6 +358,35 @@ export default function CareerAceLandingPage() {
               <span className="font-medium text-foreground">CrowdStrike, Palo Alto, Cloudflare</span>
             </div>
           </div>
+
+          {/* Domain 7 - Sector 06+ (And More...) */}
+          <div className="p-5 rounded-2xl border-2 border-dashed border-emerald-500/30 bg-emerald-500/[0.02] space-y-3.5 flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono text-[10px]">
+                  Sector 06+ &bull; And More...
+                </Badge>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Global Matrix
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-foreground">Quantitative Finance, Energy &amp; Global Disciplines</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Extensible ATS calibration for quantitative trading, renewable energy engineering, supply chain logistics, avionics, and specialized technical professions worldwide.
+              </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {['FinTech / Quant', 'Clean Energy / Wind', 'Supply Chain', 'Avionics', 'Civil Infrastructure'].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
+              <span>Universal Coverage</span>
+              <span className="font-medium text-foreground">Citadel, Vestas, Lockheed, Maersk Logistics</span>
+            </div>
+          </div>
         </div>
 
         {/* Case Study Callout Banner */}
@@ -499,6 +542,12 @@ export default function CareerAceLandingPage() {
           </div>
         </div>
 
+        {/* ── CENTRALIZED WALRUS SOVEREIGN MEMORY ARCHITECTURE CHART ── */}
+        <WalrusCentralArchitectureChart />
+
+        {/* ── PRODUCT ROADMAP & AUTONOMOUS FRONTIERS ── */}
+        <ProjectRoadmapSection />
+
         {/* ── High-Impact Call to Action Banner ── */}
         <div className="p-8 md:p-10 rounded-2xl border border-border/80 bg-card/70 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
@@ -529,6 +578,9 @@ export default function CareerAceLandingPage() {
 
       {/* ── Chatdeck Footer ─────────────────────────────────────────────────── */}
       <ChatdeckFooter />
+
+      {/* ── Global Header Feedback Modal ─────────────────────────────────────── */}
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   )
 }

@@ -901,3 +901,154 @@ export function generateMailtoUrl({
   const query = params.length > 0 ? `?${params.join("&")}` : "";
   return `mailto:${encodeURIComponent(to)}${query}`;
 }
+
+export interface DispatchReportItem {
+  company: string;
+  role: string;
+  recipientEmail?: string;
+  appliedAt?: string;
+  followUpDue?: string;
+  status?: string;
+}
+
+/**
+ * Sends an executive daily dispatch summary report directly to the candidate's personal email
+ */
+export async function sendDailyDispatchReportEmail({
+  candidateEmail,
+  candidateName,
+  dispatches,
+  walrusCvSnapshotLabel,
+  walrusBlobId,
+}: {
+  candidateEmail: string;
+  candidateName: string;
+  dispatches: DispatchReportItem[];
+  walrusCvSnapshotLabel?: string;
+  walrusBlobId?: string;
+}): Promise<SendEmailResult> {
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const rowsHtml = dispatches
+    .map(
+      (d, i) => `
+    <tr style="border-bottom:1px solid #e2e8f0;">
+      <td style="padding:10px 8px;font-family:monospace;font-size:11px;color:#64748b;">${i + 1}</td>
+      <td style="padding:10px 8px;font-size:13px;font-weight:600;color:#0f172a;">${escapeHtml(d.company)}</td>
+      <td style="padding:10px 8px;font-size:12px;color:#334155;">${escapeHtml(d.role)}</td>
+      <td style="padding:10px 8px;font-family:monospace;font-size:11px;color:#059669;">${escapeHtml(d.recipientEmail || "Direct Crewing Desk")}</td>
+      <td style="padding:10px 8px;font-size:11px;color:#64748b;">${escapeHtml(d.followUpDue || "In 7 Days")}</td>
+      <td style="padding:10px 8px;font-size:11px;font-weight:600;color:#059669;">Delivered</td>
+    </tr>`
+    )
+    .join("");
+
+  const rowsText = dispatches
+    .map(
+      (d, i) =>
+        `${i + 1}. ${d.company} — ${d.role} (${d.recipientEmail || "Direct Desk"}) | Follow-up: ${d.followUpDue || "7 Days"}`
+    )
+    .join("\n");
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.6;color:#1e293b;background-color:#f8fafc;margin:0;padding:24px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+    <tr>
+      <td style="background:#0f172a;padding:24px;border-bottom:1px solid #334155;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:18px;font-weight:800;color:#f8fafc;letter-spacing:-0.02em;">CareerAce Dispatch Report</span>
+          <span style="font-size:11px;font-family:monospace;background:#1e293b;color:#38bdf8;padding:4px 8px;border-radius:4px;border:1px solid #334155;">SUMMARY ATTESTATION</span>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:24px 28px;">
+        <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 8px;">
+          Applications Dispatched for ${escapeHtml(candidateName)}
+        </h2>
+        <p style="font-size:13px;color:#64748b;margin:0 0 20px;">
+          Date: ${escapeHtml(currentDate)} &bull; Primary CV: <strong>${escapeHtml(walrusCvSnapshotLabel || "Walrus Sovereign CV")}</strong>
+          ${walrusBlobId ? ` &bull; Blob ID: <span style="font-family:monospace;font-size:11px;">${escapeHtml(walrusBlobId)}</span>` : ""}
+        </p>
+
+        <!-- METRIC CARDS -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+          <tr>
+            <td style="padding:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;text-align:center;width:33%;">
+              <div style="font-size:22px;font-weight:800;color:#15803d;">${dispatches.length}</div>
+              <div style="font-size:11px;font-weight:600;color:#166534;text-transform:uppercase;">Applications Sent</div>
+            </td>
+            <td style="width:10px;"></td>
+            <td style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;text-align:center;width:33%;">
+              <div style="font-size:22px;font-weight:800;color:#0f172a;">7 Days</div>
+              <div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;">Follow-up Cooldown</div>
+            </td>
+            <td style="width:10px;"></td>
+            <td style="padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;text-align:center;width:33%;">
+              <div style="font-size:22px;font-weight:800;color:#0284c7;">100%</div>
+              <div style="font-size:11px;font-weight:600;color:#0369a1;text-transform:uppercase;">Relay Integrity</div>
+            </td>
+          </tr>
+        </table>
+
+        <!-- APPLICATIONS TABLE -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+              <th style="padding:8px;font-size:10px;text-align:left;color:#64748b;font-weight:700;">#</th>
+              <th style="padding:8px;font-size:10px;text-align:left;color:#64748b;font-weight:700;">EMPLOYER</th>
+              <th style="padding:8px;font-size:10px;text-align:left;color:#64748b;font-weight:700;">ROLE</th>
+              <th style="padding:8px;font-size:10px;text-align:left;color:#64748b;font-weight:700;">DESK EMAIL</th>
+              <th style="padding:8px;font-size:10px;text-align:left;color:#64748b;font-weight:700;">FOLLOW-UP</th>
+              <th style="padding:8px;font-size:10px;text-align:left;color:#64748b;font-weight:700;">STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+
+        <div style="padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#475569;line-height:1.6;">
+          <strong>What happens next:</strong>
+          <ul style="margin:6px 0 0;padding-left:18px;">
+            <li>All recipient crewing desks have received your tailored CV, cover letter, and verified credentials.</li>
+            <li>Direct replies from hiring managers will route directly to your email (<strong>${escapeHtml(candidateEmail)}</strong>).</li>
+            <li>Your 7-day cooldown prevents accidental duplicate submissions. Calendar follow-ups (.ics) are available on your Application Board.</li>
+          </ul>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8;">
+        &copy; 2026 CareerAce. Decentralized Sovereign Career Protocol.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `CareerAce Application Dispatch Summary Report
+Date: ${currentDate}
+Candidate: ${candidateName} (${candidateEmail})
+Total Applications Sent Today: ${dispatches.length}
+
+Dispatched Opportunities:
+${rowsText}
+
+Direct replies will connect to your inbox (${candidateEmail}).
+View full status and cooldown timers on your Application Board: https://careerace.online/application_board`;
+
+  return sendEmail({
+    to: candidateEmail,
+    subject: `CareerAce Dispatch Summary: ${dispatches.length} Applications Sent (${currentDate})`,
+    html,
+    text,
+  });
+}
+

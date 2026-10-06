@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { HeroVideoDialog } from "@/components/ui/hero_video_dialog"
 import { motion, type Variants } from "motion/react"
 import {
   Sparkles,
@@ -122,55 +121,8 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
               How it works
             </Button>
           </motion.div>
-
-          {/* ── Universal Industry Coverage Tags ── */}
-          <motion.div
-            variants={fadeUpVariants}
-            className="pt-3 flex flex-wrap items-center justify-center gap-1.5 max-w-2xl mx-auto"
-          >
-            <span className="text-[10px] font-semibold text-muted-foreground mr-1 uppercase tracking-wider">Universal Domains:</span>
-            {[
-              { label: 'Software & Cloud Systems', isCaseStudy: false },
-              { label: 'AI & Autonomous Robotics', isCaseStudy: false },
-              { label: 'Maritime & Offshore', isCaseStudy: true },
-              { label: 'Cybersecurity & Infosec', isCaseStudy: false },
-              { label: 'Healthcare Informatics', isCaseStudy: false },
-              { label: 'Industrial Automation', isCaseStudy: false }
-            ].map((tag) => (
-              <span
-                key={tag.label}
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-                  tag.isCaseStudy
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
-                    : 'border-border/70 bg-card/80 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tag.label}{tag.isCaseStudy ? ' (Case Study)' : ''}
-              </span>
-            ))}
-          </motion.div>
         </div>
       </div>
-
-      {/* ── Spot for the Video Demo ── */}
-      <motion.div className="relative max-w-4xl mx-auto pt-4" variants={fadeUpVariants}>
-        <div className="p-2 sm:p-3 rounded-2xl border-2 border-emerald-500/20 bg-card/60 backdrop-blur shadow-2xl shadow-emerald-500/5">
-          <HeroVideoDialog
-            className="block dark:hidden"
-            animationStyle="top-in-bottom-out"
-            videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
-            thumbnailSrc="https://startup-template-sage.vercel.app/hero-light.png"
-            thumbnailAlt="Career Ace Interactive Demo Video"
-          />
-          <HeroVideoDialog
-            className="hidden dark:block"
-            animationStyle="top-in-bottom-out"
-            videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
-            thumbnailSrc="https://startup-template-sage.vercel.app/hero-dark.png"
-            thumbnailAlt="Career Ace Interactive Demo Video"
-          />
-        </div>
-      </motion.div>
 
       {/* ── Clean Interactive Mockup: Resume Diff + Copilot Chat ── */}
       <motion.div className="max-w-6xl mx-auto pt-6" variants={fadeUpVariants}>
