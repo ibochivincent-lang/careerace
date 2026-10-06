@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { harvestJobsFromSources, type RawJob } from '@/lib/job_harvester'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -18,125 +19,131 @@ export interface SyncedJobItem {
   source: string
 }
 
+function normalizeSeniority(title: string, desc = ''): SyncedJobItem['seniority'] {
+  const t = title.toLowerCase()
+  const d = desc.toLowerCase()
+  if (t.includes('intern') || t.includes('cadet') || t.includes('trainee') || t.includes('co-op')) {
+    return 'Intern / Co-op'
+  }
+  if (t.includes('junior') || t.includes('jr.') || t.includes('entry') || t.includes('graduate') || t.includes('associate')) {
+    return 'Entry Level'
+  }
+  if (t.includes('lead') || t.includes('staff') || t.includes('principal') || t.includes('head of') || t.includes('chief') || t.includes('superintendent') || t.includes('director')) {
+    return 'Lead / Staff'
+  }
+  if (t.includes('senior') || t.includes('sr.') || t.includes('specialist') || t.includes('architect') || d.includes('5+ years') || d.includes('senior level')) {
+    return 'Senior'
+  }
+  return 'Mid-Level'
+}
+
+function normalizeRoleCategory(title: string, desc = ''): string {
+  const text = `${title} ${desc}`.toLowerCase()
+  if (text.includes('marine') || text.includes('naval') || text.includes('offshore') || text.includes('subsea') || text.includes('vessel') || text.includes('propulsion') || text.includes('cadet')) {
+    return 'Marine Engineering'
+  }
+  if (text.includes('ai') || text.includes('machine learning') || text.includes('deep learning') || text.includes('robotics') || text.includes('autonomous') || text.includes('llm') || text.includes('neural')) {
+    return 'AI / Robotics'
+  }
+  if (text.includes('data engineer') || text.includes('analytics') || text.includes('data science') || text.includes('business intelligence')) {
+    return 'Data & Analytics'
+  }
+  if (text.includes('cyber') || text.includes('security') || text.includes('infosec') || text.includes('soc analyst') || text.includes('penetration')) {
+    return 'Cybersecurity'
+  }
+  if (text.includes('product manager') || text.includes('ux') || text.includes('ui/ux') || text.includes('product design')) {
+    return 'Product & Design'
+  }
+  if (text.includes('devops') || text.includes('sre') || text.includes('cloud') || text.includes('infrastructure') || text.includes('kubernetes')) {
+    return 'Software / Cloud'
+  }
+  if (text.includes('medical') || text.includes('health') || text.includes('clinical') || text.includes('bioinformatics') || text.includes('telehealth')) {
+    return 'Medical / Healthcare'
+  }
+  if (text.includes('manager') || text.includes('operations') || text.includes('director') || text.includes('coordinator')) {
+    return 'Management / Operations'
+  }
+  if (text.includes('industrial') || text.includes('manufacturing') || text.includes('hardware') || text.includes('aerospace')) {
+    return 'Industrial & Manufacturing'
+  }
+  return 'Software / Cloud'
+}
+
+function normalizeWorkplace(job: RawJob): SyncedJobItem['workplace'] {
+  const loc = (job.location || '').toLowerCase()
+  const wp = (job.job_type || '').toLowerCase()
+  if (loc.includes('offshore') || loc.includes('vessel') || loc.includes('rig')) return 'Offshore / Vessel'
+  if (job.is_remote || wp === 'remote' || loc.includes('remote') || loc.includes('worldwide')) return 'Remote'
+  if (wp === 'hybrid' || loc.includes('hybrid')) return 'Hybrid'
+  return 'On-site'
+}
+
+function normalizeCountry(location: string): string {
+  const loc = (location || '').toLowerCase()
+  if (loc.includes('nigeria') || loc.includes('lagos') || loc.includes('abuja') || loc.includes('port harcourt')) return 'Nigeria'
+  if (loc.includes('united states') || loc.includes('usa') || loc.includes('tx') || loc.includes('ca') || loc.includes('ny')) return 'United States'
+  if (loc.includes('united kingdom') || loc.includes('uk') || loc.includes('london') || loc.includes('aberdeen')) return 'United Kingdom'
+  if (loc.includes('netherlands') || loc.includes('rotterdam') || loc.includes('amsterdam')) return 'Netherlands'
+  if (loc.includes('norway') || loc.includes('oslo') || loc.includes('kongsberg')) return 'Norway'
+  if (loc.includes('germany') || loc.includes('berlin') || loc.includes('munich')) return 'Germany'
+  if (loc.includes('canada') || loc.includes('toronto') || loc.includes('vancouver')) return 'Canada'
+  return 'Remote Worldwide'
+}
+
 /**
- * Normalizes live job postings from open remote APIs (Remotive, Remote OK, Jobicy)
- * and Indeed Job Sync API schema specifications into standard CareerAce JobListing format.
+ * Normalizes live job postings from open remote APIs (Remotive, Arbeitnow, Jobicy, WeWorkRemotely,
+ * RemoteOK, Himalayas, Nodesk, FreshRemote, Jobberman) and Indeed/Google Jobs API schema adapters.
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category') || 'all'
-  const query = searchParams.get('q') || ''
+  const query = searchParams.get('q') || searchParams.get('query') || 'software engineer'
 
-  const syncedJobs: SyncedJobItem[] = []
-
-  // 1. Fetch from Remotive Public Open API
   try {
-    const remotiveUrl = 'https://remotive.com/api/remote-jobs?limit=15'
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 6000)
+    const rawJobs = await harvestJobsFromSources(query, category)
 
-    const res = await fetch(remotiveUrl, {
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'CareerAce-JobSync/2.0 (compliance@careerace.online)',
-      },
-      next: { revalidate: 3600 },
+    const syncedJobs: SyncedJobItem[] = rawJobs.map((j) => ({
+      id: j.job_id || `sync_${Math.random().toString(36).substring(2, 9)}`,
+      title: j.title || 'Engineer',
+      company: j.company || 'Enterprise Employer',
+      location: j.location || 'Remote Worldwide',
+      country: normalizeCountry(j.location || ''),
+      workplace: normalizeWorkplace(j),
+      seniority: normalizeSeniority(j.title, j.description),
+      roleCategory: normalizeRoleCategory(j.title, j.description),
+      postedDate: j.posted_date ? 'Live Feed' : 'Today',
+      apply_url: j.apply_url || 'https://careerace.online/application_board',
+      description: j.description || undefined,
+      source: j.source || 'Live Feed',
+    }))
+
+    return NextResponse.json({
+      success: true,
+      totalSynced: syncedJobs.length,
+      jobs: syncedJobs,
+      fetchedAt: new Date().toISOString(),
+      apiSources: [
+        'Indeed API Adapter (SerpAPI / RapidAPI JSearch)',
+        'Arbeitnow Real-Time Job Feed',
+        'Remotive Public Open API',
+        'Jobicy Global Remote API',
+        'WeWorkRemotely RSS Feed',
+        'RemoteOK Engineering Feed',
+        'Himalayas Software Feed',
+        'Jobberman Nigeria Feed',
+      ],
     })
-    clearTimeout(timeoutId)
-
-    if (res.ok) {
-      const data = await res.json()
-      const jobs = Array.isArray(data.jobs) ? data.jobs : []
-      for (const j of jobs.slice(0, 15)) {
-        if (!j.title || !j.company_name) continue
-
-        const titleLower = j.title.toLowerCase()
-        let seniority: SyncedJobItem['seniority'] = 'Mid-Level'
-        if (titleLower.includes('senior') || titleLower.includes('sr.')) seniority = 'Senior'
-        else if (titleLower.includes('lead') || titleLower.includes('staff') || titleLower.includes('principal') || titleLower.includes('head')) seniority = 'Lead / Staff'
-        else if (titleLower.includes('junior') || titleLower.includes('jr.') || titleLower.includes('entry') || titleLower.includes('graduate')) seniority = 'Entry Level'
-        else if (titleLower.includes('intern') || titleLower.includes('cadet') || titleLower.includes('trainee')) seniority = 'Intern / Co-op'
-
-        let roleCat = 'Software / Cloud'
-        if (titleLower.includes('marine') || titleLower.includes('naval') || titleLower.includes('offshore')) roleCat = 'Marine Engineering'
-        else if (titleLower.includes('ai') || titleLower.includes('machine learning') || titleLower.includes('autonomous')) roleCat = 'AI / Robotics'
-        else if (titleLower.includes('medical') || titleLower.includes('health') || titleLower.includes('clinical')) roleCat = 'Medical / Healthcare'
-        else if (titleLower.includes('manager') || titleLower.includes('director') || titleLower.includes('operations')) roleCat = 'Management / Operations'
-
-        syncedJobs.push({
-          id: `remotive-${j.id || Math.random().toString(36).substring(2, 9)}`,
-          title: j.title.trim(),
-          company: j.company_name.trim(),
-          location: j.candidate_required_location || 'Remote Worldwide',
-          country: (j.candidate_required_location && j.candidate_required_location.includes('Nigeria')) ? 'Nigeria' : 'Remote Worldwide',
-          workplace: 'Remote',
-          seniority,
-          roleCategory: roleCat,
-          postedDate: 'Live Feed',
-          apply_url: j.url || 'https://remotive.com',
-          description: j.description ? j.description.replace(/<[^>]*>?/gm, '').slice(0, 280) + '...' : undefined,
-          source: 'Remotive Open API',
-        })
-      }
-    }
-  } catch (err) {
-    console.warn('[api/jobs/sync] Remotive sync notice:', err)
-  }
-
-  // 2. Fetch from Jobicy Public Open API (Worldwide Remote)
-  try {
-    const jobicyUrl = 'https://jobicy.com/api/v2/remote-jobs?count=10&geo=worldwide'
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 6000)
-
-    const res = await fetch(jobicyUrl, {
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'CareerAce-JobSync/2.0',
+  } catch (err: any) {
+    console.error('[api/jobs/sync] Error during multi-source synchronization:', err)
+    return NextResponse.json(
+      {
+        success: false,
+        error: err?.message || 'Synchronization failed',
+        totalSynced: 0,
+        jobs: [],
+        fetchedAt: new Date().toISOString(),
       },
-      next: { revalidate: 3600 },
-    })
-    clearTimeout(timeoutId)
-
-    if (res.ok) {
-      const data = await res.json()
-      const jobs = Array.isArray(data.jobs) ? data.jobs : []
-      for (const j of jobs.slice(0, 10)) {
-        if (!j.jobTitle || !j.companyName) continue
-
-        const titleLower = j.jobTitle.toLowerCase()
-        let seniority: SyncedJobItem['seniority'] = 'Mid-Level'
-        if (titleLower.includes('senior')) seniority = 'Senior'
-        else if (titleLower.includes('lead') || titleLower.includes('head')) seniority = 'Lead / Staff'
-        else if (titleLower.includes('junior') || titleLower.includes('entry')) seniority = 'Entry Level'
-
-        syncedJobs.push({
-          id: `jobicy-${j.id || Math.random().toString(36).substring(2, 9)}`,
-          title: j.jobTitle.trim(),
-          company: j.companyName.trim(),
-          location: j.jobGeo || 'Worldwide Remote',
-          country: 'Remote Worldwide',
-          workplace: 'Remote',
-          seniority,
-          roleCategory: 'Software / Cloud',
-          postedDate: 'Live Feed',
-          apply_url: j.url || 'https://jobicy.com',
-          description: j.jobExcerpt || undefined,
-          source: 'Jobicy Open API',
-        })
-      }
-    }
-  } catch (err) {
-    console.warn('[api/jobs/sync] Jobicy sync notice:', err)
+      { status: 500 }
+    )
   }
-
-  return NextResponse.json({
-    success: true,
-    totalSynced: syncedJobs.length,
-    jobs: syncedJobs,
-    fetchedAt: new Date().toISOString(),
-    apiSources: ['Remotive Public Open API', 'Jobicy Public Open API', 'Indeed Job Sync API Adapter'],
-  })
 }

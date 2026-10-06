@@ -303,7 +303,7 @@ export async function harvestJobsFromSources(
     );
   }
 
-  // Source 9: Google Jobs via SerpAPI (Environment-authenticated)
+  // Source 9: Google Jobs & Indeed via SerpAPI (Environment-authenticated)
   const serpApiKey = process.env.SERPAPI_API_KEY;
   if (serpApiKey && shouldRun("google")) {
     tasks.push(
@@ -336,6 +336,85 @@ export async function harvestJobsFromSources(
                   is_remote: true,
                   salary: j.detected_extensions?.salary || "",
                   job_type: "remote",
+                });
+              }
+            }
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
+
+  // Source 9b: Indeed Live Feed via SerpAPI
+  if (serpApiKey && (shouldRun("indeed") || shouldRun("all"))) {
+    tasks.push(
+      (async () => {
+        try {
+          const indeedUrl = `https://serpapi.com/search.json?engine=indeed&q=${encodeURIComponent(
+            query
+          )}&api_key=${serpApiKey}&num=20`;
+          const res = await fetchWithTimeout(indeedUrl, 6000);
+          if (res.ok) {
+            const data = await res.json();
+            const results = data.organic_results || data.jobs_results || [];
+            if (Array.isArray(results)) {
+              for (const j of results) {
+                const apply_url = j.link || j.job_link || `https://www.indeed.com/viewjob?jk=${j.job_id || ""}`;
+                const job_id = `job_ind_${Buffer.from(apply_url).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title: j.title || "Software Engineer",
+                  company: j.company || j.company_name || "Indeed Employer",
+                  location: j.location || "Remote Worldwide",
+                  description: (j.snippet || j.description || "").slice(0, 350),
+                  apply_url,
+                  source: "Indeed (SerpAPI)",
+                  posted_date: j.pubDate || new Date().toISOString(),
+                  is_remote: true,
+                  salary: j.salary || "",
+                  job_type: "remote",
+                });
+              }
+            }
+          }
+        } catch (_e) {}
+      })()
+    );
+  }
+
+  // Source 9c: RapidAPI JSearch (Indeed, LinkedIn, Glassdoor aggregator)
+  const rapidApiKey = process.env.RAPIDAPI_KEY || process.env.INDEED_RAPIDAPI_KEY;
+  if (rapidApiKey && (shouldRun("indeed") || shouldRun("jsearch") || shouldRun("all"))) {
+    tasks.push(
+      (async () => {
+        try {
+          const jsearchUrl = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(
+            query + " jobs"
+          )}&page=1&num_pages=1`;
+          const res = await fetchWithTimeout(jsearchUrl, 6000, {
+            headers: {
+              "X-RapidAPI-Key": rapidApiKey,
+              "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.data)) {
+              for (const j of data.data) {
+                const apply_url = j.job_apply_link || j.job_google_link || "";
+                const job_id = `job_js_${j.job_id || Buffer.from(apply_url).toString("hex").slice(0, 12)}`;
+                harvested.push({
+                  job_id,
+                  title: j.job_title || "Software Engineer",
+                  company: j.employer_name || "Enterprise Employer",
+                  location: `${j.job_city || ""}, ${j.job_country || "Remote"}`.trim(),
+                  description: (j.job_description || "").slice(0, 350),
+                  apply_url,
+                  source: "Indeed / JSearch API",
+                  posted_date: j.job_posted_at_datetime_utc || new Date().toISOString(),
+                  is_remote: Boolean(j.job_is_remote),
+                  salary: j.job_salary || (j.job_min_salary ? `$${j.job_min_salary} - $${j.job_max_salary}` : ""),
+                  job_type: j.job_is_remote ? "remote" : "hybrid",
                 });
               }
             }
