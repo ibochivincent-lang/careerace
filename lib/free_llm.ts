@@ -87,14 +87,14 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     chatMessages.push({ role: "user", content: options.prompt });
   }
 
-  // 1. Try Groq Cloud (Ultra-fast open-source inference: Qwen, Llama 3.3, GPT-OSS)
+  // 1. Try Groq Cloud (Ultra-fast open-source inference: Llama 3.3, Llama 3.1)
   if (groqKey) {
     const groqPayloadMessages = [
       ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
       ...chatMessages,
     ];
 
-    for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]) {
+    for (const model of ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"]) {
       try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
@@ -107,6 +107,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: groqPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
+          signal: AbortSignal.timeout(3500),
         });
         if (res.ok) {
           const data = await res.json();
@@ -141,6 +142,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: cerebrasPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
+          signal: AbortSignal.timeout(3500),
         });
         if (res.ok) {
           const data = await res.json();
@@ -175,6 +177,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: deepseekPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
+          signal: AbortSignal.timeout(4000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -189,14 +192,14 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 4. Try Google Gemini API (gemini-3.5-flash / gemini-3.1-flash-lite / gemini-3.8-flash)
+  // 4. Try Google Gemini API (gemini-2.5-flash / gemini-1.5-flash / gemini-2.0-flash)
   if (geminiKey) {
     const geminiContents = chatMessages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
 
-    for (const modelName of ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest", "gemini-2.0-flash"]) {
+    for (const modelName of ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]) {
       try {
         const payload: Record<string, unknown> = {
           contents: geminiContents,
@@ -216,6 +219,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(4000),
           }
         );
         if (res.ok) {
@@ -230,6 +234,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
       }
     }
   }
+
 
   // 5. Try OpenRouter (Free open-source models: Qwen, Nemotron, Gemma, DeepSeek R1, Mistral)
   if (openRouterKey) {
@@ -287,6 +292,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             ],
             max_tokens: options.max_tokens || 800,
           }),
+          signal: AbortSignal.timeout(3500),
         });
         if (res.ok) {
           const data = await res.json();
@@ -319,6 +325,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             ],
             max_tokens: options.max_tokens || 800,
           }),
+          signal: AbortSignal.timeout(3500),
         });
         if (res.ok) {
           const data = await res.json();

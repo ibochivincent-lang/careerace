@@ -47,15 +47,15 @@ function getGreeting(): string {
 // Formatted Chat Message component that renders bold, italics, bullets, and numbered items cleanly without raw asterisks
 function FormattedChatMessage({ content, role }: { content: string; role: 'user' | 'assistant' }) {
   if (role === 'user') {
-    return <div className="whitespace-pre-wrap text-[11px] sm:text-xs">{content}</div>
+    return <div className="whitespace-pre-wrap text-[10px] sm:text-[11px] leading-snug">{content}</div>
   }
 
   const lines = content.split('\n')
   return (
-    <div className="space-y-1 leading-snug text-[11px] sm:text-xs">
+    <div className="space-y-0.5 leading-snug text-[10px] sm:text-[11px]">
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
-          return <div key={lineIdx} className="h-1" />
+          return <div key={lineIdx} className="h-0.5" />
         }
 
         const bulletMatch = line.match(/^(\s*)([•\-\*]|\d+\.)\s+(.*)$/)
@@ -96,11 +96,11 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
           const prefix = bulletMatch![2]
           const isNumber = /^\d+\./.test(prefix)
           return (
-            <div key={lineIdx} className="flex items-start gap-1.5 pl-1 my-0.5">
-              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-[11px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-[10px] sm:text-xs"}>
+            <div key={lineIdx} className="flex items-start gap-1 pl-0.5 my-0.5">
+              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[9px] sm:text-[10px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-[9px] sm:text-[10px]"}>
                 {prefix}
               </span>
-              <div className="flex-1">{parts}</div>
+              <div className="flex-1 text-[10px] sm:text-[11px]">{parts}</div>
             </div>
           )
         }
@@ -1539,8 +1539,8 @@ function DashboardContent() {
                   </Badge>
                 </div>
 
-                {/* Chat Messages Feed (Expanded for high visibility so multiple responses fit comfortably) */}
-                <div ref={overviewChatContainerRef} className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-3.5 text-xs sm:text-sm">
+                {/* Chat Messages Feed (Compact typography so multiple responses fit comfortably) */}
+                <div ref={overviewChatContainerRef} className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 text-[10px] sm:text-xs">
                   {/* First-time User Onboarding Callout: Prominent upload card */}
                   {!parsedProfile && (
                     <div className="p-4 rounded-2xl border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
@@ -1575,13 +1575,13 @@ function DashboardContent() {
                       }`}
                     >
                       {msg.role === 'assistant' && (
-                        <div className="w-7 h-7 rounded-lg bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <Bot className="w-4 h-4" />
+                        <div className="w-6 h-6 rounded-lg bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                          <Bot className="w-3.5 h-3.5" />
                         </div>
                       )}
 
                       <div
-                        className={`max-w-[90%] sm:max-w-[80%] p-2.5 sm:p-3.5 rounded-2xl text-[11px] sm:text-xs leading-snug ${
+                        className={`max-w-[88%] sm:max-w-[78%] p-2 sm:p-2.5 rounded-xl text-[10px] sm:text-[11px] leading-snug ${
                           msg.role === 'assistant'
                             ? 'bg-muted/40 border border-border/80 text-foreground shadow-2xs'
                             : 'bg-emerald-600 text-white font-medium shadow-xs'
@@ -1593,43 +1593,38 @@ function DashboardContent() {
                   ))}
 
                   {isOverviewSending && (
-                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60">
-                      <Bot className="w-4 h-4 text-emerald-500 animate-pulse" />
-                      <span>Querying Walrus Memory...</span>
+                    <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground p-2 rounded-lg bg-muted/30 border border-border/60">
+                      <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                      <span>Querying Walrus Memory</span>
                     </div>
                   )}
                   <div ref={overviewChatEndRef} />
                 </div>
 
                 {/* Streamlined Prompt Chips (2x2 Grid: Recommended Jobs, Application Tracker, Daily Limits & Goals, Profile & Qualifications) */}
-                <div className="p-2 sm:p-2.5 bg-muted/20 border-t border-border/60">
-                  <div className="grid grid-cols-2 gap-1.5 sm:gap-2 max-w-3xl mx-auto">
+                <div className="p-1.5 sm:p-2 bg-muted/20 border-t border-border/60">
+                  <div className="grid grid-cols-2 gap-1 sm:gap-1.5 max-w-3xl mx-auto">
                     {STREAMLINED_PROMPT_CHIPS.slice(0, 4).map((chip) => (
                       <button
                         key={chip.id}
                         type="button"
                         onClick={() => {
-                          if (!parsedProfile) {
-                            toast.info('Please upload your CV first to access personalized career features.')
-                            fileInputRef.current?.click()
-                            return
-                          }
                           handleSendOverviewMessage(chip.prompt)
                         }}
                         disabled={isOverviewSending}
                         title={chip.prompt}
-                        className="text-[11px] sm:text-xs px-2.5 py-1.5 sm:py-2 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center justify-between gap-1.5 font-medium text-left cursor-pointer shadow-2xs group"
+                        className="text-[10px] sm:text-[11px] px-2 py-1 sm:py-1.5 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center justify-between gap-1 font-medium text-left cursor-pointer shadow-2xs group"
                       >
                         <span className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
                           {chip.label}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
                           {chip.badge && (
-                            <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground font-mono hidden sm:inline-block">
+                            <span className="text-[8.5px] uppercase px-1 py-0.5 rounded bg-muted/80 text-muted-foreground font-mono hidden sm:inline-block">
                               {chip.badge}
                             </span>
                           )}
-                          <ArrowRight className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-opacity" />
+                          <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-opacity" />
                         </div>
                       </button>
                     ))}
@@ -1955,7 +1950,7 @@ function DashboardContent() {
                               )}
 
                               <div
-                                className={`max-w-[88%] p-3 rounded-xl text-xs ${
+                                className={`max-w-[88%] p-2 rounded-xl text-[10px] sm:text-[11px] leading-snug ${
                                   msg.role === 'assistant'
                                     ? 'bg-muted/40 border border-border/80 text-foreground'
                                     : 'bg-emerald-600 text-white font-medium shadow-xs'
@@ -1963,14 +1958,14 @@ function DashboardContent() {
                               >
                                 <FormattedChatMessage content={msg.content} role={msg.role} />
                                 {typeof msg.edits_added === 'number' && msg.edits_added > 0 && (
-                                  <div className="mt-2 pt-1.5 border-t border-border/60 flex items-center justify-between text-[10px]">
+                                  <div className="mt-1.5 pt-1 border-t border-border/60 flex items-center justify-between text-[9px] sm:text-[10px]">
                                     <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
-                                      <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {msg.edits_added} edit{msg.edits_added > 1 ? 's' : ''} applied
+                                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" /> {msg.edits_added} edit{msg.edits_added > 1 ? 's' : ''} applied
                                     </span>
                                     <button
                                       type="button"
                                       onClick={handleUndo}
-                                      className="text-[10px] text-muted-foreground hover:text-foreground underline flex items-center gap-0.5 font-medium cursor-pointer"
+                                      className="text-[9px] sm:text-[10px] text-muted-foreground hover:text-foreground underline flex items-center gap-0.5 font-medium cursor-pointer"
                                     >
                                       <RotateCcw className="w-2.5 h-2.5" /> Undo
                                     </button>
@@ -1981,9 +1976,9 @@ function DashboardContent() {
                           ))}
 
                           {isResumeSending && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 rounded-lg bg-muted/30 border border-border/60">
-                              <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-                              <span>Querying Walrus Memory...</span>
+                            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground p-1.5 rounded-lg bg-muted/30 border border-border/60">
+                              <Bot className="w-3 h-3 text-emerald-500 animate-pulse" />
+                              <span>Querying Walrus Memory</span>
                             </div>
                           )}
                           <div ref={resumeChatEndRef} />

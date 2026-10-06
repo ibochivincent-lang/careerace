@@ -1582,7 +1582,7 @@ export function generateIntentMemoryResponse(
         `• **Target Role:** ${role}\n` +
         `• **Academic Background:** ${eduStr}\n` +
         `• **Work Experience:** ${expCount} indexed tenure(s)\n` +
-        `• **Technical Skills (${skills.length}):** ${skills.slice(0, 8).join(", ")}${skills.length > 8 ? "..." : ""}\n` +
+        `• **Technical Skills (${skills.length}):** ${skills.slice(0, 8).join(", ")}${skills.length > 8 ? " and more" : ""}\n` +
         `• **Walrus Sovereign Memory:** Profile metadata is synchronized and cryptographically anchored.\n\n` +
         `You can edit any section on the live ATS canvas in **Resume Studio**, switch templates (Modern Tech, Ivy League, Senior Architect), and export tamper-proof PDF/.docx packages at any time.`
       );

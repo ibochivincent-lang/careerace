@@ -3,6 +3,7 @@ import {
   recallCareerProfile,
   recallCareerCoaching,
   rememberFact,
+  type RecalledFact,
 } from "./memory_core.ts";
 import {
   resolveConflicts,
@@ -228,10 +229,16 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
   // 1. Resolve canonical address for sovereign Walrus Memory
   const address = await resolveTargetAddress(body.address);
 
-  // 2. Recall existing verified facts from Walrus Memory
-  const [profileFacts, coachingFacts] = await Promise.all([
+  // 2. Recall existing verified facts from Walrus Memory with fast bounded timeout (<350ms)
+  const memoryPromise = Promise.all([
     recallCareerProfile(address).catch(() => []),
     recallCareerCoaching(address).catch(() => []),
+  ]);
+  const [profileFacts, coachingFacts] = await Promise.race([
+    memoryPromise,
+    new Promise<[RecalledFact[], RecalledFact[]]>((resolve) =>
+      setTimeout(() => resolve([[], []]), 350)
+    ),
   ]);
 
   const activeProfile = resolveConflicts(profileFacts).active;
@@ -247,20 +254,22 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     tailoredCvs: claimsOfKind(activeProfile, "tailored_cv"),
   };
 
-  // 3. Extract facts from current user turn and persist to Walrus Memory
+  // 3. Extract facts from current user turn and persist to Walrus Memory in the background
   const newlyStored: string[] = [];
   const extracted = extractHeuristicFacts(latest, asked);
 
-  for (const fact of extracted) {
-    try {
-      const outcome = await rememberFact(address, fact.kind, fact.text, { userTurn: latest });
-      if (outcome.status === "written") {
-        newlyStored.push(`${fact.kind.replace("_", " ")}: ${fact.text}`);
-      }
-    } catch (err) {
-      console.warn("[careerace] memory persistence notice:", err);
-    }
-  }
+  // Non-blocking asynchronous fact persistence to eliminate round-trip latency
+  Promise.allSettled(
+    extracted.map((fact) =>
+      rememberFact(address, fact.kind, fact.text, { userTurn: latest })
+        .then((outcome) => {
+          if (outcome.status === "written") {
+            newlyStored.push(`${fact.kind.replace("_", " ")}: ${fact.text}`);
+          }
+        })
+        .catch((err) => console.warn("[careerace] memory persistence notice:", err))
+    )
+  );
 
   const currentName =
     extracted.find((f) => f.kind === "candidate_identity")?.text.replace("Candidate Name: ", "").trim() ||
@@ -396,17 +405,11 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
   // Fine-Tuned Intent Classification & Grounded Walrus Sovereign Memory Recall
   const userIntent = classifyUserIntent(latest);
   const activeProfileData = cv_profile || body.profile;
+  const simulatedIntentReply = !isGreeting
+    ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest)
+    : null;
 
-  if (!hasUploadedResume && isPersonalOrProfileQuery) {
-    directReply =
-      `Welcome to CareerAce! You haven't uploaded or calibrated your resume yet.\n\n` +
-      `To give you tailored career intelligence, match you with verified openings, and track your applications, the very first step is to upload your resume in **Resume Studio**.\n\n` +
-      `Once uploaded, our sovereign AI will:\n` +
-      `1. Calibrate your target roles and seniority level to match live hiring standards\n` +
-      `2. Extract and index your verified technical competencies and work experience into your decentralized Walrus Memory vault\n` +
-      `3. Format and quantify your achievements to pass ATS screening algorithms\n\n` +
-      `Please head over to **Resume Studio** to upload your resume to get started!`;
-  } else if (isHowManyJobsInADay) {
+  if (isHowManyJobsInADay) {
     directReply =
       `You can apply to as many jobs as possible in a day. CareerAce does not place an artificial limit on your daily dispatches.\n\n` +
       `To ensure maximum delivery success, protect your candidate reputation, and adhere to recruiter compliance standards, our Universal Application Board and Auto-Apply engine implement two key safeguards:\n` +
@@ -701,11 +704,8 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     directReply = `ATS Audit Complete for ${currentName || "Candidate"}:\n\n- Overall ATS Compatibility: ${score}/100\n- Contact & Header: Clean and parseable\n- Target Role: ${profileRole}\n- Core Competencies: ${profileSkills.length} verified skills\n- Experience Entries: ${Array.isArray(profileExperience) ? profileExperience.length : 1} position(s)\n- Recommendation: Ensure every work accomplishment starts with a strong action verb and includes quantifiable metrics (% growth, revenue, speed, or team size).`;
   }
 
-  if (!directReply) {
-    const intentMemoryReply = !isGreeting ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest) : null;
-    if (intentMemoryReply) {
-      directReply = intentMemoryReply;
-    }
+  if (!directReply && simulatedIntentReply) {
+    directReply = simulatedIntentReply;
   }
 
   let reply = directReply;
@@ -741,6 +741,8 @@ CLASSIFIED USER INTENT & CONTEXT:
 - Category: ${userIntent.category}
 - Action Guidance: ${userIntent.actionPrompt}
 - Matched Keywords: ${userIntent.matchedKeywords.join(", ") || "Direct inquiry"}
+
+${simulatedIntentReply ? `GROUNDED TAXONOMY & VERIFIED SIMULATION KNOWLEDGE:\n${simulatedIntentReply}\n` : ""}
 
 DATA PRIVACY & STRICT SOVEREIGN ISOLATION:
 You are strictly scoped to the active candidate's own verified CV, credentials, and application records. Under no circumstances can you reveal, reference, or cross-pollinate data, applications, or credentials belonging to another user.
@@ -785,6 +787,16 @@ RULES:
       reply = sanitizeAntiSlop(reply);
     }
   }
+
+  if (!reply) {
+    reply =
+      simulatedIntentReply ||
+      directReply ||
+      "CareerAce Chatbot is active and connected to your decentralized Walrus Sovereign Memory vault. I can answer questions about your verified CV, work history, target roles, academic credentials, and track 7-day follow-ups.";
+  }
+
+  // Strip trailing ellipses or multiple dots
+  reply = reply.replace(/\.{3,}/g, "").trim();
 
   return {
     role: "assistant",
