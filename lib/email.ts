@@ -18,8 +18,102 @@ export interface SendEmailResult {
   success: boolean;
   id?: string;
   error?: string;
-  provider: "resend" | "brevo";
+  provider: "resend" | "brevo" | "sendgrid" | "mailersend";
   failoverOccurred?: boolean;
+}
+
+/**
+ * Dispatches an email via Twilio SendGrid REST API (100 free emails/day forever)
+ */
+async function sendViaSendGrid(
+  apiKey: string,
+  options: SendEmailOptions,
+  fromEmail: string,
+  fromName: string
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const toRecipients = (Array.isArray(options.to) ? options.to : [options.to]).map((email) => ({
+      email: email.trim(),
+    }));
+
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: toRecipients }],
+        from: { email: fromEmail, name: fromName },
+        subject: options.subject,
+        content: [
+          { type: "text/plain", value: options.text || options.subject },
+          { type: "text/html", value: options.html },
+        ],
+        reply_to: options.reply_to ? { email: options.reply_to } : undefined,
+      }),
+    });
+
+    if (response.status === 200 || response.status === 202) {
+      const msgId = response.headers.get("x-message-id") || `sg-${Date.now()}`;
+      return { success: true, id: msgId };
+    }
+
+    const data = await response.json().catch(() => ({}));
+    const errMsg = data?.errors?.[0]?.message || `SendGrid HTTP ${response.status}`;
+    return { success: false, error: errMsg };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Dispatches an email via MailerSend REST API (3,000 free emails/month)
+ */
+async function sendViaMailerSend(
+  apiKey: string,
+  options: SendEmailOptions,
+  fromEmail: string,
+  fromName: string
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const toRecipients = (Array.isArray(options.to) ? options.to : [options.to]).map((email) => ({
+      email: email.trim(),
+    }));
+
+    const response = await fetch("https://api.mailersend.com/v1/email", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: { email: fromEmail, name: fromName },
+        to: toRecipients,
+        subject: options.subject,
+        html: options.html,
+        text: options.text || options.subject,
+        reply_to: options.reply_to ? { email: options.reply_to } : undefined,
+      }),
+    });
+
+    if (response.status === 200 || response.status === 202) {
+      const msgId = response.headers.get("x-message-id") || `ms-${Date.now()}`;
+      return { success: true, id: msgId };
+    }
+
+    const data = await response.json().catch(() => ({}));
+    const errMsg = data?.message || `MailerSend HTTP ${response.status}`;
+    return { success: false, error: errMsg };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 /**
@@ -152,25 +246,37 @@ async function sendViaResend(
 
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const resendKey = (process.env.RESEND_API_KEY || "").trim();
+  const sendgridKey = (process.env.SENDGRID_API_KEY || "").trim();
+  const mailersendKey = (process.env.MAILERSEND_API_KEY || "").trim();
   const brevoKey = (process.env.BREVO_API_KEY || process.env.SIB_API_KEY || "").trim();
 
   const configuredFrom =
     options.from ||
     process.env.RESEND_FROM_EMAIL ||
+    process.env.SENDGRID_FROM_EMAIL ||
+    process.env.MAILERSEND_FROM_EMAIL ||
     process.env.BREVO_FROM_EMAIL ||
     process.env.EMAIL_FROM ||
     "Career Ace <onboarding@resend.dev>";
 
-  if (!resendKey && !brevoKey) {
-    console.warn("[email] Neither RESEND_API_KEY nor BREVO_API_KEY is configured. Refusing to send mock data.");
+  const fromEmail =
+    configuredFrom.includes("<")
+      ? configuredFrom.match(/<([^>]+)>/)?.[1] || configuredFrom
+      : configuredFrom;
+  const fromName =
+    process.env.EMAIL_FROM_NAME ||
+    (configuredFrom.includes("<") ? configuredFrom.split("<")[0].trim() : "Career Ace");
+
+  if (!resendKey && !sendgridKey && !mailersendKey && !brevoKey) {
+    console.warn("[email] No email provider API keys configured in environment. Refusing to send mock data.");
     return {
       success: false,
-      error: "No email provider configured. Configure RESEND_API_KEY or BREVO_API_KEY in Vercel or .env.local to enable live transactional email delivery.",
+      error: "No email provider configured. Configure RESEND_API_KEY, SENDGRID_API_KEY, or MAILERSEND_API_KEY in Vercel or .env.local to enable live transactional email delivery.",
       provider: "resend",
     };
   }
 
-  // 1. Primary path: Resend
+  // 1. Primary path: Resend (3,000 free emails/month)
   if (resendKey) {
     const resendResult = await sendViaResend(resendKey, options, configuredFrom);
     if (resendResult.success) {
@@ -183,18 +289,38 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 
     console.warn(`[email] Resend delivery failed (${resendResult.error}). Checking for fallback provider...`);
 
-    // If Resend failed and Brevo is configured, execute automated fallback
+    // Fallback A: SendGrid (100 free emails/day)
+    if (sendgridKey) {
+      console.info("[email] Failover: Dispatching via SendGrid secondary provider...");
+      const sgResult = await sendViaSendGrid(sendgridKey, options, fromEmail, fromName);
+      if (sgResult.success) {
+        return {
+          success: true,
+          id: sgResult.id,
+          provider: "sendgrid",
+          failoverOccurred: true,
+        };
+      }
+    }
+
+    // Fallback B: MailerSend (3,000 free emails/month)
+    if (mailersendKey) {
+      console.info("[email] Failover: Dispatching via MailerSend secondary provider...");
+      const msResult = await sendViaMailerSend(mailersendKey, options, fromEmail, fromName);
+      if (msResult.success) {
+        return {
+          success: true,
+          id: msResult.id,
+          provider: "mailersend",
+          failoverOccurred: true,
+        };
+      }
+    }
+
+    // Fallback C: Brevo
     if (brevoKey) {
       console.info("[email] Failover: Dispatching via Brevo secondary provider...");
-      const brevoFromEmail =
-        process.env.BREVO_FROM_EMAIL ||
-        process.env.EMAIL_FROM ||
-        (configuredFrom.includes("<") ? configuredFrom.match(/<([^>]+)>/)?.[1] || configuredFrom : configuredFrom);
-      const brevoFromName =
-        process.env.EMAIL_FROM_NAME ||
-        (configuredFrom.includes("<") ? configuredFrom.split("<")[0].trim() : "Career Ace");
-
-      const brevoResult = await sendViaBrevo(brevoKey, options, brevoFromEmail, brevoFromName);
+      const brevoResult = await sendViaBrevo(brevoKey, options, fromEmail, fromName);
       if (brevoResult.success) {
         return {
           success: true,
@@ -203,12 +329,6 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
           failoverOccurred: true,
         };
       }
-
-      return {
-        success: false,
-        error: `Both Resend and Brevo failed. Resend: ${resendResult.error} | Brevo: ${brevoResult.error}`,
-        provider: "resend",
-      };
     }
 
     return {
@@ -218,28 +338,61 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     };
   }
 
-  // 2. Secondary path: Direct Brevo (if only BREVO_API_KEY is configured)
-  const brevoFromEmail =
-    process.env.BREVO_FROM_EMAIL ||
-    process.env.EMAIL_FROM ||
-    (configuredFrom.includes("<") ? configuredFrom.match(/<([^>]+)>/)?.[1] || configuredFrom : configuredFrom);
-  const brevoFromName =
-    process.env.EMAIL_FROM_NAME ||
-    (configuredFrom.includes("<") ? configuredFrom.split("<")[0].trim() : "Career Ace");
-
-  const brevoResult = await sendViaBrevo(brevoKey, options, brevoFromEmail, brevoFromName);
-  if (brevoResult.success) {
+  // 2. Direct SendGrid (if SENDGRID_API_KEY configured)
+  if (sendgridKey) {
+    const sgResult = await sendViaSendGrid(sendgridKey, options, fromEmail, fromName);
+    if (sgResult.success) {
+      return {
+        success: true,
+        id: sgResult.id,
+        provider: "sendgrid",
+      };
+    }
     return {
-      success: true,
-      id: brevoResult.id,
+      success: false,
+      error: sgResult.error,
+      provider: "sendgrid",
+    };
+  }
+
+  // 3. Direct MailerSend (if MAILERSEND_API_KEY configured)
+  if (mailersendKey) {
+    const msResult = await sendViaMailerSend(mailersendKey, options, fromEmail, fromName);
+    if (msResult.success) {
+      return {
+        success: true,
+        id: msResult.id,
+        provider: "mailersend",
+      };
+    }
+    return {
+      success: false,
+      error: msResult.error,
+      provider: "mailersend",
+    };
+  }
+
+  // 4. Direct Brevo
+  if (brevoKey) {
+    const brevoResult = await sendViaBrevo(brevoKey, options, fromEmail, fromName);
+    if (brevoResult.success) {
+      return {
+        success: true,
+        id: brevoResult.id,
+        provider: "brevo",
+      };
+    }
+    return {
+      success: false,
+      error: brevoResult.error,
       provider: "brevo",
     };
   }
 
   return {
     success: false,
-    error: brevoResult.error,
-    provider: "brevo",
+    error: "No provider handled the request.",
+    provider: "resend",
   };
 }
 

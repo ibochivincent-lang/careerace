@@ -20,9 +20,13 @@ test("Email Dispatch: sendApplicationDispatchEmail returns actionable error when
   const originalResend = process.env.RESEND_API_KEY;
   const originalBrevo = process.env.BREVO_API_KEY;
   const originalSib = process.env.SIB_API_KEY;
+  const originalSendgrid = process.env.SENDGRID_API_KEY;
+  const originalMailersend = process.env.MAILERSEND_API_KEY;
   delete process.env.RESEND_API_KEY;
   delete process.env.BREVO_API_KEY;
   delete process.env.SIB_API_KEY;
+  delete process.env.SENDGRID_API_KEY;
+  delete process.env.MAILERSEND_API_KEY;
 
   try {
     const result = await sendApplicationDispatchEmail({
@@ -37,12 +41,14 @@ test("Email Dispatch: sendApplicationDispatchEmail returns actionable error when
     });
 
     assert.equal(result.success, false);
-    assert.ok(result.error?.includes("RESEND_API_KEY") || result.error?.includes("BREVO_API_KEY"));
+    assert.ok(result.error?.includes("RESEND_API_KEY") || result.error?.includes("SENDGRID_API_KEY"));
     assert.equal(result.provider, "resend");
   } finally {
     if (originalResend) process.env.RESEND_API_KEY = originalResend;
     if (originalBrevo) process.env.BREVO_API_KEY = originalBrevo;
     if (originalSib) process.env.SIB_API_KEY = originalSib;
+    if (originalSendgrid) process.env.SENDGRID_API_KEY = originalSendgrid;
+    if (originalMailersend) process.env.MAILERSEND_API_KEY = originalMailersend;
   }
 });
 
@@ -92,6 +98,54 @@ test("Email Dispatch: cascades to Brevo secondary provider when Resend fails", a
     globalThis.fetch = originalFetch;
     if (originalResend) process.env.RESEND_API_KEY = originalResend; else delete process.env.RESEND_API_KEY;
     if (originalBrevo) process.env.BREVO_API_KEY = originalBrevo; else delete process.env.BREVO_API_KEY;
+  }
+});
+
+test("Email Dispatch: cascades to SendGrid free secondary provider when Resend fails", async () => {
+  const originalResend = process.env.RESEND_API_KEY;
+  const originalSendgrid = process.env.SENDGRID_API_KEY;
+  const originalFetch = globalThis.fetch;
+
+  process.env.RESEND_API_KEY = "re_test_fail_123";
+  process.env.SENDGRID_API_KEY = "SG.test_pass_789";
+
+  globalThis.fetch = async (url: string | URL | Request): Promise<Response> => {
+    const urlStr = String(url);
+    if (urlStr.includes("resend.com")) {
+      return new Response(JSON.stringify({ message: "The domain is not verified" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (urlStr.includes("sendgrid.com")) {
+      return new Response("", {
+        status: 202,
+        headers: { "x-message-id": "sg-test-msg-id" },
+      });
+    }
+    return new Response("Not found", { status: 404 });
+  };
+
+  try {
+    const result = await sendApplicationDispatchEmail({
+      to: "recruiting@stripe.com",
+      candidateName: "Marcus Adebayo",
+      candidateEmail: "marcus@example.com",
+      jobTitle: "Engineering Lead",
+      company: "Stripe",
+      coverLetter: "Cover letter text.",
+      passportUrl: "https://careerace.online/p/MarcusAdebayo",
+      fitScore: 10,
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(result.provider, "sendgrid");
+    assert.equal(result.failoverOccurred, true);
+    assert.equal(result.id, "sg-test-msg-id");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalResend) process.env.RESEND_API_KEY = originalResend; else delete process.env.RESEND_API_KEY;
+    if (originalSendgrid) process.env.SENDGRID_API_KEY = originalSendgrid; else delete process.env.SENDGRID_API_KEY;
   }
 });
 

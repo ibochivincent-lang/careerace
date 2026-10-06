@@ -42,13 +42,15 @@ export async function POST(req: Request) {
     }
 
     const hasResend = !!(process.env.RESEND_API_KEY || '').trim();
+    const hasSendgrid = !!(process.env.SENDGRID_API_KEY || '').trim();
+    const hasMailersend = !!(process.env.MAILERSEND_API_KEY || '').trim();
     const hasBrevo = !!(process.env.BREVO_API_KEY || process.env.SIB_API_KEY || '').trim();
 
-    if (!hasResend && !hasBrevo) {
+    if (!hasResend && !hasSendgrid && !hasMailersend && !hasBrevo) {
       return NextResponse.json(
         {
           success: false,
-          error: 'No transactional email provider is configured in environment variables. Please add RESEND_API_KEY or BREVO_API_KEY to your Vercel project settings or .env.local to enable live email delivery.',
+          error: 'No transactional email provider is configured in environment variables. Please add RESEND_API_KEY, SENDGRID_API_KEY, or MAILERSEND_API_KEY to your Vercel project settings or .env.local to enable live email delivery.',
           provider: 'none',
         },
         { status: 503 }
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
     const timestampStr = new Date(now).toISOString();
     const attachedCount = Array.isArray(attachments) ? attachments.length : 0;
 
-    // Dispatch real transactional email via Resend or Brevo (with automated failover)
+    // Dispatch real transactional email with multi-provider automated failover
     const result = await sendEmail({
       to,
       subject,
@@ -81,9 +83,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const providerLabel = result.provider === 'brevo'
-      ? (result.failoverOccurred ? 'Brevo Transactional Relay (Failover)' : 'Brevo Transactional Relay')
-      : 'Resend Sovereign Transactional Relay';
+    let providerLabel = 'Resend Sovereign Transactional Relay';
+    if (result.provider === 'sendgrid') {
+      providerLabel = result.failoverOccurred ? 'SendGrid Transactional Relay (Failover)' : 'SendGrid Transactional Relay';
+    } else if (result.provider === 'mailersend') {
+      providerLabel = result.failoverOccurred ? 'MailerSend Transactional Relay (Failover)' : 'MailerSend Transactional Relay';
+    } else if (result.provider === 'brevo') {
+      providerLabel = result.failoverOccurred ? 'Brevo Transactional Relay (Failover)' : 'Brevo Transactional Relay';
+    }
 
     // Persist dispatched event to candidate's sovereign Walrus Memory
     try {
