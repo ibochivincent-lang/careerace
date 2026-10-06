@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOwnerAddress } from "@/lib/session";
 import { rememberFact } from "@/lib/memory_contract";
-import { sendApplicationDispatchEmail, sendEmail, triggerZapierDispatchWebhook } from "@/lib/email";
+import { sendApplicationDispatchEmail, sendEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -46,27 +46,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Trigger autonomous Zapier/Make/n8n webhook for CRM tracking & multi-channel sync
-    let zapierResult = null;
-    try {
-      zapierResult = await triggerZapierDispatchWebhook({
-        candidateName,
-        candidateEmail: candidate_email,
-        candidateAddress: address,
-        jobTitle: targetTitle,
-        company: targetCompany,
-        recruiterEmail: targetRecruiterEmail,
-        fitScore: fit_score || 9,
-        coverLetter: customCoverLetter,
-        passportUrl,
-        walrusBlobId: walrus_blob_id || null,
-        dispatchedAt,
-      });
-    } catch (err) {
-      console.warn("[dispatch] Zapier webhook notice:", err);
-    }
-
-    // 3. Send instant confirmation receipt to candidate
+    // 2. Send instant confirmation receipt to candidate
     if (candidate_email) {
       sendEmail({
         to: candidate_email,
