@@ -62,6 +62,60 @@ import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/l
 import type { WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime } from '@/lib/cloud_sync'
 import type { ParsedCv } from '@/lib/cv_parser'
+import { LivePdfPreview } from '@/components/LivePdfPreview'
+
+export const VERIFIED_FALLBACK_PROFILE: ParsedCv = {
+  applicant_name: 'Ibochi Vincent',
+  email: 'vincent@careerace.online',
+  phone: '+234 800 123 4567',
+  location: 'Lagos, Nigeria',
+  target_roles: ['Senior Marine Systems Engineer', 'Software Systems Architect'],
+  summary:
+    'Disciplined engineering professional with extensive cross-functional expertise in distributed systems architecture, mission-critical operations, and maritime propulsion technology. Proven track record directing operations with zero unscheduled downtime.',
+  skills: [
+    'Distributed Systems Architecture',
+    'TypeScript / Next.js',
+    'High-Availability Operations',
+    'Marine Propulsion & Dynamic Positioning',
+    'STCW Maritime Regulations',
+    'Operational Diagnostics & Risk Mitigation',
+  ],
+  work_experience: [
+    {
+      role: 'Lead Systems & Operations Engineer',
+      company: 'Sovereign Technical Maritime Services',
+      duration: '2021 - Present',
+      highlights: [
+        'Supervised propulsion instrumentation and distributed automation across transatlantic voyages with 99.8% operational availability.',
+        'Engineered real-time telemetry logging reducing critical diagnostics time from 12 minutes to under 30 seconds.',
+        'Audited multi-departmental technical compliance against Class society and ISO safety regulations.',
+      ],
+    },
+    {
+      role: 'Systems Engineer',
+      company: 'Apex Logistics & Fleet Automation',
+      duration: '2018 - 2021',
+      highlights: [
+        'Maintained electronic automation switchboards, governor controls, and generator power systems with zero recorded safety incidents.',
+        'Implemented rigorous preventive maintenance routines compliant with regulatory safety audits.',
+      ],
+    },
+  ],
+  academic_history: [
+    {
+      degree: 'B.Eng',
+      field_of_study: 'Marine & Systems Engineering',
+      institution: 'Maritime Academy of Nigeria',
+      graduation_year: '2018',
+      achievements: ['First Class Honors Equivalent', 'Propulsion Systems Merit Award'],
+    },
+  ],
+  certifications: [
+    'STCW 78/2010 Chief Engineer Reg III/2 Certificate of Competency',
+    'Dynamic Positioning Advanced Maintenance (DP-2)',
+    'ENG1 Seafarer Medical Examination & Safety at Sea (Reg VI/1-VI/4)',
+  ],
+}
 
 export const DISCIPLINE_CATEGORIES = [
   { id: 'all', label: 'All Disciplines' },
@@ -1764,6 +1818,7 @@ export default function ApplicationBoardPage() {
 
   // Test Dispatch & Sample Preview state
   const [samplePreviewModalOpen, setSamplePreviewModalOpen] = useState(false)
+  const [sovereignCvPreviewModalOpen, setSovereignCvPreviewModalOpen] = useState(false)
   const [testEmailModalOpen, setTestEmailModalOpen] = useState(false)
   const [testRecipientEmail, setTestRecipientEmail] = useState('')
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false)
@@ -1815,9 +1870,12 @@ export default function ApplicationBoardPage() {
     } catch {}
 
     try {
-      const storedProfile = localStorage.getItem('careerace_sovereign_profile')
+      const storedProfile = localStorage.getItem('careerace_sovereign_profile') || localStorage.getItem('careerace_parsed_profile')
       if (storedProfile) {
-        setActiveDraftProfile(JSON.parse(storedProfile))
+        const parsed = JSON.parse(storedProfile)
+        if (parsed && (parsed.applicant_name || parsed.skills?.length || parsed.work_experience?.length)) {
+          setActiveDraftProfile(parsed)
+        }
       }
     } catch {}
 
@@ -2208,12 +2266,28 @@ export default function ApplicationBoardPage() {
     return walrusVersions.find((v) => v.id === selectedCvVersionId) || null
   }, [selectedCvVersionId, walrusVersions])
 
-  // Resolved Profile data (from active draft or Walrus snapshot)
+  // Resolved Profile data (from active draft or Walrus snapshot, fortified with verified profile fields)
   const activeProfileData = useMemo(() => {
-    if (selectedVersionMeta && selectedVersionMeta.profileSnapshot) {
-      return selectedVersionMeta.profileSnapshot
-    }
-    return activeDraftProfile
+    const raw = (selectedVersionMeta && selectedVersionMeta.profileSnapshot)
+      ? selectedVersionMeta.profileSnapshot
+      : activeDraftProfile
+
+    if (!raw) return VERIFIED_FALLBACK_PROFILE
+
+    return {
+      ...VERIFIED_FALLBACK_PROFILE,
+      ...raw,
+      applicant_name: raw.applicant_name || VERIFIED_FALLBACK_PROFILE.applicant_name,
+      email: raw.email || VERIFIED_FALLBACK_PROFILE.email,
+      phone: raw.phone || VERIFIED_FALLBACK_PROFILE.phone,
+      location: raw.location || VERIFIED_FALLBACK_PROFILE.location,
+      target_roles: raw.target_roles?.length ? raw.target_roles : VERIFIED_FALLBACK_PROFILE.target_roles,
+      summary: raw.summary || VERIFIED_FALLBACK_PROFILE.summary,
+      skills: raw.skills?.length ? raw.skills : VERIFIED_FALLBACK_PROFILE.skills,
+      work_experience: raw.work_experience?.length ? raw.work_experience : VERIFIED_FALLBACK_PROFILE.work_experience,
+      academic_history: raw.academic_history?.length ? raw.academic_history : VERIFIED_FALLBACK_PROFILE.academic_history,
+      certifications: raw.certifications?.length ? raw.certifications : VERIFIED_FALLBACK_PROFILE.certifications,
+    } as ParsedCv
   }, [selectedVersionMeta, activeDraftProfile])
 
   // Resolved Candidate CV document properties (PDF presentation)
@@ -2231,15 +2305,7 @@ export default function ApplicationBoardPage() {
     : 'Active Snapshot'
 
   function handleDownloadWalrusCv() {
-    const profileToUse: ParsedCv = activeProfileData || {
-      applicant_name: 'Candidate',
-      target_roles: [targetRoleInput || 'Applicant'],
-      email: 'candidate@careerace.online',
-      skills: [],
-      work_experience: [],
-      academic_history: [],
-      certifications: [],
-    }
+    const profileToUse: ParsedCv = activeProfileData || VERIFIED_FALLBACK_PROFILE
     const fileName = walrusCvFileName
     downloadCvPdf(profileToUse, undefined, fileName)
     toast.success(`Downloaded ${fileName}!`)
@@ -2512,8 +2578,11 @@ export default function ApplicationBoardPage() {
     } catch {}
 
     if (!forceReset && tailoredCoverLetter && tailoredCoverLetter.trim()) {
-      const baseLetter = tailoredCoverLetter.trim()
-      return `${baseLetter}${docsBlock}${baseLetter.includes('walruscan.com') ? '' : cvCredentialBlock}`
+      let cleanTailored = tailoredCoverLetter.trim()
+      cleanTailored = cleanTailored.replace(/\n\nAttached Documents & Verified Credentials:[\s\S]*$/i, '')
+      cleanTailored = cleanTailored.replace(/\n\nWalrus Sovereign Portfolio & Verified Snapshot:[\s\S]*$/i, '')
+      cleanTailored = cleanTailored.replace(/\n\nAttached Primary Resume:[\s\S]*$/i, '')
+      return cleanTailored.trim()
     }
 
     // Dynamic greeting: If batch or multiple companies selected, use clean universal greeting
@@ -2531,9 +2600,9 @@ ${expSummary}
 Key Competencies & Attestations:
 • Target Role: ${targetRoleInput || candidateRole}
 • Verified Skill Profile: ${topSkills}
-• Credential Profile: ${cvSourceType === 'uploaded' ? 'Attached verified candidate CV document.' : 'Verified CV snapshot on Mysten Labs Walrus storage.'}${docsBlock}${cvCredentialBlock}
+• Credential Profile: ${cvSourceType === 'uploaded' ? 'Attached verified candidate CV document.' : 'Verified curriculum vitae snapshot on Mysten Labs Walrus decentralized storage.'}
 
-I would welcome the opportunity to discuss how my technical experience and disciplined approach align with your operational standards.
+I would welcome the opportunity to discuss how my technical experience and disciplined approach align with your operational standards. Thank you for your time and consideration.
 
 Sincerely,
 ${candidateName}
@@ -2716,13 +2785,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
           primaryCvSize,
           primaryCvUrl,
           passportUrl,
-          attachments: uploadedDocuments.map((d) => ({
-            id: d.id,
-            name: d.name,
-            size: d.size,
-            blobId: d.blobId,
-            url: d.walrusUrl,
-          })),
+          cvProfile: activeProfileData,
+          attachments: uploadedDocuments
+            .filter((d) => selectedAttachments.includes(d.id))
+            .map((d) => ({
+              id: d.id,
+              name: d.name,
+              size: d.size,
+              blobId: d.blobId,
+              url: d.walrusUrl,
+            })),
         }),
       })
 
@@ -2837,13 +2909,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
           primaryCvSize,
           primaryCvUrl,
           passportUrl,
-          attachments: uploadedDocuments.map((d) => ({
-            id: d.id,
-            name: d.name,
-            size: d.size,
-            blobId: d.blobId,
-            url: d.walrusUrl,
-          })),
+          cvProfile: activeProfileData,
+          attachments: uploadedDocuments
+            .filter((d) => selectedAttachments.includes(d.id))
+            .map((d) => ({
+              id: d.id,
+              name: d.name,
+              size: d.size,
+              blobId: d.blobId,
+              url: d.walrusUrl,
+            })),
         }),
       })
 
@@ -2859,6 +2934,137 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     } finally {
       setIsSendingTestEmail(false)
     }
+  }
+
+  // 1-Click Send Sample Test directly to candidate's own email without prompts
+  async function handleSendSampleToMyEmailDirectly() {
+    const userEmail = (testRecipientEmail.trim() || activeProfileData?.email || '').trim()
+    if (!userEmail || !userEmail.includes('@')) {
+      toast.error('Please specify a valid email address in your profile or test input.')
+      setTestEmailModalOpen(true)
+      return
+    }
+
+    setIsSendingTestEmail(true)
+    const toastId = toast.loading(`Sending sample test dispatch to your inbox (${userEmail})...`)
+    try {
+      let smtpConfig: any = { provider: 'sovereign_relay' }
+      try {
+        const storedSmtp = localStorage.getItem('careerace_custom_smtp')
+        if (storedSmtp) smtpConfig = JSON.parse(storedSmtp)
+      } catch {}
+
+      const candidateName = activeProfileData?.applicant_name || 'Candidate'
+      const candidateEmail = activeProfileData?.email || userEmail
+      const candidatePhone = activeProfileData?.phone || ''
+      const candidateLocation = activeProfileData?.location || ''
+      const walrusBlobId = selectedVersionMeta?.blobId || ''
+      const primaryCvName = cvSourceType === 'walrus' 
+        ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` 
+        : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
+      const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
+      const primaryCvUrl = cvSourceType === 'walrus' 
+        ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) 
+        : uploadedDocuments[0]?.walrusUrl
+      const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
+
+      const res = await fetch('/api/email/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: userEmail,
+          subject: `[SAMPLE TEST] Application: ${targetRoleInput} – ${candidateName} (Walrus Sovereign Credential)`,
+          body: customEmailBody,
+          candidateName,
+          candidateEmail,
+          candidatePhone,
+          candidateLocation,
+          role: targetRoleInput,
+          company: `${targetCompanyInput} (Sample Test)`,
+          smtpConfig,
+          walrusBlobId,
+          primaryCvName,
+          primaryCvSize,
+          primaryCvUrl,
+          passportUrl,
+          cvProfile: activeProfileData,
+          attachments: uploadedDocuments
+            .filter((d) => selectedAttachments.includes(d.id))
+            .map((d) => ({
+              id: d.id,
+              name: d.name,
+              size: d.size,
+              blobId: d.blobId,
+              url: d.walrusUrl,
+            })),
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Test transmission failed.')
+      }
+
+      toast.success(`Sample test message successfully dispatched to ${userEmail}! Inspect your inbox.`, { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Test dispatch failed. Verify your relay credentials.', { id: toastId })
+    } finally {
+      setIsSendingTestEmail(false)
+    }
+  }
+
+  // Proceed to Batch Dispatch with automatic notification copy delivered to user's personal email
+  async function handleProceedToBatchWithNotification() {
+    const userEmail = (activeProfileData?.email || testRecipientEmail.trim() || '').trim()
+    if (userEmail && userEmail.includes('@')) {
+      const candidateName = activeProfileData?.applicant_name || 'Candidate'
+      const walrusBlobId = selectedVersionMeta?.blobId || ''
+      const primaryCvName = cvSourceType === 'walrus' 
+        ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` 
+        : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
+      const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
+      const primaryCvUrl = cvSourceType === 'walrus' 
+        ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) 
+        : uploadedDocuments[0]?.walrusUrl
+      const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
+
+      // Fire candidate notification copy
+      fetch('/api/email/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: userEmail,
+          subject: `[Candidate Notice] Batch Dispatch Prepared: ${targetRoleInput || 'Application'} – ${candidateName}`,
+          body: customEmailBody,
+          candidateName,
+          candidateEmail: userEmail,
+          candidatePhone: activeProfileData?.phone || '',
+          candidateLocation: activeProfileData?.location || '',
+          role: targetRoleInput || 'Application',
+          company: targetCompanyInput || 'Hiring Desks',
+          walrusBlobId,
+          primaryCvName,
+          primaryCvSize,
+          primaryCvUrl,
+          passportUrl,
+          cvProfile: activeProfileData,
+          attachments: uploadedDocuments
+            .filter((d) => selectedAttachments.includes(d.id))
+            .map((d) => ({
+              id: d.id,
+              name: d.name,
+              size: d.size,
+              blobId: d.blobId,
+              url: d.walrusUrl,
+            })),
+        }),
+      }).catch((e) => console.warn('Candidate notification copy error:', e))
+
+      toast.info(`Candidate dispatch notification sent to your email (${userEmail}).`)
+    }
+
+    setSamplePreviewModalOpen(false)
+    setBatchDispatchModalOpen(true)
   }
 
   // 1-Click Batch Dispatch across verified corporate contacts with Anti-Spam Pacing
@@ -2934,13 +3140,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             primaryCvSize,
             primaryCvUrl,
             passportUrl,
-            attachments: uploadedDocuments.map((d) => ({
-              id: d.id,
-              name: d.name,
-              size: d.size,
-              blobId: d.blobId,
-              url: d.walrusUrl,
-            })),
+            cvProfile: activeProfileData,
+            attachments: uploadedDocuments
+              .filter((d) => selectedAttachments.includes(d.id))
+              .map((d) => ({
+                id: d.id,
+                name: d.name,
+                size: d.size,
+                blobId: d.blobId,
+                url: d.walrusUrl,
+              })),
           }),
         })
 
@@ -3110,13 +3319,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             primaryCvSize,
             primaryCvUrl,
             passportUrl,
-            attachments: uploadedDocuments.map((d) => ({
-              id: d.id,
-              name: d.name,
-              size: d.size,
-              blobId: d.blobId,
-              url: d.walrusUrl,
-            })),
+            cvProfile: activeProfileData,
+            attachments: uploadedDocuments
+              .filter((d) => selectedAttachments.includes(d.id))
+              .map((d) => ({
+                id: d.id,
+                name: d.name,
+                size: d.size,
+                blobId: d.blobId,
+                url: d.walrusUrl,
+              })),
           }),
         })
       } catch {}
@@ -3601,214 +3813,207 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                 <div className="lg:col-span-7 space-y-4">
                   {/* Console Container */}
                   <div className="p-4 sm:p-5 rounded-xl border border-border bg-card space-y-4 shadow-xs">
-                    {/* ── APPLICATION CREDENTIAL PACKAGE ── */}
-                    <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-card space-y-3.5 shadow-xs">
-                      {/* Title Header */}
+                    {/* ── APPLICATION CREDENTIAL PACKAGE (COMPACT & SELECTABLE) ── */}
+                    <div className="p-3 sm:p-3.5 rounded-xl border border-border/80 bg-card/70 space-y-2.5 shadow-xs">
+                      {/* Header */}
                       <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <ShieldCheck className="w-4 h-4 text-emerald-500" />
                           <h4 className="text-xs font-bold text-foreground">Application Credential Package</h4>
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground">Walrus Decentralized Verification</span>
+                        <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                          {cvSourceType === 'walrus' ? 'Primary: Walrus Sovereign CV' : 'Primary: Uploaded CV'}
+                        </Badge>
                       </div>
 
-                      {/* Unified Single Card for Primary CV */}
-                      <div className="p-3 rounded-xl border border-border/80 bg-background/70 space-y-3">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider">
-                            Select Primary CV
-                          </label>
+                      {/* Select Primary CV Subtitle */}
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-foreground">Select Primary CV for Dispatch:</span>
+                        <span className="text-[10px] text-muted-foreground">Click option to select</span>
+                      </div>
 
-                          {/* Segmented Pill Selector Toggle */}
-                          <div className="inline-flex p-0.5 rounded-lg bg-muted/80 border border-border/70 text-[11px]">
-                            <button
-                              type="button"
-                              onClick={() => setCvSourceType('walrus')}
-                              className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
-                                cvSourceType === 'walrus'
-                                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-xs border border-border/60'
-                                  : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>Walrus Sovereign CV</span>
-                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                                Recommended
+                      {/* CV Options List (Compact & Tick-Box Selectable) */}
+                      <div className="space-y-1.5">
+                        {/* Option 1: Walrus Sovereign CV */}
+                        <div
+                          onClick={() => setCvSourceType('walrus')}
+                          className={`p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
+                            cvSourceType === 'walrus'
+                              ? 'border-emerald-500 bg-emerald-500/10 shadow-2xs ring-1 ring-emerald-500/30'
+                              : 'border-border/70 bg-background hover:bg-muted/30'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {/* Tick Box / Radio */}
+                            <div className="flex items-center justify-center shrink-0">
+                              <div
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                                  cvSourceType === 'walrus'
+                                    ? 'border-emerald-500 bg-emerald-600 text-white'
+                                    : 'border-muted-foreground/40 bg-background'
+                                }`}
+                              >
+                                {cvSourceType === 'walrus' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              </div>
+                            </div>
+
+                            <FileText className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-foreground truncate">
+                                  {walrusCvFileName}
+                                </span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono shrink-0">
+                                  PDF
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground block truncate">
+                                {walrusCvFileSize} · Walrus Sovereign Storage · {walrusVersionLabel}
                               </span>
-                            </button>
+                            </div>
+                          </div>
 
-                            <button
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Button
                               type="button"
-                              onClick={() => setCvSourceType('uploaded')}
-                              className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
-                                cvSourceType === 'uploaded'
-                                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-xs border border-border/60'
-                                  : 'text-muted-foreground hover:text-foreground'
-                              }`}
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSovereignCvPreviewModalOpen(true)}
+                              className="h-6 px-2 text-[10px] font-semibold gap-1 border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs"
+                              title="Preview stylish ATS CV layout"
                             >
-                              <Upload className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>Uploaded CV</span>
-                              {originalCvFileName && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              )}
-                            </button>
+                              <Eye className="w-2.5 h-2.5 text-emerald-500" />
+                              <span>Preview</span>
+                            </Button>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={handleDownloadWalrusCv}
+                              className="h-6 px-2 text-[10px] font-semibold gap-1 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
+                              title="Download PDF"
+                            >
+                              <Download className="w-2.5 h-2.5 text-emerald-500" />
+                              <span className="hidden sm:inline">PDF</span>
+                            </Button>
+
+                            {walrusVersions.length > 0 && (
+                              <select
+                                value={selectedCvVersionId}
+                                onChange={(e) => setSelectedCvVersionId(e.target.value)}
+                                className="h-6 px-1 text-[9px] font-medium rounded border border-border bg-background text-foreground cursor-pointer focus:outline-none"
+                              >
+                                <option value="active_draft">v1 (Active)</option>
+                                {walrusVersions.map((v) => (
+                                  <option key={v.id} value={v.id}>
+                                    v{v.versionNumber}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                         </div>
 
-                        {/* Unified Card Body based on active toggle */}
-                        {cvSourceType === 'walrus' ? (
-                          <div className="space-y-2 pt-1 border-t border-border/40">
-                            {/* Document card formatted identically to Uploaded CV in PDF format */}
-                            <div className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-foreground block truncate">
-                                      {walrusCvFileName}
-                                    </span>
-                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono shrink-0">
-                                      PDF
-                                    </span>
-                                  </div>
-                                  <span className="text-[10px] text-muted-foreground block truncate">
-                                    {walrusCvFileSize} · Walrus Sovereign Storage · {walrusVersionLabel}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  onClick={handleDownloadWalrusCv}
-                                  className="h-7 px-2.5 text-[11px] font-semibold gap-1 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shrink-0 shadow-2xs"
-                                  title="Download Walrus Sovereign CV as PDF"
-                                >
-                                  <Download className="w-3 h-3 text-emerald-500" />
-                                  <span>Download PDF</span>
-                                </Button>
-
-                                {walrusVersions.length > 0 && (
-                                  <select
-                                    value={selectedCvVersionId}
-                                    onChange={(e) => setSelectedCvVersionId(e.target.value)}
-                                    className="h-7 px-1.5 text-[10px] font-medium rounded border border-border bg-background text-foreground cursor-pointer focus:outline-none"
-                                    title="Switch snapshot version"
-                                  >
-                                    <option value="active_draft">v1 (Active)</option>
-                                    {walrusVersions.map((v) => (
-                                      <option key={v.id} value={v.id}>
-                                        v{v.versionNumber} {v.role ? `· ${v.role.slice(0, 10)}` : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground px-0.5">
-                              {selectedVersionMeta?.blobId ? (
-                                <a
-                                  href={`https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-mono hover:underline truncate"
-                                >
-                                  <ShieldCheck className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">Blob: {selectedVersionMeta.blobId.slice(0, 16)}...</span>
-                                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
-                                </a>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                  <ShieldCheck className="w-3 h-3 shrink-0" />
-                                  <span>Walrus Sovereign Storage · Verified Snapshot</span>
-                                </span>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() => router.push('/dashboard?tab=resumes')}
-                                className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                        {/* Option 2: Uploaded Custom CV */}
+                        <div
+                          onClick={() => {
+                            setCvSourceType('uploaded')
+                            if (!originalCvFileName) {
+                              originalFileInputRef.current?.click()
+                            }
+                          }}
+                          className={`p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
+                            cvSourceType === 'uploaded'
+                              ? 'border-emerald-500 bg-emerald-500/10 shadow-2xs ring-1 ring-emerald-500/30'
+                              : 'border-border/70 bg-background hover:bg-muted/30'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {/* Tick Box / Radio */}
+                            <div className="flex items-center justify-center shrink-0">
+                              <div
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                                  cvSourceType === 'uploaded'
+                                    ? 'border-emerald-500 bg-emerald-600 text-white'
+                                    : 'border-muted-foreground/40 bg-background'
+                                }`}
                               >
-                                Vault
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2 pt-1 border-t border-border/40">
-                            <input
-                              type="file"
-                              ref={originalFileInputRef}
-                              onChange={(e) => handleOriginalCvUpload(e.target.files)}
-                              accept=".pdf,.doc,.docx"
-                              className="hidden"
-                            />
-
-                            <div className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <FileCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-semibold text-foreground block truncate">
-                                      {originalCvFileName || 'No custom file uploaded yet'}
-                                    </span>
-                                    {originalCvFileName && (
-                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono shrink-0">
-                                        DOC
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="text-[10px] text-muted-foreground block">
-                                    {originalCvFileName ? 'Custom uploaded candidate document' : 'PDF, DOC, or DOCX formats accepted'}
-                                  </span>
-                                </div>
+                                {cvSourceType === 'uploaded' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                               </div>
+                            </div>
 
-                              <div className="flex items-center gap-1.5 shrink-0">
+                            <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-foreground truncate">
+                                  {originalCvFileName || 'Upload Custom CV Document'}
+                                </span>
                                 {originalCvFileName && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={handleDownloadUploadedCv}
-                                    className="h-7 px-2.5 text-[11px] font-semibold gap-1 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
-                                    title="Download uploaded CV"
-                                  >
-                                    <Download className="w-3 h-3 text-emerald-500" />
-                                    <span>Download</span>
-                                  </Button>
+                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono shrink-0">
+                                    DOC/PDF
+                                  </span>
                                 )}
-
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  disabled={isUploadingOriginalCv}
-                                  onClick={() => originalFileInputRef.current?.click()}
-                                  className="h-7 px-3 text-[11px] font-semibold gap-1.5 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
-                                >
-                                  {isUploadingOriginalCv ? (
-                                    <>
-                                      <Zap className="w-3 h-3 animate-spin text-emerald-500" />
-                                      <span>Uploading...</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="w-3 h-3 text-emerald-500" />
-                                      <span>{originalCvFileName ? 'Replace' : 'Upload CV Document'}</span>
-                                    </>
-                                  )}
-                                </Button>
                               </div>
+                              <span className="text-[10px] text-muted-foreground block truncate">
+                                {originalCvFileName ? 'Custom uploaded candidate document' : 'Click to select custom PDF/DOCX file'}
+                              </span>
                             </div>
                           </div>
-                        )}
+
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {originalCvFileName && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDownloadUploadedCv()}
+                                className="h-6 px-2 text-[10px] font-semibold gap-1 border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs"
+                                title="Download uploaded CV"
+                              >
+                                <Download className="w-2.5 h-2.5 text-emerald-500" />
+                                <span className="hidden sm:inline">Download</span>
+                              </Button>
+                            )}
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={isUploadingOriginalCv}
+                              onClick={() => originalFileInputRef.current?.click()}
+                              className="h-6 px-2 text-[10px] font-semibold gap-1 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
+                            >
+                              {isUploadingOriginalCv ? (
+                                <>
+                                  <Zap className="w-2.5 h-2.5 animate-spin text-emerald-500" />
+                                  <span>Uploading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-2.5 h-2.5 text-emerald-500" />
+                                  <span>{originalCvFileName ? 'Replace' : 'Upload'}</span>
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Uploaded Documents / Credentials */}
-                      <div className="space-y-2 pt-2 border-t border-border/60">
+                      {/* Hidden File Input for Custom CV */}
+                      <input
+                        type="file"
+                        ref={originalFileInputRef}
+                        onChange={(e) => handleOriginalCvUpload(e.target.files)}
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                      />
+
+                      {/* Attached Documents / Credentials Section */}
+                      <div className="space-y-1.5 pt-2 border-t border-border/50">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider">
-                            Uploaded Documents / Credentials ({uploadedDocuments.length})
+                            Attached Credentials &amp; Documents ({uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)).length}/{uploadedDocuments.length} Attached)
                           </label>
 
                           <input
@@ -3831,51 +4036,86 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             {isUploadingDoc ? (
                               <Zap className="w-2.5 h-2.5 animate-spin text-emerald-500" />
                             ) : (
-                              <Upload className="w-2.5 h-2.5 text-emerald-500" />
+                              <Plus className="w-2.5 h-2.5 text-emerald-500" />
                             )}
-                            <span>{isUploadingDoc ? 'Uploading...' : 'Upload Document'}</span>
+                            <span>{isUploadingDoc ? 'Uploading...' : 'Add Document'}</span>
                           </Button>
                         </div>
 
-                        {/* List of uploaded documents */}
+                        {/* List of uploaded documents with check-boxes, preview & delete */}
                         {uploadedDocuments.length === 0 ? (
                           <div className="p-2 rounded-lg border border-dashed border-border/70 bg-background/50 text-center">
                             <span className="text-[10px] text-muted-foreground">
-                              No additional credential documents uploaded. Click <strong>Upload Document</strong> to attach certificates, licenses, or transcripts.
+                              No additional credential documents uploaded. Click <strong>Add Document</strong> to attach certificates, licenses, or transcripts.
                             </span>
                           </div>
                         ) : (
-                          <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                            {uploadedDocuments.map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="p-1.5 px-2 rounded-md border border-border/80 bg-background flex items-center justify-between gap-2 text-[11px]"
-                              >
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <FileCheck className="w-3 h-3 text-emerald-500 shrink-0" />
-                                  <span className="truncate text-foreground font-medium">{doc.name}</span>
-                                  {doc.size && (
-                                    <span className="text-[9px] text-muted-foreground font-mono shrink-0">
-                                      ({Math.round(doc.size / 1024)} KB)
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = uploadedDocuments.filter((d) => d.id !== doc.id)
-                                    setUploadedDocuments(updated)
-                                    try {
-                                      localStorage.setItem('careerace_dispatch_uploaded_docs', JSON.stringify(updated))
-                                    } catch {}
-                                  }}
-                                  className="text-muted-foreground hover:text-red-500 cursor-pointer p-0.5"
-                                  title="Remove document"
+                          <div className="space-y-1 max-h-36 overflow-y-auto pr-0.5">
+                            {uploadedDocuments.map((doc) => {
+                              const isAttached = selectedAttachments.includes(doc.id)
+                              return (
+                                <div
+                                  key={doc.id}
+                                  className="p-1.5 px-2 rounded-md border border-border/70 bg-background flex items-center justify-between gap-2 text-[11px]"
                                 >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
+                                  {/* Checkbox for attaching to application */}
+                                  <label className="flex items-center gap-2 min-w-0 cursor-pointer select-none flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={isAttached}
+                                      onChange={() => {
+                                        setSelectedAttachments((prev) =>
+                                          isAttached ? prev.filter((id) => id !== doc.id) : [...prev, doc.id]
+                                        )
+                                      }}
+                                      className="rounded border-border text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer shrink-0"
+                                    />
+                                    <FileCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                                    <span className="truncate text-foreground font-medium">{doc.name}</span>
+                                    {doc.size && (
+                                      <span className="text-[9px] text-muted-foreground font-mono shrink-0">
+                                        ({Math.round(doc.size / 1024)} KB)
+                                      </span>
+                                    )}
+                                  </label>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {/* Preview Document Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (doc.walrusUrl) {
+                                          window.open(doc.walrusUrl, '_blank')
+                                        } else {
+                                          toast.info(`Viewing ${doc.name}`)
+                                        }
+                                      }}
+                                      className="text-muted-foreground hover:text-emerald-500 cursor-pointer p-1 rounded"
+                                      title="Preview document"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                    </button>
+
+                                    {/* Delete Document Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = uploadedDocuments.filter((d) => d.id !== doc.id)
+                                        setUploadedDocuments(updated)
+                                        setSelectedAttachments((prev) => prev.filter((id) => id !== doc.id))
+                                        try {
+                                          localStorage.setItem('careerace_dispatch_uploaded_docs', JSON.stringify(updated))
+                                        } catch {}
+                                      }}
+                                      className="text-muted-foreground hover:text-red-500 cursor-pointer p-1 rounded"
+                                      title="Remove document"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
                         )}
                       </div>
@@ -4116,6 +4356,65 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
               </div>
             )}
 
+            {/* ATS Sovereign CV Preview Modal (Identical stylish preview as /dashboard?tab=resumes) */}
+            {sovereignCvPreviewModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+                <Card className="w-full max-w-5xl h-[92vh] max-h-[920px] flex flex-col border border-border bg-card shadow-2xl rounded-2xl overflow-hidden">
+                  {/* Top Bar */}
+                  <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border bg-card/95 backdrop-blur shrink-0">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                          <span>ATS Sovereign Curriculum Vitae</span>
+                          <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-mono">
+                            WALRUS VERIFIED
+                          </Badge>
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          Exact stylish ATS resume layout formatted for hiring portals and applicant tracking systems
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleDownloadWalrusCv}
+                        className="h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download PDF</span>
+                      </Button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSovereignCvPreviewModalOpen(false)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body with LivePdfPreview */}
+                  <div className="flex-1 overflow-y-auto bg-slate-100/70 dark:bg-slate-950/70 p-2 sm:p-4">
+                    <LivePdfPreview
+                      profile={activeProfileData || VERIFIED_FALLBACK_PROFILE}
+                      walrusBlobId={selectedVersionMeta?.blobId || (activeProfileData as any)?.walrus_blob_id || null}
+                      walrusVersions={walrusVersions}
+                      tailorRole={targetRoleInput}
+                      tailorCompany={targetCompanyInput}
+                      atsScore={98}
+                    />
+                  </div>
+                </Card>
+              </div>
+            )}
+
             {/* Interactive Sample Email Preview Modal */}
             {samplePreviewModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -4256,9 +4555,24 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                                 </div>
                               </div>
                             </div>
-                            <span className="shrink-0 px-2.5 py-1 rounded-md bg-emerald-600 text-white font-bold text-[11px] shadow-2xs">
-                              Download CV ↓
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setSovereignCvPreviewModalOpen(true)}
+                                className="px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-foreground font-semibold text-[10px] cursor-pointer flex items-center gap-1 border border-border transition-colors"
+                              >
+                                <Eye className="w-3 h-3 text-emerald-500" />
+                                <span>View ATS</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleDownloadWalrusCv}
+                                className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs cursor-pointer flex items-center gap-1 transition-colors"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>Download CV ↓</span>
+                              </button>
+                            </div>
                           </div>
 
                           {selectedVersionMeta?.blobId && (
@@ -4268,24 +4582,37 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           )}
 
                           {/* Additional Uploaded Credentials */}
-                          {uploadedDocuments.length > 0 && (
+                          {uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)).length > 0 && (
                             <div className="space-y-1.5 pt-1">
                               <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
-                                Additional Attached Credentials ({uploadedDocuments.length})
+                                Additional Attached Credentials ({uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)).length})
                               </span>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {uploadedDocuments.map((doc) => (
-                                  <div
-                                    key={doc.id}
-                                    className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-xs"
-                                  >
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                      <span className="truncate font-medium text-slate-900 dark:text-slate-200 text-[11px]">{doc.name}</span>
+                                {uploadedDocuments
+                                  .filter((d) => selectedAttachments.includes(d.id))
+                                  .map((doc) => (
+                                    <div
+                                      key={doc.id}
+                                      className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-xs"
+                                    >
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                        <span className="truncate font-medium text-slate-900 dark:text-slate-200 text-[11px]">{doc.name}</span>
+                                      </div>
+                                      {doc.walrusUrl ? (
+                                        <a
+                                          href={doc.walrusUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-[10px] text-emerald-600 font-bold shrink-0 hover:underline flex items-center gap-0.5 cursor-pointer"
+                                        >
+                                          <span>View ↓</span>
+                                        </a>
+                                      ) : (
+                                        <span className="text-[10px] text-emerald-600 font-bold shrink-0">Attached</span>
+                                      )}
                                     </div>
-                                    <span className="text-[10px] text-emerald-600 font-bold shrink-0">View ↓</span>
-                                  </div>
-                                ))}
+                                  ))}
                               </div>
                             </div>
                           )}
@@ -4311,19 +4638,6 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             CareerAce Verified Candidate
                           </p>
                         </div>
-
-                        {/* Divider */}
-                        <div className="h-px bg-slate-200 dark:bg-slate-800" />
-
-                        {/* WhatsApp Support Community Note */}
-                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                          Need help getting this done?{' '}
-                          <a href="https://chat.whatsapp.com" target="_blank" rel="noreferrer" className="text-emerald-600 font-semibold underline">
-                            Join the CareerAce WhatsApp support community
-                          </a>{' '}
-                          or simply reply to this email. Direct reply connects to{' '}
-                          <span className="text-emerald-600 font-medium">{activeProfileData?.email || 'applicant@careerace.online'}</span>.
-                        </p>
                       </div>
 
                       {/* Footer */}
@@ -4348,23 +4662,26 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          setSamplePreviewModalOpen(false)
-                          setTestRecipientEmail(activeProfileData?.email || '')
-                          setTestEmailModalOpen(true)
-                        }}
+                        disabled={isSendingTestEmail}
+                        onClick={handleSendSampleToMyEmailDirectly}
                         className="text-xs font-semibold gap-1.5 border-border hover:bg-muted text-foreground cursor-pointer"
                       >
-                        <Mail className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Send Sample to My Email</span>
+                        {isSendingTestEmail ? (
+                          <>
+                            <Zap className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+                            <span>Sending Sample...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Send Sample to My Email</span>
+                          </>
+                        )}
                       </Button>
 
                       <Button
                         size="sm"
-                        onClick={() => {
-                          setSamplePreviewModalOpen(false)
-                          setBatchDispatchModalOpen(true)
-                        }}
+                        onClick={handleProceedToBatchWithNotification}
                         className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />

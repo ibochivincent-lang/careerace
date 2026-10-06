@@ -793,18 +793,10 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
               </table>
 
               <!-- SIGN OFF -->
-              <div style="margin-bottom:24px;">
+              <div style="margin-bottom:8px;">
                 <p style="margin:0;font-size:14px;font-weight:700;color:#0f172a;">${escapeHtml(candidateName)}</p>
                 <p style="margin:2px 0 0;font-size:13px;font-weight:600;color:#16a34a;">CareerAce Verified Candidate</p>
               </div>
-
-              <!-- DIVIDER -->
-              <div style="height:1px;background-color:#e2e8f0;margin:0 0 24px;"></div>
-
-              <!-- SUPPORT / COMMUNITY NOTE -->
-              <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">
-                Need help getting this done? <a href="https://chat.whatsapp.com" style="color:#16a34a;text-decoration:none;font-weight:600;">Join the CareerAce WhatsApp support community</a> or simply reply to this email. Direct reply connects to <a href="mailto:${escapeHtml(candidateEmail)}" style="color:#16a34a;text-decoration:none;">${escapeHtml(candidateEmail)}</a>.
-              </p>
 
             </td>
           </tr>

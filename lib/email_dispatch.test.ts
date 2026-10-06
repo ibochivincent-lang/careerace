@@ -329,7 +329,8 @@ test("Email Dispatch: buildApplicationEmailHtml produces Image 2 branded templat
   assert.ok(html.includes("View Verified Candidate Passport"));
   assert.ok(html.includes("https://careerace.online/verify?applicant=Ibochi%20Vincent"));
 
-  // 5. WhatsApp support community note & copyright footer
-  assert.ok(html.includes("Join the CareerAce WhatsApp support community"));
+  // 5. Clean footer without WhatsApp community or reply clutter (per UX requirements)
+  assert.ok(!html.includes("Join the CareerAce WhatsApp support community"));
+  assert.ok(!html.includes("simply reply directly to this email"));
   assert.ok(html.includes("&copy; 2026 CareerAce. All rights reserved."));
 });

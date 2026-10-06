@@ -189,15 +189,16 @@ export function WalrusCentralArchitectureChart() {
                   </Badge>
                   <h3 className="text-lg font-bold text-foreground mt-1">Walrus Sovereign Memory Vault</h3>
                   <p className="text-xs text-muted-foreground font-mono">
-                    @mysten/walrus &bull; @mysten-incubation/memwal &bull; AES-256-GCM
+                    @mysten/walrus · @mysten-incubation/memwal · AES-256-GCM
                   </p>
                 </div>
               </div>
 
               {/* Connecting Pulse Indicator */}
               <div className="text-center">
-                <span className="inline-block px-3 py-0.5 rounded-full bg-muted/60 border border-border text-[10px] font-mono text-muted-foreground">
-                  ↕ Real-Time Bi-Directional Synchronization Bus ↕
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/60 border border-border text-[10px] font-mono text-muted-foreground">
+                  <RefreshCw className="w-3 h-3 text-emerald-500 shrink-0" />
+                  <span>Real-Time Bi-Directional Synchronization Bus</span>
                 </span>
               </div>
 

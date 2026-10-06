@@ -173,7 +173,7 @@ export default function CareerAceLandingPage() {
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3.5">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
             <Briefcase className="w-3.5 h-3.5" />
-            <span>About Career Ace &bull; Universal Technical Architecture</span>
+            <span>About Career Ace · Universal Technical Architecture</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             Engineered for every high-stakes technical discipline.
@@ -364,7 +364,7 @@ export default function CareerAceLandingPage() {
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono text-[10px]">
-                  Sector 06+ &bull; And More...
+                  Sector 06+ · And More...
                 </Badge>
                 <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
                   Global Matrix
@@ -394,7 +394,7 @@ export default function CareerAceLandingPage() {
           <div className="space-y-1 max-w-3xl">
             <div className="flex items-center gap-2">
               <span className="font-bold text-xs uppercase tracking-wide text-emerald-600 dark:text-emerald-400">The Case Study Rationale</span>
-              <span className="text-xs text-muted-foreground">&bull; Why Maritime / STCW?</span>
+              <span className="text-xs text-muted-foreground">· Why Maritime / STCW?</span>
             </div>
             <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
               Maritime engineering represents the most stringent international credential auditing standard in the world. If Career Ace can deterministically parse, verify, and tailor STCW marine licenses, physical discharge books, and non-standard CV layouts, it can master any software, cloud, or engineering standard with ease.
