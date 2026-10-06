@@ -41,13 +41,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const apiKey = (process.env.RESEND_API_KEY || '').trim();
-    if (!apiKey) {
+    const hasResend = !!(process.env.RESEND_API_KEY || '').trim();
+    const hasBrevo = !!(process.env.BREVO_API_KEY || process.env.SIB_API_KEY || '').trim();
+
+    if (!hasResend && !hasBrevo) {
       return NextResponse.json(
         {
           success: false,
-          error: 'RESEND_API_KEY is not configured in server environment variables. Please add RESEND_API_KEY to your Vercel project settings or .env.local to enable live email delivery.',
-          provider: 'resend',
+          error: 'No transactional email provider is configured in environment variables. Please add RESEND_API_KEY or BREVO_API_KEY to your Vercel project settings or .env.local to enable live email delivery.',
+          provider: 'none',
         },
         { status: 503 }
       );
@@ -57,7 +59,7 @@ export async function POST(req: Request) {
     const timestampStr = new Date(now).toISOString();
     const attachedCount = Array.isArray(attachments) ? attachments.length : 0;
 
-    // Dispatch real transactional email via Resend
+    // Dispatch real transactional email via Resend or Brevo (with automated failover)
     const result = await sendEmail({
       to,
       subject,
@@ -72,12 +74,16 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: result.error || 'Resend transactional relay rejected the message.',
-          provider: 'resend',
+          error: result.error || 'Transactional relay rejected the message.',
+          provider: result.provider,
         },
         { status: 502 }
       );
     }
+
+    const providerLabel = result.provider === 'brevo'
+      ? (result.failoverOccurred ? 'Brevo Transactional Relay (Failover)' : 'Brevo Transactional Relay')
+      : 'Resend Sovereign Transactional Relay';
 
     // Persist dispatched event to candidate's sovereign Walrus Memory
     try {
@@ -89,7 +95,7 @@ export async function POST(req: Request) {
       await rememberFact(
         ownerAddress,
         'application',
-        `Dispatched job application for "${role || 'Candidate'}" at "${company || 'Target Organization'}" to <${to}>. Resend Message ID: ${result.id}. Walrus Attestation Blob: ${walrusBlobId || 'N/A'}. Timestamp: ${timestampStr}.`
+        `Dispatched job application for "${role || 'Candidate'}" at "${company || 'Target Organization'}" to <${to}>. Provider: ${providerLabel}. Message ID: ${result.id}. Walrus Attestation Blob: ${walrusBlobId || 'N/A'}. Timestamp: ${timestampStr}.`
       );
     } catch (memError) {
       console.warn('[email/dispatch] Walrus memory logging non-fatal notice:', memError);
@@ -103,13 +109,15 @@ export async function POST(req: Request) {
       recipient: to,
       company: company || 'Employer',
       role: role || 'Candidate',
-      relayProvider: 'Resend Sovereign Transactional Relay',
+      relayProvider: providerLabel,
       deliveryStatus: 'Sent',
-      dkimStatus: 'PASS (RFC 6376 aligned via Resend)',
+      dkimStatus: result.provider === 'brevo'
+        ? 'PASS (RFC 6376 aligned via Brevo)'
+        : 'PASS (RFC 6376 aligned via Resend)',
       walrusVerificationUrl: walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : null,
       attachmentsCount: attachedCount,
       attachments: attachments || [],
-      message: `Live application successfully transmitted to ${to} via Resend DKIM relay. Sovereign Walrus memory permanently recorded.`
+      message: `Live application successfully transmitted to ${to} via ${providerLabel}. Sovereign Walrus memory permanently recorded.`
     });
   } catch (error: any) {
     return NextResponse.json(

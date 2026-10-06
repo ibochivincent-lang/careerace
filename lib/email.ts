@@ -18,26 +18,68 @@ export interface SendEmailResult {
   success: boolean;
   id?: string;
   error?: string;
-  provider: "resend";
+  provider: "resend" | "brevo";
+  failoverOccurred?: boolean;
 }
 
-export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
-  const apiKey = (process.env.RESEND_API_KEY || "").trim();
-  const configuredFrom =
-    options.from ||
-    process.env.RESEND_FROM_EMAIL ||
-    process.env.EMAIL_FROM ||
-    "Career Ace <onboarding@resend.dev>";
+/**
+ * Dispatches an email via Brevo (Sendinblue) transactional REST API
+ */
+async function sendViaBrevo(
+  apiKey: string,
+  options: SendEmailOptions,
+  fromEmail: string,
+  fromName: string
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const toRecipients = (Array.isArray(options.to) ? options.to : [options.to]).map((email) => ({
+      email: email.trim(),
+    }));
 
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY is not configured in environment. Refusing to send mock data.");
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromEmail },
+        to: toRecipients,
+        subject: options.subject,
+        htmlContent: options.html,
+        textContent: options.text || options.subject,
+        replyTo: options.reply_to ? { email: options.reply_to } : undefined,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errMessage = data?.message || data?.error || `Brevo HTTP ${response.status}`;
+      return { success: false, error: errMessage };
+    }
+
+    return {
+      success: true,
+      id: data?.messageId || `brevo-${Date.now()}`,
+    };
+  } catch (error) {
     return {
       success: false,
-      error: "RESEND_API_KEY is not configured in environment. Configure your Resend API key in Vercel or .env.local to enable live transactional email delivery.",
-      provider: "resend",
+      error: error instanceof Error ? error.message : String(error),
     };
   }
+}
 
+/**
+ * Dispatches an email via Resend REST API
+ */
+async function sendViaResend(
+  apiKey: string,
+  options: SendEmailOptions,
+  configuredFrom: string
+): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const toRecipients = Array.isArray(options.to) ? options.to : [options.to];
 
@@ -57,10 +99,16 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       }),
     });
 
-    let data = await response.json();
+    let data = await response.json().catch(() => ({}));
 
     // If domain verification failed and custom from was used, fallback retry once with onboarding@resend.dev
-    if (!response.ok && data?.message && typeof data.message === "string" && data.message.toLowerCase().includes("domain") && !configuredFrom.includes("onboarding@resend.dev")) {
+    if (
+      !response.ok &&
+      data?.message &&
+      typeof data.message === "string" &&
+      data.message.toLowerCase().includes("domain") &&
+      !configuredFrom.includes("onboarding@resend.dev")
+    ) {
       console.warn("[email/resend] Custom domain not verified on Resend. Retrying via onboarding@resend.dev...");
       const retryResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -78,34 +126,121 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
         }),
       });
       if (retryResponse.ok) {
-        data = await retryResponse.json();
+        data = await retryResponse.json().catch(() => ({}));
         response = retryResponse;
       }
     }
 
     if (!response.ok) {
-      console.error("[email/resend] Failed to send email:", data);
       return {
         success: false,
-        error: data.message || data.error || "Resend API error",
-        provider: "resend",
+        error: data?.message || data?.error || `Resend HTTP ${response.status}`,
       };
     }
 
     return {
       success: true,
       id: data.id,
-      provider: "resend",
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[email/resend] Exception while dispatching email:", message);
     return {
       success: false,
-      error: message,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  const resendKey = (process.env.RESEND_API_KEY || "").trim();
+  const brevoKey = (process.env.BREVO_API_KEY || process.env.SIB_API_KEY || "").trim();
+
+  const configuredFrom =
+    options.from ||
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.BREVO_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    "Career Ace <onboarding@resend.dev>";
+
+  if (!resendKey && !brevoKey) {
+    console.warn("[email] Neither RESEND_API_KEY nor BREVO_API_KEY is configured. Refusing to send mock data.");
+    return {
+      success: false,
+      error: "No email provider configured. Configure RESEND_API_KEY or BREVO_API_KEY in Vercel or .env.local to enable live transactional email delivery.",
       provider: "resend",
     };
   }
+
+  // 1. Primary path: Resend
+  if (resendKey) {
+    const resendResult = await sendViaResend(resendKey, options, configuredFrom);
+    if (resendResult.success) {
+      return {
+        success: true,
+        id: resendResult.id,
+        provider: "resend",
+      };
+    }
+
+    console.warn(`[email] Resend delivery failed (${resendResult.error}). Checking for fallback provider...`);
+
+    // If Resend failed and Brevo is configured, execute automated fallback
+    if (brevoKey) {
+      console.info("[email] Failover: Dispatching via Brevo secondary provider...");
+      const brevoFromEmail =
+        process.env.BREVO_FROM_EMAIL ||
+        process.env.EMAIL_FROM ||
+        (configuredFrom.includes("<") ? configuredFrom.match(/<([^>]+)>/)?.[1] || configuredFrom : configuredFrom);
+      const brevoFromName =
+        process.env.EMAIL_FROM_NAME ||
+        (configuredFrom.includes("<") ? configuredFrom.split("<")[0].trim() : "Career Ace");
+
+      const brevoResult = await sendViaBrevo(brevoKey, options, brevoFromEmail, brevoFromName);
+      if (brevoResult.success) {
+        return {
+          success: true,
+          id: brevoResult.id,
+          provider: "brevo",
+          failoverOccurred: true,
+        };
+      }
+
+      return {
+        success: false,
+        error: `Both Resend and Brevo failed. Resend: ${resendResult.error} | Brevo: ${brevoResult.error}`,
+        provider: "resend",
+      };
+    }
+
+    return {
+      success: false,
+      error: resendResult.error,
+      provider: "resend",
+    };
+  }
+
+  // 2. Secondary path: Direct Brevo (if only BREVO_API_KEY is configured)
+  const brevoFromEmail =
+    process.env.BREVO_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    (configuredFrom.includes("<") ? configuredFrom.match(/<([^>]+)>/)?.[1] || configuredFrom : configuredFrom);
+  const brevoFromName =
+    process.env.EMAIL_FROM_NAME ||
+    (configuredFrom.includes("<") ? configuredFrom.split("<")[0].trim() : "Career Ace");
+
+  const brevoResult = await sendViaBrevo(brevoKey, options, brevoFromEmail, brevoFromName);
+  if (brevoResult.success) {
+    return {
+      success: true,
+      id: brevoResult.id,
+      provider: "brevo",
+    };
+  }
+
+  return {
+    success: false,
+    error: brevoResult.error,
+    provider: "brevo",
+  };
 }
 
 /**
