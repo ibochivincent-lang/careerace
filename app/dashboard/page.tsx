@@ -1480,7 +1480,7 @@ function DashboardContent() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 pt-2 sm:pt-6 pb-8 space-y-4 sm:space-y-6">
         {/* Hidden File Inputs */}
         <input
           ref={fileInputRef}
@@ -1503,12 +1503,12 @@ function DashboardContent() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-6"
+            className="space-y-3 sm:space-y-4"
           >
-            {/* Clean Standard Header (Clutter badges and subtitle removed) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/80">
+            {/* Clean Standard Header (Shifted up, minimal vertical spacing) */}
+            <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/80">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
               </div>
@@ -1517,8 +1517,8 @@ function DashboardContent() {
             {/* 1. EXPANDED PRIMARY CAREERACE CHATBOT (FULL-WIDTH, HIGH VISIBILITY, ROOMY MESSAGES) */}
             <div className="w-full">
               <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[740px] sm:h-[780px] lg:h-[820px] min-h-[580px]">
-                {/* Status Bar */}
-                <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between">
+                {/* Status Bar (No redundant subtitle - compact & clean) */}
+                <div className="px-3.5 py-2.5 sm:py-3 border-b border-border/80 bg-muted/30 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="relative">
                       <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
@@ -1526,18 +1526,11 @@ function DashboardContent() {
                       </div>
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-bold text-sm text-foreground">CareerAce Chatbot</h3>
-                        <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
-                          Walrus Memory
-                        </Badge>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        {parsedProfile?.applicant_name 
-                          ? `Grounded in ${parsedProfile.applicant_name}'s verified background & application log` 
-                          : 'Connected to decentralized memory vault'}
-                      </p>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-bold text-sm text-foreground">CareerAce Chatbot</h3>
+                      <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
+                        Walrus Memory
+                      </Badge>
                     </div>
                   </div>
 
@@ -1548,6 +1541,32 @@ function DashboardContent() {
 
                 {/* Chat Messages Feed (Expanded for high visibility so multiple responses fit comfortably) */}
                 <div ref={overviewChatContainerRef} className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-3.5 text-xs sm:text-sm">
+                  {/* First-time User Onboarding Callout: Prominent upload card */}
+                  {!parsedProfile && (
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm text-foreground">Attach your CV to unlock CareerAce</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            First-time setup: Upload your resume (PDF/DOCX) to calibrate AI matching, enable ATS audits, and activate decentralized Walrus memory.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 h-8 gap-1.5 rounded-xl shadow-xs w-full sm:w-auto cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Resume</span>
+                      </Button>
+                    </div>
+                  )}
+
                   {overviewChatMessages.map((msg, i) => (
                     <div
                       key={i}
@@ -1589,7 +1608,14 @@ function DashboardContent() {
                       <button
                         key={chip.id}
                         type="button"
-                        onClick={() => handleSendOverviewMessage(chip.prompt)}
+                        onClick={() => {
+                          if (!parsedProfile) {
+                            toast.info('Please upload your CV first to access personalized career features.')
+                            fileInputRef.current?.click()
+                            return
+                          }
+                          handleSendOverviewMessage(chip.prompt)
+                        }}
                         disabled={isOverviewSending}
                         title={chip.prompt}
                         className="text-[11px] sm:text-xs px-2.5 py-1.5 sm:py-2 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center justify-between gap-1.5 font-medium text-left cursor-pointer shadow-2xs group"
@@ -1711,19 +1737,17 @@ function DashboardContent() {
                   transition={{ duration: 0.25 }}
                   className="space-y-6"
                 >
-                  {/* Top Toolbar: Actions & Mode Indicator */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-emerald-500" />
-                          Resume Workspace
-                        </h2>
-                      </div>
+                  {/* Top Toolbar: Actions & Mode Indicator (Single Line on All Screens) */}
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/80">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h2 className="text-base sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-1.5 truncate">
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 shrink-0" />
+                        <span className="truncate">Resume Workspace</span>
+                      </h2>
                     </div>
 
-                    {/* Primary Actions: Cleaned Toolbar */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Primary Actions: Cleaned Toolbar on Same Line */}
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {/* Undo & Redo Controls */}
                       <div className="flex items-center gap-1">
                         <Button
@@ -1731,7 +1755,7 @@ function DashboardContent() {
                           size="sm"
                           onClick={handleUndo}
                           disabled={undoStack.length === 0}
-                          className="text-xs h-8 px-2.5 gap-1 border-border/80 text-foreground disabled:opacity-40 hover:bg-muted"
+                          className="text-xs h-8 px-2 sm:px-2.5 gap-1 border-border/80 text-foreground disabled:opacity-40 hover:bg-muted cursor-pointer shrink-0"
                           title="Undo last edit (Ctrl+Z)"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -1742,7 +1766,7 @@ function DashboardContent() {
                           size="sm"
                           onClick={handleRedo}
                           disabled={redoStack.length === 0}
-                          className="text-xs h-8 px-2.5 gap-1 border-border/80 text-foreground disabled:opacity-40 hover:bg-muted"
+                          className="text-xs h-8 px-2 sm:px-2.5 gap-1 border-border/80 text-foreground disabled:opacity-40 hover:bg-muted cursor-pointer shrink-0"
                           title="Redo edit"
                         >
                           <RotateCw className="w-3.5 h-3.5" />
@@ -1755,9 +1779,11 @@ function DashboardContent() {
                         variant="outline"
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-xs h-8 gap-1.5 border-border/80"
+                        className="text-xs h-8 px-2 sm:px-2.5 gap-1.5 border-border/80 cursor-pointer shrink-0"
                       >
-                        <Upload className="w-3.5 h-3.5" /> Attach / Replace CV
+                        <Upload className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Attach / Replace CV</span>
+                        <span className="inline sm:hidden">Replace CV</span>
                       </Button>
                     </div>
                   </div>
@@ -2023,11 +2049,11 @@ function DashboardContent() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/80">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Cover Letter Studio</h1>
               </div>
               <Button
                 variant="outline"

@@ -271,7 +271,7 @@ export function ChatdeckFeatures() {
   return (
     <div className="space-y-24 py-12">
       {/* ── HOW IT WORKS SECTION ── */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 scroll-mt-24">
+      <section id="how-it-works" className="max-w-7xl mx-auto px-4 scroll-mt-24 pt-8 sm:pt-14">
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
           <Badge variant="outline" className="px-3.5 py-1 text-xs font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
             Streamlined 3-Step Flow

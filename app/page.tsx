@@ -79,11 +79,11 @@ export default function CareerAceLandingPage() {
       {/* ── Clean Sticky Header ─────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-card border border-border/70 shadow-sm p-1">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 whitespace-nowrap">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-card border border-border/70 shadow-sm p-1 shrink-0">
               <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain dark:invert" />
             </div>
-            <span className="font-bold text-lg">Career Ace</span>
+            <span className="font-bold text-base sm:text-lg whitespace-nowrap">Career Ace</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground font-medium">
@@ -95,7 +95,7 @@ export default function CareerAceLandingPage() {
             <a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a>
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <Button
               variant="ghost"
               size="sm"
@@ -108,8 +108,8 @@ export default function CareerAceLandingPage() {
 
             <ThemeToggle />
             {sessionAddress ? (
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => router.push('/dashboard')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 shadow-sm">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <Button size="sm" onClick={() => router.push('/dashboard')} className="hidden sm:inline-flex bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 shadow-sm">
                   Dashboard <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
                 <AccountChip address={sessionAddress} />
@@ -164,7 +164,7 @@ export default function CareerAceLandingPage() {
       </div>
 
       {/* ── Features & How it Works Section ─────────────────────────────────── */}
-      <div id="features">
+      <div id="features" className="pt-6 sm:pt-14 mt-4 sm:mt-8">
         <ChatdeckFeatures />
       </div>
 

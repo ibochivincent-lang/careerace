@@ -153,15 +153,15 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/90 py-1 pl-1.5 pr-2.5 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs cursor-pointer"
+        className="flex items-center gap-2 rounded-full border border-border/80 bg-card/90 p-1 sm:py-1.5 sm:pl-2 sm:pr-3.5 transition-all hover:bg-accent hover:border-primary/40 shadow-xs cursor-pointer shrink-0"
         title="View Sovereign Sui Passport & Identity"
       >
-        <span aria-hidden className="size-6 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
+        <span aria-hidden className="size-7 sm:size-6 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
           {initial}
         </span>
-        <div className="flex items-center gap-1.5 text-xs text-left">
+        <div className="hidden sm:flex items-center gap-1.5 text-xs text-left">
           {/* Display Name */}
-          <span className="font-semibold text-foreground tracking-tight max-w-[90px] sm:max-w-[140px] truncate">
+          <span className="font-semibold text-foreground tracking-tight max-w-[120px] lg:max-w-[160px] truncate">
             {resolvedName || (suinsDomain ? suinsDomain : short(currentAddress))}
           </span>
 
@@ -172,7 +172,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
               <span>{suinsDomain}</span>
             </span>
           ) : (
-            <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">
+            <span className="font-mono text-[10px] text-muted-foreground">
               ({short(currentAddress)})
             </span>
           )}

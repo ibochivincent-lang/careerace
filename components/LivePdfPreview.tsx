@@ -657,48 +657,48 @@ export function LivePdfPreview({
       }`}
     >
       {/* ── TOP UNIFIED TOOLBAR: COMPACT SINGLE-LINE (Editable ATS Canvas, Print/Save, Walrus Save, History) ── */}
-      <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/70 bg-muted/20 gap-2 flex-wrap sm:flex-nowrap">
+      <div className="flex items-center justify-between px-2.5 sm:px-3.5 py-1.5 sm:py-2 border-b border-border/70 bg-muted/20 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
         {/* Left: View Toggle */}
         <div className="flex items-center p-0.5 rounded-lg bg-background border border-border/70 text-xs font-medium shrink-0">
           <button
             type="button"
             onClick={() => setActiveView("ats_live")}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 whitespace-nowrap ${
               activeView === "ats_live"
                 ? "bg-emerald-600 text-white shadow-xs font-semibold"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <FileCheck className="w-3.5 h-3.5" />
-            Editable ATS Canvas
+            <span>Editable ATS Canvas</span>
           </button>
           {sourcePdfUrl && (
             <button
               type="button"
               onClick={() => setActiveView("uploaded_source")}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors shrink-0 whitespace-nowrap ${
                 activeView === "uploaded_source"
                   ? "bg-emerald-600 text-white shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              Original Uploaded PDF
+              <span>Original Uploaded PDF</span>
             </button>
           )}
         </div>
 
-        {/* Right: Actions on the same single line */}
-        <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap ml-auto">
+        {/* Right: Actions on the exact same line */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto whitespace-nowrap">
           {/* Print / Save PDF */}
           <Button
             size="sm"
             onClick={handlePrintPdf}
-            className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-foreground text-background hover:bg-foreground/90 rounded-lg shadow-xs"
+            className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-foreground text-background hover:bg-foreground/90 rounded-lg shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
             title="Print or export as vector PDF"
           >
             <Printer className="w-3 h-3" />
-            Print / Save PDF
+            <span>Print / Save PDF</span>
           </Button>
 
           {/* Walrus Save Action */}
@@ -707,11 +707,11 @@ export function LivePdfPreview({
               size="sm"
               onClick={onCommitWalrusVersion}
               disabled={isSavingVersion}
-              className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-xs"
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
               title="Save current version as immutable snapshot to Walrus Protocol"
             >
               <Database className="w-3 h-3" />
-              {isSavingVersion ? "Saving..." : "Save to Walrus"}
+              <span>{isSavingVersion ? "Saving..." : "Save to Walrus"}</span>
             </Button>
           )}
 
@@ -721,7 +721,7 @@ export function LivePdfPreview({
               variant="outline"
               size="sm"
               onClick={onOpenWalrusHistory}
-              className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-border/80 text-foreground hover:bg-muted rounded-lg shadow-xs"
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-border/80 text-foreground hover:bg-muted rounded-lg shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
               title="View immutable Walrus snapshots"
             >
               <History className="w-3 h-3 text-emerald-500" />
