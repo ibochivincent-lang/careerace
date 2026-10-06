@@ -735,7 +735,7 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
                       Attachments &amp; Sovereign Credentials
                     </td>
                     <td align="right" style="font-size:10px;font-weight:700;color:#16a34a;font-family:'SFMono-Regular',Consolas,Liberation Mono,Menlo,monospace;">
-                      ${walrusBlobId ? "WALRUS STORAGE SEALED" : "CRYPTOGRAPHICALLY VERIFIED"}
+                      ${walrusBlobId ? "WALRUS STORAGE SEALED" : "VERIFIED CANDIDATE ATTESTATION"}
                     </td>
                   </tr>
                 </table>
@@ -776,7 +776,7 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
                 ${additionalDocsHtml}
 
                 <p style="margin:10px 0 0 0;font-size:11px;color:#15803d;line-height:1.4;">
-                  All credential documents are cryptographically verified and accessible above.
+                  All credential documents are verified and accessible above.
                 </p>
               </div>
 

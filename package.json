@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types lib/contract_test.ts lib/ats_benchmark_simulator.test.ts lib/multisection_gating_test.ts lib/action_verbs.test.ts lib/company_directory.test.ts lib/ics_calendar.test.ts lib/role_intelligence.test.ts lib/walrus_anchor.test.ts lib/suins.test.ts lib/cv_experience_extraction.test.ts lib/email_receipt.test.ts lib/copilot_intelligence.test.ts lib/email_dispatch.test.ts",
+    "test": "node --test --experimental-strip-types lib/contract_test.ts lib/ats_benchmark_simulator.test.ts lib/multisection_gating_test.ts lib/action_verbs.test.ts lib/company_directory.test.ts lib/ics_calendar.test.ts lib/role_intelligence.test.ts lib/walrus_anchor.test.ts lib/suins.test.ts lib/cv_experience_extraction.test.ts lib/email_receipt.test.ts lib/copilot_intelligence.test.ts lib/email_dispatch.test.ts lib/pdf_generator.test.ts",
     "smoke": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --experimental-strip-types scripts/smoke.ts",
     "seed:mainnet": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/seed_and_verify_mainnet.ts",
     "mcp": "node --experimental-strip-types mcp/server.mts",

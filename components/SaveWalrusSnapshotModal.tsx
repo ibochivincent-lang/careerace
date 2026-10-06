@@ -143,7 +143,7 @@ export function SaveWalrusSnapshotModal({
           <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-[11px] text-muted-foreground flex items-start gap-2.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <p className="leading-relaxed">
-              This snapshot is cryptographically committed to Walrus testnet. Once anchored, you can select this specific CV version on the <strong className="text-foreground">Job Board</strong> to instantly auto-apply with matched credentials.
+              This snapshot is securely anchored to Walrus storage. Once saved, you can select this specific CV version on the <strong className="text-foreground">Job Board</strong> to instantly auto-apply with matched credentials.
             </p>
           </div>
 

@@ -74,7 +74,7 @@ export function WalrusVersionModal({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Cryptographically anchored on Mysten Labs Walrus testnet. Restore any version anytime.
+                Securely anchored and verified on Walrus decentralized storage. Restore any version anytime.
               </p>
             </div>
           </div>

@@ -97,7 +97,7 @@ export function generateEmlContent(options: EmlReceiptOptions): string {
     `Attached Credentials:`,
     attachmentListPlain,
     '============================================================',
-    'This offline receipt serves as cryptographic proof of application dispatch.',
+    'This offline receipt serves as verified proof of application dispatch.',
   ].filter(Boolean).join('\r\n')
 
   // HTML Body with Clean Styling (Zero Emojis, No AI Slop)
@@ -153,7 +153,7 @@ ${escapeHtml(body)}
         <div>Message-ID: &lt;${escapeHtml(messageId)}&gt;</div>
         ${candidateAddress ? `<div>Sui zkLogin ID: ${escapeHtml(candidateAddress)}</div>` : ''}
         ${walrusBlobId ? `<div>Walrus Sovereign Blob: ${escapeHtml(walrusBlobId)}</div>` : ''}
-        <div style="margin-top: 4px; color: #059669; font-weight: 600;">Status: Verifiable Cryptographic Dispatch Record</div>
+        <div style="margin-top: 4px; color: #059669; font-weight: 600;">Status: Verifiable Dispatch Record</div>
       </div>
     </div>
   </div>

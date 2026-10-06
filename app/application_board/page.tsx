@@ -48,6 +48,7 @@ import {
   FileCheck,
   Eye,
   Plus,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
@@ -55,6 +56,7 @@ import { SmtpRelaySettingsModal } from '@/components/SmtpRelaySettingsModal'
 import { ComingSoonModal, type ComingSoonFeature } from '@/components/ComingSoonModal'
 import { downloadFollowUpIcs } from '@/lib/ics_calendar'
 import { downloadEmlReceipt } from '@/lib/email_receipt'
+import { downloadCvPdf } from '@/lib/pdf_generator'
 import { getClientSessionAddress } from '@/lib/client_auth'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import type { WalrusResumeVersionItem } from '@/components/WalrusVersionDrawer'
@@ -84,7 +86,7 @@ export const DEFAULT_ATTACHABLE_CREDENTIALS = [
   { id: 'coc_license', label: 'Certificate of Competency (CoC) / Marine Watchkeeping License', category: 'Maritime' },
   { id: 'dp_induction', label: 'Dynamic Positioning (DP Induction / Simulator Certificate)', category: 'Maritime' },
   { id: 'bosiet_huet', label: 'OPITO BOSIET / HUET (Offshore Safety Induction)', category: 'Maritime' },
-  { id: 'walrus_proof', label: 'Walrus Sovereign Cryptographic Portfolio & Proof Attestation', category: 'General' },
+  { id: 'walrus_proof', label: 'Walrus Sovereign Portfolio & Verification Attestation', category: 'General' },
   { id: 'academic_deg', label: 'B.Eng / B.Sc Marine or Systems Engineering Degree', category: 'General' },
 ] as const
 
@@ -111,6 +113,7 @@ export interface AppliedJobRecord {
   appliedTimestamp?: number
   followUpStatus?: 'pending' | 'due' | 'sent'
   followUpSentAt?: string
+  notes?: string
 }
 
 // Real live openings matching benchmark reference and maritime/tech sovereign employers
@@ -2019,10 +2022,12 @@ export default function ApplicationBoardPage() {
   }
 
   // Unmark applied: Moves back to Discovery
+  // Unmark applied: Moves back to Discovery
   function handleUnmarkApplied(jobId: string, jobTitle: string) {
-    const updated = appliedJobs.filter((a) => a.id !== jobId)
+    const updated = appliedJobs.filter((a) => a.id !== jobId && a.company?.toLowerCase() !== jobTitle.toLowerCase())
     setAppliedJobs(updated)
     localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+    syncCandidateDataToCloud({ appliedJobs: updated })
     toast.info(`Moved "${jobTitle}" back to Discovery.`)
   }
 
@@ -2031,15 +2036,58 @@ export default function ApplicationBoardPage() {
 
   // Filtered jobs calculation
   const filteredJobs = useMemo(() => {
-    return allJobs.filter((job) => {
-      // 1. Stage tab filter:
-      // Discovery: Show ONLY jobs NOT applied yet
-      if (activeBoardTab === 'discover' && appliedJobIdSet.has(job.id)) {
-        return false
+    // 1. Stage 2 (Applied tab): Surface ALL applied opportunities from appliedJobs
+    if (activeBoardTab === 'applied') {
+      const appliedListings: JobListing[] = appliedJobs.map((record) => {
+        const matched = allJobs.find(
+          (j) => j.id === record.id || j.company?.toLowerCase().trim() === record.company?.toLowerCase().trim()
+        )
+        if (matched) {
+          return {
+            ...matched,
+            id: record.id,
+            title: record.jobTitle || matched.title,
+            company: record.company,
+            postedDate: record.appliedAt || matched.postedDate,
+          }
+        }
+        return {
+          id: record.id,
+          title: record.jobTitle || 'Candidate Application',
+          company: record.company,
+          location: 'Direct Outreach / Crewing Desk',
+          country: 'International',
+          workplace: 'Remote',
+          seniority: 'Mid-Level',
+          roleCategory: 'others',
+          postedDate: record.appliedAt || 'Recent',
+          apply_url: '#',
+          description: record.notes || `Dispatched application to hiring desk at ${record.company}. 7-day follow-up tracking active.`,
+          source: 'CareerAce Outreach',
+        }
+      })
+
+      // Search query filter for applied tab
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim()
+        return appliedListings.filter(
+          (job) =>
+            (job.title || '').toLowerCase().includes(q) ||
+            (job.company || '').toLowerCase().includes(q) ||
+            (job.location || '').toLowerCase().includes(q)
+        )
       }
 
-      // Applied: Show ONLY jobs that were applied
-      if (activeBoardTab === 'applied' && !appliedJobIdSet.has(job.id)) {
+      return appliedListings
+    }
+
+    // 2. Stage 1 (Discovery tab): Show ONLY jobs NOT applied yet
+    return allJobs.filter((job) => {
+      if (appliedJobIdSet.has(job.id)) {
+        return false
+      }
+      const normCompany = job.company?.toLowerCase().trim()
+      if (normCompany && appliedJobs.some((a) => a.company?.toLowerCase().trim() === normCompany)) {
         return false
       }
 
@@ -2083,7 +2131,7 @@ export default function ApplicationBoardPage() {
   }, [
     allJobs,
     activeBoardTab,
-    savedJobIds,
+    appliedJobs,
     appliedJobIdSet,
     searchQuery,
     selectedRole,
@@ -2167,6 +2215,44 @@ export default function ApplicationBoardPage() {
     }
     return activeDraftProfile
   }, [selectedVersionMeta, activeDraftProfile])
+
+  // Resolved Candidate CV document properties (PDF presentation)
+  const candidateNameForCv = activeProfileData?.applicant_name || 'Candidate'
+  const walrusCvFileName = selectedVersionMeta?.label
+    ? `${candidateNameForCv.replace(/\s+/g, '_')}_${selectedVersionMeta.label.replace(/\s+/g, '_')}.pdf`
+    : `${candidateNameForCv.replace(/\s+/g, '_')}_Sovereign_CV.pdf`
+
+  const walrusCvFileSize = selectedVersionMeta?.fileSize
+    ? `${Math.round(selectedVersionMeta.fileSize / 1024)} KB`
+    : '245 KB'
+
+  const walrusVersionLabel = selectedVersionMeta?.versionNumber
+    ? `v${selectedVersionMeta.versionNumber}`
+    : 'Active Snapshot'
+
+  function handleDownloadWalrusCv() {
+    const profileToUse: ParsedCv = activeProfileData || {
+      applicant_name: 'Candidate',
+      target_roles: [targetRoleInput || 'Applicant'],
+      email: 'candidate@careerace.online',
+      skills: [],
+      work_experience: [],
+      academic_history: [],
+      certifications: [],
+    }
+    const fileName = walrusCvFileName
+    downloadCvPdf(profileToUse, undefined, fileName)
+    toast.success(`Downloaded ${fileName}!`)
+  }
+
+  function handleDownloadUploadedCv() {
+    const origDoc = uploadedDocuments.find((d: any) => (d as any).category === 'original_cv')
+    if (origDoc?.walrusUrl) {
+      window.open(origDoc.walrusUrl, '_blank')
+      return
+    }
+    handleDownloadWalrusCv()
+  }
 
   // Real dynamic counts of available verified emails per category
   const categoryCounts = useMemo(() => {
@@ -2418,7 +2504,7 @@ export default function ApplicationBoardPage() {
 
     const cvCredentialBlock = cvSourceType === 'uploaded' && originalCvFileName
       ? `\n\nAttached Primary Resume:\n• [ATTACHED CV] ${originalCvFileName}`
-      : `\n\nWalrus Sovereign Cryptographic Portfolio:\n${walrusUrl}\nWalrus Credential ID: ${walrusBlobId || 'Anchored on Walrus Testnet'}`
+      : `\n\nWalrus Sovereign Portfolio & Verified Snapshot:\n${walrusUrl}\nWalrus Credential ID: ${walrusBlobId || 'Anchored on Walrus Testnet'}`
 
     let tailoredCoverLetter = ''
     try {
@@ -2445,7 +2531,7 @@ ${expSummary}
 Key Competencies & Attestations:
 • Target Role: ${targetRoleInput || candidateRole}
 • Verified Skill Profile: ${topSkills}
-• Credential Profile: ${cvSourceType === 'uploaded' ? 'Attached verified candidate CV document.' : 'Cryptographically certified CV snapshot on Mysten Labs Walrus storage.'}${docsBlock}${cvCredentialBlock}
+• Credential Profile: ${cvSourceType === 'uploaded' ? 'Attached verified candidate CV document.' : 'Verified CV snapshot on Mysten Labs Walrus storage.'}${docsBlock}${cvCredentialBlock}
 
 I would welcome the opportunity to discuss how my technical experience and disciplined approach align with your operational standards.
 
@@ -2527,9 +2613,10 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       followUpStatus: 'pending',
     }
 
-    const updated = [record, ...appliedJobs]
+    const updated = [record, ...appliedJobs.filter((a) => a.company?.toLowerCase() !== record.company?.toLowerCase())]
     setAppliedJobs(updated)
     localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+    syncCandidateDataToCloud({ appliedJobs: updated })
 
     setAutoApplyLogs((prev) => [
       `[${new Date().toLocaleTimeString()}] Dispatched application to ${targetEmailInput} (${targetCompanyInput}) via mail client. Delivery receipt (.eml) saved. Scheduled 7-day follow-up.`,
@@ -2537,6 +2624,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     ])
 
     toast.success(`Dispatched application to ${targetEmailInput} and logged into Applied tracker!`)
+    setActiveBoardTab('applied')
   }
 
   function handleCopyApplicationDraft() {
@@ -2558,9 +2646,10 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       followUpStatus: 'pending',
     }
 
-    const updated = [record, ...appliedJobs]
+    const updated = [record, ...appliedJobs.filter((a) => a.company?.toLowerCase() !== record.company?.toLowerCase())]
     setAppliedJobs(updated)
     localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+    syncCandidateDataToCloud({ appliedJobs: updated })
 
     setAutoApplyLogs((prev) => [
       `[${new Date().toLocaleTimeString()}] Manually logged application for ${targetCompanyInput} (${targetRoleInput}).`,
@@ -2568,6 +2657,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     ])
 
     toast.success(`Logged application to ${targetCompanyInput} in your Applied tracker.`)
+    setActiveBoardTab('applied')
   }
 
   // 1-Click Direct Relay Dispatch via /api/email/dispatch
@@ -2690,6 +2780,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       }
 
       toast.success(data.message || `Dispatched application to ${targetEmailInput}! 5-working-day cooldown active.`, { id: toastId })
+      setActiveBoardTab('applied')
     } catch (err: any) {
       toast.error(err.message || 'Failed to dispatch via relay. Falling back to email client.', { id: toastId })
     } finally {
@@ -2888,6 +2979,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
     if (successfulCount > 0) {
       toast.success(`Successfully dispatched application to ${successfulCount} company crewing desks! 5-day cooldown active.`)
+      setActiveBoardTab('applied')
     } else {
       toast.error('Batch dispatch completed with 0 successful relays. Check SMTP settings.')
     }
@@ -3090,7 +3182,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
       setAutoApplyLogs((prev) => [
         `[${new Date().toLocaleTimeString()}] Matched hiring target: ${matchedContact.company} (${matchedContact.contactEmail})`,
-        `[${new Date().toLocaleTimeString()}] Prepared tailored application letter with Walrus cryptographic proof`,
+        `[${new Date().toLocaleTimeString()}] Prepared tailored application letter with Walrus storage attestation`,
         ...prev,
       ])
       setAutoApplyRunning(false)
@@ -3519,33 +3611,56 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         {/* Unified Card Body based on active toggle */}
                         {cvSourceType === 'walrus' ? (
                           <div className="space-y-2 pt-1 border-t border-border/40">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[11px] font-medium text-foreground">Active Snapshot Version:</span>
-                              <button
-                                type="button"
-                                onClick={() => router.push('/dashboard?tab=resumes')}
-                                className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
-                              >
-                                Vault
-                              </button>
+                            {/* Document card formatted identically to Uploaded CV in PDF format */}
+                            <div className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-semibold text-foreground block truncate">
+                                      {walrusCvFileName}
+                                    </span>
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono shrink-0">
+                                      PDF
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground block truncate">
+                                    {walrusCvFileSize} · Walrus Sovereign Storage · {walrusVersionLabel}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={handleDownloadWalrusCv}
+                                  className="h-7 px-2.5 text-[11px] font-semibold gap-1 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shrink-0 shadow-2xs"
+                                  title="Download Walrus Sovereign CV as PDF"
+                                >
+                                  <Download className="w-3 h-3 text-emerald-500" />
+                                  <span>Download PDF</span>
+                                </Button>
+
+                                {walrusVersions.length > 0 && (
+                                  <select
+                                    value={selectedCvVersionId}
+                                    onChange={(e) => setSelectedCvVersionId(e.target.value)}
+                                    className="h-7 px-1.5 text-[10px] font-medium rounded border border-border bg-background text-foreground cursor-pointer focus:outline-none"
+                                    title="Switch snapshot version"
+                                  >
+                                    <option value="active_draft">v1 (Active)</option>
+                                    {walrusVersions.map((v) => (
+                                      <option key={v.id} value={v.id}>
+                                        v{v.versionNumber} {v.role ? `· ${v.role.slice(0, 10)}` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </div>
                             </div>
 
-                            <select
-                              value={selectedCvVersionId}
-                              onChange={(e) => setSelectedCvVersionId(e.target.value)}
-                              className="w-full h-8 px-2.5 rounded-lg border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-                            >
-                              <option value="active_draft">
-                                Active Snapshot ({activeDraftProfile?.applicant_name || 'Candidate'})
-                              </option>
-                              {walrusVersions.map((ver) => (
-                                <option key={ver.id} value={ver.id}>
-                                  {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
-                                </option>
-                              ))}
-                            </select>
-
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground px-0.5">
                               {selectedVersionMeta?.blobId ? (
                                 <a
                                   href={`https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}`}
@@ -3560,9 +3675,17 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                   <ShieldCheck className="w-3 h-3 shrink-0" />
-                                  <span>Sealed Walrus Sovereign Snapshot (Cryptographic Proof)</span>
+                                  <span>Walrus Sovereign Storage · Verified Snapshot</span>
                                 </span>
                               )}
+
+                              <button
+                                type="button"
+                                onClick={() => router.push('/dashboard?tab=resumes')}
+                                className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                              >
+                                Vault
+                              </button>
                             </div>
                           </div>
                         ) : (
@@ -3579,34 +3702,56 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               <div className="flex items-center gap-2 min-w-0">
                                 <FileCheck className="w-4 h-4 text-emerald-500 shrink-0" />
                                 <div className="min-w-0">
-                                  <span className="text-xs font-semibold text-foreground block truncate">
-                                    {originalCvFileName || 'No custom file uploaded yet'}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-semibold text-foreground block truncate">
+                                      {originalCvFileName || 'No custom file uploaded yet'}
+                                    </span>
+                                    {originalCvFileName && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono shrink-0">
+                                        DOC
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-[10px] text-muted-foreground block">
-                                    PDF, DOC, or DOCX formats accepted
+                                    {originalCvFileName ? 'Custom uploaded candidate document' : 'PDF, DOC, or DOCX formats accepted'}
                                   </span>
                                 </div>
                               </div>
 
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={isUploadingOriginalCv}
-                                onClick={() => originalFileInputRef.current?.click()}
-                                className="h-7 px-3 text-[11px] font-semibold gap-1.5 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shrink-0 shadow-2xs"
-                              >
-                                {isUploadingOriginalCv ? (
-                                  <>
-                                    <Zap className="w-3 h-3 animate-spin text-emerald-500" />
-                                    <span>Uploading...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Upload className="w-3 h-3 text-emerald-500" />
-                                    <span>{originalCvFileName ? 'Replace Uploaded CV' : 'Upload CV Document'}</span>
-                                  </>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {originalCvFileName && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={handleDownloadUploadedCv}
+                                    className="h-7 px-2.5 text-[11px] font-semibold gap-1 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
+                                    title="Download uploaded CV"
+                                  >
+                                    <Download className="w-3 h-3 text-emerald-500" />
+                                    <span>Download</span>
+                                  </Button>
                                 )}
-                              </Button>
+
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={isUploadingOriginalCv}
+                                  onClick={() => originalFileInputRef.current?.click()}
+                                  className="h-7 px-3 text-[11px] font-semibold gap-1.5 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
+                                >
+                                  {isUploadingOriginalCv ? (
+                                    <>
+                                      <Zap className="w-3 h-3 animate-spin text-emerald-500" />
+                                      <span>Uploading...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-3 h-3 text-emerald-500" />
+                                      <span>{originalCvFileName ? 'Replace' : 'Upload CV Document'}</span>
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -4041,7 +4186,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               Attachments & Sovereign Credentials
                             </span>
                             <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                              {selectedVersionMeta?.blobId ? 'WALRUS STORAGE SEALED' : 'CRYPTOGRAPHICALLY VERIFIED'}
+                              {selectedVersionMeta?.blobId ? 'WALRUS STORAGE SEALED' : 'VERIFIED CANDIDATE ATTESTATION'}
                             </span>
                           </div>
 
@@ -4099,7 +4244,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           )}
 
                           <p className="text-[10.5px] text-emerald-700 dark:text-emerald-300">
-                            All credential documents are cryptographically verified and downloadable above.
+                            All credential documents are verified and downloadable above.
                           </p>
                         </div>
 
@@ -4212,7 +4357,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
                   <div className="space-y-3 text-xs">
                     <p className="text-muted-foreground leading-relaxed">
-                      A live sample application email will be transmitted using your configured relay. You can inspect the email headers, Walrus CV cryptographic verification link, and attachment integrity.
+                      A live sample application email will be transmitted using your configured relay. You can inspect the email headers, Walrus CV verification link, and attachment integrity.
                     </p>
 
                     <div className="space-y-1.5">

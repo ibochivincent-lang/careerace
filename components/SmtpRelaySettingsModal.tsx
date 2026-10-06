@@ -284,7 +284,7 @@ export function SmtpRelaySettingsModal({
                 <span>Zero-Setup Sovereign Relay Active</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Applications are dispatched through the decentralized CareerAce DKIM relay, attaching your Walrus cryptographic credential proof link directly in the email signature.
+                Applications are dispatched through the decentralized CareerAce DKIM relay, attaching your Walrus verified credential link directly in the email signature.
               </p>
             </div>
           )}
