@@ -47,6 +47,7 @@ import {
   Trash2,
   FileCheck,
   Eye,
+  Plus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApplicationFollowUpModal } from '@/components/ApplicationFollowUpModal'
@@ -1725,6 +1726,8 @@ export default function ApplicationBoardPage() {
   const [targetCompanyInput, setTargetCompanyInput] = useState('A.P. Moller - Maersk')
   const [targetRoleInput, setTargetRoleInput] = useState('Engine Cadet / Trainee Marine Engineer')
   const [targetEmailInput, setTargetEmailInput] = useState('careers.marine@maersk.com')
+  const [customEmailsList, setCustomEmailsList] = useState<string[]>(['careers.marine@maersk.com'])
+  const [newCustomEmailInput, setNewCustomEmailInput] = useState<string>('')
   const [customEmailSubject, setCustomEmailSubject] = useState('')
   const [customEmailBody, setCustomEmailBody] = useState('')
   const [copiedDraft, setCopiedDraft] = useState(false)
@@ -2197,15 +2200,57 @@ export default function ApplicationBoardPage() {
     return null
   }
 
+  // Add an email to custom target emails list
+  function handleAddCustomEmail() {
+    const emailToAdd = newCustomEmailInput.trim().toLowerCase()
+    if (!emailToAdd || !emailToAdd.includes('@')) {
+      toast.error('Please enter a valid email address.')
+      return
+    }
+    if (customEmailsList.map((e) => e.toLowerCase()).includes(emailToAdd)) {
+      toast.info('This email is already added to custom recipients.')
+      setNewCustomEmailInput('')
+      return
+    }
+    const updated = [...customEmailsList, emailToAdd]
+    setCustomEmailsList(updated)
+    setTargetEmailInput(updated[0])
+    setNewCustomEmailInput('')
+    toast.success(`Added ${emailToAdd} to target recipients.`)
+  }
+
+  // Remove an email from custom target emails list
+  function handleRemoveCustomEmail(emailToRemove: string) {
+    const updated = customEmailsList.filter((e) => e.toLowerCase() !== emailToRemove.toLowerCase())
+    setCustomEmailsList(updated)
+    if (updated.length > 0) {
+      setTargetEmailInput(updated[0])
+    }
+    toast.info(`Removed ${emailToRemove}.`)
+  }
+
   // 1-Click Select & Lock Custom Employer direct contact
   function handleSelectCustomDirectContact() {
-    if (!targetEmailInput || !targetEmailInput.includes('@')) {
-      toast.error('Please enter a valid hiring contact email address.')
-      return
+    let finalEmails = [...customEmailsList]
+    const pendingInput = newCustomEmailInput.trim().toLowerCase()
+    if (pendingInput && pendingInput.includes('@') && !finalEmails.map((e) => e.toLowerCase()).includes(pendingInput)) {
+      finalEmails.push(pendingInput)
+      setCustomEmailsList(finalEmails)
+      setNewCustomEmailInput('')
+    }
+    if (finalEmails.length === 0) {
+      const fallback = targetEmailInput.trim().toLowerCase()
+      if (fallback && fallback.includes('@')) {
+        finalEmails = [fallback]
+        setCustomEmailsList(finalEmails)
+      } else {
+        toast.error('Please enter at least 1 valid hiring contact email address.')
+        return
+      }
     }
     const cleanCompany = targetCompanyInput.trim() || 'Direct Employer'
     setSelectedCompanyIds(['custom_direct_contact'])
-    toast.success(`Target locked: 1 Direct recipient selected (${cleanCompany} · ${targetEmailInput}). Ready to send!`)
+    toast.success(`Target locked: ${finalEmails.length} recipient${finalEmails.length > 1 ? 's' : ''} selected (${cleanCompany}). Ready to dispatch!`)
   }
 
   // Merged available attachments list (uploaded documents and custom additions)
@@ -2423,6 +2468,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
   function handleSelectCompanyFromDirectory(contact: CompanyHiringContact) {
     setTargetCompanyInput(contact.company)
     setTargetEmailInput(contact.contactEmail)
+    setCustomEmailsList([contact.contactEmail])
     if (contact.typicalRoles && contact.typicalRoles.length > 0) {
       setTargetRoleInput(contact.typicalRoles[0])
     }
@@ -2812,19 +2858,18 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
   // Dispatch applications to currently selected companies and move them automatically to Applied
   async function handleDispatchSelectedCompanies() {
     const isCustomDirect = selectedCompanyIds.includes('custom_direct_contact')
+    const customList = customEmailsList.length > 0 ? customEmailsList : [targetEmailInput.trim()]
     const selectedCompanies: CompanyHiringContact[] = isCustomDirect
-      ? [
-          {
-            id: 'custom_direct_contact',
-            company: targetCompanyInput.trim() || 'Direct Employer',
-            category: 'Software / Cloud',
-            contactEmail: targetEmailInput.trim(),
-            typicalRoles: [targetRoleInput.trim() || 'Candidate Application'],
-            location: 'Direct / Custom Recipient',
-            careersUrl: 'https://careerace.online',
-            notes: 'Direct custom contact target',
-          },
-        ]
+      ? customList.map((email, idx) => ({
+          id: `custom_direct_contact_${idx}`,
+          company: targetCompanyInput.trim() || 'Direct Employer',
+          category: 'Software / Cloud',
+          contactEmail: email.trim(),
+          typicalRoles: [targetRoleInput.trim() || 'Candidate Application'],
+          location: 'Direct / Custom Recipient',
+          careersUrl: 'https://careerace.online',
+          notes: 'Direct custom contact target',
+        }))
       : filteredCompanyContacts.filter((c) =>
           selectedCompanyIds.includes(c.id)
         )
@@ -2837,7 +2882,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     setIsBatchDispatching(true)
     const toastId = toast.loading(
       isCustomDirect
-        ? `Dispatching direct application to ${targetEmailInput}...`
+        ? `Dispatching direct application to ${selectedCompanies.length} contact${selectedCompanies.length > 1 ? 's' : ''}...`
         : `Dispatching application to ${selectedCompanies.length} verified employers...`
     )
 
@@ -2891,12 +2936,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       const record: AppliedJobRecord = {
         id: `auto-apply-${now}-${i}`,
         jobTitle: targetRole,
-        company: contact.company,
+        company: `${contact.company}${selectedCompanies.length > 1 && isCustomDirect ? ` (${contact.contactEmail})` : ''}`,
         appliedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         appliedTimestamp: now,
         followUpStatus: 'pending',
       }
-      currentAppliedList = [record, ...currentAppliedList.filter((a) => a.company !== contact.company)]
+      currentAppliedList = [record, ...currentAppliedList.filter((a) => a.company !== record.company)]
       setAppliedJobs(currentAppliedList)
       localStorage.setItem('careerace_applied_jobs', JSON.stringify(currentAppliedList))
       syncCandidateDataToCloud({ appliedJobs: currentAppliedList })
@@ -2907,7 +2952,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
     toast.success(
       isCustomDirect
-        ? `Successfully dispatched application to ${targetEmailInput}! Switched to Applied tracker.`
+        ? `Successfully dispatched application to ${selectedCompanies.length} contact email${selectedCompanies.length > 1 ? 's' : ''}! Switched to Applied tracker.`
         : `Successfully dispatched to ${selectedCompanies.length} verified employers! Switched to Applied tracker.`,
       { id: toastId }
     )
@@ -3283,27 +3328,78 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">
-                            Hiring Contact Email
-                          </label>
-                          <input
-                            type="email"
-                            value={targetEmailInput}
-                            onChange={(e) => setTargetEmailInput(e.target.value)}
-                            placeholder="recruiting@company.com"
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                          />
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                              Hiring Contact Email(s)
+                            </label>
+                            {customEmailsList.length > 0 && (
+                              <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                                {customEmailsList.length} added
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="email"
+                              value={newCustomEmailInput}
+                              onChange={(e) => setNewCustomEmailInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  handleAddCustomEmail()
+                                }
+                              }}
+                              placeholder="Add email, e.g. hr@company.com..."
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={handleAddCustomEmail}
+                              className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 cursor-pointer shadow-xs gap-1"
+                              title="Add another email recipient"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span className="text-[11px] font-semibold hidden sm:inline">Add</span>
+                            </Button>
+                          </div>
+
+                          {/* Email chips list */}
+                          {customEmailsList.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-2 max-h-24 overflow-y-auto">
+                              {customEmailsList.map((email) => (
+                                <span
+                                  key={email}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-mono"
+                                >
+                                  <span className="truncate max-w-[170px]">{email}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveCustomEmail(email)}
+                                    className="p-0.5 hover:text-red-500 text-muted-foreground transition-colors cursor-pointer"
+                                    title="Remove this email"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <Button
                           type="button"
                           size="sm"
                           onClick={handleSelectCustomDirectContact}
-                          disabled={!targetEmailInput || !targetEmailInput.includes('@')}
-                          className="w-full mt-1.5 h-7 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer shadow-xs"
+                          disabled={customEmailsList.length === 0 && (!newCustomEmailInput || !newCustomEmailInput.includes('@'))}
+                          className="w-full mt-1.5 h-8 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer shadow-xs"
                         >
                           <Send className="w-3 h-3" />
-                          <span>Select & Target This 1 Contact</span>
+                          <span>
+                            {customEmailsList.length > 1
+                              ? `Select & Target ${customEmailsList.length} Contacts`
+                              : 'Select & Target This 1 Contact'}
+                          </span>
                         </Button>
                       </div>
                     )}
@@ -3314,260 +3410,111 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                 <div className="lg:col-span-7 space-y-4">
                   {/* Console Container */}
                   <div className="p-4 sm:p-5 rounded-xl border border-border bg-card space-y-4 shadow-xs">
-                    {/* Selected Target Recipients List */}
-                    <div className="p-4 rounded-xl border border-border/80 bg-muted/20 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
-                            Selected Target Recipients
-                          </span>
-                          <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
-                            {selectedCompanyIds.length} Selected
-                          </Badge>
-                        </div>
-                        {selectedCompanyIds.length > 0 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedCompanyIds([])}
-                            className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
-                          >
-                            Clear All
-                          </Button>
-                        )}
-                      </div>
-
-                      {selectedCompanyIds.length === 0 ? (
-                        <div className="p-3 rounded-lg border border-dashed border-border/80 bg-background/50 text-center space-y-1.5">
-                          <p className="text-xs text-muted-foreground">
-                            No employers selected yet. Choose companies from the directory on the left, click quick batch, or enter a custom email.
-                          </p>
-                          <div className="flex items-center justify-center gap-2 pt-1">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
-                                setSelectedCompanyIds(eligible.slice(0, 10).map(c => c.id))
-                                toast.info('Selected 10 verified employers.')
-                              }}
-                              className="h-6 text-[11px] border-border hover:bg-muted cursor-pointer"
-                            >
-                              Select 10
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
-                                setSelectedCompanyIds(eligible.slice(0, 20).map(c => c.id))
-                                toast.info('Selected 20 verified employers.')
-                              }}
-                              className="h-6 text-[11px] border-border hover:bg-muted cursor-pointer"
-                            >
-                              Select 20
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                          {selectedCompanyIds.includes('custom_direct_contact') && (
-                            <div className="p-2 rounded-lg border border-emerald-500 bg-emerald-500/10 flex items-center justify-between gap-2 text-xs shadow-2xs">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">
-                                  1
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-foreground truncate">{targetCompanyInput || 'Direct Employer'}</span>
-                                    <span className="text-[10px] text-muted-foreground font-mono truncate">({targetEmailInput})</span>
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground truncate">
-                                    Role: <strong className="text-foreground">{targetRoleInput || 'Target Position'}</strong> · <span className="text-emerald-600 font-medium">Direct 1-Person Target</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedCompanyIds((prev) => prev.filter((id) => id !== 'custom_direct_contact'))}
-                                className="p-1 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors"
-                                title="Remove"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
-
-                          {(() => {
-                            const selectedList = filteredCompanyContacts.filter((c) =>
-                              selectedCompanyIds.includes(c.id)
-                            )
-                            return selectedList.map((contact, index) => {
-                              const cd = getCompanyCooldown(contact.company)
-                              const itemNum = selectedCompanyIds.includes('custom_direct_contact') ? index + 2 : index + 1
-                              return (
-                                <div
-                                  key={contact.id}
-                                  className="p-2 rounded-lg border border-border/80 bg-background flex items-center justify-between gap-2 text-xs shadow-2xs"
-                                >
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] flex items-center justify-center shrink-0">
-                                      {itemNum}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="font-semibold text-foreground truncate">{contact.company}</span>
-                                        <span className="text-[10px] text-muted-foreground font-mono truncate">
-                                          ({contact.contactEmail})
-                                        </span>
-                                      </div>
-                                      <div className="text-[10px] text-muted-foreground truncate">
-                                        Role: <strong className="text-foreground">{contact.typicalRoles?.[0] || targetRoleInput}</strong>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    {cd && cd.active && (
-                                      <span className="text-[9px] font-mono text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                        Cooldown ({cd.remainingDays}d)
-                                      </span>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => setSelectedCompanyIds((prev) => prev.filter((id) => id !== contact.id))}
-                                      className="p-1 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors"
-                                      title="Remove from batch"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              )
-                            })
-                          })()}
-                        </div>
-                      )}
-                    </div>
-
                     {/* ── APPLICATION CREDENTIAL PACKAGE ── */}
-                    <div className="p-3.5 rounded-xl border border-border bg-card space-y-3 shadow-xs">
-                      {/* Clean Title Only */}
+                    <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-card space-y-3.5 shadow-xs">
+                      {/* Title Header */}
                       <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                        <h4 className="text-xs font-bold text-foreground">Application Credential Package</h4>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                          <h4 className="text-xs font-bold text-foreground">Application Credential Package</h4>
+                        </div>
+                        <span className="text-[10px] font-mono text-muted-foreground">Walrus Decentralized Verification</span>
                       </div>
 
-                      {/* Primary CV Selection: Walrus Sovereign Memory CV (Recommended) vs Uploaded CV */}
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider block">
-                          Select Primary CV
-                        </label>
+                      {/* Unified Single Card for Primary CV */}
+                      <div className="p-3 rounded-xl border border-border/80 bg-background/70 space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider">
+                            Select Primary CV
+                          </label>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {/* Option 1: Walrus Sovereign Memory CV (Recommended) */}
-                          <div
-                            onClick={() => setCvSourceType('walrus')}
-                            className={`p-2.5 rounded-lg border text-xs cursor-pointer transition-all select-none space-y-2 ${
-                              cvSourceType === 'walrus'
-                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/30'
-                                : 'border-border bg-background hover:bg-muted/30'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <input
-                                  type="radio"
-                                  name="cvSource"
-                                  checked={cvSourceType === 'walrus'}
-                                  onChange={() => setCvSourceType('walrus')}
-                                  className="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span className="font-bold text-foreground text-xs truncate">Walrus Sovereign CV</span>
-                              </div>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
+                          {/* Segmented Pill Selector Toggle */}
+                          <div className="inline-flex p-0.5 rounded-lg bg-muted/80 border border-border/70 text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setCvSourceType('walrus')}
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                                cvSourceType === 'walrus'
+                                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-xs border border-border/60'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>Walrus Sovereign CV</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                                 Recommended
                               </span>
-                            </div>
+                            </button>
 
-                            {/* Dropdown for Walrus Versions */}
-                            <div className="pt-1">
-                              <select
-                                value={selectedCvVersionId}
-                                onChange={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedCvVersionId(e.target.value)
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-full h-7 px-2 rounded-md border border-border bg-background text-[11px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                            <button
+                              type="button"
+                              onClick={() => setCvSourceType('uploaded')}
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                                cvSourceType === 'uploaded'
+                                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-xs border border-border/60'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                            >
+                              <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>Uploaded CV</span>
+                              {originalCvFileName && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Unified Card Body based on active toggle */}
+                        {cvSourceType === 'walrus' ? (
+                          <div className="space-y-2 pt-1 border-t border-border/40">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-medium text-foreground">Active Snapshot Version:</span>
+                              <button
+                                type="button"
+                                onClick={() => router.push('/dashboard?tab=resumes')}
+                                className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
                               >
-                                <option value="active_draft">
-                                  Active Snapshot ({activeDraftProfile?.applicant_name || 'Candidate'})
-                                </option>
-                                {walrusVersions.map((ver) => (
-                                  <option key={ver.id} value={ver.id}>
-                                    {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
-                                  </option>
-                                ))}
-                              </select>
+                                Vault
+                              </button>
                             </div>
 
-                            <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground pt-0.5">
+                            <select
+                              value={selectedCvVersionId}
+                              onChange={(e) => setSelectedCvVersionId(e.target.value)}
+                              className="w-full h-8 px-2.5 rounded-lg border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                            >
+                              <option value="active_draft">
+                                Active Snapshot ({activeDraftProfile?.applicant_name || 'Candidate'})
+                              </option>
+                              {walrusVersions.map((ver) => (
+                                <option key={ver.id} value={ver.id}>
+                                  {ver.label || `v${ver.versionNumber}`} {ver.role ? `· ${ver.role}` : ''}
+                                </option>
+                              ))}
+                            </select>
+
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
                               {selectedVersionMeta?.blobId ? (
                                 <a
                                   href={`https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-mono truncate hover:underline"
+                                  className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-mono hover:underline truncate"
                                 >
                                   <ShieldCheck className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">{selectedVersionMeta.blobId.slice(0, 10)}...</span>
+                                  <span className="truncate">Blob: {selectedVersionMeta.blobId.slice(0, 16)}...</span>
                                   <ExternalLink className="w-2.5 h-2.5 shrink-0" />
                                 </a>
                               ) : (
-                                <span className="inline-flex items-center gap-1 truncate">
-                                  <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />
-                                  <span>Sealed Walrus Snapshot</span>
+                                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                  <ShieldCheck className="w-3 h-3 shrink-0" />
+                                  <span>Sealed Walrus Sovereign Snapshot (Cryptographic Proof)</span>
                                 </span>
                               )}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  router.push('/dashboard?tab=resumes')
-                                }}
-                                className="text-muted-foreground hover:text-foreground text-[10px] underline cursor-pointer shrink-0"
-                              >
-                                Vault
-                              </button>
                             </div>
                           </div>
-
-                          {/* Option 2: Uploaded CV */}
-                          <div
-                            onClick={() => setCvSourceType('uploaded')}
-                            className={`p-2.5 rounded-lg border text-xs cursor-pointer transition-all select-none space-y-2 ${
-                              cvSourceType === 'uploaded'
-                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/30'
-                                : 'border-border bg-background hover:bg-muted/30'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <input
-                                  type="radio"
-                                  name="cvSource"
-                                  checked={cvSourceType === 'uploaded'}
-                                  onChange={() => setCvSourceType('uploaded')}
-                                  className="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span className="font-bold text-foreground text-xs truncate">Uploaded CV</span>
-                              </div>
-                            </div>
-
+                        ) : (
+                          <div className="space-y-2 pt-1 border-t border-border/40">
                             <input
                               type="file"
                               ref={originalFileInputRef}
@@ -3576,16 +3523,25 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               className="hidden"
                             />
 
-                            <div className="pt-1">
+                            <div className="flex items-center justify-between gap-3 p-2 rounded-lg border border-border/60 bg-card">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <FileCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                                <div className="min-w-0">
+                                  <span className="text-xs font-semibold text-foreground block truncate">
+                                    {originalCvFileName || 'No custom file uploaded yet'}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground block">
+                                    PDF, DOC, or DOCX formats accepted
+                                  </span>
+                                </div>
+                              </div>
+
                               <Button
                                 type="button"
                                 size="sm"
                                 disabled={isUploadingOriginalCv}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  originalFileInputRef.current?.click()
-                                }}
-                                className="w-full h-7 px-2 text-[11px] font-semibold gap-1.5 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shadow-2xs"
+                                onClick={() => originalFileInputRef.current?.click()}
+                                className="h-7 px-3 text-[11px] font-semibold gap-1.5 bg-background hover:bg-muted text-foreground border border-border cursor-pointer shrink-0 shadow-2xs"
                               >
                                 {isUploadingOriginalCv ? (
                                   <>
@@ -3600,15 +3556,8 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                                 )}
                               </Button>
                             </div>
-
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground pt-0.5 truncate">
-                              <FileCheck className="w-3 h-3 text-emerald-500 shrink-0" />
-                              <span className="truncate text-foreground font-medium">
-                                {originalCvFileName || 'No custom file uploaded'}
-                              </span>
-                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Uploaded Documents / Credentials */}
@@ -3715,7 +3664,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                               <Send className="w-3.5 h-3.5 text-emerald-200" />
                               <span>
                                 {selectedCompanyIds.length === 1 && selectedCompanyIds[0] === 'custom_direct_contact'
-                                  ? `Dispatch to ${targetCompanyInput || 'Direct Contact'} (1 Recipient)`
+                                  ? `Dispatch to ${targetCompanyInput || 'Direct Contact'} (${customEmailsList.length > 0 ? customEmailsList.length : 1} Email${customEmailsList.length > 1 ? 's' : ''})`
                                   : `Dispatch to Selected (${selectedCompanyIds.length})`}
                               </span>
                             </>
