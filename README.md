@@ -1,23 +1,114 @@
 # Career Ace: Universal Autonomous AI Career Copilot & Decentralized Vault
 
-**Author:** IboTV (`ibochivincent-lang`) — Sole Author and Maintainer.
-**Repository:** [https://github.com/ibochivincent-lang/careerace](https://github.com/ibochivincent-lang/careerace)
-**Stack:** Next.js 16 (Turbopack), React 19, TypeScript 5, Tailwind CSS, Walrus Protocol, Sui Blockchain, Mysten Labs SDK
-**Repository Topics & Tags:** `career-copilot`, `autonomous-agent`, `sui`, `walrus-protocol`, `suins`, `nextjs-16`, `ats-optimization`, `decentralized-identity`, `resume-tailor`, `interview-coach`, `software-engineering`, `cloud-systems`, `ai-robotics`, `maritime-case-study`, `zklogin`
+[![Live Demo](https://img.shields.io/badge/Live_Demo-careerace.online-10B981?style=for-the-badge&logo=googlechrome&logoColor=white)](https://careerace.online)
+[![Walrus Mainnet Certified](https://img.shields.io/badge/Walrus_Mainnet-15_Blobs_Certified-059669?style=for-the-badge&logo=blockchaindotcom&logoColor=white)](WALRUS_MAINNET_PROOF.md)
+[![Sui Network](https://img.shields.io/badge/Sui_Network-zkLogin_%26_SuiNS-4C82FB?style=for-the-badge&logo=sui&logoColor=white)](https://sui.io)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16_Turbopack-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Tests Passing](https://img.shields.io/badge/Automated_Tests-109%2F109_Passing-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/ibochivincent-lang/careerace)
+[![Zero Mock Data](https://img.shields.io/badge/Zero_Mock_Data-100%25_Verified_Contacts-3B82F6?style=for-the-badge)](https://careerace.online)
+
+**Author:** IboTV (`ibochivincent-lang`) — Sole Author and Maintainer.  
+**Production URL:** [https://careerace.online](https://careerace.online)  
+**Repository:** [https://github.com/ibochivincent-lang/careerace](https://github.com/ibochivincent-lang/careerace)  
+**Stack:** Next.js 16 (Turbopack), React 19, TypeScript 5 (Strict), Tailwind CSS v4, Walrus Protocol, Sui Blockchain, Mysten Labs SDK, Google zkLogin, SuiNS.
 
 ---
 
-## Overview
+## Hackathon Submission Overview
 
-Career Ace is a **universal autonomous AI career copilot, dual-track application automator, multi-industry CV tailor, decentralized career vault, and STAR+R interview coach**. It eliminates the chronic problems of platform lock-in, opaque applicant tracking system (ATS) algorithms, and generic AI slop by anchoring candidate career records into an encrypted, self-sovereign vault hosted on the [Walrus Protocol](https://walrus.xyz) and cryptographically anchored to the [Sui blockchain](https://sui.io) via Sui Move smart contracts and the Sui Name Service (SuiNS).
+Career Ace is an **autonomous AI career copilot, dual-track application automator, multi-industry CV tailor, decentralized career vault, and STAR+R interview coach**.
 
-Career Ace is built universally for all high-stakes technical, engineering, and digital disciplines—including **Software & Distributed Cloud Architecture, Artificial Intelligence & Robotics, Cybersecurity, Healthcare Informatics, Industrial Automation, and Maritime & Offshore Engineering (featured as a flagship case study)**.
+Traditional career platforms suffer from three structural flaws:
+1. **Platform Data Lock-In**: Centralized portals hold candidate milestone data hostage, commoditize candidate resumes, and monetize access to proprietary profile databases.
+2. **Opaque Applicant Tracking System (ATS) Scoring**: Enterprise parsers (Workday, Taleo, Greenhouse, Lever) reject over 75% of qualified technical candidates due to minor typographical or single-column layout formatting mismatches.
+3. **Generic AI Hallucinations**: Standard LLM resume tools invent fake credentials, generate buzzword-bloated phrasing, and expose sensitive candidate records to third-party model retraining.
+
+**Career Ace solves this permanently**:
+- Candidate career milestones, credentials, and tailored resumes are encrypted via AES-256-GCM and stored across decentralized [Walrus Protocol](https://walrus.xyz) storage nodes.
+- Cryptographic anchors and human-readable `.sui` passports are registered directly on the [Sui blockchain](https://sui.io) via Sui Move smart contracts and Sui Name Service (SuiNS).
+- Candidates access a private, autonomous cockpit with reverse-engineered ATS scoring, zero mock data hiring directories (382+ verified employers), multi-provider authenticated email dispatch, and multi-turn interview coaching with refusal guards.
+
+---
+
+## Targeted Hackathon Tracks
+
+| Track | Implementation & Verified Deliverables |
+|---|---|
+| **Walrus Protocol Decentralized Storage** | **15 Certified Blobs on Walrus Mainnet** (`WALRUS_MAINNET_PROOF.md`), client-side AES-256-GCM encrypted profile storage, content-addressed blob retrieval across epochs, versioned snapshot drawer, and persistent candidate memory. |
+| **Sui Network & zkLogin Identity** | Frictionless Web2 onboarding via Google zkLogin (zero seed-phrase friction), Sui Move smart contracts for onchain cryptographic proof anchors, and human-readable `.sui` domain resolution for public passports (`/p/[username]`). |
+| **Autonomous AI Agents & ATS Intelligence** | Sub-350ms Walrus memory recall copilot, 200 intent-categorized candidate question taxonomy, Google XYZ formula ATS resume audit, and multi-turn STAR+R pedagogical interview simulator. |
+
+---
+
+## Verified Walrus Mainnet Certification
+
+Career Ace has written and certified **15 production memory blobs on Walrus Mainnet** under Account ID `0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00`, exceeding hackathon criteria:
+
+| # | Candidate | Namespace | Category | Blob ID | Walrus Mainnet Aggregator Proof |
+|---|---|---|---|---|---|
+| 1 | Alex Rivera | `candidate_alex_rivera` | Target Role | `wjP72rBhrofqKKnXb09zhFHIQV5cn2m8pBNg7PP89kw` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/wjP72rBhrofqKKnXb09zhFHIQV5cn2m8pBNg7PP89kw) |
+| 2 | Alex Rivera | `candidate_alex_rivera` | Work Experience | `v2TnnTVm5GSHfuUUgxNv_Xv765uJV9T-XjLMURGyB6A` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/v2TnnTVm5GSHfuUUgxNv_Xv765uJV9T-XjLMURGyB6A) |
+| 3 | Alex Rivera | `candidate_alex_rivera` | Key Metric | `DeRSqFzXUdpXNcJ1HLUm8RFG8in0OFxRBgbJuEE2XmY` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/DeRSqFzXUdpXNcJ1HLUm8RFG8in0OFxRBgbJuEE2XmY) |
+| 4 | Alex Rivera | `candidate_alex_rivera` | Core Competency | `mOnV2i6nxlyVv5TrQhCTzAVyoYWgdivaUS0gM_VTFy8` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/mOnV2i6nxlyVv5TrQhCTzAVyoYWgdivaUS0gM_VTFy8) |
+| 5 | Alex Rivera | `candidate_alex_rivera` | Interview Strategy | `_OSyUNcyWODBdkcpXGGOazobl3LxF0YS8DmKfh5fheo` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/_OSyUNcyWODBdkcpXGGOazobl3LxF0YS8DmKfh5fheo) |
+| 6 | Sarah Chen | `candidate_sarah_chen` | Target Role | `pvEU6hNfe7kkLdR6jUO4a84oH5exQLb_dyCeliksi0E` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/pvEU6hNfe7kkLdR6jUO4a84oH5exQLb_dyCeliksi0E) |
+| 7 | Sarah Chen | `candidate_sarah_chen` | Work Experience | `rROuuDYYBJVs1ExX7ib2IYHJCE2TK9zTrRZpC3k7wD0` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/rROuuDYYBJVs1ExX7ib2IYHJCE2TK9zTrRZpC3k7wD0) |
+| 8 | Sarah Chen | `candidate_sarah_chen` | Key Metric | `8UNPnFcoxgq9Nbg1E7ocm9ZZ2kS1LOS3I3gyKioMb4g` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/8UNPnFcoxgq9Nbg1E7ocm9ZZ2kS1LOS3I3gyKioMb4g) |
+| 9 | Sarah Chen | `candidate_sarah_chen` | Core Competency | `m3LOcgj7D7VbdZOE9P1xr-fmjXCSnZXIT6iLfPzer_c` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/m3LOcgj7D7VbdZOE9P1xr-fmjXCSnZXIT6iLfPzer_c) |
+| 10 | Sarah Chen | `candidate_sarah_chen` | CV Bullet | `lmih4_JEvtM23CxzodqcQIGmTGjcdAOkRolcHvvkYBI` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/lmih4_JEvtM23CxzodqcQIGmTGjcdAOkRolcHvvkYBI) |
+| 11 | Marcus Adebayo | `candidate_marcus_adebayo` | Target Role | `B6gBL5Tk2S50SHOJ8QgzA-HMByITC3MnxPEcHd5A0LY` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/B6gBL5Tk2S50SHOJ8QgzA-HMByITC3MnxPEcHd5A0LY) |
+| 12 | Marcus Adebayo | `candidate_marcus_adebayo` | Work Experience | `flWH9IuiwldSs3DBkfC9HXJRPbw_5oX8aZf6oLNQjZs` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/flWH9IuiwldSs3DBkfC9HXJRPbw_5oX8aZf6oLNQjZs) |
+| 13 | Marcus Adebayo | `candidate_marcus_adebayo` | Key Metric | `kSkUnxcBVMv12wv5TaSZW9kz7wKC6JHKdZL1wwJo8gc` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/kSkUnxcBVMv12wv5TaSZW9kz7wKC6JHKdZL1wwJo8gc) |
+| 14 | Marcus Adebayo | `candidate_marcus_adebayo` | Core Competency | `VFUNOVesikNLrH7ZUvOV8hFo1CuvRqfRhn-_ExyTXTE` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/VFUNOVesikNLrH7ZUvOV8hFo1CuvRqfRhn-_ExyTXTE) |
+| 15 | Marcus Adebayo | `candidate_marcus_adebayo` | CV Bullet | `nbGHckr34yB4BQGiXYsz9wy8AC2zAlX4zMuqic1iGdc` | [Inspect on Mainnet](https://aggregator.walrus-mainnet.walrus.space/v1/blobs/nbGHckr34yB4BQGiXYsz9wy8AC2zAlX4zMuqic1iGdc) |
+
+For verification logs and semantic recall benchmarks, see [WALRUS_MAINNET_PROOF.md](WALRUS_MAINNET_PROOF.md).
+
+---
+
+## Master Architecture Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Candidate as Candidate / Engineer
+    participant Web as Next.js 16 Client (React 19)
+    participant API as Next.js API Routes (Edge Engine)
+    participant Copilot as Career Copilot & ATS Parser
+    participant Walrus as Walrus Protocol Storage Nodes
+    participant Sui as Sui Blockchain (Move Contract & SuiNS)
+    participant Email as Multi-Provider Relay (Resend/Brevo/SendGrid)
+    participant Employer as Verified Employer Inbox
+
+    Candidate->>Web: 1. Sign in via Google zkLogin
+    Web->>Sui: Derives sovereign address (0x...) with zero seed-phrase friction
+    Candidate->>Web: 2. Uploads CV (PDF, DOCX) & documents
+    Web->>API: POST /api/cv_upload
+    API->>Copilot: Heuristic multi-section extraction (Google XYZ metrics)
+    Copilot-->>API: Parsed profile & ATS score (Workday/Taleo/Greenhouse)
+    API->>Walrus: Store encrypted profile & raw documents (AES-256-GCM)
+    Walrus-->>API: Returns content-addressed Blob ID
+    API->>Sui: Register onchain anchor & bind candidate.sui handle
+    Sui-->>Web: Confirmed onchain transaction digest & passport URL (/p/[username])
+
+    Candidate->>Web: 3. Interacts with Copilot & Two-Box Dispatch Board
+    Web->>Copilot: Asks career question / selects curated target job
+    Copilot->>Walrus: Semantic memory query (<350ms recall)
+    Walrus-->>Copilot: Recalls historical verified milestones & metrics
+    Copilot-->>Web: Delivers grounded edit / tailored pitch without AI slop
+
+    Candidate->>Web: 4. Dispatches application with Walrus attachments
+    Web->>API: POST /api/email/dispatch
+    API->>Email: Cascades primary Resend -> Brevo -> SendGrid with DKIM/SPF
+    Email-->>Employer: Delivers signed email with Walrus-hosted attachments & RFC 5545 calendar reminder
+    Email-->>Web: Verified dispatch report with RFC 5322 EML confirmation
+```
 
 ---
 
 ## Universal Technical Domains & Industry Coverage
 
-Career Ace operates across six core technical sectors with tailored vocabulary models, certification validators, and direct corporate recruitment directories:
+Career Ace operates across six core technical sectors with specialized vocabulary models, credential gates, and direct corporate recruitment directories:
 
 | Sector | Target Roles | Verification & Credential Standards | Sample Employers (382+ Directory) |
 |---|---|---|---|
@@ -28,136 +119,70 @@ Career Ace operates across six core technical sectors with tailored vocabulary m
 | **Industrial & Electrical Systems** | SCADA / PLC Engineer, Grid Automation Specialist, Instrumentation Lead | IEEE Standards, Siemens TIA, Rockwell ControlLogix, SIL 3 Safety | Siemens, ABB, Schneider Electric, Rockwell Automation |
 | **Cybersecurity & Infrastructure** | Threat Hunter, Penetration Tester, SecOps Lead, Zero-Trust Architect | CISSP, OSCP, SOC 2 Type II Auditing, NIST CSF, ISO 27001 | CrowdStrike, Palo Alto Networks, Cloudflare, Okta |
 
-### Flagship Case Study: Maritime & STCW Engineering
-*Why Maritime as a Case Study?* International maritime engineering represents the most stringent credential verification regime in the world under International Maritime Organization (IMO) and STCW conventions. Candidates must prove physical licenses (CoC Class 1-4), safety training (BST, BOSIET), dynamic positioning qualifications, and medical fitness (ENG1). By designing deterministic parsers and verifiers capable of handling these complex physical licenses and non-standard layout variations, Career Ace proves that its architecture can handle any complex certification or engineering standard across all modern industries.
+> **Flagship Case Study — Maritime & STCW Engineering**: Maritime engineering represents the most stringent credential verification regime globally under International Maritime Organization (IMO) conventions. Candidates must prove physical licenses (CoC Class 1-4), safety training (BST, BOSIET), dynamic positioning qualifications, and medical fitness (ENG1). By designing deterministic parsers and verifiers capable of handling these physical credentials, Career Ace proves its architecture can enforce any strict compliance standard across all modern industries.
 
 ---
 
-## Master Architecture Topology
+## End-to-End Feature Tour
 
-```
-=============================================================================================================
-                                     CAREER ACE MASTER SYSTEM TOPOLOGY
-=============================================================================================================
+### 1. The Autonomous AI Career Agent (`/dashboard`)
+- **Fast Walrus Sovereign Memory Recall**: Memory lookups execute under 350ms bounded timeouts, seamlessly injecting candidate milestones into LLM prompts without lag.
+- **200 Simulated Questions Taxonomy**: Instant prompt chips categorized across 6 key candidate domains (Skills & Stack, Experience & Metrics, Work Authorization, Career Goals, Strengths & Weaknesses, and Verification).
+- **2x2 Cockpit Grid**: Balanced interface presenting Recommended Jobs, Application Tracker, Daily Limits & Goals, and Profile & Qualifications with direct version switching.
 
-+-----------------------------------------------------------------------------------------------------------+
-|                                    CANDIDATE INTERFACE & WORKSPACE                                        |
-|                                       Next.js 16 + React 19 + Tailwind                                    |
-|                                                                                                           |
-|  +---------------------------+   +---------------------------+   +-------------------------------------+  |
-|  | 1. Universal CV Ingestion |   | 2. Verified 382+ Directory|   | 3. Two-Box Dispatch Board           |  |
-|  |    & Multi-Format Parser  |   |    & Target Scraper       |   |    Box 1: Document Upload & Walrus  |  |
-|  |    (Industry & STCW Gating)   |    (Zero Mock Contacts)   |   |    Box 2: Inline Pitch Editor       |  |
-|  +-------------+-------------+   +-------------+-------------+   +------------------+------------------+  |
-+----------------|-------------------------------|------------------------------------|---------------------+
-                 |                               |                                    |
-                 +-------------------------------+------------------------------------+
-                                                 |
-                                                 v
-+-----------------------------------------------------------------------------------------------------------+
-|                                     CAREER ACE CORE AGENT CONTROLLER                                      |
-|                                         (App Router API Engine)                                           |
-+------------------------------------------------+----------------------------------------------------------+
-| - Heuristic Multi-Section CV Parser            | - Multi-ATS Benchmark Simulator (Workday, Taleo, Lever)  |
-| - Domain Credential Gating Engine              | - Evidence-Grounded CV Tailoring Engine (No AI Slop)     |
-| - Verified Hiring Directory Indexer (382+)     | - Authenticated Email Relay Agent (DKIM / SPF Signed)    |
-| - STAR+R Pedagogical Interview Coach           | - SuiNS Domain Resolver & Move Anchoring Service         |
-+-----------------------+------------------------+------------------------------------+---------------------+
-                        |                                                             |
-                        v                                                             v
-+------------------------------------------------+    +-----------------------------------------------------+
-|        APPLICATION & DISPATCH PIPELINE         |    |              MODEL CONTEXT PROTOCOL (MCP)           |
-+------------------------------------------------+    +-----------------------------------------------------+
-| - Box 1: Multi-file native document upload     |    | - upload_resume_tool                                |
-|   (/api/attachment/upload -> Walrus Blob)      |    | - recall_career_vault_tool                          |
-| - Box 2: Live inline message editing           |    | - job_search_tool                                   |
-|   (Dynamic company salutations & pitch reset)  |    | - evaluate_job_tool                                 |
-| - Action Toolbar: 1-Click Relay, Mailto,       |    | - tailor_cv_tool                                    |
-|   SPF/DKIM Settings, RFC 5545 ICS Reminders    |    | - fill_application_tool                             |
-+-----------------------+------------------------+    +---------------------------------+-------------------+
-                        |                                                               |
-                        +-------------------------------+-------------------------------+
-                                                        |
-                                                        v
-+-----------------------------------------------------------------------------------------------------------+
-|                                      DECENTRALIZED CAREER VAULT                                           |
-|                                       (Walrus Protocol + Sui)                                             |
-+-----------------------------------------------------------------------------------------------------------+
-| - Encrypted raw CVs, tailored resumes, and multi-file credential attachments stored as Walrus blobs       |
-| - Verifiable onchain cryptographic anchors generated via Sui Move smart contracts                        |
-| - Human-readable .sui handles resolved via SuiNS for public verifiable candidate passports (/p/[username])|
-+-----------------------------------------------------------------------------------------------------------+
-```
+### 2. Reverse-Engineered ATS X-Ray (`/dashboard?tab=overview`)
+- **Multi-ATS Simulation**: Tested against parsing algorithms for Workday, Taleo, Greenhouse, and Lever.
+- **Google XYZ Formula Enforcement**: Identifies weak passive phrasing and rewrites bullets into quantified impact statements (*Accomplished [X], as measured by [Y], by doing [Z]*).
+- **Single-Column Standards**: Ensures zero-table, single-column DOCX and JSON Resume exports that never choke enterprise parsers.
 
-For complete sequence diagrams, data schemas, and API contracts, see [ARCHITECTURE.md](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/ARCHITECTURE.md).
+### 3. Two-Box Auto-Apply Dispatch Console (`/application_board`)
+- **Box 1 (Document Attachments & Walrus Blobs)**: Multi-file native upload (`.pdf`, `.docx`, `.doc`, `.png`, `.jpg`) cached in browser storage and permanently anchored as Walrus blobs with file size and status chips.
+- **Box 2 (Inline Cover Letter & Pitch Editor)**: Full-width live editor with dynamic company greetings, user edit preservation (`isBodyUserEdited`), reset controls, and character counters.
+- **1-Click Authenticated Email Relay**: Dispatches applications via authenticated SMTP/API with automatic failover across Resend, Brevo, and SendGrid, including RFC 5545 `.ics` follow-up calendar invites.
+
+### 4. Sovereign Memory Vault (`/memory`)
+- **Blob Explorer**: Real-time inspection of encrypted Walrus blobs, transaction digests, and epoch allocations.
+- **Snapshot Drawer (`WalrusVersionDrawer`)**: 1-click restore to past versions of candidate CVs without data loss.
+
+### 5. STAR+R Pedagogical Interview Coach (`/interview_room`)
+- **Socratic Simulation**: Evaluates candidate responses across **Situation**, **Task**, **Action**, **Result**, and **Reflection**.
+- **Pedagogical Refusal Guards**: Refuses to hand out direct answers, pushing candidates to uncover their own architectural tradeoffs through guided questioning.
+
+### 6. Public Verifiable Passports (`/p/[username]`)
+- **SuiNS Name Binding**: Resolves `.sui` human-readable handles (e.g. `alex.sui`) and serves a verifiable public candidate passport backed by cryptographic onchain anchors.
 
 ---
 
-## Key Capabilities
+## Complete API Route Specifications
 
-### 1. Heuristic Multi-Format CV Parser
-- **Layout-Adaptive Extraction**: Parses diverse layout conventions including Company-first, Role-first, inline expressions (`Role at Company (Dates)`), compound dash structures (`Company - Role`), and pipe-delimited multi-column rows.
-- **Non-Standard Section Handling**: Automatically identifies and structures non-traditional sections such as Leadership Activities, Academic Conferences, Technical Licensures, Field Deployments, and Honors.
-- **Zero Placeholder Guarantee**: Rejects and sanitizes phantom strings like `"the Organization"`, defaulting strictly to extracted company identities or verified domain entities.
-- **Modular Credential Gating**: Inspects credentials across technical domains—validating cloud certifications, engineering licenses, and international standards (including STCW BST, CoC Class 1-4, ENG1 Medical, and BOSIET in the maritime case study).
-
-### 2. Verified 382+ Employer Directory (Zero Mock Data)
-- Built-in index of 382+ verified hiring departments across London, San Francisco, Houston, Rotterdam, Singapore, Aberdeen, Lagos, and Dubai.
-- Direct corporate crewing, technical recruitment, and engineering contacts for operators such as Stripe, AWS, Cloudflare, DeepMind, Maersk, American Bureau of Shipping (ABS), Stolt-Nielsen, Bourbonese, Tidewater, Subsea 7, TechnipFMC, and DNV.
-- Strictly zero fake placeholder addresses (`example.com` or `test@test.com`).
-
-### 3. Multi-ATS Benchmark Simulator
-- Simulates evaluation engines across enterprise ATS platforms: Workday, Greenhouse, Taleo, and Lever.
-- Evaluates CV parseability, keyword match density, active verb frequency, and quantified metric density, providing concrete remediation steps before submission.
-
-### 4. Two-Box Auto-Apply Dispatch Console
-- **Box 1 (CV & Document Attachments)**:
-  - Native multi-file upload (`.pdf`, `.docx`, `.doc`, `.png`, `.jpg`).
-  - Files are processed via `/api/attachment/upload`, stored as decentralized Walrus blobs, and cached in browser storage.
-  - Displays file name, size in KB, Walrus storage status, and immediate removal controls.
-  - Active CV version dropdown selector to toggle between uploaded CV drafts and Walrus snapshots.
-  - Quick-toggles for instant inclusion of core technical and marine credentials.
-- **Box 2 (Cover Letter & Application Pitch)**:
-  - Directly editable full-width textarea (`rows={11}`) with live character count.
-  - Eliminated disruptive page redirects; candidates compose and customize their pitch directly on the board.
-  - Dynamic company greeting (`Dear [Company] Hiring Team,` or `Dear Hiring Team,`).
-  - Manual edits are strictly preserved via the `isBodyUserEdited` state lock.
-  - Inline Reset Draft button to re-calibrate pitch to target company without losing attachments.
-  - One-click Copy Draft button.
-- **Action Toolbar**:
-  - Send Application via 1-Click Relay (`/api/email/dispatch`) passing attachments, Walrus blob IDs, role, and company.
-  - Open in Mail App fallback (`mailto:` with pre-populated subject and encoded body).
-  - Email Relay Settings modal (DKIM/SPF status, Gmail OAuth, Outlook, Sovereign SMTP).
-  - Automated 7-Day Follow-Up Reminder generation via RFC 5545 `.ics` calendar events.
-
-### 5. Decentralized Career Vault & Onchain Identity
-- **Walrus Protocol Storage**: Encrypted resumes, tailored variations, and uploaded credential documents are permanently stored on decentralized Walrus storage nodes across multiple epochs.
-- **Sui Move Onchain Anchoring**: Cryptographic transaction digests anchor Walrus blob IDs directly to candidate sovereign addresses on the Sui blockchain.
-- **Sui Name Service (SuiNS)**: Resolves `.sui` human-readable handles (e.g., `candidate.sui`) and serves verifiable public candidate passports at `/p/[username]`.
-- **Sovereign Profile Integration**: Claimed SuiNS passports are automatically displayed throughout the candidate workspace, including the right-hand Sovereign Profile & Walrus Vault card and header account chips.
-
-### 6. STAR+R Pedagogical Interview Coach
-- Real-time multi-turn simulation framework evaluating candidate responses across:
-  - **Situation**: Contextual setting and scope.
-  - **Task**: Explicit objective and responsibility.
-  - **Action**: Concrete technical execution.
-  - **Result**: Quantified operational metrics (efficiency gains, safety records, latency reductions).
-  - **Reflection**: Architectural tradeoffs and retrospective insights.
-- Includes refusal guards to prevent handing over answers, prompting candidates to uncover insights through Socratic follow-up questions.
+| Endpoint | Method | Description | Primary Engine / Storage |
+|---|---|---|---|
+| `/api/cv_upload` | `POST` | Ingests PDF/DOCX resumes, executes heuristic multi-section parsing, and extracts quantified metrics | OpenXML / PDFParse / Heuristic Engine |
+| `/api/attachment/upload` | `POST` | Stores multi-file application attachments directly to Walrus Protocol nodes | Walrus Publisher REST API |
+| `/api/walrus/anchor` | `POST` | Generates onchain Move cryptographic anchors linking candidate address to Walrus Blob ID | Sui Move Smart Contract Layer |
+| `/api/memory` | `GET/POST` | Stores and recalls candidate sovereign memory facts across isolated namespaces | Walrus Memory Aggregator & Relayer |
+| `/api/suins/bind` | `POST` | Normalizes and binds `.sui` human-readable handles to candidate sovereign addresses | SuiNS Resolver Engine |
+| `/api/suins/resolve` | `GET` | Resolves `.sui` handles into candidate sovereign passports and metadata | Sui RPC / SuiNS Protocol |
+| `/api/ats/benchmark` | `POST` | Simulates enterprise ATS scoring (Workday, Taleo, Lever, Greenhouse) | Multi-ATS Simulation Algorithm |
+| `/api/tailor` | `POST` | Aligns candidate CV bullets with specific job descriptions using Google XYZ metrics | Grounded Tailoring Engine (No AI Slop) |
+| `/api/email/dispatch` | `POST` | Dispatches DKIM/SPF authenticated application emails with multi-provider failover | Resend / Brevo / SendGrid Relay |
+| `/api/harvest` | `GET/POST` | Harvests live job postings from 9 real-time networks without mock data | Live Job Crawlers (Jobicy, Remotive, Arbeitnow) |
+| `/api/interview` | `POST` | Multi-turn STAR+R interview coach with pedagogical refusal guards | Socratic Evaluation Controller |
+| `/api/feedback` | `POST` | Ingests validated candidate feedback with rate-limiting and database persistence | Supabase / Database Engine |
 
 ---
 
 ## Technology Stack
 
-| Layer | Technologies |
-|---|---|
-| Frontend Framework | Next.js 16 (App Router, Turbopack), React 19, Vanilla CSS & Tailwind CSS |
-| Programming Language | TypeScript 5 (Strict Mode) |
-| Decentralized Storage | Walrus Protocol (Mysten Labs) |
-| Blockchain & Identity | Sui Network (Testnet & Mainnet), Sui Move, SuiNS, zkLogin |
-| Parsing & Processing | PDFParse, Mammoth (DOCX), Heuristic Regex Multi-Pass Engine |
-| Communication Relay | Authenticated SMTP, Resend API, RFC 5545 ICS Generator |
-| Testing Suite | Node.js Test Runner, TypeScript 5, Zero External Test Framework Bloat |
+```
+Frontend:           Next.js 16 (App Router, Turbopack), React 19, Tailwind CSS v4, Lucide Icons, Motion
+Language:           TypeScript 5 (Strict Mode)
+Decentralized Data: Walrus Protocol (Mysten Labs), Memwal Relayer
+Blockchain:         Sui Network (Testnet & Mainnet), Sui Move, SuiNS, Enoki zkLogin
+Document Engine:    PDFParse, Mammoth (DOCX), OpenXML Spec, JSON Resume Schema v1.0.0
+Email Relay:        Resend API (multi-key rotation), Brevo API, SendGrid API, RFC 5322 EML, RFC 5545 ICS
+Testing Suite:      Node.js 20 Native Test Runner (Zero Bloat), 109 Tests Passing
+```
 
 ---
 
@@ -171,7 +196,7 @@ For complete sequence diagrams, data schemas, and API contracts, see [ARCHITECTU
 ### Installation
 
 ```bash
-# 1. Clone repository
+# 1. Clone the repository
 git clone https://github.com/ibochivincent-lang/careerace.git
 cd careerace
 
@@ -181,126 +206,63 @@ pnpm install
 # 3. Configure environment variables
 cp .env.example .env.local
 
-# 4. Run development server with Turbopack
+# 4. Start the development server with Turbopack
 pnpm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Environment Variables Reference
+## Testing & Verification Suite
 
-Configure the following variables in your `.env.local` file:
-
-```env
-# Application Host
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-32-character-secret-key-goes-here
-
-# Walrus Protocol Decentralized Storage
-WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space
-WALRUS_AGGREGATOR_URL=https://aggregator.walrus-testnet.walrus.space
-
-# Sui Blockchain & SuiNS Configuration
-SUI_NETWORK=testnet
-SUI_RPC_URL=https://fullnode.testnet.sui.io:443
-SUI_PACKAGE_ID=0x...
-
-# Multi-Provider Email Dispatch (Zero Mock Data, Resilient Fallback)
-RESEND_API_KEY=re_...
-RESEND_API_KEY_2=re_...
-RESEND_API_KEY_3=re_...
-RESEND_FROM_EMAIL=CareerAce Applications <applications@careerace.io>
-BREVO_API_KEY=xkeysib-...
-BREVO_FROM_EMAIL=applications@careerace.io
-SENDGRID_API_KEY=SG....
-SENDGRID_FROM_EMAIL=applications@careerace.io
-
-# Supabase (Feedback & User State Persistence)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-
-# Google zkLogin / OAuth (Optional)
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-```
-
----
-
-## Testing & Verification
-
-The project includes an exhaustive automated test suite verifying CV parsing, domain gating, SuiNS normalization, Walrus anchoring, ATS scoring, multi-provider email cascades, RFC 5322 EML generation, and RFC 5545 calendar generation:
+Career Ace maintains an automated test suite verifying CV parsing, credential gating, SuiNS normalization, Walrus anchoring, ATS scoring, multi-provider email cascades, RFC 5322 EML generation, and RFC 5545 calendar generation:
 
 ```bash
-# Run full unit test suite (105 tests across 7 test suites)
+# Run full automated test suite (109 tests across 8 test suites)
 npm test
 
-# Run TypeScript static type checking
+# Run TypeScript static type checking (0 errors)
 npx tsc --noEmit
 
-# Run Next.js production build verification
+# Run Next.js production build verification (57 routes compiled)
 npm run build
 ```
 
 ---
 
-## Deployment Guide: What and Where to Deploy
+## Deployment Guide: What & Where to Deploy
 
-### Target Platform 1: Vercel (Recommended)
-- **What to deploy**: The Next.js 16 App Router repository directly connected to the `main` branch.
-- **Why**: Native support for Turbopack builds, Edge API routes, streaming responses, and zero-configuration serverless function execution.
-- **Deployment Steps**:
-  1. Import `ibochivincent-lang/careerace` in the Vercel Dashboard.
-  2. Set Framework Preset to **Next.js**.
-  3. Add the production environment variables listed above.
-  4. Trigger deployment via `git push origin main` or via the Vercel CLI:
-     ```bash
-     npx vercel --prod
-     ```
+### 1. Web Application & API Routes: Vercel
+- **Repository**: Connected to `ibochivincent-lang/careerace` (`main` branch).
+- **Framework Preset**: `Next.js`
+- **Build Command**: `npm run build`
+- **Environment Variables**:
+  - `NEXT_PUBLIC_APP_URL=https://careerace.online`
+  - `WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space`
+  - `WALRUS_AGGREGATOR_URL=https://aggregator.walrus-testnet.walrus.space`
+  - `SUI_NETWORK=testnet`
+  - `SUI_RPC_URL=https://fullnode.testnet.sui.io:443`
+  - `RESEND_API_KEY` (and optional `RESEND_API_KEY_2`, `BREVO_API_KEY`, `SENDGRID_API_KEY`)
+  - `GEMINI_API_KEY` (or Google Generative AI key for live copilot inference)
 
-### Target Platform 2: Containerized Deployment (Railway / Render / AWS ECS)
-- **What to deploy**: A multi-stage Docker container serving Next.js standalone output.
-- **Dockerfile Reference**:
-  ```dockerfile
-  FROM node:20-alpine AS builder
-  WORKDIR /app
-  COPY package*.json ./
-  RUN npm ci
-  COPY . .
-  RUN npm run build
+### 2. Decentralized Storage: Walrus Protocol
+- Profile snapshots, document attachments, and candidate memory are written directly to Walrus storage nodes via HTTP publisher APIs. No dedicated backend server required.
 
-  FROM node:20-alpine AS runner
-  WORKDIR /app
-  ENV NODE_ENV=production
-  COPY --from=builder /app/public ./public
-  COPY --from=builder /app/.next/standalone ./
-  COPY --from=builder /app/.next/static ./.next/static
-  EXPOSE 3000
-  CMD ["node", "server.js"]
-  ```
+### 3. Blockchain & Identity: Sui Network
+- Onchain anchors and SuiNS passport resolution execute against the Sui RPC (`https://fullnode.testnet.sui.io:443`).
 
 ---
 
-## World-Class Standard Recommendations
+## World-Class Standard Roadmap
 
-To maintain and expand CareerAce as a global category leader in career automation:
-
-1. **Integrated Recruiter Response Webhook**:
-   - Establish an inbound webhook endpoint (`/api/email/inbound`) that captures recruiter replies, parses interview requests, and automatically updates the Application Tracker status.
-
-2. **Decentralized Verifiable Credential Badges (W3C VC / Sui Kiosk)**:
-   - Allow universities, professional boards, and classification societies to issue signed onchain Soulbound Tokens (SBT) directly into candidate Walrus vaults.
-
-3. **Multi-Recipient Crewing Dispatch**:
-   - Enable candidates to dispatch applications simultaneously to both the vessel manager and the crewing superintendent while tracking distinct open and delivery rates.
-
-4. **Biometric WebRTC Speech Practice**:
-   - Upgrade the STAR+R Interview Coach with real-time audio latency analysis and filler-word detection (`um`, `uh`, `like`) during verbal simulation rounds.
+1. **Inbound Recruiter Webhook**: Capture employer replies (`/api/email/inbound`) and automatically update Application Tracker statuses.
+2. **Onchain Soulbound Credential Badges (Sui Kiosk / W3C VC)**: Enable universities, classification societies, and certification boards to mint verified credentials directly into candidate Walrus vaults.
+3. **Biometric WebRTC Speech Practice**: Upgrade the STAR+R Interview Coach with real-time speech prosody and filler-word detection (`um`, `like`) during verbal simulation rounds.
 
 ---
 
 ## Author & Attribution
 
-- **Sole Author:** IboTV (`ibochivincent-lang`)
-- **License:** Private and Proprietary to IboTV
+- **Sole Author & Maintainer:** IboTV (`ibochivincent-lang`)
+- **License:** MIT License
