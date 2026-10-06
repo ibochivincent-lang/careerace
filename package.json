@@ -1,6 +1,7 @@
 {
   "name": "careerace",
   "version": "0.1.0",
+  "description": "Universal Autonomous AI Career Copilot & Decentralized Vault — Built with Google Gemini & Walrus Protocol",
   "author": "IboTV (ibochivincent-lang)",
   "private": true,
   "scripts": {

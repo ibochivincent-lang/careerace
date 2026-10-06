@@ -1,5 +1,6 @@
 # Career Ace: Universal Autonomous AI Career Copilot & Decentralized Vault
 
+[![Built with Gemini](https://img.shields.io/badge/Built_with-Google_Gemini-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-careerace.online-10B981?style=for-the-badge&logo=googlechrome&logoColor=white)](https://careerace.online)
 [![Walrus Mainnet Certified](https://img.shields.io/badge/Walrus_Mainnet-15_Blobs_Certified-059669?style=for-the-badge&logo=blockchaindotcom&logoColor=white)](WALRUS_MAINNET_PROOF.md)
 [![Sui Network](https://img.shields.io/badge/Sui_Network-zkLogin_%26_SuiNS-4C82FB?style=for-the-badge&logo=sui&logoColor=white)](https://sui.io)
@@ -8,9 +9,10 @@
 [![Zero Mock Data](https://img.shields.io/badge/Zero_Mock_Data-100%25_Verified_Contacts-3B82F6?style=for-the-badge)](https://careerace.online)
 
 **Author:** IboTV (`ibochivincent-lang`) — Sole Author and Maintainer.  
+**AI Engine:** Built with Google Gemini (`@google/genai` & `@ai-sdk/google`).  
 **Production URL:** [https://careerace.online](https://careerace.online)  
 **Repository:** [https://github.com/ibochivincent-lang/careerace](https://github.com/ibochivincent-lang/careerace)  
-**Stack:** Next.js 16 (Turbopack), React 19, TypeScript 5 (Strict), Tailwind CSS v4, Walrus Protocol, Sui Blockchain, Mysten Labs SDK, Google zkLogin, SuiNS.
+**Stack:** Next.js 16 (Turbopack), React 19, TypeScript 5 (Strict), Tailwind CSS v4, Google Gemini AI Engine, Walrus Protocol, Sui Blockchain, Mysten Labs SDK, Google zkLogin, SuiNS.
 
 ---
 
@@ -262,7 +264,8 @@ npm run build
 
 ---
 
-## Author & Attribution
+## Author & AI Engine Attribution
 
+- **AI Engine:** Built with Google Gemini (`@google/genai` & `@ai-sdk/google`)
 - **Sole Author & Maintainer:** IboTV (`ibochivincent-lang`)
 - **License:** MIT License

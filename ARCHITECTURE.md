@@ -2,7 +2,7 @@
 
 Author: IboTV (`ibochivincent-lang`)
 Repository: [careerace](https://github.com/ibochivincent-lang/careerace)
-Stack: Next.js 16 (Turbopack), React 19, TypeScript 5, Tailwind CSS, Walrus Protocol, Sui Blockchain, Mysten Labs SDK
+Stack: Next.js 16 (Turbopack), React 19, TypeScript 5, Tailwind CSS, Google Gemini AI Engine, Walrus Protocol, Sui Blockchain, Mysten Labs SDK
 
 ---
 
