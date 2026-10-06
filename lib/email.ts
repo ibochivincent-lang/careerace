@@ -18,30 +18,30 @@ export interface SendEmailResult {
   success: boolean;
   id?: string;
   error?: string;
-  provider: "resend" | "mock_fallback";
+  provider: "resend";
 }
 
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
-  const apiKey = process.env.RESEND_API_KEY || "";
+  const apiKey = (process.env.RESEND_API_KEY || "").trim();
   const configuredFrom =
     options.from ||
     process.env.RESEND_FROM_EMAIL ||
     process.env.EMAIL_FROM ||
-    "Career Ace <notifications@careerace.online>"; // Verified custom domain on Resend
+    "Career Ace <onboarding@resend.dev>";
 
   if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY is not configured in environment. Running in safe mock fallback mode.");
+    console.warn("[email] RESEND_API_KEY is not configured in environment. Refusing to send mock data.");
     return {
-      success: true,
-      id: `mock_email_${Date.now()}`,
-      provider: "mock_fallback",
+      success: false,
+      error: "RESEND_API_KEY is not configured in environment. Configure your Resend API key in Vercel or .env.local to enable live transactional email delivery.",
+      provider: "resend",
     };
   }
 
   try {
     const toRecipients = Array.isArray(options.to) ? options.to : [options.to];
 
-    const response = await fetch("https://api.resend.com/emails", {
+    let response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -57,7 +57,31 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       }),
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // If domain verification failed and custom from was used, fallback retry once with onboarding@resend.dev
+    if (!response.ok && data?.message && typeof data.message === "string" && data.message.toLowerCase().includes("domain") && !configuredFrom.includes("onboarding@resend.dev")) {
+      console.warn("[email/resend] Custom domain not verified on Resend. Retrying via onboarding@resend.dev...");
+      const retryResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Career Ace <onboarding@resend.dev>",
+          to: toRecipients,
+          subject: options.subject,
+          html: options.html,
+          text: options.text || options.subject,
+          reply_to: options.reply_to,
+        }),
+      });
+      if (retryResponse.ok) {
+        data = await retryResponse.json();
+        response = retryResponse;
+      }
+    }
 
     if (!response.ok) {
       console.error("[email/resend] Failed to send email:", data);

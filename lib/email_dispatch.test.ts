@@ -16,20 +16,28 @@ test("Email Dispatch: generateMailtoUrl builds RFC-compliant URI", () => {
   assert.ok(url.includes("cc=alex.rivera%40example.com"));
 });
 
-test("Email Dispatch: sendApplicationDispatchEmail executes in safe fallback when RESEND_API_KEY is not set", async () => {
-  const result = await sendApplicationDispatchEmail({
-    to: "recruiting@stripe.com",
-    candidateName: "Marcus Adebayo",
-    candidateEmail: "marcus@example.com",
-    jobTitle: "Engineering Lead",
-    company: "Stripe",
-    coverLetter: "Cover letter text for Stripe engineering team.",
-    passportUrl: "https://careerace.online/p/MarcusAdebayo",
-    fitScore: 10,
-  });
+test("Email Dispatch: sendApplicationDispatchEmail returns actionable error when RESEND_API_KEY is not set", async () => {
+  const originalKey = process.env.RESEND_API_KEY;
+  delete process.env.RESEND_API_KEY;
 
-  assert.ok(result.success === true);
-  assert.ok(result.id?.includes("mock_email") || result.provider === "resend");
+  try {
+    const result = await sendApplicationDispatchEmail({
+      to: "recruiting@stripe.com",
+      candidateName: "Marcus Adebayo",
+      candidateEmail: "marcus@example.com",
+      jobTitle: "Engineering Lead",
+      company: "Stripe",
+      coverLetter: "Cover letter text for Stripe engineering team.",
+      passportUrl: "https://careerace.online/p/MarcusAdebayo",
+      fitScore: 10,
+    });
+
+    assert.equal(result.success, false);
+    assert.ok(result.error?.includes("RESEND_API_KEY"));
+    assert.equal(result.provider, "resend");
+  } finally {
+    if (originalKey) process.env.RESEND_API_KEY = originalKey;
+  }
 });
 
 test("Email Dispatch: generateEmlContent generates valid RFC 5322 multipart message with Walrus Blob ID", () => {
