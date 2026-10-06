@@ -289,7 +289,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     process.env.MAILERSEND_FROM_EMAIL ||
     process.env.BREVO_FROM_EMAIL ||
     process.env.EMAIL_FROM ||
-    "Career Ace <onboarding@resend.dev>";
+    "Career Ace <notifications@careerace.online>";
 
   const fromEmail =
     configuredFrom.includes("<")
