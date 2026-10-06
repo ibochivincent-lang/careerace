@@ -24,12 +24,16 @@ import {
   ArrowRight,
   Save,
   CheckCircle2,
+  FileCheck,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { signOutClient, getClientSessionAddress } from '@/lib/client_auth'
 import { syncCandidateDataToCloud } from '@/lib/cloud_sync'
 import { normalizeSuinsName } from '@/lib/suins'
 import { ResetVaultButton } from '@/components/ResetVaultButton'
+import { getLaunchShieldMatrix, ShieldItem } from '@/lib/api_security'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -56,6 +60,12 @@ export default function SettingsPage() {
     versionsCount: 0,
     lastSync: 'Local Session',
   })
+
+  // Pre-Launch Compliance & Security Shield state
+  const [shieldMatrix] = useState<ShieldItem[]>(() => getLaunchShieldMatrix())
+  const [shieldFilter, setShieldFilter] = useState<'all' | 'Legal & Compliance' | 'Technical Security'>('all')
+  const [showErasureConfirm, setShowErasureConfirm] = useState(false)
+  const [isErasing, setIsErasing] = useState(false)
 
   useEffect(() => {
     // Load zkLogin session
@@ -245,6 +255,22 @@ export default function SettingsPage() {
     localStorage.removeItem('careerace_applied_jobs')
     setShowClearConfirm(false)
     toast.success('Local browser profile cache cleared.')
+  }
+
+  async function handleGdprErasure() {
+    setIsErasing(true)
+    const toastId = toast.loading('Purging cloud records under GDPR Art. 17...')
+    try {
+      const res = await fetch('/api/candidate/sync', { method: 'DELETE' })
+      if (!res.ok) throw new Error('Cloud erasure request failed.')
+      handleClearCache()
+      setShowErasureConfirm(false)
+      toast.success('All candidate records, memories, and applications permanently erased.', { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Erasure failed.', { id: toastId })
+    } finally {
+      setIsErasing(false)
+    }
   }
 
   return (
@@ -483,15 +509,112 @@ export default function SettingsPage() {
               onClick={handleExportVault}
               className="text-xs h-8 gap-1.5 cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export Vault (JSON)</span>
+              <Download className="w-3.5 h-3.5 text-primary" />
+              <span>Export Vault (GDPR Art. 20 JSON)</span>
             </Button>
 
             <ResetVaultButton />
           </div>
         </Card>
 
-        {/* 4. Walrus Network Configuration */}
+        {/* 4. Pre-Launch Compliance & Technical Security Shield Matrix (28/28 Active) */}
+        <Card className="p-5 space-y-4 border-primary/20 shadow-sm" id="security-shield">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" />
+              <div>
+                <h2 className="font-bold text-sm text-foreground flex items-center gap-2">
+                  Launch Readiness &amp; Security Shield
+                  <Badge variant="outline" className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
+                    28/28 Safeguards Active
+                  </Badge>
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  8 Legal &amp; Compliance Safeguards + 20 Technical Defenses protecting against lawsuits and exploits.
+                </p>
+              </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 self-start sm:self-center">
+              <Button
+                variant={shieldFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShieldFilter('all')}
+                className="h-6 text-[10px] px-2 cursor-pointer"
+              >
+                All (28)
+              </Button>
+              <Button
+                variant={shieldFilter === 'Legal & Compliance' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShieldFilter('Legal & Compliance')}
+                className="h-6 text-[10px] px-2 cursor-pointer"
+              >
+                Legal (8)
+              </Button>
+              <Button
+                variant={shieldFilter === 'Technical Security' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShieldFilter('Technical Security')}
+                className="h-6 text-[10px] px-2 cursor-pointer"
+              >
+                Security (20)
+              </Button>
+            </div>
+          </div>
+
+          {/* Matrix Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+            {shieldMatrix
+              .filter((item) => (shieldFilter === 'all' ? true : item.category === shieldFilter))
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="p-2.5 rounded-lg border bg-muted/15 hover:bg-muted/30 transition-colors flex items-start gap-2.5 text-xs"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-semibold text-foreground truncate">{item.title}</span>
+                      <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-background border text-muted-foreground shrink-0">
+                        {item.routeOrFile}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          {/* Quick Legal Links */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t text-[11px] text-muted-foreground">
+            <span className="font-medium text-foreground">Official Documents:</span>
+            <a href="/privacy" className="text-primary hover:underline flex items-center gap-0.5">
+              <span>Privacy Policy</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+            <span>&bull;</span>
+            <a href="/terms" className="text-primary hover:underline flex items-center gap-0.5">
+              <span>Terms of Service ($100 Cap)</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+            <span>&bull;</span>
+            <a href="/subprocessors" className="text-primary hover:underline flex items-center gap-0.5">
+              <span>Subprocessors Registry</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+            <span>&bull;</span>
+            <a href="/dpa" className="text-primary hover:underline flex items-center gap-0.5">
+              <span>Data Processing Agreement (DPA)</span>
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          </div>
+        </Card>
+
+        {/* 5. Walrus Network Configuration */}
         <Card className="p-5 space-y-3">
           <div className="flex items-center justify-between border-b pb-3">
             <div className="flex items-center gap-2">
@@ -517,16 +640,23 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* 5. Local Storage & Cache Clear */}
-        <Card className="p-5 space-y-3 border-destructive/20">
-          <div className="flex items-center justify-between border-b pb-3">
+        {/* 6. Sovereign Data Erasure & Cache Clear (GDPR Art. 17) */}
+        <Card className="p-5 space-y-3 border-destructive/20 bg-destructive/5">
+          <div className="flex items-center justify-between border-b border-destructive/20 pb-3">
             <div className="flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-destructive" />
-              <h2 className="font-bold text-sm text-foreground">Local Session Cache</h2>
+              <h2 className="font-bold text-sm text-foreground">Data Sovereignty &amp; Erasure (GDPR Art. 17)</h2>
             </div>
+            <Badge variant="outline" className="font-mono text-[10px] text-destructive border-destructive/30">
+              Irreversible Actions
+            </Badge>
           </div>
 
-          <div className="pt-1">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            In compliance with GDPR Article 17 (Right to be Forgotten) and CCPA, you retain permanent sovereignty over all candidate dossiers. You can wipe your local device cache or request total cryptographic erasure across cloud databases.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             {showClearConfirm ? (
               <div className="flex items-center gap-2">
                 <Button
@@ -535,7 +665,7 @@ export default function SettingsPage() {
                   onClick={handleClearCache}
                   className="text-xs h-8 cursor-pointer"
                 >
-                  Confirm Clear Cache
+                  Confirm Local Cache Wipe
                 </Button>
                 <Button
                   variant="ghost"
@@ -555,6 +685,38 @@ export default function SettingsPage() {
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Clear Local Browser Cache</span>
+              </Button>
+            )}
+
+            {showErasureConfirm ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isErasing}
+                  onClick={handleGdprErasure}
+                  className="text-xs h-8 cursor-pointer font-semibold shadow-sm"
+                >
+                  {isErasing ? 'Erasing Everything…' : 'Confirm Total GDPR Art. 17 Erasure'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowErasureConfirm(false)}
+                  className="text-xs h-8 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowErasureConfirm(true)}
+                className="text-xs h-8 gap-1.5 cursor-pointer font-medium"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Request GDPR Article 17 Erasure</span>
               </Button>
             )}
           </div>

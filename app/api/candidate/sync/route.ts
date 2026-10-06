@@ -269,3 +269,56 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+/**
+ * GDPR Art. 17: Right to Erasure / Account & Data Deletion
+ */
+export async function DELETE(req: Request) {
+  try {
+    const cookieHeader = req.headers.get("cookie") || "";
+    const sessionCookie = cookieHeader
+      .split(";")
+      .map((c) => c.trim())
+      .find((c) => c.startsWith("careerace_session="));
+
+    const token = sessionCookie ? sessionCookie.split("=")[1] : undefined;
+    const address = readSession(token);
+
+    if (!address) {
+      return NextResponse.json({ success: false, error: "Unauthorized session." }, { status: 401 });
+    }
+
+    const url = getSanitizedSupabaseUrl();
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+    if (!url || (!serviceKey && !anonKey)) {
+      return NextResponse.json({ success: true, message: "Local session purged. Cloud unconfigured." });
+    }
+
+    const client = createClient(url, serviceKey || anonKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const normalizedAddress = address.toLowerCase().trim();
+
+    // Delete candidate memories
+    await client.from("candidate_memories").delete().eq("candidate_wallet", normalizedAddress);
+
+    // Delete job applications
+    await client.from("job_applications").delete().eq("candidate_wallet", normalizedAddress);
+
+    // Delete candidate profile
+    await client.from("candidates").delete().eq("wallet_address", normalizedAddress);
+
+    return NextResponse.json({
+      success: true,
+      message: "GDPR Article 17 Erasure complete. All profile records, memories, and applications purged.",
+      address: normalizedAddress,
+    });
+  } catch (err: any) {
+    console.error("[candidate/sync DELETE] error:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}
+

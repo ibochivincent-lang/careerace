@@ -93,11 +93,20 @@ export default function TermsOfServicePage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground">6. Limitation of Liability</h2>
+            <h2 className="text-lg font-semibold text-foreground">6. Limitation of Liability &amp; Liability Cap</h2>
             <p>
-              To the maximum extent permitted by applicable law, Career Ace and its creator IboTV shall not be liable for any
-              indirect, incidental, special, consequential, or punitive damages arising from your access to or inability to access
-              the service, including but not limited to loss of employment opportunities or data discrepancies.
+              To the maximum extent permitted by applicable law, CareerAce and its creator IboTV shall not be liable for any
+              indirect, incidental, special, exemplary, consequential, or punitive damages arising from your access to or inability to access
+              the service, including but not limited to loss of prospective employment, interview outcomes, or data discrepancies.
+            </p>
+            <p className="font-semibold text-foreground">
+              CAP ON AGGREGATE LIABILITY: In no event shall CareerAce&apos;s total aggregate liability arising out of or related to these Terms,
+              the platform, or any services provided exceed the greater of: (a) the total amount actually paid by you to CareerAce in the twelve (12)
+              months immediately preceding the event giving rise to liability, or (b) One Hundred United States Dollars ($100.00 USD).
+            </p>
+            <p>
+              This limitation applies regardless of the legal theory invoked—whether in contract, tort (including negligence), warranty, strict liability,
+              or otherwise—even if CareerAce has been advised of the possibility of such damages.
             </p>
           </section>
 

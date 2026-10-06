@@ -95,31 +95,25 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground">5. Third-Party Integrations</h2>
-            <p>Career Ace interfaces with select infrastructure providers to deliver its services:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>
-                <strong className="text-foreground">Google OAuth 2.0:</strong> Facilitates seamless identity verification
-                under Google OpenID Connect standards.
-              </li>
-              <li>
-                <strong className="text-foreground">Mysten Labs Enoki:</strong> Converts authorized Google OAuth tokens into
-                zero-knowledge Sui cryptographic keypairs.
-              </li>
-              <li>
-                <strong className="text-foreground">AI Inference Infrastructure:</strong> Processes resume text through secure,
-                stateless LLM inference endpoints with zero training retention on candidate data.
-              </li>
-            </ul>
+            <h2 className="text-lg font-semibold text-foreground">5. Third-Party Integrations &amp; Subprocessors</h2>
+            <p>
+              CareerAce partners with vetted infrastructure providers under strict Data Processing Addendums. A complete, regularly maintained list of authorized vendors, hosting locations, and data processing scopes is available on our dedicated <Link href="/subprocessors" className="text-primary underline">Subprocessors Registry</Link>.
+            </p>
+            <p>
+              For enterprise customers, recruiting teams, and corporate partners, our standard GDPR Article 28 <Link href="/dpa" className="text-primary underline">Data Processing Agreement (DPA)</Link> is incorporated by reference.
+            </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground">6. Data Deletion & User Rights</h2>
+            <h2 className="text-lg font-semibold text-foreground">6. Data Deletion, Export &amp; User Rights (GDPR &amp; CCPA)</h2>
             <p>
-              You maintain full sovereignty over your data at all times. You may clear your local session cache, revoke Google
-              OAuth access at any time via your Google Account Security portal, or purge your stored candidate vault directly
-              from the Career Ace settings panel.
+              Under GDPR (Articles 15–20) and CCPA, you retain absolute sovereignty over your career records:
             </p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li><strong className="text-foreground">Right to Portability &amp; Export:</strong> You can download a complete, machine-readable JSON archive of your parsed profile, tailored resumes, and application records directly in the CareerAce Settings panel.</li>
+              <li><strong className="text-foreground">Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> You can permanently wipe your local storage cache, clear cloud synchronization, and disconnect your Sui zkLogin session with one click in the Settings console.</li>
+              <li><strong className="text-foreground">Zero Tracking Before Consent:</strong> We enforce strict opt-in consent for non-essential cookies. You can update or reject non-essential cookies at any time via the Cookie Preferences banner.</li>
+            </ul>
           </section>
 
           <section className="space-y-3">

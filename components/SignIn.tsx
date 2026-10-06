@@ -72,6 +72,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [otpCode, setOtpCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -191,6 +192,9 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
     setError(null)
     setBusy(true)
     try {
+      if (!agreedToTerms) {
+        throw new Error('You must accept the Terms of Service, Privacy Policy, and Data Processing Agreement to create an account.')
+      }
       if (!username.trim()) throw new Error('Please enter a username.')
       if (username.trim().length < 3) throw new Error('Username must be at least 3 characters.')
       if (!/^[a-zA-Z0-9_-]+$/.test(username.trim()))
@@ -199,7 +203,7 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
         throw new Error('Please enter a valid email address.')
       if (!password || password.length < 8)
         throw new Error('Password must be at least 8 characters.')
-      setStatusMessage('Sending verification code\u2026')
+      setStatusMessage('Sending verification code…')
       const res = await fetch('/api/auth/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -670,7 +674,33 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
                     </button>
                   </div>
                 </div>
-                <button type="submit" disabled={busy || googleBusy} className={primaryBtn}>
+
+                <label className="flex items-start gap-2.5 text-xs text-muted-foreground cursor-pointer select-none py-1">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 rounded border-border text-primary focus:ring-primary h-4 w-4 shrink-0 cursor-pointer"
+                  />
+                  <span className="leading-snug">
+                    I agree to the{' '}
+                    <a href="/terms" target="_blank" className="text-primary underline hover:text-foreground">
+                      Terms of Service
+                    </a>
+                    ,{' '}
+                    <a href="/privacy" target="_blank" className="text-primary underline hover:text-foreground">
+                      Privacy Policy
+                    </a>
+                    , and{' '}
+                    <a href="/dpa" target="_blank" className="text-primary underline hover:text-foreground">
+                      DPA
+                    </a>
+                    .
+                  </span>
+                </label>
+
+                <button type="submit" disabled={busy || googleBusy || !agreedToTerms} className={primaryBtn}>
                   {busy ? <Spinner text={statusMessage || 'Sending code\u2026'} /> : <><span>Verification Code</span><ArrowRight className="size-4" /></>}
                 </button>
               </form>
@@ -775,10 +805,14 @@ export function SignIn({ initialAddress }: { initialAddress?: string | null }) {
         <ShieldCheck className="size-4 text-primary shrink-0" />
         <span>Sovereign vault. Encrypted records with zero cross-tenant leakage.</span>
       </div>
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground border-t border-border/50 pt-4">
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground border-t border-border/50 pt-4">
         <a href="/privacy" className="hover:text-foreground underline underline-offset-4">Privacy Policy</a>
-        <span>&bull;</span>
+        <span>·</span>
         <a href="/terms" className="hover:text-foreground underline underline-offset-4">Terms of Service</a>
+        <span>·</span>
+        <a href="/subprocessors" className="hover:text-foreground underline underline-offset-4">Subprocessors</a>
+        <span>·</span>
+        <a href="/dpa" className="hover:text-foreground underline underline-offset-4">DPA</a>
       </div>
     </div>
   )
