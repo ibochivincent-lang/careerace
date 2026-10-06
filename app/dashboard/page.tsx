@@ -1505,21 +1505,18 @@ function DashboardContent() {
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
-            {/* Clean Standard Header (Clutter badges removed) */}
+            {/* Clean Standard Header (Clutter badges and subtitle removed) */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/80">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  Autonomous career intelligence assistant &amp; decentralized sovereign profile vault.
-                </p>
               </div>
             </div>
 
             {/* 1. EXPANDED PRIMARY CAREERACE CHATBOT (FULL-WIDTH, HIGH VISIBILITY, ROOMY MESSAGES) */}
             <div className="w-full">
-              <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[680px] sm:h-[740px] lg:h-[780px] min-h-[580px]">
+              <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[740px] sm:h-[780px] lg:h-[820px] min-h-[580px]">
                 {/* Status Bar */}
                 <div className="p-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -1549,8 +1546,8 @@ function DashboardContent() {
                   </Badge>
                 </div>
 
-                {/* Chat Messages Feed (Scrolls internally to avoid page jumping when typing) */}
-                <div ref={overviewChatContainerRef} className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
+                {/* Chat Messages Feed (Expanded for high visibility so multiple responses fit comfortably) */}
+                <div ref={overviewChatContainerRef} className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-3.5 text-xs sm:text-sm">
                   {overviewChatMessages.map((msg, i) => (
                     <div
                       key={i}
@@ -1565,7 +1562,7 @@ function DashboardContent() {
                       )}
 
                       <div
-                        className={`max-w-[85%] sm:max-w-[80%] p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                        className={`max-w-[85%] sm:max-w-[80%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                           msg.role === 'assistant'
                             ? 'bg-muted/40 border border-border/80 text-foreground shadow-2xs'
                             : 'bg-emerald-600 text-white font-medium shadow-xs'
@@ -1577,7 +1574,7 @@ function DashboardContent() {
                   ))}
 
                   {isOverviewSending && (
-                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3.5 rounded-xl bg-muted/30 border border-border/60">
+                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/60">
                       <Bot className="w-4 h-4 text-emerald-500 animate-pulse" />
                       <span>Querying Walrus Memory...</span>
                     </div>
@@ -1585,26 +1582,32 @@ function DashboardContent() {
                   <div ref={overviewChatEndRef} />
                 </div>
 
-                {/* Streamlined Fine-Tuned Prompt Chips (8 curated action pills) */}
-                <div className="px-3.5 py-2.5 bg-muted/20 border-t border-border/60 flex flex-wrap gap-2 overflow-x-auto">
-                  {STREAMLINED_PROMPT_CHIPS.map((chip) => (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      onClick={() => handleSendOverviewMessage(chip.prompt)}
-                      disabled={isOverviewSending}
-                      title={chip.prompt}
-                      className="text-[11px] px-3 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 font-medium text-left cursor-pointer shadow-2xs group shrink-0"
-                    >
-                      <span className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{chip.label}</span>
-                      {chip.badge && (
-                        <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground font-mono">
-                          {chip.badge}
+                {/* Streamlined Prompt Chips (2x2 Grid: Recommended Jobs, Application Tracker, Daily Limits & Goals, Profile & Qualifications) */}
+                <div className="p-2 sm:p-2.5 bg-muted/20 border-t border-border/60">
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-2 max-w-3xl mx-auto">
+                    {STREAMLINED_PROMPT_CHIPS.slice(0, 4).map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => handleSendOverviewMessage(chip.prompt)}
+                        disabled={isOverviewSending}
+                        title={chip.prompt}
+                        className="text-[11px] sm:text-xs px-2.5 py-1.5 sm:py-2 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center justify-between gap-1.5 font-medium text-left cursor-pointer shadow-2xs group"
+                      >
+                        <span className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
+                          {chip.label}
                         </span>
-                      )}
-                      <ArrowRight className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-opacity" />
-                    </button>
-                  ))}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {chip.badge && (
+                            <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground font-mono hidden sm:inline-block">
+                              {chip.badge}
+                            </span>
+                          )}
+                          <ArrowRight className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-opacity" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Bottom Input (Zero attachment clutter - spacious & direct) */}
