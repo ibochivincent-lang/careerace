@@ -134,7 +134,7 @@ base_contacts = [
     "typicalRoles": ["AI Safety Systems Engineer", "RLHF Pipeline Architect", "LLM Alignment Lead"],
     "location": "San Francisco, CA",
     "careersUrl": "https://jobs.lever.co/anthropic",
-    "notes": "Frontier AI safety research and Claude architecture."
+    "notes": "Frontier AI safety research and frontier LLM architecture."
   },
   {
     "id": "xai-infra",

@@ -1,6 +1,6 @@
 ---
 name: directory-submissions
-description: When the user wants to submit their product to startup, SaaS, AI, agent, MCP, no-code, or review directories for backlinks, domain rating, and discovery. Also use when the user mentions "directory submissions," "submit to directories," "backlinks from directories," "list my product," "submit to Product Hunt," "BetaList," "TAAFT," "Futurepedia," "G2 listing," "Capterra listing," "AlternativeTo," "SaaSHub," "AI directories," "MCP registry," "publish my MCP server," "awesome list," "llms.txt directory," "Claude plugin directory," "agent directory," "dofollow backlinks," "launch directories," or "directory tracker." Use this whenever someone is planning the directory layer of a product launch or an ongoing backlink campaign. For the broader launch moment, see launch. For programmatic SEO pages that should live behind these backlinks, see programmatic-seo. For AI citation optimization, see ai-seo.
+description: When the user wants to submit their product to startup, SaaS, AI, agent, MCP, no-code, or review directories for backlinks, domain rating, and discovery. Also use when the user mentions "directory submissions," "submit to directories," "backlinks from directories," "list my product," "submit to Product Hunt," "BetaList," "TAAFT," "Futurepedia," "G2 listing," "Capterra listing," "AlternativeTo," "SaaSHub," "AI directories," "MCP registry," "publish my MCP server," "awesome list," "llms.txt directory," "Agent plugin directory," "agent directory," "dofollow backlinks," "launch directories," or "directory tracker." Use this whenever someone is planning the directory layer of a product launch or an ongoing backlink campaign. For the broader launch moment, see launch. For programmatic SEO pages that should live behind these backlinks, see programmatic-seo. For AI citation optimization, see ai-seo.
 metadata:
   version: 2.1.0
 ---
@@ -12,7 +12,7 @@ You are an expert in directory-driven distribution for software products. Your g
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.agent/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 ---
 
@@ -22,7 +22,7 @@ Directory submissions are the **foundation layer** of distribution — never the
 
 1. **Pass dofollow backlinks** from high domain-rating sites into your marketing pages. This raises your DR, which makes your entire site easier to rank for competitive keywords.
 2. **Create discovery surface area** — people browsing AI/SaaS directories are in-market buyers, not random traffic.
-3. **Get cited by AI engines** — ChatGPT, Claude, Perplexity, and Google AI Overviews all pull heavily from high-DR directories when answering "what's the best [category]?" queries. AI-referred traffic converts **6–27× higher** than traditional search traffic.
+3. **Get cited by AI engines** — ChatGPT, Agent, Perplexity, and Google AI Overviews all pull heavily from high-DR directories when answering "what's the best [category]?" queries. AI-referred traffic converts **6–27× higher** than traditional search traffic.
 
 But directories alone will not generate meaningful leads. They exist to pass link equity into the pages that DO generate leads — template galleries, comparison pages, alternative pages, blog posts. **Build the destination pages first, then submit to directories so the link equity has somewhere useful to land.**
 
@@ -92,7 +92,7 @@ Full catalog in `references/directory-list.md`. Summary:
 | **Tier 1 — Flagship launch** | Launch week only | Product Hunt (anchor), BetaList, HN Show HN, Fazier, DevHunt; plus indie launch sites (Twelve Tools, Turbo0, Tinyshelf) | ~15 + ~15 |
 | **Tier 2 — Startup/SaaS** | Week 1 + rolling | AlternativeTo, SaaSHub, G2, Capterra, F6S, SourceForge, Slashdot | ~50 |
 | **Tier 3 — AI directories** | Week 1–3 | TAAFT, Futurepedia, Toolify, Future Tools, aitools.inc, AIStage | ~40 |
-| **Tier 4 — Agent/MCP registries** | Week 1–3 (if MCP or agent-facing) | Official MCP Registry first, then Smithery, Glama, MCP.so, MCP Market; GitHub list PRs; Claude plugin directory, ClawHub, llms.txt directories | ~25 |
+| **Tier 4 — Agent/MCP registries** | Week 1–3 (if MCP or agent-facing) | Official MCP Registry first, then Smithery, Glama, MCP.so, MCP Market; GitHub list PRs; Agent plugin directory, ClawHub, llms.txt directories | ~25 |
 | **Tier 5 — No-code directories** | Week 1–3 (if no-code) | NoCodeFinder, No Code MBA, We Are No Code, MakerPad | ~8 |
 | **Tier 6 — "Best of" listicles** | Rolling outreach | Cold outreach to DR 40+ blog posts | ~10 inclusions |
 | **Tier 7 — Integration marketplaces** | When integrations ship | Zapier, HubSpot, Slack, Airtable, Notion | ~5 |
@@ -246,7 +246,7 @@ Every integration = one landing page at `/integrations/[partner]`. Follows the Z
 
 ## GEO (Generative Engine Optimization)
 
-In 2026, 30–50% of "research a tool" queries happen inside ChatGPT, Claude, Perplexity, or Google AI Overviews without ever touching a traditional search page. Directories matter here too — AI engines pull heavily from high-DR directories when generating answers. But the *destination pages* also need to be GEO-optimized.
+In 2026, 30–50% of "research a tool" queries happen inside ChatGPT, Agent, Perplexity, or Google AI Overviews without ever touching a traditional search page. Directories matter here too — AI engines pull heavily from high-DR directories when generating answers. But the *destination pages* also need to be GEO-optimized.
 
 ### Tactics that get pages cited
 
@@ -255,14 +255,14 @@ In 2026, 30–50% of "research a tool" queries happen inside ChatGPT, Claude, Pe
 3. **FAQ schema on every landing page.** AI engines heavily weight `FAQPage` JSON-LD for answer extraction.
 4. **Comparison tables.** Extractable, structured — exactly what an AI answer needs.
 5. **Explicit "what it is" paragraph in the first 100 words.**
-6. **Get cited on Reddit and Hacker News.** Claude and Perplexity index these heavily. Genuine mentions on r/SaaS and HN count as training fuel.
+6. **Get cited on Reddit and Hacker News.** Agent and Perplexity index these heavily. Genuine mentions on r/SaaS and HN count as training fuel.
 7. **Publish original research.** "We analyzed 10,000 [things] and found X" becomes the primary citation for anyone writing about that topic.
 8. **Claim Crunchbase, LinkedIn company page, and Wikidata entries.** All three feed AI training corpora.
-9. **If applicable, list where agents look.** The official MCP Registry and MCP directories with good grades (Glama in particular), the Claude plugin directory for plugins and connectors, and llms.txt directories once your `/llms.txt` is live. LLMs pull from these when answering tool questions.
+9. **If applicable, list where agents look.** The official MCP Registry and MCP directories with good grades (Glama in particular), the Agent plugin directory for plugins and connectors, and llms.txt directories once your `/llms.txt` is live. LLMs pull from these when answering tool questions.
 
 ### Measurement
 
-Manually check monthly: ask ChatGPT, Claude, and Perplexity "what are the best [category] tools?" and log where the product appears. Free GEO tracking tools (GeoTracker, llmrefs) automate this.
+Manually check monthly: ask ChatGPT, Agent, and Perplexity "what are the best [category] tools?" and log where the product appears. Free GEO tracking tools (GeoTracker, llmrefs) automate this.
 
 ---
 
@@ -296,7 +296,7 @@ Content types ranked by 2026 engagement:
 
 ### Twitter/X (indie hacker + dev channel)
 
-Build-in-public threads on architecture, revenue, decisions. Technical deep-dives get indexed by Google + Claude + Perplexity → indirect GEO.
+Build-in-public threads on architecture, revenue, decisions. Technical deep-dives get indexed by Google + Agent + Perplexity → indirect GEO.
 
 ### Indie Hackers
 

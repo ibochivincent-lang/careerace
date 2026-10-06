@@ -1,6 +1,6 @@
 # Listening Sources — Template
 
-Copy this file to `.agents/listening-sources.md` in your project (or `.claude/listening-sources.md`) and fill in the brackets. Claude reads it when running the [listening workflow](listening.md).
+Copy this file to `.agents/listening-sources.md` in your project (or `.agent/listening-sources.md`) and fill in the brackets. Agent reads it when running the [listening workflow](listening.md).
 
 Delete sections you don't use. Keep this short and current — stale sources are worse than no sources.
 
@@ -53,7 +53,7 @@ Engage with **every** post from these accounts when relevant. Keep this list to 
 
 ## Keywords (intent signals)
 
-Search across all platforms. Claude runs these through Reddit, HN, Bluesky on the [daily loop](listening.md#the-daily-triage-loop).
+Search across all platforms. Agent runs these through Reddit, HN, Bluesky on the [daily loop](listening.md#the-daily-triage-loop).
 
 ### High-intent (someone shopping or switching)
 - `"alternative to [competitor]"`
@@ -91,7 +91,7 @@ Pulled via Reddit JSON API on the daily loop.
 
 ## Saved Searches (manual / browser-driven)
 
-URLs Claude opens via dev-browser to scan.
+URLs Agent opens via dev-browser to scan.
 
 ### LinkedIn Sales Navigator
 - [Search name] — `https://linkedin.com/sales/search/people?...`
@@ -114,7 +114,7 @@ Save yourself the regret.
 
 ---
 
-## Notes for Claude
+## Notes for Agent
 
 - When asked for "today's top 10," output in the format defined in [listening.md](listening.md#the-daily-triage-loop)
 - For LinkedIn and X, use dev-browser with the persistent session (user is logged in)

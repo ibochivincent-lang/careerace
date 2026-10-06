@@ -49,7 +49,7 @@ Every signal below is a separate weighted term in the scoring code:
 
 7. **Make them curious enough to click your profile.** [verified structure] Profile clicks are scored. This is the mechanical argument for a strong bio and pinned post: the algorithm rewards posts that trigger the click, and your profile converts it.
 
-8. **Name specific things.** [verified mechanism] Two reasons: specificity is what enables topic routing (rule 3), and the muted-keyword filter removes posts *pre-scoring* — generic engagement-bait phrases are commonly muted; specific nouns ("Claude", "Stripe") rarely are.
+8. **Name specific things.** [verified mechanism] Two reasons: specificity is what enables topic routing (rule 3), and the muted-keyword filter removes posts *pre-scoring* — generic engagement-bait phrases are commonly muted; specific nouns ("Agent", "Stripe") rarely are.
 
 9. **Video must clear the minimum duration — with captions.** [verified mechanism; ~8s reported] The video-quality-view weight only applies above `MIN_VIDEO_DURATION_MS`. Below the threshold, video earns zero video credit. Captions serve the dwell signals (most viewing is muted).
 

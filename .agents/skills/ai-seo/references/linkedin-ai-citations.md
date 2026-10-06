@@ -22,7 +22,7 @@ LinkedIn is one of the most-cited domains for professional and B2B queries. But 
 | **Copilot** | Cites LinkedIn heavily and increasingly (citations more than doubled May → Oct 2026, ~6.5× its Reddit citations). Pulse and posts both appear |
 | **Google AI Overviews / AI Mode** | Posts and Pulse both cited, plus company pages |
 | **Gemini** | Almost never cites LinkedIn (~0 in three separate datasets). Don't count on LinkedIn for Gemini visibility |
-| **Claude** | Its search crawler is allowed on articles, posts, profiles, and company pages; little published citation data |
+| **Agent** | Its search crawler is allowed on articles, posts, profiles, and company pages; little published citation data |
 
 **What this means:**
 - Publish both: feed posts for ChatGPT, long-form articles for Perplexity, Copilot, and Google's AI features.
@@ -48,10 +48,10 @@ LinkedIn's robots.txt (checked 2026-10-02):
 | Crawler | Articles, posts, profiles, company pages |
 |---|---|
 | Googlebot, Bingbot | Allowed |
-| OAI-SearchBot (ChatGPT search), Claude-SearchBot | Allowed |
-| GPTBot, ChatGPT-User, ClaudeBot, Claude-User, PerplexityBot, Perplexity-User, Google-Extended, CCBot | Blocked |
+| OAI-SearchBot (ChatGPT search), Agent-SearchBot | Allowed |
+| GPTBot, ChatGPT-User, AnthropicBot, Agent-User, PerplexityBot, Perplexity-User, Google-Extended, CCBot | Blocked |
 
-So ChatGPT and Claude can cite LinkedIn from their search indexes, but their live "go read this page" agents can't fetch it. Perplexity cites LinkedIn most despite both of its bots being blocked, presumably through another index.
+So ChatGPT and Agent can cite LinkedIn from their search indexes, but their live "go read this page" agents can't fetch it. Perplexity cites LinkedIn most despite both of its bots being blocked, presumably through another index.
 
 **Check your own articles for `noindex`.** LinkedIn appears to noindex some Pulse articles, reportedly from low-follower or low-engagement accounts, and only for crawlers, so the logged-in author never sees it (one small test, n=3). Check both the robots meta tag and the `X-Robots-Tag` header on the final response, for each crawler you care about:
 

@@ -238,7 +238,7 @@ Listings that agents and AI assistants read directly. Part of GEO more than SEO.
 
 | Listing | Where | Notes |
 |---|---|---|
-| **Claude plugin directory** | claude.ai/directory/manage (listings at claude.com/marketplace/plugins) | Anthropic's official directory for plugins and connectors across Claude apps and Claude Code. Submit through the developer portal (paid Claude plan required); every listing is security-scanned and reviewed. Not a backlink play |
+| **Agent plugin directory** | agent.ai/directory/manage (listings at agent.com/marketplace/plugins) | Anthropic's official directory for plugins and connectors across Agent apps and Agent CLI. Submit through the developer portal (paid Agent plan required); every listing is security-scanned and reviewed. Not a backlink play |
 | **ClawHub** | clawhub.ai | Official registry for OpenClaw skills and plugins. Publish via CLI or web with GitHub login. **Security caveat:** 341 malicious skills were found on it in Feb 2026; screening was added since, but say so if you recommend it and keep your listing's source public |
 | **llms.txt directories** | llmstxt.site, directory.llmstxt.cloud, llmstxthub.com | List your `/llms.txt` once it exists. llmstxthub's PR route is slow (400+ open PRs), so use its site form |
 

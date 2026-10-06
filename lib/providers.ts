@@ -62,10 +62,10 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
   anthropic: {
     label: "Anthropic",
     env: "ANTHROPIC_API_KEY",
-    chat: "claude-sonnet-5",
+    chat: "anthropic-sonnet-4-5",
     console: "https://console.anthropic.com/settings/keys",
     hint: "sk-ant-...",
-    models: ["claude-sonnet-5", "claude-haiku-4-5", "claude-opus-5"],
+    models: ["anthropic-sonnet-4-5", "anthropic-haiku-4-5", "anthropic-opus-4-5"],
   },
   openai: {
     label: "OpenAI",

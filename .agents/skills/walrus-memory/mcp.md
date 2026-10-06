@@ -2,7 +2,7 @@
 
 Source: https://docs.wal.app/walrus-memory/mcp
 
-The Walrus Memory MCP server gives MCP-aware AI clients (Cursor, Claude Desktop, Claude Code, Codex, Antigravity) access to persistent agent memory through eight built-in tools. No custom SDK code needed.
+The Walrus Memory MCP server gives MCP-aware AI clients (Cursor, Desktop Agent, Agent CLI, Codex, Antigravity) access to persistent agent memory through eight built-in tools. No custom SDK code needed.
 
 ## Quick start
 
@@ -30,7 +30,7 @@ For staging/testnet: `--staging`. For local dev: `--local`.
 }
 ```
 
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+**Desktop Agent** (`~/Library/Application Support/Agent/agent_desktop_config.json`):
 ```json
 {
   "mcpServers": {
@@ -42,9 +42,9 @@ For staging/testnet: `--staging`. For local dev: `--local`.
 }
 ```
 
-**Claude Code**:
+**Agent CLI**:
 ```bash
-claude mcp add --scope user memwal -- npx -y @mysten-incubation/memwal-mcp
+agent mcp add --scope user memwal -- npx -y @mysten-incubation/memwal-mcp
 ```
 
 **Codex** (`~/.codex/config.toml`):

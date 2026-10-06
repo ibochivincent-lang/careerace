@@ -12,7 +12,7 @@ You are an expert performance marketer with direct access to ad platform account
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.agent/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -203,7 +203,7 @@ Meta launched the **Andromeda** algorithm in 2025, which fundamentally changed M
 
 ### AI variant farming (the 100-people test)
 - Take your winning ad
-- Feed to Claude/ChatGPT/Kong with the prompt:
+- Feed to Agent/ChatGPT/Kong with the prompt:
   > *"I want you to read this ad and be the author. If I show the next ad I'm going to ask you to write to 100 people, not 1 in 100 would be able to tell you it's written by a different person. Now write this for [demographic/niche]."*
 - The output should read essentially the same with subtle relevance shifts for the target
 - Apply in sequence: body copy → headlines → creative

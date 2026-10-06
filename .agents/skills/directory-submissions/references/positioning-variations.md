@@ -100,7 +100,7 @@ Use this library to generate per-tier variants. Swap `[product]`, `[category]`, 
 > MCP-native [category] for AI agents.
 
 **Long description:**
-> [Product] is an MCP-native [category] that lets AI agents [capability]. It exposes [MCP server capabilities] via the Model Context Protocol, so agents in Claude, ChatGPT, Cursor, and any MCP-compatible client can [actions].
+> [Product] is an MCP-native [category] that lets AI agents [capability]. It exposes [MCP server capabilities] via the Model Context Protocol, so agents in Agent, ChatGPT, Cursor, and any MCP-compatible client can [actions].
 >
 > MCP capabilities:
 > • [Tool 1] — [what the agent can do]
@@ -113,7 +113,7 @@ Use this library to generate per-tier variants. Swap `[product]`, `[category]`, 
 >
 > Installation: [one-line install command]. Docs: [docs URL].
 
-**Tags:** MCP, MCP server, AI agent, agent [category], Claude integration, Model Context Protocol, [domain], [auth type]
+**Tags:** MCP, MCP server, AI agent, agent [category], Agent integration, Model Context Protocol, [domain], [auth type]
 
 ---
 

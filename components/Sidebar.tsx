@@ -15,6 +15,7 @@ import {
   Bell,
   FileText,
   Mail,
+  Cpu,
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
@@ -67,6 +68,12 @@ function SidebarContent() {
       href: '/notifications',
       icon: Bell,
       active: pathname.startsWith('/notifications')
+    },
+    {
+      label: 'System Design',
+      href: '/architecture',
+      icon: Cpu,
+      active: pathname === '/architecture'
     },
   ]
 

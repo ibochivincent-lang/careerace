@@ -742,7 +742,7 @@ const VERIFIED_INITIAL_JOBS: JobListing[] = [
     roleCategory: 'AI & Autonomous Systems',
     postedDate: 'Today',
     apply_url: 'https://www.anthropic.com/careers',
-    description: 'Develop mechanistic interpretability tooling, RLHF safety evaluation benchmarks, and automated constitutional red-teaming pipelines for Claude models.',
+    description: 'Develop mechanistic interpretability tooling, RLHF safety evaluation benchmarks, and automated constitutional red-teaming pipelines for frontier LLM models.',
   },
   {
     id: 'boston-robotics-1',

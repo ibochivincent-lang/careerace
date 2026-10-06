@@ -2,7 +2,7 @@
 
 **Author:** IboTV (`ibochivincent-lang`) — Sole Author and Maintainer.
 
-Copy the guidelines below into your agent's system prompt (Claude Code `CLAUDE.md`, Cursor rules, OpenAI `system` message, or any AI assistant).
+Copy the guidelines below into your agent's system prompt (Agent `AGENTS.md`, Cursor rules, OpenAI `system` message, or any AI assistant).
 
 ---8<--- PROMPT STARTS ---8<---
 

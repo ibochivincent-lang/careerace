@@ -1,4 +1,4 @@
-# Claude Hopkins (1866–1932)
+# C. Hopkins (1866–1932)
 
 **Lens:** Advertising is salesmanship multiplied and measured — every claim, headline, and dollar must justify itself with traceable response data.
 

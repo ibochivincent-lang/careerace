@@ -27,11 +27,11 @@
   },
   {
     "id": "memory-mcp-setup",
-    "prompt": "How do I set up Walrus Memory MCP in Claude Code?",
-    "expected_output": "Run npx login command, then claude mcp add. Shows the exact command and explains the auth flow.",
+    "prompt": "How do I set up Walrus Memory MCP in Agent CLI?",
+    "expected_output": "Run npx login command, then agent mcp add. Shows the exact command and explains the auth flow.",
     "expectations": [
       "Shows the login command: npx -y @mysten-incubation/memwal-mcp login --prod",
-      "Shows the Claude Code command: claude mcp add --scope user memwal -- npx -y @mysten-incubation/memwal-mcp",
+      "Shows the Agent CLI command: agent mcp add --scope user memwal -- npx -y @mysten-incubation/memwal-mcp",
       "Mentions restarting the client after adding",
       "Mentions the six available MCP tools (memwal_remember, memwal_recall, etc.)"
     ],

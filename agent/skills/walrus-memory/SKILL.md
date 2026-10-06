@@ -4,7 +4,7 @@ description: >
   Walrus Memory (MemWal) — persistent, portable, encrypted memory for AI agents.
   Use when the user needs to give an AI agent persistent memory across sessions
   and apps, integrate the @mysten-incubation/memwal TypeScript SDK or Python
-  memwal SDK, set up the Walrus Memory MCP server for Cursor/Claude/Codex,
+  memwal SDK, set up the Walrus Memory MCP server for Cursor/Agent/Codex,
   configure remember/recall/analyze/restore operations, manage memory spaces and
   namespaces, set up delegate keys and accounts, self-host the relayer, or use
   withMemWal AI middleware (Vercel AI SDK, LangChain, OpenAI SDK). Also use when
@@ -43,8 +43,8 @@ Common integration mistakes:
 
 ### mcp — MCP Server Reference
 **Path:** `mcp.md`
-**Load when:** setting up Walrus Memory in Cursor, Claude Desktop, Claude Code, Codex, or another MCP client. Also when configuring the memwal-mcp package, debugging login/auth issues, or using Streamable HTTP transport.
-**Covers:** Installation via npx, login flow, client configs (Cursor, Claude Desktop, Claude Code, Codex), eight MCP tools, auth-required mode, default namespace, environment switching, Streamable HTTP setup.
+**Load when:** setting up Walrus Memory in Cursor, Desktop Agent, Agent CLI, Codex, or another MCP client. Also when configuring the memwal-mcp package, debugging login/auth issues, or using Streamable HTTP transport.
+**Covers:** Installation via npx, login flow, client configs (Cursor, Desktop Agent, Agent CLI, Codex), eight MCP tools, auth-required mode, default namespace, environment switching, Streamable HTTP setup.
 
 ---
 
@@ -65,7 +65,7 @@ Common integration mistakes:
 |------|------|
 | Integrate memory in a TypeScript app | `ts-sdk.md` |
 | Integrate memory in a Python app | `python-sdk.md` |
-| Set up MCP for Cursor / Claude / Codex | `mcp.md` |
+| Set up MCP for Cursor / Agent / Codex | `mcp.md` |
 | Understand what Walrus Memory is | Skill Content below |
 | Choose an integration path | Skill Content below |
 | Manage accounts and delegate keys | `ts-sdk.md` (account management section) |
@@ -120,7 +120,7 @@ Six components:
 | **MemWalManual** | You need client-side encryption. Relayer never sees plaintext. |
 | **withMemWal (AI middleware)** | You use Vercel AI SDK and want auto-recall + auto-save. |
 | **Python SDK** | Python apps. Same relayer, same auth, mirrors TypeScript API. |
-| **MCP server** | Give Cursor/Claude/Codex memory via MCP tools. No custom code. |
+| **MCP server** | Give Cursor/Agent/Codex memory via MCP tools. No custom code. |
 | **Self-hosted relayer** | Full control of the trust boundary. Your infra, your credentials. |
 
 ### Account setup

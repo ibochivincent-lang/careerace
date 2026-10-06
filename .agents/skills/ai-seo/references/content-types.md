@@ -1,6 +1,6 @@
 # AI SEO by Content Type
 
-Tactical guidance for optimizing specific content types for AI search citation. These tactics work for non-Google AI engines (ChatGPT, Claude, Perplexity, Copilot) and don't hurt Google AI Overviews / AI Mode.
+Tactical guidance for optimizing specific content types for AI search citation. These tactics work for non-Google AI engines (ChatGPT, Agent, Perplexity, Copilot) and don't hurt Google AI Overviews / AI Mode.
 
 For the cross-cutting strategy, see [SKILL.md](../SKILL.md).
 

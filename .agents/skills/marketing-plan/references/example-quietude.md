@@ -146,7 +146,7 @@ This is what we're starting from — team, budget, what's already in motion, wha
 | ~5 inbound ambassadors waiting | Inbound | Referral program ready to launch — no demand-gen needed for v1. |
 | Aurora B2B install (~€250K, July deadline) | In-flight | First flagship venue. Reference case once installed. |
 | Notion Knowledge Directory | Live | Internal context. |
-| Customer.io MCP (Claude integration) | Validated on kickoff | Non-technical team can ship flows independently. |
+| Customer.io MCP (Agent integration) | Validated on kickoff | Non-technical team can ship flows independently. |
 
 ### What's in-flight (drafted but not shipped)
 
@@ -640,16 +640,16 @@ The fCMO's job is to:
 |---|---|---|
 | **Acquisition** | App Store Connect (manual), Shopify, GA4 (in progress), Notion | Ahrefs API, DataForSEO API, Typefully MCP, GitHub MCP (`quietude-promo`), `agent-browser`, `defuddle` |
 | **Activation** | App Store Connect, Customer.io, Shopify | App Store Connect (via `dev-browser` for screenshot automation), Figma / Pencil MCP, GitHub MCP (`quietude-app` app repo), Stripe MCP |
-| **Retention** | **Customer.io (with Claude MCP — validated on kickoff)**, Stripe, Shopify | Customer.io MCP, Stripe MCP, GA4 MCP |
+| **Retention** | **Customer.io (with Agent MCP — validated on kickoff)**, Stripe, Shopify | Customer.io MCP, Stripe MCP, GA4 MCP |
 | **Referral** | Dub.co, Stripe | Dub.co, Stripe MCP, GitHub MCP (per-ambassador landing pages), Customer.io MCP |
 | **Revenue** | Stripe, Shopify, Customer.io | Stripe MCP, Shopify, GA4 MCP, Notion |
 | **Cross-cutting** | Notion, GitHub (`quietude-context`) | Notion, GitHub MCP, `defuddle`, `obsidian-cli` (for Casey's working notes) |
 
 ### The Customer.io MCP unlock (concrete example)
 
-Per kickoff call: *"Built live on call — abandoned-cart flow drafted using Customer.io's Claude MCP. Validated that non-technical team can use the skill pattern independently."*
+Per kickoff call: *"Built live on call — abandoned-cart flow drafted using Customer.io's Agent MCP. Validated that non-technical team can use the skill pattern independently."*
 
-This is the operational proof that the stack works. Alex, who is not a developer, drafted a working lifecycle flow with Claude + Customer.io MCP in real time on a kickoff call. The same pattern applies to: Flow 4 ship (lapsed user re-engagement), subscription center build, win-back campaign, eye mask gifting flow, ambassador lifecycle. The fCMO's role becomes orchestration + brand-voice QA, not hand-cranking each email.
+This is the operational proof that the stack works. Alex, who is not a developer, drafted a working lifecycle flow with Agent + Customer.io MCP in real time on a kickoff call. The same pattern applies to: Flow 4 ship (lapsed user re-engagement), subscription center build, win-back campaign, eye mask gifting flow, ambassador lifecycle. The fCMO's role becomes orchestration + brand-voice QA, not hand-cranking each email.
 
 ### Capability unlocks by funding stage
 

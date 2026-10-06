@@ -59,7 +59,7 @@
     {
       "id": 5,
       "prompt": "Do we have a product marketing context set up? I want to make sure the other marketing skills have context about our product.",
-      "expected_output": "Should check for .agents/product-marketing.md (and the older .claude/product-marketing.md location). Should report whether it exists and summarize its contents if found. If it doesn't exist, should offer to create one and explain why it's valuable (other skills like copywriting, cro, seo-audit check for it first). Should explain how other skills use this context document.",
+      "expected_output": "Should check for .agents/product-marketing.md (and the older .agent/product-marketing.md location). Should report whether it exists and summarize its contents if found. If it doesn't exist, should offer to create one and explain why it's valuable (other skills like copywriting, cro, seo-audit check for it first). Should explain how other skills use this context document.",
       "assertions": [
         "Checks both file locations",
         "Reports whether context doc exists",

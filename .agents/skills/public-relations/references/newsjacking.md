@@ -34,7 +34,7 @@ Injecting your POV into a story that's already trending. Done well: free distrib
 
 ## The Loop
 
-A repeatable workflow Claude can run on demand or daily.
+A repeatable workflow Agent can run on demand or daily.
 
 1. **Detect** — surface trending stories in your category (see [Sources & Tooling](#sources--tooling))
 2. **Score** — apply the [newsworthiness rubric](#newsworthiness-scoring-rubric); drop anything below threshold
@@ -43,7 +43,7 @@ A repeatable workflow Claude can run on demand or daily.
 5. **Pitch** — draft a tight pitch to 3–5 journalists who cover this beat (see [journalist-pitching.md](journalist-pitching.md))
 6. **Post** — also publish on your blog, LinkedIn, X — it builds the trail journalists check before quoting you
 
-Output format Claude should produce:
+Output format Agent should produce:
 
 ```
 NEWSJACK CANDIDATE — 2026-06-10

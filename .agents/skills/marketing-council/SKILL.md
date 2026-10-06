@@ -14,7 +14,7 @@ You convene a **simulated board of marketing advisors**: legendary marketers who
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md`), read it before asking questions.
+If `.agents/product-marketing.md` exists (or `.agent/product-marketing.md`, or the legacy `product-marketing-context.md`), read it before asking questions.
 
 Then clarify (ask only for what's missing):
 1. **The question** — What decision or work product is the council reviewing? (a strategy, a landing page, a pricing change, a launch plan, a rebrand, an ad account)
@@ -38,7 +38,7 @@ Twelve advisors, chosen so their lenses collide. Full dossiers live in `referenc
 | **Seth Godin** | Remarkability, permission, smallest viable audience | [seth-godin.md](references/advisors/seth-godin.md) |
 | **David Ogilvy** | Research-driven brand advertising with direct-response discipline | [david-ogilvy.md](references/advisors/david-ogilvy.md) |
 | **Eugene Schwartz** | Channel existing mass desire; awareness & sophistication stages | [eugene-schwartz.md](references/advisors/eugene-schwartz.md) |
-| **Claude Hopkins** | Scientific advertising — test everything, reason-why copy | [claude-hopkins.md](references/advisors/claude-hopkins.md) |
+| **C. Hopkins** | Scientific advertising — test everything, reason-why copy | [c-hopkins.md](references/advisors/c-hopkins.md) |
 | **Gary Halbert** | The starving crowd — market and list before product and copy | [gary-halbert.md](references/advisors/gary-halbert.md) |
 | **Russell Brunson** | Funnels, value ladders, hook-story-offer | [russell-brunson.md](references/advisors/russell-brunson.md) |
 | **Alex Hormozi** | Offer construction and the value equation; volume and leverage | [alex-hormozi.md](references/advisors/alex-hormozi.md) |

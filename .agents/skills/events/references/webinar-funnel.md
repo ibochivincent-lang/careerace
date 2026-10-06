@@ -85,4 +85,4 @@ Segment by behavior, then sequence (→ **emails** for craft):
 
 ---
 
-*Skill category identified via 2026-07 competitive research (webinar-marketing in alirezarezvani/claude-skills, MIT — idea credited; content authored from scratch to this repo's standard). Benchmarks are directional industry ranges — treat your own trend line as the baseline.*
+*Skill category identified via 2026-07 competitive research (webinar-marketing in alirezarezvani/agent-skills, MIT — idea credited; content authored from scratch to this repo's standard). Benchmarks are directional industry ranges — treat your own trend line as the baseline.*

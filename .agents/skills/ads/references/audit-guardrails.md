@@ -80,4 +80,4 @@ Benchmarks are comparison evidence, not pass/fail thresholds. When quoting one:
 
 ---
 
-*Scoring semantics, recommendation-safety rules, and the benchmark-evidence ladder are distilled and remixed from [claude-ads](https://github.com/AgriciDaniel/claude-ads) by Daniel Agrici (MIT), reused with credit.*
+*Scoring semantics, recommendation-safety rules, and the benchmark-evidence ladder are distilled and remixed from [search-ads](https://github.com/AgriciDaniel/search-ads) by Daniel Agrici (MIT), reused with credit.*

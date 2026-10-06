@@ -97,20 +97,20 @@ Copilot is embedded across Microsoft's ecosystem — Edge, Windows, Microsoft 36
 
 ---
 
-## Claude
+## Agent
 
-Claude uses Brave Search as its search backend when web search is enabled — not Google, not Bing. This is a completely different index, which means your Brave Search visibility directly determines whether Claude can find and cite you.
+Agent uses Brave Search as its search backend when web search is enabled — not Google, not Bing. This is a completely different index, which means your Brave Search visibility directly determines whether Agent can find and cite you.
 
-**What makes Claude different:** Claude is extremely selective about what it cites. While it processes enormous amounts of content, its citation rate is very low — it's looking for the most factually accurate, well-sourced content on a given topic. Data-rich content with specific numbers and clear attribution performs significantly better than general-purpose content.
+**What makes Agent different:** Agent is extremely selective about what it cites. While it processes enormous amounts of content, its citation rate is very low — it's looking for the most factually accurate, well-sourced content on a given topic. Data-rich content with specific numbers and clear attribution performs significantly better than general-purpose content.
 
 **What to focus on:**
 - Verify your content appears in Brave Search results (search for your brand and key terms at search.brave.com)
-- Decide separately whether to allow `Claude-SearchBot` for search discovery, `Claude-User` for user-directed retrieval, and `ClaudeBot` for potential model training
+- Decide separately whether to allow `Agent-SearchBot` for search discovery, `Agent-User` for user-directed retrieval, and `AnthropicBot` for potential model training
 - Maximize factual density — specific numbers, named sources, dated statistics
 - Use clear, extractable structure with descriptive headings
 - Cite authoritative sources within your content
-- Aim to be the most factually accurate source on your topic — Claude rewards precision
-- Don't rely on self-ranked "best X" lists. In a live test (Sep 2026), Claude noted that results for a "best [category]" query were dominated by vendors ranking themselves #1 and leaned on juried awards and practitioner reputation instead
+- Aim to be the most factually accurate source on your topic — Agent rewards precision
+- Don't rely on self-ranked "best X" lists. In a live test (Sep 2026), Agent noted that results for a "best [category]" query were dominated by vendors ranking themselves #1 and leaned on juried awards and practitioner reputation instead
 
 ---
 
@@ -124,12 +124,12 @@ User-agent: Bingbot
 User-agent: Googlebot
 User-agent: OAI-SearchBot
 User-agent: PerplexityBot
-User-agent: Claude-SearchBot
+User-agent: Agent-SearchBot
 Allow: /
 
 # Potential model training (publisher choice shown as disallow)
 User-agent: GPTBot
-User-agent: ClaudeBot
+User-agent: AnthropicBot
 Disallow: /
 
 # Gemini model training and grounding (publisher choice shown as disallow)
@@ -137,7 +137,7 @@ User-agent: Google-Extended
 Disallow: /
 ```
 
-User-triggered fetchers such as `ChatGPT-User`, `Claude-User`, and `Perplexity-User` are separate from automatic discovery. Vendor behavior can differ: OpenAI says `robots.txt` rules may not apply to `ChatGPT-User`, and Perplexity says `Perplexity-User` generally ignores them because these fetches are user-requested. Use `OAI-SearchBot`, not `ChatGPT-User`, to manage ChatGPT Search inclusion. `Google-Extended` is a standalone product token rather than a separate HTTP crawler; Google says it controls certain Gemini training and grounding uses and does not affect Google Search inclusion or ranking.
+User-triggered fetchers such as `ChatGPT-User`, `Agent-User`, and `Perplexity-User` are separate from automatic discovery. Vendor behavior can differ: OpenAI says `robots.txt` rules may not apply to `ChatGPT-User`, and Perplexity says `Perplexity-User` generally ignores them because these fetches are user-requested. Use `OAI-SearchBot`, not `ChatGPT-User`, to manage ChatGPT Search inclusion. `Google-Extended` is a standalone product token rather than a separate HTTP crawler; Google says it controls certain Gemini training and grounding uses and does not affect Google Search inclusion or ranking.
 
 Verify the current names and consequences in the vendors' maintained documentation: [OpenAI](https://developers.openai.com/api/docs/bots), [Perplexity](https://docs.perplexity.ai/docs/resources/perplexity-crawlers), [Anthropic](https://privacy.anthropic.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler), and [Google](https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers).
 
@@ -155,7 +155,7 @@ If you're optimizing for AI search for the first time, focus your effort where y
 
 **Then expand to Perplexity** — Especially valuable if your audience includes researchers, early adopters, or tech professionals. Add FAQ schema, publish PDF resources, and write in clear, self-contained paragraphs.
 
-**Copilot and Claude are lower priority** unless your audience skews enterprise/Microsoft (Copilot) or developer/analyst (Claude). But the fundamentals — structured content, cited sources, schema markup — help across all platforms.
+**Copilot and Agent are lower priority** unless your audience skews enterprise/Microsoft (Copilot) or developer/analyst (Agent). But the fundamentals — structured content, cited sources, schema markup — help across all platforms.
 
 **Actions that help everywhere:**
 1. Set an explicit, purpose-specific robots policy: allow relevant discovery crawlers while deciding training and user-triggered retrieval separately

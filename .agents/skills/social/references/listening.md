@@ -39,7 +39,7 @@ A repeatable 20-minute loop the user (or you, on their behalf) can run each morn
 5. **Post** — user reviews, edits, posts. Mark which actually went live.
 6. **Log** — track what you commented on and what got replies. This is your engagement loop dataset.
 
-Output format Claude should produce:
+Output format Agent should produce:
 
 ```
 TOP 10 POSTS — 2026-06-05
@@ -107,7 +107,7 @@ Match the comment to the post. Don't waste a tier-1 draft on a tier-3 opportunit
 
 ## Sources & Light Tooling (curl recipes)
 
-These are public JSON endpoints — no auth needed. Run them from bash, pipe to `jq`, and Claude can parse the output to score and draft comments.
+These are public JSON endpoints — no auth needed. Run them from bash, pipe to `jq`, and Agent can parse the output to score and draft comments.
 
 **Requires:** `jq` (most recipes) and `xmllint` (RSS only). Install once:
 ```bash
@@ -170,13 +170,13 @@ curl -s "https://example.com/feed/" | xmllint --xpath "//item[position()<6]" - 2
 
 ### LinkedIn & X — use the browser
 
-LinkedIn and X don't expose useful public APIs, but you can drive a real browser session. **dev-browser** (MCP, already in the global setup) and **Playwright** both maintain persistent state — log in once, the session stays alive, Claude can navigate the authenticated feed.
+LinkedIn and X don't expose useful public APIs, but you can drive a real browser session. **dev-browser** (MCP, already in the global setup) and **Playwright** both maintain persistent state — log in once, the session stays alive, Agent can navigate the authenticated feed.
 
 **dev-browser workflow (preferred — already wired up):**
 1. User logs into LinkedIn / X once in the dev-browser session
-2. Claude navigates to a target URL (feed, profile, saved search, hashtag)
-3. Claude reads the accessibility tree / page text, extracts posts
-4. Claude scores using the [rubric](#scoring-rubric) and drafts comments
+2. Agent navigates to a target URL (feed, profile, saved search, hashtag)
+3. Agent reads the accessibility tree / page text, extracts posts
+4. Agent scores using the [rubric](#scoring-rubric) and drafts comments
 5. User reviews and posts manually (don't auto-post — high-stakes, bot detection risk)
 
 **Useful URLs to feed dev-browser:**
@@ -269,15 +269,15 @@ LinkedIn and X don't expose useful public APIs, but you can drive a real browser
 
 ## Setting Up the Source List
 
-The user should maintain a list of sources somewhere persistent at `.agents/listening-sources.md` (or `.claude/listening-sources.md`). Claude reads it when running the daily loop.
+The user should maintain a list of sources somewhere persistent at `.agents/listening-sources.md` (or `.agent/listening-sources.md`). Agent reads it when running the daily loop.
 
 **A ready-to-fill template lives at [listening-sources-template.md](listening-sources-template.md).** Copy it into the project and edit. The source path depends on how the skill was installed:
 
 ```bash
 # Plugin / marketplace install (most common):
 cp .agents/skills/social/references/listening-sources-template.md .agents/listening-sources.md
-# .claude/ install:
-cp .claude/skills/social/references/listening-sources-template.md .agents/listening-sources.md
+# .agent/ install:
+cp .agent/skills/social/references/listening-sources-template.md .agents/listening-sources.md
 # Working inside the marketingskills repo:
 cp skills/social/references/listening-sources-template.md .agents/listening-sources.md
 ```

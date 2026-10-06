@@ -19,7 +19,7 @@
     {
       "id": 2,
       "prompt": "Should we block AI crawlers like GPTBot and PerplexityBot in our robots.txt? We're worried about content theft.",
-      "expected_output": "Should address the crawler-access question directly and separate controls by purpose. GPTBot and ClaudeBot are potential model-training crawlers; blocking them is a training opt-out and does not by itself block search citations. PerplexityBot, OAI-SearchBot, and Claude-SearchBot support automatic search discovery, so blocking them may reduce visibility. ChatGPT-User, Claude-User, and Perplexity-User support user-triggered retrieval and may have vendor-specific robots behavior. Google-Extended controls certain Gemini training and grounding uses and does not affect Google Search inclusion or ranking. Should provide a purpose-specific robots.txt example and recommend verifying current vendor documentation before implementation.",
+      "expected_output": "Should address the crawler-access question directly and separate controls by purpose. GPTBot and AnthropicBot are potential model-training crawlers; blocking them is a training opt-out and does not by itself block search citations. PerplexityBot, OAI-SearchBot, and Agent-SearchBot support automatic search discovery, so blocking them may reduce visibility. ChatGPT-User, Agent-User, and Perplexity-User support user-triggered retrieval and may have vendor-specific robots behavior. Google-Extended controls certain Gemini training and grounding uses and does not affect Google Search inclusion or ranking. Should provide a purpose-specific robots.txt example and recommend verifying current vendor documentation before implementation.",
       "assertions": [
         "Addresses the blocking tradeoff directly",
         "Distinguishes search discovery from model-training controls",
@@ -62,7 +62,7 @@
     {
       "id": 5,
       "prompt": "Can you audit our website for AI search readiness? We want to know how visible we are across ChatGPT, Perplexity, Google AI Overviews, and other AI platforms.",
-      "expected_output": "Should run the full AI Visibility Audit. Should check each platform in the landscape (Google AI Overviews, ChatGPT, Perplexity, Claude, Gemini, Copilot). Should evaluate all three pillars: Structure (content extractability, JSON-LD, clear definitions), Authority (citations, backlinks, E-E-A-T signals), Presence (AI bot access, platform-specific factors). Should provide findings organized by pillar. Should provide a prioritized action plan with specific fixes.",
+      "expected_output": "Should run the full AI Visibility Audit. Should check each platform in the landscape (Google AI Overviews, ChatGPT, Perplexity, Agent, Gemini, Copilot). Should evaluate all three pillars: Structure (content extractability, JSON-LD, clear definitions), Authority (citations, backlinks, E-E-A-T signals), Presence (AI bot access, platform-specific factors). Should provide findings organized by pillar. Should provide a prioritized action plan with specific fixes.",
       "assertions": [
         "Runs full AI Visibility Audit",
         "Checks multiple AI platforms",

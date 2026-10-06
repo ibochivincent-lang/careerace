@@ -188,7 +188,7 @@ If Firecrawl or DataForSEO are not available, use whichever SEO data source is c
 
 | Capability | Primary (preferred) | Alternative |
 |---|---|---|
-| Page scraping | Firecrawl MCP | WebFetch (built into Claude Code) |
+| Page scraping | Firecrawl MCP | WebFetch (built into Agent CLI) |
 | Site URL discovery | `firecrawl_map` | Manually probe common paths |
 | SEO metrics | DataForSEO MCP | Ubersuggest MCP |
 | Backlink data | DataForSEO backlinks tools | Ubersuggest `backlinks_overview` + `linking_domains` |
@@ -202,7 +202,7 @@ Check which MCPs are available at the start of each session and select the stack
 ### WebFetch (alternative to Firecrawl)
 
 **Purpose**: Fetch and read any public web page as text.
-**Built into**: Claude Code — no MCP required.
+**Built into**: Agent CLI — no MCP required.
 **Limitation vs. Firecrawl**: No site mapping (URL discovery); no structured extraction; may not render JavaScript-heavy pages well.
 
 Since WebFetch does not map a site's URLs, probe common paths manually for each competitor:

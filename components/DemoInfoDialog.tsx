@@ -110,7 +110,7 @@ export function DemoInfoDialog() {
           {/* Info note */}
           <div className="p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20">
             <p className="text-sm text-primary font-medium">
-              AI responses are currently simulated. The full version integrates with Claude AI
+              AI responses are currently simulated. The full version integrates with Frontier AI Engine
               for real-time intelligent Socratic tutoring tailored to your exact misconceptions.
             </p>
           </div>

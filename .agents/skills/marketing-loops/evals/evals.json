@@ -47,10 +47,10 @@
     {
       "id": 4,
       "prompt": "How do I actually schedule these loops so they run on their own?",
-      "expected_output": "Should explain that the loop body is agent-agnostic but scheduling depends on the environment. Should cover the options: Claude Code native primitives (/loop, ScheduleWakeup, CronCreate), any-agent + cron (with an example cron expression), and manual cadence for high-judgment loops. Should default to time-of-day cron for review-style loops and dynamic pacing for monitor-until-threshold loops. Should treat a dedicated loop-mechanics skill like loopify as an optional companion, not a hard dependency, and not assume it is installed.",
+      "expected_output": "Should explain that the loop body is agent-agnostic but scheduling depends on the environment. Should cover the options: Agent CLI native primitives (/loop, ScheduleWakeup, CronCreate), any-agent + cron (with an example cron expression), and manual cadence for high-judgment loops. Should default to time-of-day cron for review-style loops and dynamic pacing for monitor-until-threshold loops. Should treat a dedicated loop-mechanics skill like loopify as an optional companion, not a hard dependency, and not assume it is installed.",
       "assertions": [
         "Explains scheduling is environment-dependent",
-        "Covers Claude Code native options and plain cron",
+        "Covers Agent CLI native options and plain cron",
         "Includes manual cadence as a valid option",
         "Gives cron vs dynamic-pacing default guidance",
         "Treats loopify as optional, not a required dependency"

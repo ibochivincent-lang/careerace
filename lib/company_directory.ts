@@ -150,7 +150,7 @@ export const VERIFIED_COMPANY_HIRING_CONTACTS: CompanyHiringContact[] = [
     ],
     "location": "San Francisco, CA",
     "careersUrl": "https://jobs.lever.co/anthropic",
-    "notes": "Frontier AI safety research and Claude architecture."
+    "notes": "Frontier AI safety research and frontier LLM architecture."
   },
   {
     "id": "xai-infra",

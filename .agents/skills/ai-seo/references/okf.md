@@ -98,7 +98,7 @@ After it's serving, add a line to `llms.txt` pointing to the bundle so agents th
 OKF is v0.1, weeks old. Worth tracking, not worth obsessing over:
 
 - Whether Google announces OKF support in AI Overviews / Knowledge Graph (currently no signal)
-- Whether non-Google engines (ChatGPT, Perplexity, Claude) announce OKF reading
+- Whether non-Google engines (ChatGPT, Perplexity, Agent) announce OKF reading
 - Whether the spec moves to v1.0 (breaking changes are possible at <1.0)
 - Whether Knowledge Catalog adds public ingestion endpoints
 - Adoption signals — search GitHub for `okf/index.md` to see who's shipping bundles

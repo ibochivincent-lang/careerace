@@ -20,7 +20,7 @@ Skills speak in actions ("dispatch a subagent", "create a todo", "read a file").
 
 ## Instructions file
 
-When a skill mentions "your instructions file", on Muse this is **`CLAUDE.md`** or **`AGENTS.md`** in the project root. Muse loads these hierarchically where configured.
+When a skill mentions "your instructions file", on Muse this is **`AGENTS.md`** or **`AGENTS.md`** in the project root. Muse loads these hierarchically where configured.
 
 ## Skill invocation
 

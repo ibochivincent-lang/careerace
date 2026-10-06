@@ -126,7 +126,7 @@ Tool selection guide for prospecting across all three branches.
 - Single-email sync verification (`/api/v1/verify_inline`) + bulk async (`/api/v1/verify`)
 - Returns `email_state` (ok / email_invalid / risky / unknown / accept_all) + `email_sub_state` (email_ok / is_disposable / is_role / unknown_error / failed_smtp_check) + did-you-mean typo suggestions
 - Catches catch-all domains, role accounts, spam traps, disposable providers
-- Official MCP server for agent-driven workflows (Claude, Cursor, VS Code)
+- Official MCP server for agent-driven workflows (Agent, Cursor, VS Code)
 - Official SDKs in 7 languages + framework integrations (Django, Laravel, Next.js, Rails, React, Svelte, Vue, WordPress)
 - Native integrations with Mailchimp, Klaviyo, HubSpot, Zapier, Make, n8n, Clay, Salesforce, more
 - Pay-per-email pricing

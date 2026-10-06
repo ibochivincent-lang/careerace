@@ -4,7 +4,7 @@
  *
  * Exposes a candidate's sovereign Career Vault, CV tailor, job evaluation engine,
  * application router, and STAR+R interview coach memory to any MCP-speaking agent
- * (Claude Code, Cursor, Codex, terminal agents) through the SAME decentralized contract
+ * (Cursor, Codex, terminal agents) through the SAME decentralized contract
  * the web app uses.
  *
  * All credentials and memories live on Walrus, owned by the candidate's own Sui address.
