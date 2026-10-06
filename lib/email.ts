@@ -55,6 +55,24 @@ export function getResendApiKeys(): string[] {
 }
 
 /**
+ * Resolves the from-email address configured for a specific Resend key index.
+ * Supports dedicated sender identities per key (e.g. RESEND_FROM_EMAIL_2).
+ */
+export function getResendFromEmail(keyIndex: number = 1): string {
+  if (keyIndex === 2 && process.env.RESEND_FROM_EMAIL_2) {
+    return process.env.RESEND_FROM_EMAIL_2.trim();
+  }
+  if (keyIndex === 3 && process.env.RESEND_FROM_EMAIL_3) {
+    return process.env.RESEND_FROM_EMAIL_3.trim();
+  }
+  return (
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    "Career Ace <notifications@careerace.online>"
+  ).trim();
+}
+
+/**
  * Dispatches an email via Twilio SendGrid REST API (100 free emails/day forever)
  */
 async function sendViaSendGrid(
@@ -313,7 +331,8 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     let lastResendError = "";
     for (let i = 0; i < resendKeys.length; i++) {
       const currentKey = resendKeys[i];
-      const resendResult = await sendViaResend(currentKey, options, configuredFrom);
+      const fromForThisKey = options.from || getResendFromEmail(i + 1);
+      const resendResult = await sendViaResend(currentKey, options, fromForThisKey);
       if (resendResult.success) {
         return {
           success: true,

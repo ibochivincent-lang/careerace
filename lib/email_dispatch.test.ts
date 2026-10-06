@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateMailtoUrl, sendApplicationDispatchEmail, getResendApiKeys } from "./email.ts";
+import { generateMailtoUrl, sendApplicationDispatchEmail, getResendApiKeys, getResendFromEmail } from "./email.ts";
 import { formatRfc5322Date, generateEmlContent } from "./email_receipt.ts";
 
 test("Email Dispatch: generateMailtoUrl builds RFC-compliant URI", () => {
@@ -171,6 +171,25 @@ test("Email Dispatch: getResendApiKeys extracts multiple keys from comma-separat
     if (origKey2) process.env.RESEND_API_KEY_2 = origKey2; else delete process.env.RESEND_API_KEY_2;
     if (origKey3) process.env.RESEND_API_KEY_3 = origKey3; else delete process.env.RESEND_API_KEY_3;
     if (origKeys) process.env.RESEND_API_KEYS = origKeys; else delete process.env.RESEND_API_KEYS;
+  }
+});
+
+test("Email Dispatch: getResendFromEmail supports dedicated RESEND_FROM_EMAIL_2 for secondary key", () => {
+  const origFrom1 = process.env.RESEND_FROM_EMAIL;
+  const origFrom2 = process.env.RESEND_FROM_EMAIL_2;
+
+  try {
+    process.env.RESEND_FROM_EMAIL = "Career Ace <notifications@careerace.online>";
+    process.env.RESEND_FROM_EMAIL_2 = "Career Ace Relay <backup@careerace.online>";
+
+    assert.equal(getResendFromEmail(1), "Career Ace <notifications@careerace.online>");
+    assert.equal(getResendFromEmail(2), "Career Ace Relay <backup@careerace.online>");
+
+    delete process.env.RESEND_FROM_EMAIL_2;
+    assert.equal(getResendFromEmail(2), "Career Ace <notifications@careerace.online>");
+  } finally {
+    if (origFrom1) process.env.RESEND_FROM_EMAIL = origFrom1; else delete process.env.RESEND_FROM_EMAIL;
+    if (origFrom2) process.env.RESEND_FROM_EMAIL_2 = origFrom2; else delete process.env.RESEND_FROM_EMAIL_2;
   }
 });
 
