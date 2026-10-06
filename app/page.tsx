@@ -61,19 +61,11 @@ export default function CareerAceLandingPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden relative">
-      {/* ── Full-Width Polishme-Style Emerald Crystal Background ── */}
-      <div className="absolute top-0 left-0 right-0 h-[850px] pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div
-          className="absolute inset-0 bg-cover bg-top bg-no-repeat opacity-95 dark:opacity-40 transition-opacity duration-700"
-          style={{
-            backgroundImage: "url('/hero-bg-green.webp')",
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 98%)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0) 98%)"
-          }}
-        />
+      {/* ── Ambient Radial Glow Top Lighting ── */}
+      <div className="absolute top-0 left-0 right-0 h-[700px] pointer-events-none z-0 overflow-hidden" aria-hidden="true">
         {/* Luminous emerald glow radial gradient */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[600px] bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.20),rgba(5,150,105,0.06),transparent_70%)] blur-2xl pointer-events-none" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[650px] h-[350px] bg-emerald-500/15 rounded-full blur-[110px] pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.12),rgba(5,150,105,0.03),transparent_70%)] blur-2xl pointer-events-none" />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[650px] h-[350px] bg-emerald-500/10 rounded-full blur-[110px] pointer-events-none" />
       </div>
 
       {/* ── Clean Sticky Header ─────────────────────────────────────── */}

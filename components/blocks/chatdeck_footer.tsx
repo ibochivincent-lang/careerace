@@ -11,8 +11,25 @@ export function ChatdeckFooter() {
 
   return (
     <>
-      <footer className="border-t border-border/80 bg-background py-16 text-muted-foreground">
-        <div className="max-w-7xl mx-auto px-4 space-y-12">
+      <footer className="relative overflow-hidden border-t border-border/80 bg-background py-16 text-muted-foreground">
+        {/* ── Relocated Emerald Botanical Crystal Background Graphic ── */}
+        <div
+          className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center sm:bg-top bg-no-repeat opacity-40 dark:opacity-25 transition-opacity duration-700"
+            style={{
+              backgroundImage: "url('/hero-bg-green.webp')",
+              WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0) 100%)",
+              maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0) 100%)"
+            }}
+          />
+          {/* Luminous emerald glow radial gradient for rich footer depth */}
+          <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.14),rgba(5,150,105,0.04),transparent_70%)] blur-[100px] pointer-events-none" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             {/* Brand info & Social links on one side */}
             <div className="lg:col-span-5 space-y-4">

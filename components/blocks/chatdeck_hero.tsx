@@ -36,27 +36,19 @@ export function ChatdeckHero({ onStart }: { onStart?: () => void }) {
       animate="visible"
       className="py-12 md:py-16 space-y-12 relative"
     >
-      {/* ── Polish-Inspired Emerald Crystal Background ── */}
+      {/* ── Ambient Radial Glow Background ── */}
       <div
         className="absolute inset-0 -top-20 pointer-events-none z-0 overflow-hidden"
         aria-hidden="true"
       >
-        <div
-          className="absolute inset-0 bg-cover bg-top bg-no-repeat opacity-95 dark:opacity-45 transition-opacity duration-700"
-          style={{
-            backgroundImage: "url('/hero-bg-green.webp')",
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 70%, rgba(0,0,0,0) 98%)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 70%, rgba(0,0,0,0) 98%)"
-          }}
-        />
         {/* Luminous emerald glow radial gradient */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.18),rgba(5,150,105,0.06),transparent_70%)] blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.14),rgba(5,150,105,0.04),transparent_70%)] blur-[100px] pointer-events-none" />
       </div>
 
       <div className="relative z-10 space-y-8">
-        {/* ── Top Pill Badge ── */}
+        {/* ── Top Pill Badge (borderless) ── */}
         <motion.div className="flex items-center justify-center" variants={fadeUpVariants}>
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-xs backdrop-blur">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-xs backdrop-blur">
             <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
             <span>Autonomous AI Career Agent · Powered by Walrus Sovereign Memory</span>
           </div>

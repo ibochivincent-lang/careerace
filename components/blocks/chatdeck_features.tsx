@@ -21,7 +21,7 @@ import {
    ───────────────────────────────────────────────────────────────────────────── */
 function UploadVisual({ play = true }: { play?: boolean }) {
   return (
-    <div className="relative w-full h-44 rounded-xl bg-muted/30 border border-emerald-500/20 overflow-hidden flex flex-col items-center justify-center p-4">
+    <div className="relative w-full h-48 sm:h-52 rounded-xl sm:rounded-2xl bg-muted/30 border border-emerald-500/20 overflow-hidden flex flex-col items-center justify-center p-4 sm:p-5">
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
       <motion.div
         animate={play ? { y: [-4, 4, -4] } : { y: 0 }}
@@ -33,12 +33,12 @@ function UploadVisual({ play = true }: { play?: boolean }) {
           alt="PDF Resume"
           className="w-16 h-16 object-contain drop-shadow-[0_8px_16px_rgba(16,185,129,0.25)]"
         />
-        <div className="mt-2.5 px-3 py-1 rounded-full bg-background border border-emerald-500/30 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs flex items-center gap-1.5">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>Resume_Senior_Engineer.pdf</span>
+        <div className="mt-3 px-3.5 py-1 rounded-full bg-background border border-emerald-500/30 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold shadow-xs flex items-center gap-1.5 max-w-full truncate">
+          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Resume_Senior_Engineer.pdf</span>
         </div>
       </motion.div>
-      <div className="mt-2 text-[10px] text-muted-foreground font-mono">
+      <div className="mt-2.5 text-[10px] text-muted-foreground font-mono text-center">
         Structure · Metrics · ATS Keywords parsed
       </div>
     </div>
@@ -82,14 +82,14 @@ function AgentVisual({ play = true }: { play?: boolean }) {
   }, [play, cycle])
 
   return (
-    <div className="relative w-full h-44 rounded-xl bg-muted/30 border border-emerald-500/20 overflow-hidden flex flex-col justify-between p-3.5 text-xs font-sans">
+    <div className="relative w-full h-48 sm:h-52 rounded-xl sm:rounded-2xl bg-muted/30 border border-emerald-500/20 overflow-hidden flex flex-col justify-between p-3.5 sm:p-4 text-xs font-sans">
       <div className="space-y-2">
         {/* User sent bubble */}
         {(phase === 'sent' || phase === 'thinking' || phase === 'reply') && (
           <motion.div
             initial={{ opacity: 0, y: 6, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="self-end ml-auto max-w-[85%] px-3 py-1.5 rounded-xl rounded-br-xs bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-[11.5px] font-medium shadow-xs"
+            className="self-end ml-auto max-w-[85%] px-3.5 py-1.5 rounded-xl rounded-br-xs bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-[11.5px] font-medium shadow-xs"
           >
             {TYPED_PROMPT}
           </motion.div>
@@ -112,7 +112,7 @@ function AgentVisual({ play = true }: { play?: boolean }) {
           <motion.div
             initial={{ opacity: 0, y: 6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="max-w-[94%] p-2 rounded-xl rounded-bl-xs bg-background border border-border shadow-xs text-[11.5px] text-foreground leading-snug"
+            className="max-w-[94%] p-2.5 rounded-xl rounded-bl-xs bg-background border border-border shadow-xs text-[11.5px] text-foreground leading-snug"
           >
             <p className="inline">Tightened your bullets for impact.</p>
             <span className="inline-flex items-center ml-2 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">
@@ -123,7 +123,7 @@ function AgentVisual({ play = true }: { play?: boolean }) {
       </div>
 
       {/* Simulated input bar */}
-      <div className="mt-auto pt-2 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground bg-background/50 px-2 py-1.5 rounded-lg border">
+      <div className="mt-auto pt-2 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground bg-background/50 px-2.5 py-1.5 rounded-lg border">
         <span className="flex items-center">
           {phase === 'typing' ? (
             <>
@@ -161,7 +161,7 @@ function TailorVisual({ play = true }: { play?: boolean }) {
   }, [play, cycle])
 
   return (
-    <div className="relative w-full h-44 rounded-xl bg-muted/30 border border-emerald-500/20 overflow-hidden flex flex-col items-center justify-center p-4">
+    <div className="relative w-full h-48 sm:h-52 rounded-xl sm:rounded-2xl bg-muted/30 border border-emerald-500/20 overflow-hidden flex flex-col items-center justify-center p-4 sm:p-5">
       <div className="space-y-3 flex flex-col items-center">
         {/* Animated Export Button */}
         <motion.div
@@ -271,20 +271,20 @@ export function ChatdeckFeatures() {
   return (
     <div className="space-y-24 py-12">
       {/* ── HOW IT WORKS SECTION ── */}
-      <section id="how-it-works" className="max-w-7xl mx-auto px-4 scroll-mt-24 pt-8 sm:pt-14">
-        <div className="text-center max-w-3xl mx-auto mb-12 space-y-3">
-          <Badge variant="outline" className="px-3.5 py-1 text-xs font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
+      <section id="how-it-works" className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 scroll-mt-24 pt-8 sm:pt-14">
+        <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-14 space-y-3.5">
+          <Badge variant="outline" className="px-4 py-1 text-xs font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
             Streamlined 3-Step Flow
           </Badge>
-          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
             How it works.
           </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Upload, polish, and export a role-ready resume and tailored application in 15 seconds.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
           {steps.map((step, idx) => (
             <motion.div
               key={step.title}
@@ -292,12 +292,12 @@ export function ChatdeckFeatures() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.12, duration: 0.5 }}
-              className="p-6 rounded-2xl border border-emerald-500/20 bg-card/60 backdrop-blur shadow-lg hover:border-emerald-500/40 hover:shadow-emerald-500/5 transition-all flex flex-col justify-between space-y-5"
+              className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-card/60 backdrop-blur shadow-lg hover:border-emerald-500/40 hover:shadow-emerald-500/5 transition-all flex flex-col justify-between space-y-6"
             >
               {/* Interactive Visual Animation at the top of the card */}
               <div>{step.visual}</div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary" className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
                     {step.badge}
@@ -307,16 +307,16 @@ export function ChatdeckFeatures() {
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-foreground">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">
                   {step.title}
                 </h3>
 
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   {step.description}
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-border/40 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 gap-1.5">
+              <div className="pt-3 border-t border-border/40 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 gap-1.5">
                 <span>Learn more</span> <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </motion.div>
