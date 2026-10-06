@@ -47,15 +47,15 @@ function getGreeting(): string {
 // Formatted Chat Message component that renders bold, italics, bullets, and numbered items cleanly without raw asterisks
 function FormattedChatMessage({ content, role }: { content: string; role: 'user' | 'assistant' }) {
   if (role === 'user') {
-    return <div className="whitespace-pre-wrap">{content}</div>
+    return <div className="whitespace-pre-wrap text-[11px] sm:text-xs">{content}</div>
   }
 
   const lines = content.split('\n')
   return (
-    <div className="space-y-1.5 leading-relaxed text-xs">
+    <div className="space-y-1 leading-snug text-[11px] sm:text-xs">
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
-          return <div key={lineIdx} className="h-1.5" />
+          return <div key={lineIdx} className="h-1" />
         }
 
         const bulletMatch = line.match(/^(\s*)([•\-\*]|\d+\.)\s+(.*)$/)
@@ -96,8 +96,8 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
           const prefix = bulletMatch![2]
           const isNumber = /^\d+\./.test(prefix)
           return (
-            <div key={lineIdx} className="flex items-start gap-2 pl-1 my-0.5">
-              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[11px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-xs"}>
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-1 my-0.5">
+              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-[11px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-[10px] sm:text-xs"}>
                 {prefix}
               </span>
               <div className="flex-1">{parts}</div>
@@ -114,7 +114,7 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
 const FRESH_OVERVIEW_WELCOME_MESSAGE = {
   role: 'assistant' as const,
   content:
-    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\nHere is how I can assist you across our ecosystem:\n• **Resume Studio:** Upload your CV, maintain 2 or 3 tailored versions for different industries, polish bullet points with active verbs, and seal tamper-proof snapshots to Walrus storage.\n• **Cover Letter Studio:** Generate laser-targeted, problem-solving cover letters calibrated directly to any job requirements without AI slop.\n• **Application Board:** Discover verified corporate openings, track your applications across Discovery, Applied, and Auto Apply stages, and manage 7-day recruiter follow-up milestones.\n\nType **\"hello\"** to review your profile status, click a topic below, or ask any question about your career journey!"
+    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\n• **Resume Studio:** Polish CV bullets with active metrics and seal snapshots to Walrus.\n• **Cover Letter Studio:** Generate targeted, problem-solving cover letters without AI slop.\n• **Application Board:** Discover verified roles and track 7-day recruiter milestones.\n\nTap a topic below or ask any question to get started!"
 }
 
 const FRESH_RESUME_ASSISTANT_WELCOME = {
@@ -1581,7 +1581,7 @@ function DashboardContent() {
                       )}
 
                       <div
-                        className={`max-w-[85%] sm:max-w-[80%] p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                        className={`max-w-[90%] sm:max-w-[80%] p-2.5 sm:p-3.5 rounded-2xl text-[11px] sm:text-xs leading-snug ${
                           msg.role === 'assistant'
                             ? 'bg-muted/40 border border-border/80 text-foreground shadow-2xs'
                             : 'bg-emerald-600 text-white font-medium shadow-xs'

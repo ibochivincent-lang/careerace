@@ -13,9 +13,9 @@ export function ChatdeckFooter() {
     <>
       <footer className="border-t border-border/80 bg-background py-16 text-muted-foreground">
         <div className="max-w-7xl mx-auto px-4 space-y-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
-            {/* Brand info & Social links */}
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Brand info & Social links on one side */}
+            <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-card border border-border/70 shadow-sm flex items-center justify-center p-1">
                   <img src="/careerace_logo.png" alt="Career Ace Logo" className="w-full h-full object-contain dark:invert" />
@@ -67,61 +67,64 @@ export function ChatdeckFooter() {
               </p>
             </div>
 
-            {/* Product links */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-foreground text-xs tracking-tight">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Features</a></li>
-                <li><a href="#architecture" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Walrus Architecture</a></li>
-                <li><a href="#roadmap" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Roadmap &amp; Frontiers</a></li>
-                <li><a href="/pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Pricing</a></li>
-                <li><button type="button" onClick={() => router.push('/dashboard?tab=resumes')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Resume Editor</button></li>
-                <li><button type="button" onClick={() => router.push('/memory')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Walrus Vault</button></li>
-              </ul>
-            </div>
+            {/* Links side in 2x2 grid format (Product, Use Cases, Community & Support, Legal) */}
+            <div className="lg:col-span-7 grid grid-cols-2 gap-8">
+              {/* Product links */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-foreground text-xs tracking-tight">Product</h4>
+                <ul className="space-y-2">
+                  <li><a href="#features" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Features</a></li>
+                  <li><a href="#architecture" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Walrus Architecture</a></li>
+                  <li><a href="#roadmap" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Roadmap &amp; Frontiers</a></li>
+                  <li><a href="/pricing" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Pricing</a></li>
+                  <li><button type="button" onClick={() => router.push('/dashboard?tab=resumes')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Resume Editor</button></li>
+                  <li><button type="button" onClick={() => router.push('/memory')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Walrus Vault</button></li>
+                </ul>
+              </div>
 
-            {/* Use Cases */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-foreground text-xs tracking-tight">Use Cases</h4>
-              <ul className="space-y-2">
-                <li><button type="button" onClick={() => router.push('/dashboard?tab=resumes')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Resume Optimizer</button></li>
-                <li><button type="button" onClick={() => router.push('/dashboard?tab=tailored')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Resume Tailoring</button></li>
-                <li><button type="button" onClick={() => router.push('/dashboard?tab=overview')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">ATS Checker</button></li>
-                <li><button type="button" onClick={() => router.push('/cover_letter')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Cover Letters</button></li>
-                <li><button type="button" onClick={() => router.push('/interview_room')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Mock Interviews</button></li>
-              </ul>
-            </div>
+              {/* Use Cases */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-foreground text-xs tracking-tight">Use Cases</h4>
+                <ul className="space-y-2">
+                  <li><button type="button" onClick={() => router.push('/dashboard?tab=resumes')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Resume Optimizer</button></li>
+                  <li><button type="button" onClick={() => router.push('/dashboard?tab=tailored')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Resume Tailoring</button></li>
+                  <li><button type="button" onClick={() => router.push('/dashboard?tab=overview')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">ATS Checker</button></li>
+                  <li><button type="button" onClick={() => router.push('/cover_letter')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Cover Letters</button></li>
+                  <li><button type="button" onClick={() => router.push('/interview_room')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Mock Interviews</button></li>
+                </ul>
+              </div>
 
-            {/* Community & Feedback */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-foreground text-xs tracking-tight">Community &amp; Support</h4>
-              <ul className="space-y-2">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setFeedbackOpen(true)}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline transition-colors leading-relaxed flex items-center gap-1.5 text-left bg-transparent p-0 border-0 cursor-pointer"
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    <span>Send User Feedback</span>
-                  </button>
-                </li>
-                <li><a href="mailto:support@careerace.online" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Help Center</a></li>
-                <li><a href="mailto:contact@careerace.online" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Contact Support</a></li>
-                <li><button type="button" onClick={() => router.push('/progress')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Accomplishments</button></li>
-                <li><a href="https://walrus.xyz" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Walrus Network</a></li>
-              </ul>
-            </div>
+              {/* Community & Feedback */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-foreground text-xs tracking-tight">Community &amp; Support</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackOpen(true)}
+                      className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline transition-colors leading-relaxed flex items-center gap-1.5 text-left bg-transparent p-0 border-0 cursor-pointer"
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                      <span>Send User Feedback</span>
+                    </button>
+                  </li>
+                  <li><a href="mailto:support@careerace.online" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Help Center</a></li>
+                  <li><a href="mailto:contact@careerace.online" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Contact Support</a></li>
+                  <li><button type="button" onClick={() => router.push('/progress')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Accomplishments</button></li>
+                  <li><a href="https://walrus.xyz" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block">Walrus Network</a></li>
+                </ul>
+              </div>
 
-            {/* Legal */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-foreground text-xs tracking-tight">Legal &amp; Privacy</h4>
-              <ul className="space-y-2">
-                <li><button type="button" onClick={() => router.push('/privacy')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Privacy Policy</button></li>
-                <li><button type="button" onClick={() => router.push('/terms')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Terms of Service</button></li>
-                <li><span className="text-xs text-muted-foreground/60 leading-relaxed block">Zero-Knowledge Isolation</span></li>
-                <li><span className="text-xs text-muted-foreground/60 leading-relaxed block">Client-Side Encrypted</span></li>
-              </ul>
+              {/* Legal & Privacy */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-foreground text-xs tracking-tight">Legal &amp; Privacy</h4>
+                <ul className="space-y-2">
+                  <li><button type="button" onClick={() => router.push('/privacy')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Privacy Policy</button></li>
+                  <li><button type="button" onClick={() => router.push('/terms')} className="text-xs text-muted-foreground hover:text-foreground transition-colors leading-relaxed block text-left bg-transparent p-0 border-0 cursor-pointer">Terms of Service</button></li>
+                  <li><span className="text-xs text-muted-foreground/60 leading-relaxed block">Zero-Knowledge Isolation</span></li>
+                  <li><span className="text-xs text-muted-foreground/60 leading-relaxed block">Client-Side Encrypted</span></li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
