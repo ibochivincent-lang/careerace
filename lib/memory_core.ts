@@ -303,7 +303,7 @@ export type ForgetOutcome =
  * expires.
  *
  * The kind is unknown at this point — the student says "forget the force
- * thing", not "forget the misconception in examace:profile". So both
+ * thing", not "forget the misconception in careerace:profile". So both
  * namespaces are searched and the tombstone lands wherever the claim lives.
  */
 export async function forgetFact(address: string, text: string): Promise<ForgetOutcome> {

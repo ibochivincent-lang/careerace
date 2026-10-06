@@ -15,9 +15,9 @@ export function DemoInfoDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>How ExamAce Works</DialogTitle>
+          <DialogTitle>How Career Ace Works</DialogTitle>
           <DialogDescription>
-            Understanding the Socratic tutoring method
+            Understanding the Socratic coaching method
           </DialogDescription>
         </DialogHeader>
 
@@ -26,7 +26,7 @@ export function DemoInfoDialog() {
           <div>
             <h4 className="font-semibold mb-2">The Core Rule</h4>
             <p className="text-sm text-muted-foreground">
-              ExamAce will <strong className="text-foreground">never give you the direct answer</strong>. This is intentional.
+              Career Ace will <strong className="text-foreground">never give you the direct answer</strong>. This is intentional.
               The tutor responds with questions designed to help you discover the answer yourself.
             </p>
           </div>
@@ -110,8 +110,8 @@ export function DemoInfoDialog() {
           {/* Info note */}
           <div className="p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20">
             <p className="text-sm text-primary font-medium">
-              AI responses are currently simulated. The full version integrates with Frontier AI Engine
-              for real-time intelligent Socratic tutoring tailored to your exact misconceptions.
+              Career Ace connects end-to-end with live Walrus Decentralized Memory and Gemini AI
+              for intelligent real-time Socratic coaching tailored to your verified career credentials.
             </p>
           </div>
         </div>

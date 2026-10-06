@@ -46,10 +46,10 @@ test("a superseding write names what it replaces, and the claim still compares e
 });
 
 test("the dedupe key is stable for the same claim and different for another", () => {
-  const a = idempotencyKeyFor("examace:profile:0x1", "misconception", "thinks force = mass x velocity");
-  const b = idempotencyKeyFor("examace:profile:0x1", "misconception", "  Thinks Force = Mass x Velocity  ");
-  const c = idempotencyKeyFor("examace:profile:0x1", "misconception", "thinks weight is in kilograms");
-  const d = idempotencyKeyFor("examace:profile:0x2", "misconception", "thinks force = mass x velocity");
+  const a = idempotencyKeyFor("careerace:profile:0x1", "misconception", "thinks force = mass x velocity");
+  const b = idempotencyKeyFor("careerace:profile:0x1", "misconception", "  Thinks Force = Mass x Velocity  ");
+  const c = idempotencyKeyFor("careerace:profile:0x1", "misconception", "thinks weight is in kilograms");
+  const d = idempotencyKeyFor("careerace:profile:0x2", "misconception", "thinks force = mass x velocity");
   assert.equal(a, b, "same claim, any casing or padding, must collapse onto one job");
   assert.notEqual(a, c);
   assert.notEqual(a, d, "another student's namespace is a different write");

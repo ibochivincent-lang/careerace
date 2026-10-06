@@ -1,5 +1,5 @@
 /**
- * Deterministic teaching screen — the ExamAce equivalent of an allergen check.
+ * Deterministic teaching screen — the Career Ace equivalent of an allergen check.
  *
  * This runs AFTER the model speaks, so a question or explanation is screened
  * whether it came from a static bank or from the LLM. The three things it
