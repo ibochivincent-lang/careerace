@@ -1,4 +1,4 @@
-import { sendEmail } from "../lib/email.ts";
+import { sendEmail, buildApplicationEmailHtml } from "../lib/email.ts";
 
 const recipient = process.argv[2];
 
@@ -14,36 +14,62 @@ if (!recipient || !recipient.includes("@")) {
 }
 
 async function main() {
-  console.log(`\n[Career Ace] Dispatching live test email to: ${recipient}...`);
+  console.log(`\n[Career Ace] Dispatching live branded application email to: ${recipient}...`);
+
+  const brandedHtml = buildApplicationEmailHtml({
+    candidateName: "Ibochi Vincent",
+    candidateEmail: "ibochivincent@gmail.com",
+    candidatePhone: "+234 813 418 0229",
+    candidateLocation: "Sangoted, Lagos State, Nigeria",
+    role: "Autonomous Systems & ML Engineer",
+    company: "Anthropic",
+    coverLetter: `Dear Anthropic Hiring Team,
+
+I am writing to formally submit my application for the position of Autonomous Systems & ML Engineer with Anthropic. With a foundation centered on PyTorch, vLLM, TensorRT, LoRA Fine-Tuning, Distributed Training, Evaluation Harnesses, I take direct accountability for technical execution, operational discipline, and high-stakes reliability.
+
+Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact Anthropic:
+1. Prohibitive GPU inference costs and high time-to-first-token (TTFT) latency.
+2. Model hallucination, reasoning drift, and lack of reproducible verification in production.
+
+In demonstrated practice: Head of IT Department at T.G.C.I.: Installed, configured, maintained, and troubleshot computer hardware, software, printers, and network devices.
+
+My verified credentials and technical portfolio are registered through the CareerAce sovereign proof network.`,
+    passportUrl: "https://careerace.online/verify?applicant=Ibochi%20Vincent",
+    walrusBlobId: "0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
+    primaryCvName: "Ibochi_Vincent_ML_Engineer_CV.pdf",
+    primaryCvSize: 245000,
+    primaryCvUrl: "https://walruscan.com/testnet/blob/0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
+    attachments: [
+      {
+        id: "att_stcw",
+        name: "STCW_Maritime_Safety_Certification.pdf",
+        size: 184000,
+        blobId: "0x89ab12cd34ef5678",
+        url: "https://walruscan.com/testnet/blob/0x89ab12cd34ef5678",
+      },
+      {
+        id: "att_transcripts",
+        name: "Engineering_Degree_Transcript_Official.pdf",
+        size: 420000,
+        blobId: "0x1234abcd5678ef90",
+        url: "https://walruscan.com/testnet/blob/0x1234abcd5678ef90",
+      },
+    ],
+  });
+
   const result = await sendEmail({
     to: recipient,
-    subject: "Career Ace — Sovereign Email Dispatch Test",
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;padding:30px;color:#1e293b;">
-          <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
-            <div style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:24px;color:white;">
-              <h2 style="margin:0;font-size:20px;font-weight:700;">Career Ace Email Relay Verified</h2>
-              <p style="margin:6px 0 0 0;font-size:13px;opacity:0.9;">End-to-End Production Delivery Test</p>
-            </div>
-            <div style="padding:24px;line-height:1.6;font-size:14px;">
-              <p>Hello,</p>
-              <p>Your Career Ace transactional email engine is functioning with zero errors!</p>
-              <div style="background:#f1f5f9;border-left:4px solid #2563eb;padding:12px 16px;border-radius:4px;margin:16px 0;font-family:monospace;font-size:13px;">
-                Recipient: <strong>${recipient}</strong><br/>
-                Origin: <strong>careerace.online</strong><br/>
-                Delivery: <strong>Authenticated DKIM / SPF Relay</strong>
-              </div>
-              <p style="color:#64748b;font-size:12px;margin-top:20px;">
-                Dispatched from Career Ace Sovereign Agent &bull; Verified Domain: careerace.online
-              </p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `,
-    text: `Career Ace Email Relay Verified. Recipient: ${recipient}. Delivery confirmed.`,
+    subject: "Application: Ibochi Vincent — Autonomous Systems & ML Engineer at Anthropic",
+    html: brandedHtml,
+    text: `Application: Ibochi Vincent - Autonomous Systems & ML Engineer at Anthropic. Verifiable Passport: https://careerace.online/verify?applicant=Ibochi%20Vincent`,
+    reply_to: "ibochivincent@gmail.com",
+    attachments: [
+      {
+        filename: "Ibochi_Vincent_ML_Engineer_CV.pdf",
+        path: "https://careerace.online/careerace_logo.png",
+        contentType: "application/pdf",
+      },
+    ],
   });
 
   console.log("\n[Dispatch Result]:");

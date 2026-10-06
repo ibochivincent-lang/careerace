@@ -2599,7 +2599,13 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
       const candidateName = activeProfileData?.applicant_name || 'Candidate'
       const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
+      const candidatePhone = activeProfileData?.phone || ''
+      const candidateLocation = activeProfileData?.location || ''
       const walrusBlobId = selectedVersionMeta?.blobId || ''
+      const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
+      const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
+      const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+      const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
       const res = await fetch('/api/email/dispatch', {
         method: 'POST',
@@ -2610,10 +2616,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
           body: customEmailBody,
           candidateName,
           candidateEmail,
+          candidatePhone,
+          candidateLocation,
           role: targetRoleInput,
           company: targetCompanyInput,
           smtpConfig,
           walrusBlobId,
+          primaryCvName,
+          primaryCvSize,
+          primaryCvUrl,
+          passportUrl,
           attachments: uploadedDocuments.map((d) => ({
             id: d.id,
             name: d.name,
@@ -2707,7 +2719,13 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
       const candidateName = activeProfileData?.applicant_name || 'Candidate'
       const candidateEmail = activeProfileData?.email || targetEmail
+      const candidatePhone = activeProfileData?.phone || ''
+      const candidateLocation = activeProfileData?.location || ''
       const walrusBlobId = selectedVersionMeta?.blobId || ''
+      const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
+      const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
+      const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+      const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
       const res = await fetch('/api/email/dispatch', {
         method: 'POST',
@@ -2718,10 +2736,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
           body: customEmailBody,
           candidateName,
           candidateEmail,
+          candidatePhone,
+          candidateLocation,
           role: targetRoleInput,
           company: `${targetCompanyInput} (Sample Test)`,
           smtpConfig,
           walrusBlobId,
+          primaryCvName,
+          primaryCvSize,
+          primaryCvUrl,
+          passportUrl,
           attachments: uploadedDocuments.map((d) => ({
             id: d.id,
             name: d.name,
@@ -2772,8 +2796,14 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
     const candidateName = activeProfileData?.applicant_name || 'Candidate'
     const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
+    const candidatePhone = activeProfileData?.phone || ''
+    const candidateLocation = activeProfileData?.location || ''
     const candidateRole = selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || targetRoleInput || 'Applicant'
     const walrusBlobId = selectedVersionMeta?.blobId || ''
+    const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
+    const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
+    const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+    const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
     let currentAppliedList = [...appliedJobs]
 
@@ -2803,8 +2833,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             body: batchBody,
             candidateName,
             candidateEmail,
+            candidatePhone,
+            candidateLocation,
+            role: targetRole,
+            company: contact.company,
             smtpConfig,
             walrusBlobId,
+            primaryCvName,
+            primaryCvSize,
+            primaryCvUrl,
+            passportUrl,
             attachments: uploadedDocuments.map((d) => ({
               id: d.id,
               name: d.name,
@@ -2889,8 +2927,14 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     let currentAppliedList = [...appliedJobs]
     const candidateName = activeProfileData?.applicant_name || 'Candidate'
     const candidateEmail = activeProfileData?.email || 'applicant@careerace.online'
+    const candidatePhone = activeProfileData?.phone || ''
+    const candidateLocation = activeProfileData?.location || ''
     const candidateRole = selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || targetRoleInput || 'Applicant'
     const walrusBlobId = selectedVersionMeta?.blobId || ''
+    const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
+    const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
+    const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+    const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
     let smtpConfig: any = { provider: 'sovereign_relay' }
     try {
@@ -2918,8 +2962,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
             body: batchBody,
             candidateName,
             candidateEmail,
+            candidatePhone,
+            candidateLocation,
+            role: targetRole,
+            company: contact.company,
             smtpConfig,
             walrusBlobId,
+            primaryCvName,
+            primaryCvSize,
+            primaryCvUrl,
+            passportUrl,
             attachments: uploadedDocuments.map((d) => ({
               id: d.id,
               name: d.name,
@@ -3939,34 +3991,154 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </p>
                     </div>
 
-                    {/* Email Body Rendering */}
-                    <div className="p-4 rounded-xl border border-border bg-card space-y-3 font-mono leading-relaxed text-xs text-foreground whitespace-pre-wrap select-text">
-                      {customEmailBody || composeDefaultDraft(false, selectedCompanyIds.length > 1)}
-                    </div>
-
-                    {selectedCompanyIds.length > 1 && (
-                      <div className="p-2 rounded-lg bg-muted/40 border border-border/60 text-[10px] text-muted-foreground">
-                        Note: When batch dispatching, each employer receives a personalized greeting (e.g. <em>&quot;Dear [Company Name] Hiring Team,&quot;</em>) tailored to their organization.
-                      </div>
-                    )}
-
-                    {/* Attachments Section */}
-                    {uploadedDocuments.length > 0 && (
-                      <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
-                        <span className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider block">
-                          Attached Credentials ({uploadedDocuments.length})
+                    {/* Branded CareerAce Email Simulator Container (Image 2 Design) */}
+                    <div className="p-4 sm:p-6 rounded-2xl bg-[#f4f6fa] dark:bg-slate-900/60 border border-border space-y-4">
+                      {/* Brand Header with Real Logo */}
+                      <div className="flex items-center gap-2.5 pb-1">
+                        <img
+                          src="https://careerace.online/careerace_logo.png"
+                          alt="CareerAce"
+                          className="w-8 h-8 rounded-lg object-contain shadow-2xs"
+                        />
+                        <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                          Career<span className="text-emerald-600 dark:text-emerald-400">Ace</span>
                         </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {uploadedDocuments.map((doc) => (
-                            <div key={doc.id} className="p-2 rounded-lg border border-border bg-background flex items-center gap-2">
-                              <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              <span className="text-[11px] truncate flex-1 text-foreground">{doc.name}</span>
-                              <span className="text-[9px] text-muted-foreground font-mono">{doc.size ? `${Math.round(doc.size / 1024)} KB` : 'Attached'}</span>
-                            </div>
-                          ))}
-                        </div>
                       </div>
-                    )}
+
+                      {/* Main Card (Image 2 style) */}
+                      <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 text-left font-sans">
+                        {/* Candidate Identity & Contact Banner */}
+                        <div className="pb-4 border-b border-slate-100 dark:border-slate-800/80 space-y-1.5">
+                          <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+                            {activeProfileData?.applicant_name || 'Candidate'}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                              {activeProfileData?.email || 'applicant@careerace.online'}
+                            </span>
+                            {activeProfileData?.phone && ` · ${activeProfileData.phone}`}
+                            {activeProfileData?.location && ` · ${activeProfileData.location}`}
+                          </p>
+                          <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                              Target: {targetRoleInput || 'Candidate Application'} · {targetCompanyInput || 'Hiring Team'}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Cover Letter Body Content */}
+                        <div className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                          {customEmailBody || composeDefaultDraft(false, selectedCompanyIds.length > 1)}
+                        </div>
+
+                        {/* ATTACHMENT SIDE: Dedicated Green Dashed Container (Image 2 signature element) */}
+                        <div className="p-4 sm:p-5 rounded-xl border-1.5 border-dashed border-emerald-400/80 bg-emerald-50/60 dark:bg-emerald-950/30 space-y-3">
+                          <div className="flex items-center justify-between flex-wrap gap-1">
+                            <span className="text-[10.5px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                              Attachments & Sovereign Credentials
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              {selectedVersionMeta?.blobId ? 'WALRUS STORAGE SEALED' : 'CRYPTOGRAPHICALLY VERIFIED'}
+                            </span>
+                          </div>
+
+                          {/* Primary CV Item */}
+                          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-2xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shrink-0 font-bold text-xs">
+                                CV
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                  {cvSourceType === 'walrus'
+                                    ? `${(activeProfileData?.applicant_name || 'Candidate').replace(/\s+/g, '_')}_Sovereign_CV.pdf`
+                                    : (uploadedDocuments[0]?.name || `${(activeProfileData?.applicant_name || 'Candidate').replace(/\s+/g, '_')}_CV.pdf`)}
+                                </div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                                  {selectedVersionMeta?.fileSize
+                                    ? `${Math.round(selectedVersionMeta.fileSize / 1024)} KB`
+                                    : '245 KB'} · <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Primary Curriculum Vitae</span>
+                                </div>
+                              </div>
+                            </div>
+                            <span className="shrink-0 px-2.5 py-1 rounded-md bg-emerald-600 text-white font-bold text-[11px] shadow-2xs">
+                              Download CV ↓
+                            </span>
+                          </div>
+
+                          {selectedVersionMeta?.blobId && (
+                            <div className="pt-1 text-[10px] text-slate-600 dark:text-slate-400 font-mono truncate">
+                              Walrus Explorer: <span className="text-emerald-600 underline">https://walruscan.com/testnet/blob/{selectedVersionMeta.blobId}</span>
+                            </div>
+                          )}
+
+                          {/* Additional Uploaded Credentials */}
+                          {uploadedDocuments.length > 0 && (
+                            <div className="space-y-1.5 pt-1">
+                              <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
+                                Additional Attached Credentials ({uploadedDocuments.length})
+                              </span>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {uploadedDocuments.map((doc) => (
+                                  <div
+                                    key={doc.id}
+                                    className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 text-xs"
+                                  >
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <FileCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                      <span className="truncate font-medium text-slate-900 dark:text-slate-200 text-[11px]">{doc.name}</span>
+                                    </div>
+                                    <span className="text-[10px] text-emerald-600 font-bold shrink-0">View ↓</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-[10.5px] text-emerald-700 dark:text-emerald-300">
+                            All credential documents are cryptographically verified and downloadable above.
+                          </p>
+                        </div>
+
+                        {/* Primary Green CTA Button (Image 2 style) */}
+                        <div>
+                          <span className="inline-block px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-xs sm:text-sm shadow-md">
+                            View Verified Candidate Passport →
+                          </span>
+                        </div>
+
+                        {/* Candidate Sign-Off */}
+                        <div className="pt-2">
+                          <p className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+                            {activeProfileData?.applicant_name || 'Candidate'}
+                          </p>
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                            CareerAce Verified Candidate
+                          </p>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="h-px bg-slate-200 dark:bg-slate-800" />
+
+                        {/* WhatsApp Support Community Note */}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                          Need help getting this done?{' '}
+                          <a href="https://chat.whatsapp.com" target="_blank" rel="noreferrer" className="text-emerald-600 font-semibold underline">
+                            Join the CareerAce WhatsApp support community
+                          </a>{' '}
+                          or simply reply to this email. Direct reply connects to{' '}
+                          <span className="text-emerald-600 font-medium">{activeProfileData?.email || 'applicant@careerace.online'}</span>.
+                        </p>
+                      </div>
+
+                      {/* Footer */}
+                      <p className="text-center text-[11px] text-slate-400 pt-1">
+                        © 2026 CareerAce. All rights reserved.
+                      </p>
+                    </div>
                   </div>
 
                   {/* Modal Footer */}

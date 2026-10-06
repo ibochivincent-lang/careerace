@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { sendEmail, getResendApiKeys } from '@/lib/email';
+import {
+  sendEmail,
+  getResendApiKeys,
+  buildApplicationEmailHtml,
+  SendEmailAttachment,
+} from '@/lib/email';
 import { rememberFact } from '@/lib/memory_contract';
 
 export interface SmtpRelayConfig {
@@ -20,10 +25,16 @@ export async function POST(req: Request) {
       body,
       candidateName,
       candidateEmail,
+      candidatePhone,
+      candidateLocation,
       candidateAddress,
       role,
       company,
       walrusBlobId,
+      primaryCvName,
+      primaryCvSize,
+      primaryCvUrl,
+      passportUrl,
       attachments,
     } = payload;
 
@@ -62,15 +73,52 @@ export async function POST(req: Request) {
     const timestampStr = new Date(now).toISOString();
     const attachedCount = Array.isArray(attachments) ? attachments.length : 0;
 
+    // Generate responsive branded CareerAce email HTML (Image 2 style) if not already full document
+    let emailHtml: string;
+    const trimmedBody = body.trim();
+    if (trimmedBody.startsWith('<!DOCTYPE') || trimmedBody.startsWith('<html')) {
+      emailHtml = body;
+    } else {
+      emailHtml = buildApplicationEmailHtml({
+        candidateName: candidateName || 'Candidate',
+        candidateEmail,
+        candidatePhone,
+        candidateLocation,
+        company: company || 'Hiring Team',
+        role: role || 'Target Role',
+        coverLetter: body,
+        passportUrl,
+        walrusBlobId,
+        primaryCvName,
+        primaryCvSize,
+        primaryCvUrl,
+        attachments: Array.isArray(attachments) ? attachments : [],
+      });
+    }
+
+    // Format MIME attachments for native email client chips & paperclip icon
+    const emailAttachments: SendEmailAttachment[] = [];
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      for (const att of attachments) {
+        if (att && att.name) {
+          emailAttachments.push({
+            filename: att.name,
+            content: att.content,
+            path: att.url || (att.blobId ? `https://walruscan.com/testnet/blob/${att.blobId}` : undefined),
+            contentType: att.contentType || 'application/pdf',
+          });
+        }
+      }
+    }
+
     // Dispatch real transactional email with multi-key Resend rotation and automated failover
     const result = await sendEmail({
       to,
       subject,
-      html: body.includes('<')
-        ? body
-        : `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1e293b;white-space:pre-wrap;">${body}</div>`,
+      html: emailHtml,
       text: body.replace(/<[^>]*>?/gm, ''),
       reply_to: candidateEmail,
+      attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
     });
 
     if (!result.success) {

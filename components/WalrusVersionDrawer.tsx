@@ -36,6 +36,7 @@ export interface WalrusResumeVersionItem {
   suiTxDigest?: string;
   suiExplorerUrl?: string;
   suiObjectId?: string;
+  fileSize?: number;
 }
 
 interface WalrusVersionDrawerProps {

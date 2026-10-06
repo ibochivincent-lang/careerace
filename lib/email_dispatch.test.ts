@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateMailtoUrl, sendApplicationDispatchEmail, getResendApiKeys, getResendFromEmail } from "./email.ts";
+import {
+  generateMailtoUrl,
+  sendApplicationDispatchEmail,
+  getResendApiKeys,
+  getResendFromEmail,
+  buildApplicationEmailHtml,
+} from "./email.ts";
 import { formatRfc5322Date, generateEmlContent } from "./email_receipt.ts";
 
 test("Email Dispatch: generateMailtoUrl builds RFC-compliant URI", () => {
@@ -274,4 +280,56 @@ test("Email Dispatch: generateEmlContent generates valid RFC 5322 multipart mess
   assert.ok(eml.includes('MIME-Version: 1.0'));
   assert.ok(eml.includes('Content-Type: multipart/alternative'));
   assert.ok(eml.includes('X-Walrus-Attestation-BlobId: B6gBL5Tk2S50SHOJ8QgzA-HMByITC3MnxPEcHd5A0LY'));
+});
+
+test("Email Dispatch: buildApplicationEmailHtml produces Image 2 branded template with logo and attachment side", () => {
+  const html = buildApplicationEmailHtml({
+    candidateName: "Ibochi Vincent",
+    candidateEmail: "ibochivincent@gmail.com",
+    candidatePhone: "+234 813 418 0229",
+    candidateLocation: "Sangoted, Lagos State, Nigeria",
+    role: "Autonomous Systems & ML Engineer",
+    company: "Anthropic",
+    coverLetter: "Dear Anthropic Hiring Team,\n\nI am writing to formally submit my application for the position.\n\n1. Prohibitive GPU inference costs.\n2. Model hallucination and verification in production.",
+    passportUrl: "https://careerace.online/verify?applicant=Ibochi%20Vincent",
+    walrusBlobId: "0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
+    primaryCvName: "Ibochi_Vincent_CV.pdf",
+    primaryCvSize: 250000,
+    attachments: [
+      {
+        name: "STCW_Safety_Certificate.pdf",
+        size: 180000,
+        blobId: "0x89ab12cd",
+        url: "https://walruscan.com/testnet/blob/0x89ab12cd",
+      },
+    ],
+  });
+
+  // 1. Brand logo and title
+  assert.ok(html.includes("https://careerace.online/careerace_logo.png"));
+  assert.ok(html.includes("Career"));
+  assert.ok(html.includes("Ace"));
+
+  // 2. Candidate metadata
+  assert.ok(html.includes("Ibochi Vincent"));
+  assert.ok(html.includes("ibochivincent@gmail.com"));
+  assert.ok(html.includes("+234 813 418 0229"));
+  assert.ok(html.includes("Sangoted, Lagos State, Nigeria"));
+  assert.ok(html.includes("Anthropic"));
+  assert.ok(html.includes("Autonomous Systems &amp; ML Engineer"));
+
+  // 3. Attachment side with green dashed styling and primary CV
+  assert.ok(html.includes("Attachments &amp; Sovereign Credentials"));
+  assert.ok(html.includes("Ibochi_Vincent_CV.pdf"));
+  assert.ok(html.includes("Download CV"));
+  assert.ok(html.includes("STCW_Safety_Certificate.pdf"));
+  assert.ok(html.includes("walruscan.com/testnet/blob/0x434f860c82"));
+
+  // 4. Primary Green CTA button
+  assert.ok(html.includes("View Verified Candidate Passport"));
+  assert.ok(html.includes("https://careerace.online/verify?applicant=Ibochi%20Vincent"));
+
+  // 5. WhatsApp support community note & copyright footer
+  assert.ok(html.includes("Join the CareerAce WhatsApp support community"));
+  assert.ok(html.includes("&copy; 2026 CareerAce. All rights reserved."));
 });
