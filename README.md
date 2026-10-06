@@ -207,13 +207,19 @@ SUI_NETWORK=testnet
 SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 SUI_PACKAGE_ID=0x...
 
-# Email Relay (Resend / SMTP)
+# Multi-Provider Email Dispatch (Zero Mock Data, Resilient Fallback)
 RESEND_API_KEY=re_...
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@domain.com
-SMTP_PASS=your-app-password
-SMTP_FROM=CareerAce Applications <applications@careerace.io>
+RESEND_API_KEY_2=re_...
+RESEND_API_KEY_3=re_...
+RESEND_FROM_EMAIL=CareerAce Applications <applications@careerace.io>
+BREVO_API_KEY=xkeysib-...
+BREVO_FROM_EMAIL=applications@careerace.io
+SENDGRID_API_KEY=SG....
+SENDGRID_FROM_EMAIL=applications@careerace.io
+
+# Supabase (Feedback & User State Persistence)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
 # Google zkLogin / OAuth (Optional)
 GOOGLE_CLIENT_ID=...
@@ -224,10 +230,10 @@ GOOGLE_CLIENT_SECRET=...
 
 ## Testing & Verification
 
-The project includes an automated test suite verifying CV parsing, domain gating, SuiNS normalization, Walrus anchoring, ATS scoring, and RFC 5545 calendar generation:
+The project includes an exhaustive automated test suite verifying CV parsing, domain gating, SuiNS normalization, Walrus anchoring, ATS scoring, multi-provider email cascades, RFC 5322 EML generation, and RFC 5545 calendar generation:
 
 ```bash
-# Run full unit test suite (65 tests across 7 test suites)
+# Run full unit test suite (105 tests across 7 test suites)
 npm test
 
 # Run TypeScript static type checking
