@@ -384,23 +384,32 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 8. Try Local Ollama Instance (http://localhost:11434)
-  try {
-    const res = await fetch("http://localhost:11434/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "llama3",
-        prompt: `${options.system_prompt ? options.system_prompt + "\n\n" : ""}${options.prompt}`,
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(600),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.response) return data.response;
+  // 8. Try Ollama Instance (local dev or remote via OLLAMA_BASE_URL env var)
+  // In production on Vercel, OLLAMA_BASE_URL must be set to a reachable remote Ollama
+  // server — localhost is never reachable in a serverless runtime and is silently skipped.
+  const ollamaBase =
+    process.env.OLLAMA_BASE_URL ||
+    (process.env.NODE_ENV !== "production" ? "http://localhost:11434" : null);
+  if (ollamaBase) {
+    try {
+      const res = await fetch(`${ollamaBase}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: process.env.OLLAMA_MODEL || "llama3",
+          prompt: `${options.system_prompt ? options.system_prompt + "\n\n" : ""}${options.prompt}`,
+          stream: false,
+        }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.response) return data.response;
+      }
+    } catch (_e) {
+      // Ollama not available — fall through to intelligent fallback
     }
-  } catch (_e) {}
+  }
 
   // 6. Intelligent Intent & Memory-Aware Dialogue Fallback Engine
   return generateIntelligentFallback(options.prompt, options.system_prompt || "");

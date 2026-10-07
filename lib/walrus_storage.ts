@@ -30,11 +30,28 @@ export interface WalrusBlobUploadResult {
 /**
  * Derives a deterministic cryptographic key for a candidate address using the server session secret.
  * This guarantees the candidate's files are encrypted under an authenticated key unique to their identity.
+ *
+ * SECURITY: SESSION_SECRET must be set in production. A missing secret is a hard error —
+ * using a known fallback string would make all encrypted blobs trivially decryptable.
  */
 function deriveEncryptionKey(candidateAddress: string): Buffer {
-  const secret = process.env.SESSION_SECRET || "careerace_sovereign_walrus_secret_2026_key";
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "[walrus_storage] SESSION_SECRET env var is required in production. " +
+        "Set it in your Vercel / deployment environment variables."
+      );
+    }
+    // Dev-only warning — never silently use a public string in prod
+    console.warn(
+      "[walrus_storage] SESSION_SECRET not set — using insecure dev placeholder. " +
+      "Add SESSION_SECRET to your .env.local before testing encryption."
+    );
+  }
+  const effectiveSecret = secret ?? "dev-only-insecure-placeholder-do-not-use-in-prod";
   return crypto.pbkdf2Sync(
-    secret,
+    effectiveSecret,
     candidateAddress.toLowerCase().trim(),
     100_000,
     32,
