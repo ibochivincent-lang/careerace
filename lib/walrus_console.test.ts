@@ -9,6 +9,9 @@ import {
   getChatHistory,
   getChatHistoryAsync,
   saveChatHistory,
+  saveChatHistoryAsync,
+  appendChatTurn,
+  appendChatTurnAsync,
   clearChatHistory,
 } from "./chat_history_store.ts";
 
@@ -62,4 +65,40 @@ test("Walrus Console Chat Vault: archiveChatSessionToWalrus handles registering 
 
   // When key is registering, it should return { ok: false } with error string instead of crashing
   assert.strictEqual(typeof res.ok, "boolean");
+});
+
+test("3-Tier Chat History Persistence: saveChatHistoryAsync and appendChatTurnAsync operate seamlessly", async () => {
+  const TEST_PERSIST_ADDR = "0xpersist_test_3tier_000000000000000000001";
+  clearChatHistory(TEST_PERSIST_ADDR, "overview");
+
+  // Save via async helper
+  const saved = await saveChatHistoryAsync(
+    TEST_PERSIST_ADDR,
+    [
+      { role: "user", content: "Initial greeting" },
+      { role: "assistant", content: "Welcome to CareerAce!" },
+    ],
+    "overview"
+  );
+  assert.strictEqual(saved.length, 2);
+
+  // Append turn via async helper
+  const appended = await appendChatTurnAsync(
+    TEST_PERSIST_ADDR,
+    "Can you check my STCW license?",
+    "Your STCW license is active and verified.",
+    "overview"
+  );
+  assert.strictEqual(appended.length, 4);
+  assert.strictEqual(appended[2].content, "Can you check my STCW license?");
+  assert.strictEqual(appended[3].content, "Your STCW license is active and verified.");
+
+  // Verify retrieval
+  const retrieved = await getChatHistoryAsync(TEST_PERSIST_ADDR, "overview");
+  assert.strictEqual(retrieved.length, 4);
+
+  // Cleanup
+  clearChatHistory(TEST_PERSIST_ADDR, "overview");
+  const cleared = getChatHistory(TEST_PERSIST_ADDR, "overview");
+  assert.strictEqual(cleared.length, 0);
 });

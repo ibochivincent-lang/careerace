@@ -11,6 +11,9 @@ import {
   archiveChatSessionToWalrus,
   fetchChatSessionFromWalrus,
 } from "./walrus_console_client.ts";
+import { SupabaseDatabaseService } from "./supabase.ts";
+
+const supabaseService = new SupabaseDatabaseService();
 
 export interface ChatMessageRecord {
   role: "user" | "assistant";
@@ -89,18 +92,44 @@ export function getChatHistory(
 }
 
 /**
- * Retrieves chat history asynchronously, hydrating from Walrus Console if local is empty.
+ * Retrieves chat history asynchronously.
+ * 3-Tier Hydration Hierarchy:
+ * Tier 1: In-memory cache
+ * Tier 2: Supabase PostgreSQL (sub-50ms cloud hot store)
+ * Tier 3: Walrus Console (cold sovereign vault)
  */
 export async function getChatHistoryAsync(
   rawAddress?: string | null,
   channel = "overview"
 ): Promise<ChatMessageRecord[]> {
-  const local = getChatHistory(rawAddress, channel);
+  const address = normalizeHistoryAddress(rawAddress);
+  const local = getChatHistory(address, channel);
   if (local.length > 0) {
     return local;
   }
 
-  const address = normalizeHistoryAddress(rawAddress);
+  // Tier 2: Hydrate from Supabase PostgreSQL
+  try {
+    const supabaseMsgs = await supabaseService.getCandidateChatHistory(address, channel);
+    if (Array.isArray(supabaseMsgs) && supabaseMsgs.length > 0) {
+      const formatted: ChatMessageRecord[] = supabaseMsgs.map((m: any) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: typeof m.timestamp === "number" ? m.timestamp : Date.now(),
+        channel,
+      }));
+      const existing = memoryCache.get(address) || [];
+      const otherChannel = existing.filter((m) => m.channel && m.channel !== channel);
+      const merged = [...otherChannel, ...formatted].slice(-MAX_MESSAGES_PER_USER);
+      memoryCache.set(address, merged);
+      flushToDisk();
+      return formatted;
+    }
+  } catch (err) {
+    console.warn("[chat_history] Notice restoring from Supabase:", err);
+  }
+
+  // Tier 3: Fall back to Walrus Console cold sovereign vault
   try {
     const remote = await fetchChatSessionFromWalrus({ address, channel });
     if (Array.isArray(remote) && remote.length > 0) {
@@ -116,6 +145,7 @@ export async function getChatHistoryAsync(
 
 /**
  * Saves or replaces the complete chat history for an address and channel.
+ * Synchronously updates memory cache and triggers background cloud persistence.
  */
 export function saveChatHistory(
   rawAddress: string | null | undefined,
@@ -139,11 +169,18 @@ export function saveChatHistory(
   memoryCache.set(address, merged);
   flushToDisk();
 
-  // Background sovereign archive to Walrus Console
+  const channelMessages = merged.filter((m) => !m.channel || m.channel === channel);
+
+  // Background Cloud Persistence Tier 2: Supabase
+  supabaseService.saveCandidateChatHistory(address, channel, channelMessages).catch((err) => {
+    console.warn("[chat_history] Notice background Supabase persistence:", err);
+  });
+
+  // Background Cloud Persistence Tier 3: Walrus Console
   archiveChatSessionToWalrus({
     address,
     channel,
-    messages: formatted,
+    messages: channelMessages,
   }).catch((err) => {
     console.warn("[chat_history] Notice background Walrus Console archive:", err);
   });
@@ -184,16 +221,55 @@ export function appendChatTurn(
   memoryCache.set(address, updated);
   flushToDisk();
 
-  // Background sovereign archive to Walrus Console
+  const channelMessages = updated.filter((m) => !m.channel || m.channel === channel);
+
+  // Background Cloud Persistence Tier 2: Supabase
+  supabaseService.saveCandidateChatHistory(address, channel, channelMessages).catch((err) => {
+    console.warn("[chat_history] Notice background Supabase persistence on turn:", err);
+  });
+
+  // Background Cloud Persistence Tier 3: Walrus Console
   archiveChatSessionToWalrus({
     address,
     channel,
-    messages: updated.filter((m) => !m.channel || m.channel === channel),
+    messages: channelMessages,
   }).catch((err) => {
     console.warn("[chat_history] Notice background Walrus Console turn sync:", err);
   });
 
-  return updated.filter((m) => !m.channel || m.channel === channel);
+  return channelMessages;
+}
+
+/**
+ * Awaitable versions for API endpoints requiring guaranteed cloud delivery before responding
+ */
+export async function saveChatHistoryAsync(
+  rawAddress: string | null | undefined,
+  messages: Array<{ role: "user" | "assistant"; content: string; timestamp?: number }>,
+  channel = "overview"
+): Promise<ChatMessageRecord[]> {
+  const formatted = saveChatHistory(rawAddress, messages, channel);
+  const address = normalizeHistoryAddress(rawAddress);
+  await Promise.allSettled([
+    supabaseService.saveCandidateChatHistory(address, channel, formatted),
+    archiveChatSessionToWalrus({ address, channel, messages: formatted }),
+  ]);
+  return formatted;
+}
+
+export async function appendChatTurnAsync(
+  rawAddress: string | null | undefined,
+  userMessage: string,
+  assistantReply: string,
+  channel = "overview"
+): Promise<ChatMessageRecord[]> {
+  const updated = appendChatTurn(rawAddress, userMessage, assistantReply, channel);
+  const address = normalizeHistoryAddress(rawAddress);
+  await Promise.allSettled([
+    supabaseService.saveCandidateChatHistory(address, channel, updated),
+    archiveChatSessionToWalrus({ address, channel, messages: updated }),
+  ]);
+  return updated;
 }
 
 /**
@@ -210,5 +286,10 @@ export function clearChatHistory(rawAddress?: string | null, channel?: string): 
     memoryCache.set(address, remaining);
   }
   flushToDisk();
+
+  // Clear from Supabase
+  supabaseService.clearCandidateChatHistory(address, channel).catch((err) => {
+    console.warn("[chat_history] Notice clearing chat from Supabase:", err);
+  });
 }
 

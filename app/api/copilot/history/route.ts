@@ -3,7 +3,9 @@ import {
   getChatHistory,
   getChatHistoryAsync,
   saveChatHistory,
+  saveChatHistoryAsync,
   appendChatTurn,
+  appendChatTurnAsync,
   clearChatHistory,
 } from "@/lib/chat_history_store.ts";
 import { resolveTargetAddress } from "@/lib/target_address.ts";
@@ -52,12 +54,12 @@ export async function POST(req: Request) {
     }
 
     if (body.userMessage && body.assistantReply) {
-      const updated = appendChatTurn(address, body.userMessage, body.assistantReply, channel);
+      const updated = await appendChatTurnAsync(address, body.userMessage, body.assistantReply, channel);
       return NextResponse.json({ ok: true, messages: updated });
     }
 
     if (Array.isArray(body.messages)) {
-      const updated = saveChatHistory(address, body.messages, channel);
+      const updated = await saveChatHistoryAsync(address, body.messages, channel);
       return NextResponse.json({ ok: true, messages: updated });
     }
 
