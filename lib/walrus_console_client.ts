@@ -284,13 +284,18 @@ export async function ensureChatVaultBucket(spaceId: string): Promise<string | n
   }
 }
 
+import { archiveChatSessionToIpfs, type PinataPinResult } from "./pinata_ipfs_client.ts";
+
 export interface CandidateWalrusVaultRecord {
   blobId: string;
   suiObjectId?: string | null;
   walrusUrl: string;
+  ipfsHash?: string | null;
+  ipfsUrl?: string | null;
+  gatewayUrl?: string | null;
   timestamp: number;
   messageCount: number;
-  storageEngine: "direct-walrus" | "walrus-console";
+  storageEngine: "direct-walrus" | "walrus-console" | "pinata-ipfs";
 }
 
 // In-memory index of latest blob per candidate address and channel
@@ -568,7 +573,9 @@ export async function archiveChatSessionToWalrus(params: {
   blobId?: string;
   fileId?: string;
   walrusUrl?: string;
-  storageEngine: "direct-walrus" | "walrus-console";
+  ipfsHash?: string;
+  gatewayUrl?: string;
+  storageEngine: "direct-walrus" | "walrus-console" | "pinata-ipfs";
   error?: string;
 }> {
   const cleanAddr = params.address.toLowerCase().trim();
@@ -582,45 +589,92 @@ export async function archiveChatSessionToWalrus(params: {
     messages: params.messages,
   };
 
-  // 1. Primary Engine: Direct Walrus Protocol (instant, zero-key, decentralized)
-  const directRes = await uploadToDirectWalrus(payload, 5);
-  if (directRes.ok && directRes.blobId && directRes.walrusUrl) {
+  // Launch Walrus Protocol, Walrus Console, and Pinata IPFS simultaneously
+  const directPromise: Promise<{
+    ok: boolean;
+    blobId?: string;
+    suiObjectId?: string | null;
+    walrusUrl?: string;
+    error?: string;
+  }> = uploadToDirectWalrus(payload, 5).catch((err: any) => ({
+    ok: false,
+    error: err?.message || "Direct Walrus error",
+  }));
+
+  const ipfsPromise: Promise<PinataPinResult> = archiveChatSessionToIpfs(params).catch((err: any) => ({
+    ok: false,
+    error: err?.message || "Pinata IPFS error",
+  }));
+
+  const consolePromise: Promise<{
+    ok: boolean;
+    fileId?: string;
+    error?: string;
+  }> = mirrorToWalrusConsole(params).catch((err: any) => ({
+    ok: false,
+    error: err?.message || "Walrus Console error",
+  }));
+
+  const [directRes, ipfsRes, consoleRes] = await Promise.all([
+    directPromise,
+    ipfsPromise,
+    consolePromise,
+  ]);
+
+  const hasDirect = Boolean(directRes.ok && directRes.blobId);
+  const hasIpfs = Boolean(ipfsRes.ok && ipfsRes.ipfsHash);
+  const hasConsole = Boolean(consoleRes.ok && consoleRes.fileId);
+
+  if (hasDirect || hasIpfs || hasConsole) {
     await loadVaultIndex();
+    const primaryBlobId = (hasDirect
+      ? directRes.blobId
+      : hasIpfs
+      ? ipfsRes.ipfsHash
+      : consoleRes.fileId)!;
+    const primaryWalrusUrl = hasDirect
+      ? directRes.walrusUrl
+      : hasIpfs
+      ? ipfsRes.gatewayUrl
+      : "";
+    const activeEngine: "direct-walrus" | "walrus-console" | "pinata-ipfs" = hasDirect
+      ? "direct-walrus"
+      : hasIpfs
+      ? "pinata-ipfs"
+      : "walrus-console";
+
     candidateVaultIndex.set(`${cleanAddr}_${params.channel}`, {
-      blobId: directRes.blobId,
-      suiObjectId: directRes.suiObjectId,
-      walrusUrl: directRes.walrusUrl,
+      blobId: primaryBlobId,
+      suiObjectId: directRes.suiObjectId || null,
+      walrusUrl: primaryWalrusUrl || "",
+      ipfsHash: hasIpfs ? ipfsRes.ipfsHash : null,
+      ipfsUrl: hasIpfs ? ipfsRes.ipfsUrl : null,
+      gatewayUrl: hasIpfs ? ipfsRes.gatewayUrl : null,
       timestamp: Date.now(),
       messageCount: params.messages.length,
-      storageEngine: "direct-walrus",
+      storageEngine: activeEngine,
     });
     await saveVaultIndex();
 
-    // Mirror to Walrus Console in background if active
-    mirrorToWalrusConsole(params).catch(() => {});
-
     return {
       ok: true,
-      blobId: directRes.blobId,
-      walrusUrl: directRes.walrusUrl,
-      storageEngine: "direct-walrus",
-    };
-  }
-
-  // 2. Secondary Engine: Walrus Console fallback
-  const consoleRes = await mirrorToWalrusConsole(params);
-  if (consoleRes.ok) {
-    return {
-      ok: true,
+      blobId: directRes.blobId || ipfsRes.ipfsHash,
+      walrusUrl: directRes.walrusUrl || ipfsRes.gatewayUrl,
+      ipfsHash: ipfsRes.ipfsHash,
+      gatewayUrl: ipfsRes.gatewayUrl,
       fileId: consoleRes.fileId,
-      storageEngine: "walrus-console",
+      storageEngine: activeEngine,
     };
   }
 
   return {
     ok: false,
     storageEngine: "direct-walrus",
-    error: directRes.error || consoleRes.error || "Failed to archive to Walrus",
+    error:
+      directRes.error ||
+      ipfsRes.error ||
+      consoleRes.error ||
+      "Failed to archive to sovereign storage",
   };
 }
 

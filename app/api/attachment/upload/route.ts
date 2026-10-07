@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { uploadPublicProofToWalrus } from "@/lib/walrus_storage";
+import { pinFileToIpfs } from "@/lib/pinata_ipfs_client";
 import { resolveTargetAddress } from "@/lib/target_address";
 
 export const maxDuration = 60;
@@ -62,15 +63,33 @@ export async function POST(req: Request) {
       );
     }
 
-    // Upload to Walrus testnet
+    // Upload simultaneously to Walrus Protocol and Pinata IPFS
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const walrusResult = await uploadPublicProofToWalrus(
-      fileBuffer,
-      cleanFileName,
-      mimeType
-    );
 
-    const proofId = `proof-${Date.now()}-${walrusResult.blobId.slice(0, 6)}`;
+    const [walrusPromise, ipfsPromise] = [
+      uploadPublicProofToWalrus(fileBuffer, cleanFileName, mimeType).catch((err) => {
+        console.warn("[upload] Walrus upload notice:", err);
+        return null;
+      }),
+      pinFileToIpfs(fileBuffer, cleanFileName, mimeType, {
+        keyvalues: { title: title || cleanFileName, category, targetId },
+      }).catch((err) => {
+        console.warn("[upload] Pinata IPFS upload notice:", err);
+        return null;
+      }),
+    ];
+
+    const [walrusResult, ipfsResult] = await Promise.all([
+      walrusPromise,
+      ipfsPromise,
+    ]);
+
+    if (!walrusResult && !ipfsResult?.ok) {
+      throw new Error("Failed to anchor proof to decentralized storage (Walrus & IPFS unavailable).");
+    }
+
+    const proofId = `proof-${Date.now()}-${(walrusResult?.blobId || ipfsResult?.ipfsHash || "").slice(0, 8)}`;
+    const previewUrl = walrusResult?.walrusUrl || ipfsResult?.gatewayUrl || "";
 
     return NextResponse.json({
       success: true,
@@ -79,10 +98,13 @@ export async function POST(req: Request) {
         title: title || cleanFileName,
         category,
         targetId,
-        blobId: walrusResult.blobId,
-        walrusUrl: walrusResult.walrusUrl,
-        previewUrl: walrusResult.walrusUrl,
-        sha256Digest: walrusResult.sha256Digest,
+        blobId: walrusResult?.blobId || null,
+        walrusUrl: walrusResult?.walrusUrl || null,
+        ipfsHash: ipfsResult?.ipfsHash || null,
+        ipfsUrl: ipfsResult?.ipfsUrl || null,
+        gatewayUrl: ipfsResult?.gatewayUrl || null,
+        previewUrl,
+        sha256Digest: walrusResult?.sha256Digest || null,
         fileType: mimeType,
         uploadedAt: new Date().toISOString(),
         isExternal: false,

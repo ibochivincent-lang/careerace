@@ -229,6 +229,8 @@ function DashboardContent() {
   const [overviewWalrusVault, setOverviewWalrusVault] = useState<{
     latestBlobId?: string | null
     walrusUrl?: string | null
+    ipfsHash?: string | null
+    gatewayUrl?: string | null
     directWalrusActive?: boolean
   } | null>(null)
   const overviewChatContainerRef = useRef<HTMLDivElement>(null)
@@ -1597,6 +1599,19 @@ function DashboardContent() {
                         <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
                           Walrus Vault Live
                         </Badge>
+                      )}
+
+                      {overviewWalrusVault?.gatewayUrl && overviewWalrusVault.ipfsHash && (
+                        <a
+                          href={overviewWalrusVault.gatewayUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[9px] text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 px-2 py-0.5 rounded-md font-mono transition-colors"
+                          title={`Decentralized Pinata IPFS CID: ${overviewWalrusVault.ipfsHash} — Click to inspect on Pinata Gateway`}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>IPFS: {overviewWalrusVault.ipfsHash.slice(0, 6)}...</span>
+                        </a>
                       )}
                     </div>
                   </div>

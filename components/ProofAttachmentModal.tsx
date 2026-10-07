@@ -236,7 +236,30 @@ export function ProofAttachmentModal({
                 {existingProof.blobId && (
                   <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 break-all bg-emerald-500/10 p-2 rounded-lg">
                     <span className="font-semibold block text-[10px] uppercase text-muted-foreground">Walrus Blob ID:</span>
-                    {existingProof.blobId}
+                    <a
+                      href={existingProof.walrusUrl || `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${existingProof.blobId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline inline-flex items-center gap-1"
+                    >
+                      {existingProof.blobId}
+                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                    </a>
+                  </div>
+                )}
+
+                {existingProof.ipfsHash && (
+                  <div className="text-[11px] font-mono text-purple-700 dark:text-purple-300 break-all bg-purple-500/10 p-2 rounded-lg">
+                    <span className="font-semibold block text-[10px] uppercase text-muted-foreground">Pinata IPFS CID:</span>
+                    <a
+                      href={existingProof.gatewayUrl || `https://gateway.pinata.cloud/ipfs/${existingProof.ipfsHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline inline-flex items-center gap-1"
+                    >
+                      {existingProof.ipfsHash}
+                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                    </a>
                   </div>
                 )}
 

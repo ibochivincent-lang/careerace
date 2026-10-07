@@ -13,6 +13,9 @@ export interface ProofAttachment {
   url?: string;
   blobId?: string;
   walrusUrl?: string;
+  ipfsHash?: string | null;
+  ipfsUrl?: string | null;
+  gatewayUrl?: string | null;
   previewUrl?: string;
   fileType?: string;
   uploadedAt: string;

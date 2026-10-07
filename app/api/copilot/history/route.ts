@@ -48,6 +48,15 @@ export async function GET(req: Request) {
         (vaultRecord?.blobId
           ? `${DIRECT_WALRUS_AGGREGATOR_URL}/v1/blobs/${vaultRecord.blobId}`
           : null),
+      ipfsHash: vaultRecord?.ipfsHash || null,
+      ipfsUrl:
+        vaultRecord?.ipfsUrl ||
+        (vaultRecord?.ipfsHash ? `ipfs://${vaultRecord.ipfsHash}` : null),
+      gatewayUrl:
+        vaultRecord?.gatewayUrl ||
+        (vaultRecord?.ipfsHash
+          ? `https://gateway.pinata.cloud/ipfs/${vaultRecord.ipfsHash}`
+          : null),
       suiObjectId: vaultRecord?.suiObjectId || null,
       archivedAt: vaultRecord?.timestamp
         ? new Date(vaultRecord.timestamp).toISOString()
