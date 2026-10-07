@@ -107,7 +107,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: groqPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(2000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -115,9 +115,15 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (content) return content;
         } else {
           console.warn(`[careerace] Groq (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] Groq (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
@@ -142,7 +148,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: cerebrasPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(2000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -150,9 +156,15 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (content) return content;
         } else {
           console.warn(`[careerace] Cerebras (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] Cerebras (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
@@ -177,7 +189,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: deepseekPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
-          signal: AbortSignal.timeout(4000),
+          signal: AbortSignal.timeout(2000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -185,9 +197,15 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (content) return content;
         } else {
           console.warn(`[careerace] DeepSeek (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] DeepSeek (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
@@ -219,7 +237,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(4000),
+            signal: AbortSignal.timeout(2000),
           }
         );
         if (res.ok) {
@@ -228,13 +246,18 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (text) return text;
         } else {
           console.warn(`[careerace] Gemini (${modelName}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] Gemini (${modelName}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
-
 
   // 5. Try OpenRouter (Free open-source models: Qwen, Nemotron, Gemma, DeepSeek R1, Mistral)
   if (openRouterKey) {
@@ -258,6 +281,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             messages: openRouterPayloadMessages,
             max_tokens: options.max_tokens || 1000,
           }),
+          signal: AbortSignal.timeout(2000),
         });
 
         if (res.ok) {
@@ -266,9 +290,15 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (content) return content;
         } else {
           console.warn(`[careerace] OpenRouter (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] OpenRouter (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
@@ -292,7 +322,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             ],
             max_tokens: options.max_tokens || 800,
           }),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(2000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -300,9 +330,15 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (content) return content;
         } else {
           console.warn(`[careerace] OpenCode (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] OpenCode (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
@@ -325,7 +361,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
             ],
             max_tokens: options.max_tokens || 800,
           }),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(2000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -333,9 +369,15 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
           if (content) return content;
         } else {
           console.warn(`[careerace] OpenAI (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[careerace] OpenAI (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
       }
     }
   }
@@ -350,6 +392,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
         prompt: `${options.system_prompt ? options.system_prompt + "\n\n" : ""}${options.prompt}`,
         stream: false,
       }),
+      signal: AbortSignal.timeout(600),
     });
     if (res.ok) {
       const data = await res.json();

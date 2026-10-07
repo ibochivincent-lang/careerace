@@ -607,21 +607,28 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
   };
 
   // 3. Extract facts from current user turn and persist to Walrus Memory
+  // 3. Extract facts from current user turn and persist to Walrus Memory
   const newlyStored: string[] = [];
   const extracted = extractHeuristicFacts(latest, asked);
 
-  // Await fact persistence so memory is immediately consistent for following turns
-  await Promise.allSettled(
+  // Optimistically register extracted facts in newlyStored so turn output has immediate acknowledgment
+  for (const fact of extracted) {
+    newlyStored.push(`${fact.kind.replace("_", " ")}: ${fact.text}`);
+  }
+
+  // Persist facts to sovereign Walrus memory with a bounded 150ms race
+  // In live environments, fast local/cached writes settle immediately, while slower Walrus relayer writes continue safely in the background
+  const persistencePromise = Promise.allSettled(
     extracted.map((fact) =>
       rememberFact(address, fact.kind, fact.text, { userTurn: latest })
-        .then((outcome) => {
-          if (outcome.status === "written") {
-            newlyStored.push(`${fact.kind.replace("_", " ")}: ${fact.text}`);
-          }
-        })
         .catch((err) => console.warn("[careerace] memory persistence notice:", err))
     )
   );
+
+  await Promise.race([
+    persistencePromise,
+    new Promise((resolve) => setTimeout(resolve, 150)),
+  ]);
 
   // Update in-memory collections with newly extracted facts for current turn
   for (const f of extracted) {
@@ -1025,8 +1032,11 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
       newCategory = "Management & Operations";
     }
 
-    await rememberFact(address, "target_role", `Target role: ${newDisciplineName}`).catch(() => {});
-    await rememberFact(address, "preference", `Target discipline: ${newCategory}`).catch(() => {});
+    const switchPromise = Promise.all([
+      rememberFact(address, "target_role", `Target role: ${newDisciplineName}`).catch(() => {}),
+      rememberFact(address, "preference", `Target discipline: ${newCategory}`).catch(() => {}),
+    ]);
+    await Promise.race([switchPromise, new Promise((resolve) => setTimeout(resolve, 150))]);
     newlyStored.push(`Target role: ${newDisciplineName}`);
     newlyStored.push(`Target discipline: ${newCategory}`);
     storedSummary.targetRoles.unshift(newDisciplineName);

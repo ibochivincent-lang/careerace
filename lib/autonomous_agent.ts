@@ -358,12 +358,14 @@ export async function executeAutonomousGoal(params: AutonomousGoalParams): Promi
   const memoryUpdates: string[] = [];
   try {
     const goalSummaryFact = `Active Autonomous Goal: Prepared ${targetCount} ${locationConstraint} jobs for ${candidateName} across 4 paced batches.`;
-    await rememberFact(candidateAddress, "preference", goalSummaryFact, { userTurn: goalText });
-    memoryUpdates.push(goalSummaryFact);
-
     const planSummaryFact = `Autonomous Campaign Plan: 5 immediate dispatches ready, ${targetCount - 5} queued across Days 2-4 with 5-day company cooldowns.`;
-    await rememberFact(candidateAddress, "preference", planSummaryFact, { userTurn: goalText });
-    memoryUpdates.push(planSummaryFact);
+    memoryUpdates.push(goalSummaryFact, planSummaryFact);
+
+    const goalPersistPromise = Promise.all([
+      rememberFact(candidateAddress, "preference", goalSummaryFact, { userTurn: goalText }),
+      rememberFact(candidateAddress, "preference", planSummaryFact, { userTurn: goalText }),
+    ]);
+    await Promise.race([goalPersistPromise, new Promise((resolve) => setTimeout(resolve, 150))]);
   } catch (err) {
     console.warn("[careerace] memory persistence notice during autonomous execution:", err);
   }
