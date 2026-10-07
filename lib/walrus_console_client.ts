@@ -5,6 +5,9 @@
  * and candidate archives backed by Walrus decentralized storage.
  */
 
+import fs from "node:fs";
+import path from "node:path";
+
 export interface WalrusConsoleSpace {
   id: string;
   type: "personal" | "team";
@@ -54,8 +57,6 @@ export function getWalrusConsoleApiKey(): string | null {
 
   try {
     // Dynamic fallback for standalone script and test runners
-    const fs = require("node:fs");
-    const path = require("node:path");
     const envPath = path.join(process.cwd(), ".env.local");
     if (fs.existsSync(envPath)) {
       const content = fs.readFileSync(envPath, "utf-8");
@@ -70,6 +71,7 @@ export function getWalrusConsoleApiKey(): string | null {
 
   return null;
 }
+
 
 
 /**
