@@ -3,7 +3,9 @@
  *
  * Provides persistent sovereign storage for chat transcripts, audit trails,
  * and candidate archives backed by Walrus decentralized storage.
+ * Active deployment connection to Vercel production environment.
  */
+
 
 import fs from "node:fs";
 import path from "node:path";
