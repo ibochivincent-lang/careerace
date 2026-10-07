@@ -61,7 +61,27 @@ export interface SupabaseMemory {
   fact_text: string;
   walrus_blob_id?: string | null;
   walrus_job_id?: string | null;
+  confidence?: number;
+  sensitivity?: "public" | "normal" | "confidential";
+  valid_from?: string;
+  valid_until?: string | null;
+  supersedes_memory_id?: string | null;
+  verification_status?: "unverified" | "verified" | "disputed" | "superseded";
   created_at?: string;
+  updated_at?: string;
+}
+
+export interface SupabaseAgentAction {
+  id?: string;
+  candidate_wallet: string;
+  action_type: string;
+  status: "pending_approval" | "approved" | "executed" | "rejected" | "failed";
+  requires_approval: boolean;
+  payload?: any;
+  result?: any;
+  error_message?: string | null;
+  created_at?: string;
+  executed_at?: string | null;
 }
 
 export interface SupabaseApplication {
@@ -139,16 +159,24 @@ export class SupabaseDatabaseService {
    */
   public async recordMemory(memory: SupabaseMemory) {
     if (!this.client) return null;
+    const payload: Record<string, any> = {
+      candidate_wallet: memory.candidate_wallet.toLowerCase().trim(),
+      namespace: memory.namespace,
+      fact_kind: memory.fact_kind,
+      fact_text: memory.fact_text,
+      walrus_blob_id: memory.walrus_blob_id,
+      walrus_job_id: memory.walrus_job_id,
+    };
+    if (memory.confidence !== undefined) payload.confidence = memory.confidence;
+    if (memory.sensitivity) payload.sensitivity = memory.sensitivity;
+    if (memory.valid_from) payload.valid_from = memory.valid_from;
+    if (memory.valid_until !== undefined) payload.valid_until = memory.valid_until;
+    if (memory.supersedes_memory_id) payload.supersedes_memory_id = memory.supersedes_memory_id;
+    if (memory.verification_status) payload.verification_status = memory.verification_status;
+
     const { data, error } = await this.client
       .from("candidate_memories")
-      .insert({
-        candidate_wallet: memory.candidate_wallet.toLowerCase().trim(),
-        namespace: memory.namespace,
-        fact_kind: memory.fact_kind,
-        fact_text: memory.fact_text,
-        walrus_blob_id: memory.walrus_blob_id,
-        walrus_job_id: memory.walrus_job_id,
-      })
+      .insert(payload)
       .select()
       .single();
 
@@ -314,6 +342,61 @@ export class SupabaseDatabaseService {
       return !error;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Records an autonomous agent action to the auditable log (PRD FR-014, FR-015).
+   */
+  public async recordAgentAction(action: SupabaseAgentAction): Promise<SupabaseAgentAction | null> {
+    if (!this.client) return null;
+    try {
+      const { data, error } = await this.client
+        .from("agent_actions")
+        .insert({
+          candidate_wallet: action.candidate_wallet.toLowerCase().trim(),
+          action_type: action.action_type,
+          status: action.status,
+          requires_approval: action.requires_approval,
+          payload: action.payload || {},
+          result: action.result || null,
+          error_message: action.error_message || null,
+          executed_at: action.executed_at || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.warn("[supabase] recordAgentAction notice:", error.message);
+        return null;
+      }
+      return data;
+    } catch (err: any) {
+      console.warn("[supabase] recordAgentAction catch notice:", err?.message || err);
+      return null;
+    }
+  }
+
+  /**
+   * Fetches agent action audit records for a candidate wallet (PRD FR-015).
+   */
+  public async getAgentActions(walletAddress: string): Promise<SupabaseAgentAction[]> {
+    if (!this.client) return [];
+    try {
+      const { data, error } = await this.client
+        .from("agent_actions")
+        .select("*")
+        .eq("candidate_wallet", walletAddress.toLowerCase().trim())
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.warn("[supabase] getAgentActions notice:", error.message);
+        return [];
+      }
+      return data || [];
+    } catch (err: any) {
+      console.warn("[supabase] getAgentActions catch notice:", err?.message || err);
+      return [];
     }
   }
 }
