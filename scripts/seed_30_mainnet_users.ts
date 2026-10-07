@@ -227,6 +227,95 @@ async function rememberWithRetry(
   throw new Error(`Exceeded max retry attempts for memory write.`);
 }
 
+export interface SeedBatchOptions {
+  startIndex?: number;
+  count?: number;
+  candidateId?: string;
+  skipSleep?: boolean;
+}
+
+export interface SeedBatchResult {
+  ok: boolean;
+  seededCount: number;
+  totalCandidates: number;
+  reports: Array<{
+    candidateId: string;
+    name: string;
+    namespace: string;
+    memoriesQueued: number;
+    error?: string;
+  }>;
+  durationMs: number;
+  notice?: string;
+}
+
+export async function seedCandidatesBatch(options: SeedBatchOptions = {}): Promise<SeedBatchResult> {
+  const startTime = Date.now();
+  const accountId = process.env.MEMWAL_ACCOUNT_ID?.trim();
+  const key = process.env.MEMWAL_PRIVATE_KEY?.trim();
+  const serverUrl = process.env.MEMWAL_SERVER_URL?.trim() || "https://relayer.memory.walrus.xyz";
+
+  if (!accountId || !key) {
+    return {
+      ok: false,
+      seededCount: 0,
+      totalCandidates: 0,
+      reports: [],
+      durationMs: Date.now() - startTime,
+      notice: "Missing MEMWAL_ACCOUNT_ID or MEMWAL_PRIVATE_KEY in environment.",
+    };
+  }
+
+  let targets = CANDIDATE_PROFILES_30;
+  if (options.candidateId) {
+    targets = targets.filter((c) => c.id === options.candidateId);
+  } else {
+    const start = options.startIndex || 0;
+    const count = options.count || 2;
+    targets = targets.slice(start, start + count);
+  }
+
+  const reports: SeedBatchResult["reports"] = [];
+  let totalSeeded = 0;
+
+  for (const candidate of targets) {
+    const report = {
+      candidateId: candidate.id,
+      name: candidate.name,
+      namespace: candidate.namespace,
+      memoriesQueued: 0,
+      error: undefined as string | undefined,
+    };
+
+    try {
+      const client = MemWal.create({ key, accountId, serverUrl, namespace: candidate.namespace });
+      for (let m = 0; m < candidate.memories.length; m++) {
+        try {
+          await client.remember(candidate.memories[m], candidate.namespace);
+          report.memoriesQueued++;
+        } catch (memErr: any) {
+          console.warn(`[seed] Notice seeding memory for ${candidate.id}:`, memErr.message);
+        }
+        if (!options.skipSleep) {
+          await sleep(250);
+        }
+      }
+      totalSeeded++;
+    } catch (err: any) {
+      report.error = err.message || String(err);
+    }
+    reports.push(report);
+  }
+
+  return {
+    ok: totalSeeded > 0,
+    seededCount: totalSeeded,
+    totalCandidates: targets.length,
+    reports,
+    durationMs: Date.now() - startTime,
+  };
+}
+
 export async function seedAll30Users() {
   const accountId = process.env.MEMWAL_ACCOUNT_ID?.trim();
   const key = process.env.MEMWAL_PRIVATE_KEY?.trim();

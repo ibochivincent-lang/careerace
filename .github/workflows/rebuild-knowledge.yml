@@ -1,0 +1,58 @@
+name: Rebuild Career Knowledge & Taxonomies
+
+on:
+  schedule:
+    - cron: '0 4 * * 0' # Every Sunday at 04:00 UTC
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-knowledge:
+    name: Rebuild Knowledge Base & Embeddings
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Rebuild Intent Knowledge Base
+        run: python scripts/build_intent_knowledge.py
+
+      - name: Expand & Verify Company Directory
+        run: python scripts/expand_company_directory.py
+
+      - name: Process Maritime Contacts Directory
+        run: python scripts/build_verified_maritime_contacts.py
+
+      - name: Verify Unit Tests Pass with Fresh Knowledge
+        run: npm test
+
+      - name: Commit and Push Updated Knowledge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add lib/user_intent_knowledge.ts lib/company_directory.ts lib/verified_maritime_contacts.json supabase_seed_intents.sql
+            git commit -m "chore(knowledge): automated weekly knowledge base and taxonomy refresh [skip ci]" || echo "No changes to commit"
+            git push origin main
+          else
+            echo "Knowledge base already up to date. Zero diff detected."
+          fi

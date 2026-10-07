@@ -177,7 +177,11 @@ if os.path.exists(p3):
                 add_contact(company, em, loc, ["Engine Cadet", "Marine Engineer Officer"], "Maritime operator contact.")
 
 print(f"TOTAL CLEAN VERIFIED MARITIME CONTACTS CREATED: {len(contacts)}")
-with open(r'c:\Users\User\.gemini\antigravity-ide\scratch\careerace\lib\verified_maritime_contacts.json', 'w', encoding='utf-8') as f:
-    json.dump(contacts, f, indent=2)
+output_path = os.path.join(os.path.dirname(__file__), "..", "lib", "verified_maritime_contacts.json")
 
-print("Saved to verified_maritime_contacts.json")
+if len(contacts) > 0:
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(contacts, f, indent=2)
+    print(f"Saved {len(contacts)} contacts to verified_maritime_contacts.json")
+else:
+    print("No external source spreadsheets found; preserving existing verified_maritime_contacts.json.")
