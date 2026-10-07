@@ -13,30 +13,35 @@ if (!recipient || !recipient.includes("@")) {
   process.exit(1);
 }
 
+const candidateName = process.env.TEST_CANDIDATE_NAME || "Verified Candidate";
+const candidateEmail = process.env.TEST_CANDIDATE_EMAIL || recipient;
+const candidatePhone = process.env.TEST_CANDIDATE_PHONE || "+1 (555) 019-2834";
+const candidateLocation = process.env.TEST_CANDIDATE_LOCATION || "San Francisco, CA";
+const role = process.env.TEST_TARGET_ROLE || "Autonomous Systems & ML Engineer";
+const company = process.env.TEST_TARGET_COMPANY || "Anthropic";
+
 async function main() {
   console.log(`\n[Career Ace] Dispatching live branded application email to: ${recipient}...`);
 
   const brandedHtml = buildApplicationEmailHtml({
-    candidateName: "Ibochi Vincent",
-    candidateEmail: "ibochivincent@gmail.com",
-    candidatePhone: "+234 813 418 0229",
-    candidateLocation: "Sangoted, Lagos State, Nigeria",
-    role: "Autonomous Systems & ML Engineer",
-    company: "Anthropic",
-    coverLetter: `Dear Anthropic Hiring Team,
+    candidateName,
+    candidateEmail,
+    candidatePhone,
+    candidateLocation,
+    role,
+    company,
+    coverLetter: `Dear ${company} Hiring Team,
 
-I am writing to formally submit my application for the position of Autonomous Systems & ML Engineer with Anthropic. With a foundation centered on PyTorch, vLLM, TensorRT, LoRA Fine-Tuning, Distributed Training, Evaluation Harnesses, I take direct accountability for technical execution, operational discipline, and high-stakes reliability.
+I am writing to formally submit my application for the position of ${role} with ${company}. With a foundation centered on PyTorch, vLLM, TensorRT, LoRA Fine-Tuning, Distributed Training, and Evaluation Harnesses, I take direct accountability for technical execution, operational discipline, and high-stakes reliability.
 
-Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact Anthropic:
+Specifically, I tailor my technical approach around addressing and resolving key industry challenges:
 1. Prohibitive GPU inference costs and high time-to-first-token (TTFT) latency.
 2. Model hallucination, reasoning drift, and lack of reproducible verification in production.
 
-In demonstrated practice: Head of IT Department at T.G.C.I.: Installed, configured, maintained, and troubleshot computer hardware, software, printers, and network devices.
-
 My verified credentials and technical portfolio are registered through the CareerAce sovereign proof network.`,
-    passportUrl: "https://careerace.online/verify?applicant=Ibochi%20Vincent",
+    passportUrl: `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`,
     walrusBlobId: "0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
-    primaryCvName: "Ibochi_Vincent_ML_Engineer_CV.pdf",
+    primaryCvName: `${candidateName.replace(/\s+/g, "_")}_Resume.pdf`,
     primaryCvSize: 245000,
     primaryCvUrl: "https://walruscan.com/testnet/blob/0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
     attachments: [
@@ -59,13 +64,13 @@ My verified credentials and technical portfolio are registered through the Caree
 
   const result = await sendEmail({
     to: recipient,
-    subject: "Application: Ibochi Vincent — Autonomous Systems & ML Engineer at Anthropic",
+    subject: `Application: ${candidateName} — ${role} at ${company}`,
     html: brandedHtml,
-    text: `Application: Ibochi Vincent - Autonomous Systems & ML Engineer at Anthropic. Verifiable Passport: https://careerace.online/verify?applicant=Ibochi%20Vincent`,
-    reply_to: "ibochivincent@gmail.com",
+    text: `Application: ${candidateName} - ${role} at ${company}. Verifiable Passport: https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`,
+    reply_to: candidateEmail,
     attachments: [
       {
-        filename: "Ibochi_Vincent_ML_Engineer_CV.pdf",
+        filename: `${candidateName.replace(/\s+/g, "_")}_Resume.pdf`,
         path: "https://careerace.online/careerace_logo.png",
         contentType: "application/pdf",
       },

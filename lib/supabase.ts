@@ -59,8 +59,8 @@ export interface SupabaseMemory {
   namespace: string;
   fact_kind: string;
   fact_text: string;
-  walrus_blob_id?: string;
-  walrus_job_id?: string;
+  walrus_blob_id?: string | null;
+  walrus_job_id?: string | null;
   created_at?: string;
 }
 

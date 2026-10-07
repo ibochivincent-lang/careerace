@@ -79,6 +79,13 @@ export async function GET(req: Request) {
           savedJobIds = JSON.parse(savedMem.fact_text);
         } catch {}
       }
+
+      const learningMem = memories.find((m) => m.fact_kind === "learning_stats_snapshot");
+      if (learningMem && learningMem.fact_text) {
+        try {
+          var learningStatsData = JSON.parse(learningMem.fact_text);
+        } catch {}
+      }
     }
 
     // 3. Fetch applications
@@ -110,6 +117,7 @@ export async function GET(req: Request) {
       appliedJobs,
       savedJobIds,
       coverLetter,
+      learningStats: typeof learningStatsData !== "undefined" ? learningStatsData : null,
     });
   } catch (err: any) {
     console.error("[candidate/sync GET] error:", err);
@@ -140,6 +148,7 @@ export async function POST(req: Request) {
       appliedJobs,
       savedJobIds,
       coverLetter,
+      learningStats,
     } = body;
 
     const url = getSanitizedSupabaseUrl();
@@ -257,6 +266,23 @@ export async function POST(req: Request) {
           tailored_cv_bullet: job.tailored_cv_bullet || null,
         });
       }
+    }
+
+    // 7. Persist learning stats snapshot if provided
+    if (learningStats && typeof learningStats === "object") {
+      await client
+        .from("candidate_memories")
+        .delete()
+        .eq("candidate_wallet", normalizedAddress)
+        .eq("fact_kind", "learning_stats_snapshot");
+
+      await client.from("candidate_memories").insert({
+        candidate_wallet: normalizedAddress,
+        namespace: candidateNamespace,
+        fact_kind: "learning_stats_snapshot",
+        fact_text: JSON.stringify(learningStats),
+        walrus_blob_id: null,
+      });
     }
 
     return NextResponse.json({

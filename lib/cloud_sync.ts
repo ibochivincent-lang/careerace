@@ -4,6 +4,14 @@
  * backed by Supabase PostgreSQL and Walrus Decentralized Storage.
  */
 
+export interface LearningStatsPayload {
+  streak?: number;
+  streakDate?: string;
+  dailyGoal?: any;
+  sessions?: any[];
+  notifications?: any[];
+}
+
 export interface CloudSyncPayload {
   profile?: any;
   walrusBlobId?: string | null;
@@ -14,6 +22,7 @@ export interface CloudSyncPayload {
   candidateName?: string;
   targetRole?: string;
   suinsDomain?: string;
+  learningStats?: LearningStatsPayload;
 }
 
 export async function restoreCandidateDataFromCloud(): Promise<{
@@ -24,6 +33,7 @@ export async function restoreCandidateDataFromCloud(): Promise<{
   appliedJobs?: any[];
   savedJobIds?: string[];
   coverLetter?: string;
+  learningStats?: LearningStatsPayload;
 } | null> {
   if (typeof window === "undefined") return null;
 
@@ -76,6 +86,18 @@ export async function restoreCandidateDataFromCloud(): Promise<{
       } catch {}
     }
 
+    if (data.learningStats && typeof data.learningStats === "object") {
+      try {
+        const ls = data.learningStats;
+        if (typeof ls.streak === "number") localStorage.setItem("careerace_streak", String(ls.streak));
+        if (ls.streakDate) localStorage.setItem("careerace_streak_date", String(ls.streakDate));
+        if (ls.dailyGoal) localStorage.setItem("careerace_daily_goal", JSON.stringify(ls.dailyGoal));
+        if (Array.isArray(ls.sessions)) localStorage.setItem("careerace_sessions", JSON.stringify(ls.sessions));
+        if (Array.isArray(ls.notifications)) localStorage.setItem("careerace_notifications", JSON.stringify(ls.notifications));
+        didRestoreAny = true;
+      } catch {}
+    }
+
     return {
       restored: didRestoreAny,
       profile: data.profile,
@@ -84,6 +106,7 @@ export async function restoreCandidateDataFromCloud(): Promise<{
       appliedJobs: data.appliedJobs,
       savedJobIds: data.savedJobIds,
       coverLetter: data.coverLetter,
+      learningStats: data.learningStats,
     };
   } catch (err) {
     console.warn("[cloud_sync] Failed to restore from cloud:", err);
@@ -147,8 +170,28 @@ export function syncCandidateDataToCloud(payload?: CloudSyncPayload): void {
         } catch {}
       }
 
+      let finalLearningStats = payload?.learningStats;
+      if (!finalLearningStats) {
+        try {
+          const streak = localStorage.getItem("careerace_streak");
+          const streakDate = localStorage.getItem("careerace_streak_date");
+          const goal = localStorage.getItem("careerace_daily_goal");
+          const sessions = localStorage.getItem("careerace_sessions");
+          const notifs = localStorage.getItem("careerace_notifications");
+          if (streak || goal || sessions || notifs) {
+            finalLearningStats = {
+              streak: streak ? parseInt(streak, 10) : undefined,
+              streakDate: streakDate || undefined,
+              dailyGoal: goal ? JSON.parse(goal) : undefined,
+              sessions: sessions ? JSON.parse(sessions) : undefined,
+              notifications: notifs ? JSON.parse(notifs) : undefined,
+            };
+          }
+        } catch {}
+      }
+
       // If there is no data to sync, skip
-      if (!finalProfile && !finalBlobId && !finalVersions?.length && !finalApplied?.length) {
+      if (!finalProfile && !finalBlobId && !finalVersions?.length && !finalApplied?.length && !finalLearningStats) {
         return;
       }
 
@@ -163,6 +206,7 @@ export function syncCandidateDataToCloud(payload?: CloudSyncPayload): void {
           appliedJobs: finalApplied,
           savedJobIds: finalSaved,
           coverLetter: finalCoverLetter,
+          learningStats: finalLearningStats,
         }),
       });
     } catch (err) {
@@ -172,10 +216,10 @@ export function syncCandidateDataToCloud(payload?: CloudSyncPayload): void {
 }
 
 import { createClient } from "@supabase/supabase-js";
-import { getSanitizedSupabaseUrl } from "./supabase";
+import { getSanitizedSupabaseUrl } from "./supabase.ts";
 
 export interface RealtimeSyncEvent {
-  kind: "sovereign_profile_snapshot" | "walrus_versions_snapshot" | "tailored_cover_letter_snapshot" | "saved_jobs_snapshot" | "sui_onchain_anchor" | string;
+  kind: "sovereign_profile_snapshot" | "walrus_versions_snapshot" | "tailored_cover_letter_snapshot" | "saved_jobs_snapshot" | "learning_stats_snapshot" | "sui_onchain_anchor" | string;
   data: any;
   walrusBlobId?: string | null;
   updatedAt?: string;
@@ -254,6 +298,16 @@ export function subscribeCandidateRealtime(
             try {
               const parsed = JSON.parse(text);
               localStorage.setItem("careerace_saved_jobs", JSON.stringify(parsed));
+              onUpdate({ kind, data: parsed, updatedAt: newRecord.created_at });
+            } catch {}
+          } else if (kind === "learning_stats_snapshot" && text) {
+            try {
+              const parsed = JSON.parse(text);
+              if (typeof parsed.streak === "number") localStorage.setItem("careerace_streak", String(parsed.streak));
+              if (parsed.streakDate) localStorage.setItem("careerace_streak_date", String(parsed.streakDate));
+              if (parsed.dailyGoal) localStorage.setItem("careerace_daily_goal", JSON.stringify(parsed.dailyGoal));
+              if (Array.isArray(parsed.sessions)) localStorage.setItem("careerace_sessions", JSON.stringify(parsed.sessions));
+              if (Array.isArray(parsed.notifications)) localStorage.setItem("careerace_notifications", JSON.stringify(parsed.notifications));
               onUpdate({ kind, data: parsed, updatedAt: newRecord.created_at });
             } catch {}
           } else if (kind === "sui_onchain_anchor" && text) {

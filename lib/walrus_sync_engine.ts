@@ -135,7 +135,7 @@ export async function executeWalrusToSupabaseSync(
           namespace: candidate.namespace,
           fact_kind: factKind,
           fact_text: mem.text,
-          walrus_blob_id: mem.blobId || null,
+          walrus_blob_id: mem.blobId || undefined,
         });
         totalMemoriesSynced++;
       }

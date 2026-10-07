@@ -19,12 +19,42 @@
  * person's data.
  */
 import { writeFileSync } from "node:fs";
+import fs from "node:fs";
+import path from "node:path";
 import { MemWal } from "@mysten-incubation/memwal";
 import {
   formatFact, formatTombstone, factProbe, idempotencyKeyFor, resolveConflicts,
   factBody, factKind, sameFact, TOMBSTONE, DUPLICATE_DISTANCE, RELEVANCE_DISTANCE,
 } from "../lib/facts.ts";
 import { withRelayerRetry } from "../lib/memwal_client.ts";
+
+function loadEnvFallback() {
+  const envFiles = [".env.local", ".env"];
+  for (const file of envFiles) {
+    const fullPath = path.join(process.cwd(), file);
+    if (fs.existsSync(fullPath)) {
+      try {
+        const content = fs.readFileSync(fullPath, "utf-8");
+        for (const line of content.split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("#")) continue;
+          const match = trimmed.match(/^([A-Za-z0-9_]+)=(.*)$/);
+          if (match) {
+            const key = match[1];
+            let val = match[2].trim();
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+              val = val.slice(1, -1);
+            }
+            if (!process.env[key]) {
+              process.env[key] = val;
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+}
+loadEnvFallback();
 
 const SUBJECT = `0xsmoke${Date.now().toString(36)}`;
 const PROFILE = `careerace:profile:${SUBJECT}`;
@@ -41,7 +71,16 @@ function build(namespace: string) {
   const key = process.env.MEMWAL_PRIVATE_KEY;
   const accountId = process.env.MEMWAL_ACCOUNT_ID;
   if (!key || !accountId) {
-    console.error("Set MEMWAL_PRIVATE_KEY and MEMWAL_ACCOUNT_ID first (see .env.example).");
+    console.error("================================================================================");
+    console.error("CAREER ACE SMOKE TEST: Missing Walrus Memory Credentials");
+    console.error("================================================================================");
+    console.error("Required variables:");
+    console.error("  - MEMWAL_PRIVATE_KEY: Hex private key for Walrus SEAL delegate");
+    console.error("  - MEMWAL_ACCOUNT_ID: Candidate Walrus account ID (0x...)");
+    console.error("  - MEMWAL_SERVER_URL: Optional relayer URL (defaults to staging)");
+    console.error("\nFor CI environments without private keys, run with '--dry-run' flag:");
+    console.error("  pnpm smoke --dry-run");
+    console.error("================================================================================");
     process.exit(1);
   }
   return MemWal.create({
@@ -174,6 +213,30 @@ ${checks}
 }
 
 async function main() {
+  if (process.argv.includes("--dry-run") || process.argv.includes("--preflight")) {
+    console.log("=== Career Ace Smoke Preflight (Dry Run) ===");
+    console.log(`Relayer endpoint: ${process.env.MEMWAL_SERVER_URL ?? "https://relayer-staging.memory.walrus.xyz"}`);
+    console.log(`Private key configured: ${Boolean(process.env.MEMWAL_PRIVATE_KEY)}`);
+    console.log(`Account ID configured: ${Boolean(process.env.MEMWAL_ACCOUNT_ID)}`);
+
+    // Verify pure facts formatting and conflict resolution logic
+    const f1 = formatFact("misconception", "thinks force = mass x velocity");
+    const f2 = formatFact("misconception", "now applies f = ma correctly, force/velocity confusion resolved");
+    const t = formatTombstone(f1);
+    const resolved = resolveConflicts([
+      { text: f1, distance: 0.1, blobId: "b1" },
+      { text: f2, distance: 0.15, blobId: "b2" },
+      { text: t, distance: 0.05, blobId: "b3" },
+    ]);
+
+    check("dry-run: fact formatter generates valid dated format", f1.includes("| misconception |"));
+    check("dry-run: tombstone formatter outranks claim", resolved.retracted.length === 1);
+    check("dry-run: non-retracted superseding claim remains active", resolved.active.length === 1);
+
+    console.log("\n[Dry Run Completed Successfully]");
+    process.exit(failures === 0 ? 0 : 1);
+  }
+
   console.log(`relayer  ${process.env.MEMWAL_SERVER_URL ?? "staging (default)"}`);
   console.log(`subject  ${SUBJECT}\n`);
 

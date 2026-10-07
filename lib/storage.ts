@@ -2,7 +2,8 @@
 // Career Ace — Local Storage Utilities
 // =============================================================================
 
-import type { Session } from './types'
+import type { Session } from './types.ts'
+import { syncCandidateDataToCloud } from './cloud_sync.ts'
 
 const STORAGE_KEYS = {
   SESSIONS:       'careerace_sessions',
@@ -12,6 +13,26 @@ const STORAGE_KEYS = {
   STREAK_DATE:    'careerace_streak_date',
   DAILY_GOAL:     'careerace_daily_goal',
 } as const
+
+function triggerBackgroundCloudSync(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const streak = getStreak();
+    const streakDate = localStorage.getItem(STORAGE_KEYS.STREAK_DATE) || undefined;
+    const dailyGoal = getDailyGoal();
+    const sessions = getSessions();
+    const notifications = getStoredNotifications();
+    syncCandidateDataToCloud({
+      learningStats: {
+        streak,
+        streakDate,
+        dailyGoal,
+        sessions,
+        notifications,
+      },
+    });
+  } catch {}
+}
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
@@ -27,6 +48,7 @@ export function getSessions(): Session[] {
 export function saveSessions(sessions: Session[]): void {
   try {
     localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions))
+    triggerBackgroundCloudSync()
   } catch (e) {
     console.error('Failed to save sessions:', e)
   }
@@ -48,6 +70,7 @@ export function saveCurrentSession(session: Session | null): void {
     } else {
       localStorage.removeItem(STORAGE_KEYS.CURRENT_SESSION)
     }
+    triggerBackgroundCloudSync()
   } catch (e) {
     console.error('Failed to save current session:', e)
   }
@@ -76,6 +99,7 @@ export function updateStreakOnStudy(): number {
 
     localStorage.setItem(STORAGE_KEYS.STREAK, String(newStreak))
     localStorage.setItem(STORAGE_KEYS.STREAK_DATE, today)
+    triggerBackgroundCloudSync()
     return newStreak
   } catch {
     return 0
@@ -117,6 +141,7 @@ export function getStoredNotifications(): AppNotification[] {
 export function saveStoredNotifications(notifications: AppNotification[]): void {
   try {
     localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications.slice(0, 50)))
+    triggerBackgroundCloudSync()
   } catch {}
 }
 
@@ -172,6 +197,7 @@ export function updateDailyGoal(patch: Partial<Pick<DailyGoal, 'completedMinutes
     const goal = getDailyGoal()
     const updated = { ...goal, ...patch }
     localStorage.setItem(STORAGE_KEYS.DAILY_GOAL, JSON.stringify(updated))
+    triggerBackgroundCloudSync()
   } catch {}
 }
 
