@@ -112,11 +112,28 @@ export async function POST(req: Request) {
 
     let walrusBlobResult: { blobId: string; sha256Digest: string } | null = null;
     try {
-      walrusBlobResult = await uploadEncryptedResumeToWalrus(
+      const walrusUploadPromise = uploadEncryptedResumeToWalrus(
         uploadBuffer,
         address,
         safeDocName
       );
+      const walrusTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
+      walrusBlobResult = await Promise.race([walrusUploadPromise, walrusTimeout]);
+
+      if (!walrusBlobResult) {
+        // Complete in background if network is taking longer than 2s
+        walrusUploadPromise
+          .then((res) => {
+            if (res?.blobId) {
+              rememberFact(
+                address,
+                "tailored_cv",
+                `Walrus Encrypted Resume: ${safeDocName} | blobId: ${res.blobId} | digest: ${res.sha256Digest.slice(0, 16)}`
+              ).catch(() => {});
+            }
+          })
+          .catch((blobErr) => console.warn("[cv_upload] Background Walrus upload notice:", blobErr));
+      }
     } catch (blobErr) {
       console.warn("[cv_upload] Walrus encrypted resume upload notice:", blobErr);
     }
@@ -194,13 +211,15 @@ export async function POST(req: Request) {
     if (walrusBlobResult?.blobId) {
       try {
         const { anchorWalrusCredentialOnchain } = await import("@/lib/walrus_anchor");
-        onchainAnchor = await anchorWalrusCredentialOnchain({
+        const anchorPromise = anchorWalrusCredentialOnchain({
           blobId: walrusBlobResult.blobId,
           sha256Digest: walrusBlobResult.sha256Digest,
           credentialType: "sovereign_resume",
           candidateAddress: address,
           fileName: safeDocName,
         });
+        const anchorTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000));
+        onchainAnchor = await Promise.race([anchorPromise, anchorTimeout]);
       } catch (anchorErr) {
         console.warn("[cv_upload] Auto on-chain anchor notice:", anchorErr);
       }

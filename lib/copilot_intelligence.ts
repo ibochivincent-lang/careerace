@@ -9,6 +9,7 @@ import {
   resolveConflicts,
   claimsOfKind,
   type FactKind,
+  isSensitiveData,
 } from "./facts.ts";
 import { callFreeLlm } from "./free_llm.ts";
 import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "./no_slop.ts";
@@ -37,6 +38,120 @@ export interface CopilotQueryResult {
     education?: string[];
     experience?: string[];
   };
+}
+
+export interface ParsedDateQuery {
+  day: number;
+  month: number;
+  year?: number;
+  label: string;
+}
+
+export const MONTH_NAMES: Record<string, number> = {
+  january: 1, jan: 1,
+  february: 2, feb: 2,
+  march: 3, mar: 3,
+  april: 4, apr: 4,
+  may: 5,
+  june: 6, jun: 6,
+  july: 7, jul: 7,
+  august: 8, aug: 8,
+  september: 9, sep: 9, sept: 9,
+  october: 10, oct: 10,
+  november: 11, nov: 11,
+  december: 12, dec: 12,
+};
+
+export const MONTH_STRINGS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+export function getDaySuffix(day: number): string {
+  if (day >= 11 && day <= 13) return "th";
+  switch (day % 10) {
+    case 1: return "st";
+    case 2: return "nd";
+    case 3: return "rd";
+    default: return "th";
+  }
+}
+
+export function parseSpecificDateQuery(text: string): ParsedDateQuery | null {
+  const lower = text.toLowerCase();
+
+  // Format: "6th of October", "6 October", "6th October 2026", "on 7th of october"
+  const dayFirstMatch = lower.match(
+    /\b(?:on\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)(?:\s+(\d{4}))?\b/i
+  );
+  if (dayFirstMatch) {
+    const day = parseInt(dayFirstMatch[1], 10);
+    const month = MONTH_NAMES[dayFirstMatch[2].toLowerCase()];
+    const year = dayFirstMatch[3] ? parseInt(dayFirstMatch[3], 10) : undefined;
+    if (day >= 1 && day <= 31 && month) {
+      const monthName = MONTH_STRINGS[month - 1];
+      const suffix = getDaySuffix(day);
+      const label = `${day}${suffix} of ${monthName}${year ? `, ${year}` : ""}`;
+      return { day, month, year, label };
+    }
+  }
+
+  // Format: "October 6th", "October 6", "Oct 7th 2026", "on october 6th"
+  const monthFirstMatch = lower.match(
+    /\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?\b/i
+  );
+  if (monthFirstMatch) {
+    const month = MONTH_NAMES[monthFirstMatch[1].toLowerCase()];
+    const day = parseInt(monthFirstMatch[2], 10);
+    const year = monthFirstMatch[3] ? parseInt(monthFirstMatch[3], 10) : undefined;
+    if (day >= 1 && day <= 31 && month) {
+      const monthName = MONTH_STRINGS[month - 1];
+      const suffix = getDaySuffix(day);
+      const label = `${day}${suffix} of ${monthName}${year ? `, ${year}` : ""}`;
+      return { day, month, year, label };
+    }
+  }
+
+  // Format: ISO "2026-10-06"
+  const isoMatch = lower.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      const monthName = MONTH_STRINGS[month - 1];
+      const suffix = getDaySuffix(day);
+      const label = `${day}${suffix} of ${monthName}, ${year}`;
+      return { day, month, year, label };
+    }
+  }
+
+  return null;
+}
+
+export function isJobMatchingDate(job: any, target: ParsedDateQuery): boolean {
+  if (!job) return false;
+  let d: Date | null = null;
+  if (typeof job.appliedTimestamp === "number") {
+    d = new Date(job.appliedTimestamp);
+  } else if (job.appliedAt) {
+    d = new Date(job.appliedAt);
+    if (isNaN(d.getTime())) {
+      const parsed = parseSpecificDateQuery(String(job.appliedAt));
+      if (parsed) {
+        return (
+          parsed.day === target.day &&
+          parsed.month === target.month &&
+          (target.year ? parsed.year === target.year : true)
+        );
+      }
+    }
+  }
+  if (!d || isNaN(d.getTime())) return false;
+  const matchDay = d.getDate() === target.day;
+  const matchMonth = d.getMonth() + 1 === target.month;
+  const matchYear = target.year ? d.getFullYear() === target.year : true;
+  return matchDay && matchMonth && matchYear;
 }
 
 export function isYesterdayDate(timestampOrDate: number | string | undefined | null): boolean {
@@ -96,21 +211,32 @@ export function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: F
 
   // 1. Target Role & Seniority Level
   if (
-    lowerAsked.includes("role") ||
-    lowerAsked.includes("work are you looking for") ||
-    lowerAsked.includes("kind of work") ||
-    lowerAsked.includes("position") ||
-    lower.includes("looking for") ||
-    lower.includes("targeting") ||
-    lower.includes("entry-level") ||
-    lower.includes("entry level") ||
-    lower.includes("junior") ||
-    lower.includes("senior") ||
-    lower.includes("engineer") ||
-    lower.includes("developer")
+    !lower.startsWith("what is") &&
+    !lower.startsWith("what's") &&
+    !lower.startsWith("what role") &&
+    !lower.endsWith("?") &&
+    (
+      lowerAsked.includes("role") ||
+      lowerAsked.includes("work are you looking for") ||
+      lowerAsked.includes("kind of work") ||
+      lowerAsked.includes("position") ||
+      lower.includes("looking for") ||
+      lower.includes("targeting") ||
+      lower.includes("target role") ||
+      lower.includes("entry-level") ||
+      lower.includes("entry level") ||
+      lower.includes("junior") ||
+      lower.includes("senior") ||
+      lower.includes("lead") ||
+      lower.includes("principal") ||
+      lower.includes("staff") ||
+      lower.includes("architect") ||
+      lower.includes("engineer") ||
+      lower.includes("developer")
+    )
   ) {
     let roleText = text.trim();
-    roleText = roleText.replace(/^(i am looking for|i'm looking for|i want|targeting|i target)\s+/i, "");
+    roleText = roleText.replace(/^(?:my target role is|my target role|target role:?|my desired role is|i am looking for|i'm looking for|i want|targeting|i target)\s+/i, "");
     if (roleText.length > 2 && roleText.length < 100) {
       facts.push({
         kind: "target_role",
@@ -176,10 +302,14 @@ export function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: F
     lower.includes("remote") ||
     lower.includes("hybrid") ||
     lower.includes("on-site") ||
-    lower.includes("located in")
+    lower.includes("located in") ||
+    lower.includes("i want to work in") ||
+    lower.includes("i want to work") ||
+    lower.includes("work in ") ||
+    lower.includes("live in ")
   ) {
     let prefText = text.trim();
-    prefText = prefText.replace(/^(i want to work|i prefer|i am located in)\s+/i, "");
+    prefText = prefText.replace(/^(i want to work in|i want to work|i prefer to work in|i prefer|i am located in|i live in)\s+/i, "");
     if (prefText.length > 2 && prefText.length < 120) {
       facts.push({
         kind: "preference",
@@ -208,6 +338,100 @@ export function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: F
     }
   }
 
+  // 6. Explicit Instructions, Formatting & Behavioral Preferences
+  if (
+    /short answer|short answers|concise answer|concise answers|keep it concise|keep answers brief|under 2 sentences|in bullet points|bullet point answers/i.test(lower)
+  ) {
+    facts.push({
+      kind: "preference",
+      text: `Formatting preference: Short and concise answers`,
+    });
+  }
+
+  // 7. Operating System & Environment Preferences / Corrections
+  if (
+    lower.includes("i use linux") ||
+    lower.includes("i switched to linux") ||
+    lower.includes("switched from mac to linux") ||
+    lower.includes("now use linux") ||
+    lower.includes("operating system is linux")
+  ) {
+    facts.push({
+      kind: "preference",
+      text: `Operating system: Linux - SUPERSEDES: Operating system`,
+    });
+  } else if (
+    lower.includes("i use mac") ||
+    lower.includes("i use macos") ||
+    lower.includes("operating system is mac")
+  ) {
+    facts.push({
+      kind: "preference",
+      text: `Operating system: Mac - SUPERSEDES: Operating system`,
+    });
+  } else if (
+    lower.includes("i use windows") ||
+    lower.includes("operating system is windows")
+  ) {
+    facts.push({
+      kind: "preference",
+      text: `Operating system: Windows - SUPERSEDES: Operating system`,
+    });
+  }
+
+  // 8. General Explicit "Remember that ..." Statements
+  const rememberMatch = text.match(/(?:please\s+)?remember\s+(?:that\s+)?(.+)/i);
+  if (rememberMatch && rememberMatch[1]) {
+    const rememberedClaim = rememberMatch[1].trim();
+    if (rememberedClaim.length > 2 && rememberedClaim.length < 150) {
+      if (/role|position|engineer|developer|architect/i.test(rememberedClaim)) {
+        facts.push({
+          kind: "target_role",
+          text: `Target role: ${rememberedClaim.replace(/^(my target role is|i want to be|i am targeting)\s+/i, "")}`,
+        });
+      } else if (/python|react|typescript|rust|go|java|aws|sql/i.test(rememberedClaim)) {
+        facts.push({
+          kind: "skill",
+          text: `Skill: ${rememberedClaim.replace(/^(i like|i prefer|my favorite language is)\s+/i, "")}`,
+        });
+      } else {
+        facts.push({
+          kind: "preference",
+          text: `User preference: ${rememberedClaim}`,
+        });
+      }
+    }
+  }
+
+  // 9. Fact Corrections ("Actually, ...", "Correction: ...")
+  const correctionMatch = text.match(/(?:actually|correction:?)\s*,?\s*(.+)/i);
+  if (correctionMatch && correctionMatch[1]) {
+    const correctionText = correctionMatch[1].trim();
+    if (/london|berlin|new york|remote|nigeria|lagos|san francisco/i.test(correctionText)) {
+      const loc = correctionText.replace(/^(i moved to|i live in|i am located in)\s+/i, "").trim();
+      facts.push({
+        kind: "preference",
+        text: `Workplace preference: ${loc} - SUPERSEDES: Workplace preference`,
+      });
+    } else if (/name is\s+([A-Za-z\s'-]{2,30})/i.test(correctionText)) {
+      const match = correctionText.match(/name is\s+([A-Za-z\s'-]{2,30})/i);
+      if (match && match[1]) {
+        facts.push({
+          kind: "candidate_identity",
+          text: `Candidate Name: ${match[1].trim()} - SUPERSEDES: Candidate Name`,
+        });
+      }
+    } else if (/role is\s+([A-Za-z\s'-]{2,50})/i.test(correctionText)) {
+      const match = correctionText.match(/role is\s+([A-Za-z\s'-]{2,50})/i);
+      if (match && match[1]) {
+        facts.push({
+          kind: "target_role",
+          text: `Target role: ${match[1].trim()} - SUPERSEDES: Target role`,
+        });
+      }
+    }
+  }
+
   return facts;
 }
 
@@ -219,6 +443,19 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     : [];
   const cv_profile = body.cv_profile || body.profile;
   const latest = (body.message || messages?.at(-1)?.content || "Hello, Career Ace").trim();
+
+  // 0. Sensitive Data & Credential Guard (QA Checklist Section 1.10, 2.9, 11.2, and Test J)
+  if (isSensitiveData(latest)) {
+    const notice =
+      "For your security and privacy, Career Ace does not store passwords, API keys, access tokens, social security numbers, or payment details in decentralized Walrus memory. This sensitive data has been omitted.";
+    return {
+      role: "assistant",
+      content: notice,
+      reply: notice,
+      stored: [],
+      candidate_name: undefined,
+    };
+  }
 
   const asked =
     [...messages]
@@ -254,12 +491,12 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     tailoredCvs: claimsOfKind(activeProfile, "tailored_cv"),
   };
 
-  // 3. Extract facts from current user turn and persist to Walrus Memory in the background
+  // 3. Extract facts from current user turn and persist to Walrus Memory
   const newlyStored: string[] = [];
   const extracted = extractHeuristicFacts(latest, asked);
 
-  // Non-blocking asynchronous fact persistence to eliminate round-trip latency
-  Promise.allSettled(
+  // Await fact persistence so memory is immediately consistent for following turns
+  await Promise.allSettled(
     extracted.map((fact) =>
       rememberFact(address, fact.kind, fact.text, { userTurn: latest })
         .then((outcome) => {
@@ -271,6 +508,17 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     )
   );
 
+  // Update in-memory collections with newly extracted facts for current turn
+  for (const f of extracted) {
+    if (f.kind === "target_role") {
+      storedSummary.targetRoles.unshift(f.text.replace(/^target role:\s*/i, "").trim());
+    } else if (f.kind === "preference") {
+      storedSummary.preferences.unshift(f.text.trim());
+    } else if (f.kind === "skill") {
+      storedSummary.skills.unshift(f.text.replace(/^skill:\s*/i, "").trim());
+    }
+  }
+
   const currentName =
     extracted.find((f) => f.kind === "candidate_identity")?.text.replace("Candidate Name: ", "").trim() ||
     storedSummary.names[0]?.replace(/^candidate name:\s*/i, "").trim() ||
@@ -278,8 +526,8 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     "";
 
   const profileRole =
-    cv_profile?.target_roles?.[0] ||
     storedSummary.targetRoles[0]?.replace(/^target role:\s*/i, "") ||
+    cv_profile?.target_roles?.[0] ||
     "Software Engineer";
 
   const profileSkills =
@@ -402,6 +650,59 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     lowerLatest.includes("how can you assist") ||
     lowerLatest.includes("get started");
 
+  // Specific Date Application Query Matcher (Audio Rule & Test I)
+  const specificDateQuery = parseSpecificDateQuery(latest);
+  const isDateJobQuery =
+    Boolean(specificDateQuery) &&
+    (lowerLatest.includes("job") ||
+     lowerLatest.includes("jobs") ||
+     lowerLatest.includes("apply") ||
+     lowerLatest.includes("applied") ||
+     lowerLatest.includes("application") ||
+     lowerLatest.includes("applications") ||
+     lowerLatest.includes("how many") ||
+     lowerLatest.includes("what did i apply") ||
+     lowerLatest.includes("did i apply") ||
+     lowerLatest.includes("show me") ||
+     lowerLatest.includes("list"));
+
+  const isWhatDatesQuery =
+    (lowerLatest.includes("what date") ||
+     lowerLatest.includes("what dates") ||
+     lowerLatest.includes("which date") ||
+     lowerLatest.includes("which dates") ||
+     lowerLatest.includes("when did i apply")) &&
+    (lowerLatest.includes("job") ||
+     lowerLatest.includes("jobs") ||
+     lowerLatest.includes("apply") ||
+     lowerLatest.includes("application") ||
+     lowerLatest.includes("applications"));
+
+  const isFalseMemoryProbe =
+    /what (?:is|was) my (?:dog|cat|pet|car|favorite food|favorite color|favorite car|favorite movie|salary|bonus|shoe size|height|blood type)/i.test(lowerLatest) ||
+    /\b(?:dog(?:'s)? name|cat(?:'s)? name|pet(?:'s)? name|car do i drive|favorite food|favorite car|favorite movie)\b/i.test(lowerLatest) ||
+    /where was i born/i.test(lowerLatest) ||
+    /who is my (?:wife|husband|spouse|brother|sister|mother|father|boss|manager)/i.test(lowerLatest);
+
+  const isOSQuery =
+    lowerLatest.includes("what os") ||
+    lowerLatest.includes("which os") ||
+    lowerLatest.includes("what operating system") ||
+    (lowerLatest.includes("operating system") && (lowerLatest.includes("i use") || lowerLatest.includes("my")));
+
+  const isLocationQuery =
+    lowerLatest.includes("where do i live") ||
+    lowerLatest.includes("where am i located") ||
+    lowerLatest.includes("my location") ||
+    lowerLatest.includes("where i want to work") ||
+    lowerLatest.includes("what is my city");
+
+  const isTargetRoleQuery =
+    lowerLatest.includes("what is my target role") ||
+    lowerLatest.includes("what is my role") ||
+    lowerLatest.includes("what role am i targeting") ||
+    lowerLatest.includes("my target role");
+
   // Fine-Tuned Intent Classification & Grounded Walrus Sovereign Memory Recall
   const userIntent = classifyUserIntent(latest);
   const activeProfileData = cv_profile || body.profile;
@@ -409,7 +710,88 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest)
     : null;
 
-  if (isHowManyJobsInADay) {
+  if (isDateJobQuery && specificDateQuery) {
+    const matchingJobs = appliedJobs.filter((j: any) => isJobMatchingDate(j, specificDateQuery));
+    if (matchingJobs.length > 0) {
+      const jobList = matchingJobs
+        .map((j: any, i: number) => `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**`)
+        .join("\n");
+      directReply =
+        `According to your Walrus application records, you applied to ${matchingJobs.length} job${matchingJobs.length > 1 ? "s" : ""} on ${specificDateQuery.label}:\n\n${jobList}`;
+    } else {
+      directReply =
+        `According to your Walrus application records, you did not apply for any jobs on ${specificDateQuery.label}. No applications are recorded for that date.`;
+    }
+  } else if (isWhatDatesQuery) {
+    if (appliedJobs.length > 0) {
+      const dateGroups = new Map<string, number>();
+      for (const j of appliedJobs) {
+        let dateLabel = "Unspecified Date";
+        if (typeof j.appliedTimestamp === "number") {
+          const d = new Date(j.appliedTimestamp);
+          if (!isNaN(d.getTime())) {
+            dateLabel = `${d.getDate()}${getDaySuffix(d.getDate())} of ${MONTH_STRINGS[d.getMonth()]}, ${d.getFullYear()}`;
+          }
+        } else if (j.appliedAt) {
+          const parsed = parseSpecificDateQuery(String(j.appliedAt));
+          if (parsed) {
+            dateLabel = parsed.label;
+          } else {
+            const d = new Date(j.appliedAt);
+            if (!isNaN(d.getTime())) {
+              dateLabel = `${d.getDate()}${getDaySuffix(d.getDate())} of ${MONTH_STRINGS[d.getMonth()]}, ${d.getFullYear()}`;
+            } else {
+              dateLabel = String(j.appliedAt);
+            }
+          }
+        }
+        dateGroups.set(dateLabel, (dateGroups.get(dateLabel) || 0) + 1);
+      }
+      const list = [...dateGroups.entries()]
+        .map(([date, count]) => `• **${date}**: ${count} job${count > 1 ? "s" : ""}`)
+        .join("\n");
+      directReply =
+        `According to your Walrus application records, you applied for jobs on the following dates:\n\n${list}\n\nTotal applications tracked: ${appliedJobs.length}.`;
+    } else {
+      directReply = `You have no application dates recorded in your Walrus memory yet.`;
+    }
+  } else if (isFalseMemoryProbe) {
+    const probeWords = lowerLatest.match(/\b(?:dog|cat|pet|car|food|movie|salary|born|wife|husband|spouse)\b/g) || [];
+    const hasKnown = [...activeProfile, ...activeCoaching].some((f) =>
+      probeWords.some((w) => f.text.toLowerCase().includes(w))
+    );
+    if (!hasKnown) {
+      directReply =
+        "I do not have any record of that in your Walrus Sovereign Memory or uploaded CV. You can tell me, and I will remember it for you.";
+    }
+  } else if (isOSQuery) {
+    const osFacts = [...activeCoaching, ...activeProfile].filter((f) =>
+      /operating system:\s*([a-zA-Z]+)/i.test(f.text) || /\b(linux|mac|macos|windows)\b/i.test(f.text)
+    );
+    const osFact = osFacts[0];
+    if (osFact) {
+      const match = osFact.text.match(/operating system:\s*([a-zA-Z]+)/i) || osFact.text.match(/\b(linux|mac|macos|windows)\b/i);
+      const osName = match ? match[1] : "Linux";
+      directReply = `Based on your Walrus Sovereign Memory, your operating system is ${osName.charAt(0).toUpperCase() + osName.slice(1).toLowerCase()}.`;
+    } else {
+      directReply = "I do not have your operating system recorded in your Walrus Sovereign Memory. Which OS do you use?";
+    }
+  } else if (isLocationQuery) {
+    const locFacts = [...activeCoaching, ...activeProfile].filter((f) =>
+      /workplace preference:\s*([a-zA-Z\s]+)/i.test(f.text) || /location:\s*([a-zA-Z\s]+)/i.test(f.text)
+    );
+    const locFact = locFacts[0];
+    if (locFact) {
+      const match = locFact.text.match(/(?:workplace preference|location):\s*([a-zA-Z\s]+)/i);
+      let locName = match ? match[1].replace(/ - SUPERSEDES:.*/, "").trim() : "on file";
+      locName = locName.replace(/^in\s+/i, "");
+      directReply = `Based on your Walrus Sovereign Memory, your location preference is ${locName}.`;
+    } else {
+      directReply = "I do not have your location recorded in your Walrus Sovereign Memory. Where are you located?";
+    }
+  } else if (isTargetRoleQuery) {
+    directReply = `Based on your Walrus Sovereign Memory, your active target role is ${profileRole}.`;
+  } else if (isHowManyJobsInADay) {
     directReply =
       `You can apply to as many jobs as possible in a day. CareerAce does not place an artificial limit on your daily dispatches.\n\n` +
       `To ensure maximum delivery success, protect your candidate reputation, and adhere to recruiter compliance standards, our Universal Application Board and Auto-Apply engine implement two key safeguards:\n` +
@@ -797,6 +1179,18 @@ RULES:
 
   // Strip trailing ellipses or multiple dots
   reply = reply.replace(/\.{3,}/g, "").trim();
+
+  // Instruction Memory Formatting Adaptation (Test G)
+  const prefersShort =
+    storedSummary.preferences.some((p: string) => /short|concise|brief|under 2 sentences/i.test(p)) ||
+    /short answer|concise|brief|under 2 sentences/i.test(lowerLatest);
+
+  if (prefersShort && reply.length > 180) {
+    const sentences = reply.match(/[^.!?]+[.!?]+/g);
+    if (sentences && sentences.length >= 2) {
+      reply = sentences.slice(0, 2).join(" ").trim();
+    }
+  }
 
   return {
     role: "assistant",

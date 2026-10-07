@@ -110,6 +110,24 @@ export function isOffTheRecord(userText: string) {
   return OFF_THE_RECORD.some((phrase) => haystack.includes(phrase));
 }
 
+/**
+ * Sensitive patterns that must never be recorded into persistent Walrus memory.
+ * Directly fulfills QA Checklist Section 1.10, 2.9, 11.2, and Test J.
+ */
+const SENSITIVE_PATTERNS = [
+  /\b(?:password|passwd|pwd)\b/i,
+  /\b(?:api[_-]?key|secret[_-]?key|access[_-]?token|bearer\s+[a-zA-Z0-9_\-\.]+)\b/i,
+  /\b(?:sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{20,}|xoxb-[a-zA-Z0-9_\-]+)\b/i,
+  /\b(?:ssn|social\s*security\s*number)\b/i,
+  /\b(?:credit\s*card|cvv|cvc|card\s*number)\b/i,
+  /\b(?:\d{3}-\d{2}-\d{4})\b/,
+  /\b(?:\d{4}[-\s]?){3}\d{4}\b/,
+];
+
+export function isSensitiveData(userText: string): boolean {
+  return SENSITIVE_PATTERNS.some((pattern) => pattern.test(userText));
+}
+
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** `2026-08-27 | misconception | thinks force = mass x velocity` */
@@ -223,26 +241,72 @@ export function resolveConflicts(facts: RecalledFact[]) {
     if (date >= (retractions.get(target) ?? "")) retractions.set(target, date);
   }
 
-  const byBody = new Map<string, RecalledFact[]>();
-  for (const fact of facts) {
-    if (factKind(fact.text) === TOMBSTONE) continue; // never readable as a claim
+  /** Superseding entries with order tracking */
+  const supersedingEntries: Array<{ target: string; supBody: string; date: string; order: number }> = [];
+  facts.forEach((fact, order) => {
+    if (fact.text.includes(" - SUPERSEDES:")) {
+      const parts = fact.text.split(" - SUPERSEDES:");
+      const target = parts[1]?.trim().toLowerCase();
+      const supBody = factBody(fact.text);
+      if (target) {
+        supersedingEntries.push({ target, supBody, date: factDate(fact.text), order });
+      }
+    }
+  });
+
+  const byBody = new Map<string, Array<{ fact: RecalledFact; order: number }>>();
+  facts.forEach((fact, order) => {
+    if (factKind(fact.text) === TOMBSTONE) return; // never readable as a claim
     const key = factBody(fact.text);
-    byBody.set(key, [...(byBody.get(key) ?? []), fact]);
-  }
+    byBody.set(key, [...(byBody.get(key) ?? []), { fact, order }]);
+  });
 
   const active: RecalledFact[] = [];
   const superseded: RecalledFact[] = [];
   const retracted: RecalledFact[] = [];
   for (const [body, group] of byBody) {
-    const sorted = [...group].sort((a, b) => factDate(b.text).localeCompare(factDate(a.text)));
+    const sorted = [...group].sort((a, b) => {
+      const dCmp = factDate(b.fact.text).localeCompare(factDate(a.fact.text));
+      return dCmp !== 0 ? dCmp : b.order - a.order;
+    });
+
+    const newestEntry = sorted[0];
+
     // A same-day retraction wins: you only retract a claim that already exists.
     const killed = retractions.get(body);
-    if (killed !== undefined && killed >= factDate(sorted[0].text)) {
-      retracted.push(...sorted);
+    if (killed !== undefined && killed >= factDate(newestEntry.fact.text)) {
+      retracted.push(...sorted.map((g) => g.fact));
       continue;
     }
-    active.push(sorted[0]);
-    superseded.push(...sorted.slice(1));
+
+    // Check if superseded by an explicit SUPERSEDES directive from a newer/later claim
+    let isSuperseded = false;
+    for (const sup of supersedingEntries) {
+      if (body === sup.supBody) continue; // A claim cannot supersede itself
+
+      const matchesTarget =
+        body === sup.target ||
+        body.startsWith(sup.target) ||
+        sup.target.startsWith(body);
+
+      if (matchesTarget) {
+        const isNewer =
+          sup.date > factDate(newestEntry.fact.text) ||
+          (sup.date === factDate(newestEntry.fact.text) && sup.order > newestEntry.order);
+
+        if (isNewer) {
+          isSuperseded = true;
+          break;
+        }
+      }
+    }
+    if (isSuperseded) {
+      superseded.push(...sorted.map((g) => g.fact));
+      continue;
+    }
+
+    active.push(newestEntry.fact);
+    superseded.push(...sorted.slice(1).map((g) => g.fact));
   }
   return { active, superseded, retracted };
 }

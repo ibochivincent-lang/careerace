@@ -102,7 +102,7 @@ export const recallFeedback = (address: string, query: string) => recallFrom(fee
 export const CAREER_QUERY =
   "candidate name, full name, identity, target role, work experience, education, technical skills and verified accomplishments";
 export const COACHING_QUERY =
-  "interview feedback, STAR+R coaching assessments, job application history and career preferences";
+  "interview feedback, STAR+R coaching assessments, job application history, career preferences, operating system, environment, location, and workplace";
 
 /** Target role, experiences, skills, education — retrieved on every turn. */
 export const recallCareerProfile = (address: string) => recallFrom(profileNs(address), CAREER_QUERY);

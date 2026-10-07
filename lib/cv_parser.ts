@@ -97,11 +97,13 @@ Strict Output JSON Schema:
 }
 Extract ONLY factual data present in the text. Return raw JSON only.`;
 
-    const aiParsed = await callFreeLlmJson<ParsedCv>(
-      rawText.slice(0, 25000),
+    const aiPromise = callFreeLlmJson<ParsedCv>(
+      rawText.slice(0, 20000),
       systemPrompt,
       custom_keys
     );
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500));
+    const aiParsed = await Promise.race([aiPromise, timeoutPromise]);
 
     if (aiParsed && typeof aiParsed === "object") {
       // Intelligently merge skills from both AI and dictionary heuristic parser
