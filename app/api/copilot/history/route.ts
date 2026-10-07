@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import {
   getChatHistory,
+  getChatHistoryAsync,
   saveChatHistory,
   appendChatTurn,
   clearChatHistory,
 } from "@/lib/chat_history_store.ts";
 import { resolveTargetAddress } from "@/lib/target_address.ts";
+import { checkWalrusConsoleStatus } from "@/lib/walrus_console_client.ts";
 
 export const maxDuration = 30;
 
@@ -14,15 +16,29 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const rawAddress = url.searchParams.get("address");
     const channel = url.searchParams.get("channel") || "overview";
+    const checkStatus = url.searchParams.get("status") === "1";
+
     const address = await resolveTargetAddress(rawAddress);
 
-    const messages = getChatHistory(address, channel);
-    return NextResponse.json({ ok: true, address, channel, messages });
+    let walrusStatus = undefined;
+    if (checkStatus) {
+      walrusStatus = await checkWalrusConsoleStatus();
+    }
+
+    const messages = await getChatHistoryAsync(address, channel);
+    return NextResponse.json({
+      ok: true,
+      address,
+      channel,
+      messages,
+      walrusVault: walrusStatus,
+    });
   } catch (error) {
     console.error("[copilot_history] Error fetching chat history:", error);
     return NextResponse.json({ ok: false, messages: [] }, { status: 500 });
   }
 }
+
 
 export async function POST(req: Request) {
   try {

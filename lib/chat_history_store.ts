@@ -7,6 +7,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import {
+  archiveChatSessionToWalrus,
+  fetchChatSessionFromWalrus,
+} from "./walrus_console_client.ts";
 
 export interface ChatMessageRecord {
   role: "user" | "assistant";
@@ -67,7 +71,7 @@ export function normalizeHistoryAddress(address?: string | null): string {
 }
 
 /**
- * Retrieves the full chat history for a candidate address.
+ * Retrieves the full chat history for a candidate address (synchronous).
  */
 export function getChatHistory(
   rawAddress?: string | null,
@@ -82,6 +86,32 @@ export function getChatHistory(
   }
 
   return userMessages.filter((m) => !m.channel || m.channel === channel);
+}
+
+/**
+ * Retrieves chat history asynchronously, hydrating from Walrus Console if local is empty.
+ */
+export async function getChatHistoryAsync(
+  rawAddress?: string | null,
+  channel = "overview"
+): Promise<ChatMessageRecord[]> {
+  const local = getChatHistory(rawAddress, channel);
+  if (local.length > 0) {
+    return local;
+  }
+
+  const address = normalizeHistoryAddress(rawAddress);
+  try {
+    const remote = await fetchChatSessionFromWalrus({ address, channel });
+    if (Array.isArray(remote) && remote.length > 0) {
+      saveChatHistory(address, remote, channel);
+      return getChatHistory(address, channel);
+    }
+  } catch (err) {
+    console.warn("[chat_history] Notice restoring from Walrus Console:", err);
+  }
+
+  return local;
 }
 
 /**
@@ -108,6 +138,15 @@ export function saveChatHistory(
   const merged = [...otherChannelMessages, ...formatted].slice(-MAX_MESSAGES_PER_USER);
   memoryCache.set(address, merged);
   flushToDisk();
+
+  // Background sovereign archive to Walrus Console
+  archiveChatSessionToWalrus({
+    address,
+    channel,
+    messages: formatted,
+  }).catch((err) => {
+    console.warn("[chat_history] Notice background Walrus Console archive:", err);
+  });
 
   return formatted;
 }
@@ -145,6 +184,15 @@ export function appendChatTurn(
   memoryCache.set(address, updated);
   flushToDisk();
 
+  // Background sovereign archive to Walrus Console
+  archiveChatSessionToWalrus({
+    address,
+    channel,
+    messages: updated.filter((m) => !m.channel || m.channel === channel),
+  }).catch((err) => {
+    console.warn("[chat_history] Notice background Walrus Console turn sync:", err);
+  });
+
   return updated.filter((m) => !m.channel || m.channel === channel);
 }
 
@@ -163,3 +211,4 @@ export function clearChatHistory(rawAddress?: string | null, channel?: string): 
   }
   flushToDisk();
 }
+
