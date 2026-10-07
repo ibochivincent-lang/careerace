@@ -87,7 +87,48 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     chatMessages.push({ role: "user", content: options.prompt });
   }
 
-  // 1. Try Groq Cloud (Ultra-fast open-source inference: Llama 3.3, Llama 3.1)
+  // 1. Try OpenAI API if present (gpt-4o-mini, gpt-4o)
+  if (openaiKey) {
+    const openaiPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"]) {
+      try {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: openaiPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+          signal: AbortSignal.timeout(2000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] OpenAI (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[careerace] OpenAI (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
+      }
+    }
+  }
+
+  // 2. Try Groq Cloud (Ultra-fast open-source inference: Llama 3.3, Llama 3.1)
   if (groqKey) {
     const groqPayloadMessages = [
       ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
@@ -128,89 +169,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 2. Try Cerebras API if configured (Fast Llama 3.3 / 3.1)
-  if (cerebrasKey) {
-    const cerebrasPayloadMessages = [
-      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-      ...chatMessages,
-    ];
-
-    for (const model of ["llama-3.3-70b", "llama3.1-70b", "llama3.1-8b"]) {
-      try {
-        const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${cerebrasKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: cerebrasPayloadMessages,
-            max_tokens: options.max_tokens || 1000,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] Cerebras (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] Cerebras (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
-  // 3. Try DeepSeek direct API if configured
-  if (deepseekKey) {
-    const deepseekPayloadMessages = [
-      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-      ...chatMessages,
-    ];
-
-    for (const model of ["deepseek-chat", "deepseek-reasoner"]) {
-      try {
-        const res = await fetch("https://api.deepseek.com/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${deepseekKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: deepseekPayloadMessages,
-            max_tokens: options.max_tokens || 1000,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] DeepSeek (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] DeepSeek (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
-  // 4. Try Google Gemini API (gemini-2.5-flash / gemini-1.5-flash / gemini-2.0-flash)
+  // 3. Try Google Gemini API (gemini-2.5-flash / gemini-1.5-flash / gemini-2.0-flash)
   if (geminiKey) {
     const geminiContents = chatMessages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -259,7 +218,89 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 5. Try OpenRouter (Free open-source models: Qwen, Nemotron, Gemma, DeepSeek R1, Mistral)
+  // 4. Try Cerebras API if configured (Fast Llama 3.3 / 3.1)
+  if (cerebrasKey) {
+    const cerebrasPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["llama-3.3-70b", "llama3.1-70b", "llama3.1-8b"]) {
+      try {
+        const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${cerebrasKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: cerebrasPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+          signal: AbortSignal.timeout(2000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] Cerebras (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[careerace] Cerebras (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
+      }
+    }
+  }
+
+  // 5. Try DeepSeek direct API if configured
+  if (deepseekKey) {
+    const deepseekPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["deepseek-chat", "deepseek-reasoner"]) {
+      try {
+        const res = await fetch("https://api.deepseek.com/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${deepseekKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: deepseekPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+          signal: AbortSignal.timeout(2000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] DeepSeek (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[careerace] DeepSeek (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
+      }
+    }
+  }
+
+  // 6. Try OpenRouter (Free open-source models: Qwen, Nemotron, Gemma, DeepSeek R1, Mistral)
   if (openRouterKey) {
     const openRouterPayloadMessages = [
       ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
@@ -303,7 +344,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 6. Try OpenCode Zen/Go API if present
+  // 7. Try OpenCode Zen/Go API if present
   if (openCodeKey) {
     for (const model of ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash"]) {
       try {
@@ -343,45 +384,6 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 7. Try OpenAI API if present
-  if (openaiKey) {
-    for (const model of ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"]) {
-      try {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-              { role: "user", content: options.prompt },
-            ],
-            max_tokens: options.max_tokens || 800,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] OpenAI (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] OpenAI (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
   // 8. Try Local Ollama Instance (http://localhost:11434)
   try {
     const res = await fetch("http://localhost:11434/api/generate", {
@@ -413,6 +415,24 @@ function generateIntelligentFallback(prompt: string, systemPrompt: string): stri
   const nameMatch = systemPrompt.match(/(?:candidate name|name)[:=]\s*([^\n,]+)/i);
   if (nameMatch && nameMatch[1]) {
     knownName = nameMatch[1].trim();
+  }
+
+  // 0. Check if Walrus Sovereign Memory contains a matching learned Q&A or relevant fact
+  const memoryMatch = systemPrompt.match(/FACTS RECORDED IN WALRUS SOVEREIGN MEMORY:\n([\s\S]+?)(?=\n\n|\nRULES:|$)/i);
+  if (memoryMatch && memoryMatch[1]) {
+    const memoryLines = memoryMatch[1].split("\n").map((l) => l.trim().replace(/^-\s*/, ""));
+    for (const line of memoryLines) {
+      if (line.includes("Learned Q&A:")) {
+        const qaMatch = line.match(/Learned Q&A:\s*"([^"]+)"\s*->\s*"([^"]+)"/i);
+        if (qaMatch) {
+          const q = qaMatch[1].toLowerCase().trim();
+          const a = qaMatch[2].trim();
+          if (pLower === q || pLower.includes(q) || q.includes(pLower)) {
+            return a;
+          }
+        }
+      }
+    }
   }
 
   // 1. Direct Name Queries: "what is my name", "who am i", "do you know my name"

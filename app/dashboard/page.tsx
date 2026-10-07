@@ -319,6 +319,28 @@ function DashboardContent() {
       .catch(() => {})
   }, [sessionAddress])
 
+  // Load persistent cross-device chat history from sovereign store
+  useEffect(() => {
+    if (!sessionAddress) return
+    let isMounted = true
+    fetch(`/api/copilot/history?address=${encodeURIComponent(sessionAddress)}&channel=overview`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (isMounted && data.ok && Array.isArray(data.messages) && data.messages.length > 0) {
+          setOverviewChatMessages(
+            data.messages.map((m: any) => ({
+              role: m.role === 'assistant' ? 'assistant' : 'user',
+              content: m.content,
+            }))
+          )
+        }
+      })
+      .catch((err) => console.warn('[dashboard] Notice fetching persistent chat history:', err))
+    return () => {
+      isMounted = false
+    }
+  }, [sessionAddress])
+
   async function handleBindSuinsDomain(e?: React.FormEvent) {
     if (e) e.preventDefault()
     const input = suinsDomainInput.trim().toLowerCase().replace(/^@/, '').replace(/\.sui$/, '')
@@ -972,6 +994,7 @@ function DashboardContent() {
 
     try {
       const customAiKeys = {
+        openai: typeof window !== 'undefined' ? localStorage.getItem('careerace_openai_key') || undefined : undefined,
         google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
         groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
         cerebras: typeof window !== 'undefined' ? localStorage.getItem('careerace_cerebras_key') || undefined : undefined,
@@ -1097,6 +1120,7 @@ function DashboardContent() {
 
     try {
       const customAiKeys = {
+        openai: typeof window !== 'undefined' ? localStorage.getItem('careerace_openai_key') || undefined : undefined,
         google: typeof window !== 'undefined' ? localStorage.getItem('careerace_gemini_key') || undefined : undefined,
         groq: typeof window !== 'undefined' ? localStorage.getItem('careerace_groq_key') || undefined : undefined,
         cerebras: typeof window !== 'undefined' ? localStorage.getItem('careerace_cerebras_key') || undefined : undefined,

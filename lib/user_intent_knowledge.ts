@@ -1350,7 +1350,7 @@ export function classifyUserIntent(rawQuery: string): IntentClassification {
 
   // Find highest scoring category
   let topCategory = "Profile, CV & Credentials Management";
-  let topScore = -1;
+  let topScore = 0;
   let topKeywords: string[] = [];
 
   for (const [catName, res] of Object.entries(categoryScores)) {
@@ -1362,7 +1362,7 @@ export function classifyUserIntent(rawQuery: string): IntentClassification {
   }
 
   const tax = INTENT_TAXONOMY[topCategory] || INTENT_TAXONOMY["Profile, CV & Credentials Management"];
-  const confidence = topScore > 0 ? Math.min(0.95, 0.4 + topScore * 0.1) : 0.35;
+  const confidence = topScore > 0 ? Math.min(0.95, 0.4 + topScore * 0.1) : 0;
 
   return {
     category: topCategory,
@@ -1403,6 +1403,9 @@ export function generateIntentMemoryResponse(
   appliedJobs: any[] = [],
   rawQuery = ""
 ): string | null {
+  if (!classification || (!classification.matchedQuestion && (!classification.matchedKeywords || !classification.matchedKeywords.length))) {
+    return null;
+  }
   const hasProfile = !!(profile && (profile.applicant_name || profile.target_roles?.length || profile.skills?.length));
   const candidateName = profile?.applicant_name && !profile.applicant_name.startsWith("0x") ? profile.applicant_name : "";
   const role = profile?.target_roles?.[0] || profile?.role || "Professional";

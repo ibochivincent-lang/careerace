@@ -2,11 +2,14 @@ import { resolveTargetAddress } from "./target_address.ts";
 import {
   recallCareerProfile,
   recallCareerCoaching,
+  recallProfile,
+  recallFeedback,
   rememberFact,
   type RecalledFact,
 } from "./memory_core.ts";
 import {
   resolveConflicts,
+  unionFacts,
   claimsOfKind,
   type FactKind,
   isSensitiveData,
@@ -22,6 +25,8 @@ import {
   scanApplicationsForFollowUp,
   persistFollowUpMilestone,
 } from "./autonomous_followup.ts";
+import { correctTypographicalErrors } from "./typo_tolerance.ts";
+import { appendChatTurn } from "./chat_history_store.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -547,6 +552,90 @@ export function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: F
     }
   }
 
+  // 10. Certifications & Professional Licenses (AWS, STCW, PMP, CompTIA, Cisco, CPA, etc.)
+  if (
+    lowerAsked.includes("certification") ||
+    lowerAsked.includes("license") ||
+    lowerAsked.includes("credential") ||
+    lower.includes("certified") ||
+    lower.includes("certification") ||
+    lower.includes("license") ||
+    lower.includes("credential") ||
+    lower.includes("stcw") ||
+    lower.includes("pmp") ||
+    lower.includes("aws certified") ||
+    lower.includes("comptia") ||
+    lower.includes("cisco")
+  ) {
+    let certText = text.trim().replace(/^(?:i am certified in|i hold a|my certification is|certifications?:?|license:?|credential:?)\s+/i, "");
+    if (certText.length > 2 && certText.length < 150) {
+      facts.push({
+        kind: "education",
+        text: `Certification: ${certText}`,
+      });
+    }
+  }
+
+  // 11. Compensation & Salary Expectations
+  if (
+    lowerAsked.includes("salary") ||
+    lowerAsked.includes("compensation") ||
+    lowerAsked.includes("rate") ||
+    lower.includes("salary") ||
+    lower.includes("compensation") ||
+    lower.includes("expected pay") ||
+    lower.includes("/year") ||
+    lower.includes("/yr") ||
+    lower.includes("/month") ||
+    lower.includes("/hr") ||
+    lower.includes("/hour") ||
+    /\$\d+[\d,]*\s*(?:k|usd|per|\/)/i.test(text)
+  ) {
+    let salText = text.trim().replace(/^(?:my target salary is|my salary expectation is|i am asking for|salary expectation:?|compensation:?)\s+/i, "");
+    if (salText.length > 2 && salText.length < 120) {
+      facts.push({
+        kind: "preference",
+        text: `Compensation expectation: ${salText}`,
+      });
+    }
+  }
+
+  // 12. Availability & Notice Period
+  if (
+    lowerAsked.includes("availability") ||
+    lowerAsked.includes("notice period") ||
+    lowerAsked.includes("when can you start") ||
+    lower.includes("available immediately") ||
+    lower.includes("notice period") ||
+    lower.includes("can start in") ||
+    lower.includes("can start immediately") ||
+    lower.includes("start date")
+  ) {
+    let availText = text.trim().replace(/^(?:my availability is|my notice period is|i can start|availability:?)\s+/i, "");
+    if (availText.length > 2 && availText.length < 100) {
+      facts.push({
+        kind: "preference",
+        text: `Availability: ${availText}`,
+      });
+    }
+  }
+
+  // 13. Online Portfolios & Profiles
+  if (
+    lower.includes("github.com") ||
+    lower.includes("linkedin.com") ||
+    lower.includes("portfolio") ||
+    lower.includes("my website")
+  ) {
+    let linkText = text.trim().replace(/^(?:my portfolio is|my website is|portfolio:?|github:?|linkedin:?)\s+/i, "");
+    if (linkText.length > 4 && linkText.length < 150) {
+      facts.push({
+        kind: "preference",
+        text: `Portfolio / Profile: ${linkText}`,
+      });
+    }
+  }
+
   return facts;
 }
 
@@ -557,12 +646,17 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     ? [{ role: "user", content: body.message }]
     : [];
   const cv_profile = body.cv_profile || body.profile;
-  const latest = (body.message || messages?.at(-1)?.content || "Hello, Career Ace").trim();
+  const rawLatest = (body.message || messages?.at(-1)?.content || "Hello, Career Ace").trim();
+  const typoCorrection = correctTypographicalErrors(rawLatest);
+  const latest = typoCorrection.corrected || rawLatest;
 
   // 0. Sensitive Data & Credential Guard (QA Checklist Section 1.10, 2.9, 11.2, and Test J)
-  if (isSensitiveData(latest)) {
+  if (isSensitiveData(latest) || isSensitiveData(rawLatest)) {
     const notice =
       "For your security and privacy, Career Ace does not store passwords, API keys, access tokens, social security numbers, or payment details in decentralized Walrus memory. This sensitive data has been omitted.";
+    if (body.address) {
+      appendChatTurn(body.address, rawLatest, notice, "overview");
+    }
     return {
       role: "assistant",
       content: notice,
@@ -585,16 +679,18 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
   const memoryPromise = Promise.all([
     recallCareerProfile(address).catch(() => []),
     recallCareerCoaching(address).catch(() => []),
+    recallProfile(address, latest).catch(() => []),
+    recallFeedback(address, latest).catch(() => []),
   ]);
-  const [profileFacts, coachingFacts] = await Promise.race([
+  const [profileFacts, coachingFacts, queryProfileFacts, queryCoachingFacts] = await Promise.race([
     memoryPromise,
-    new Promise<[RecalledFact[], RecalledFact[]]>((resolve) =>
-      setTimeout(() => resolve([[], []]), 350)
+    new Promise<[RecalledFact[], RecalledFact[], RecalledFact[], RecalledFact[]]>((resolve) =>
+      setTimeout(() => resolve([[], [], [], []]), 350)
     ),
   ]);
 
-  const activeProfile = resolveConflicts(profileFacts).active;
-  const activeCoaching = resolveConflicts(coachingFacts).active;
+  const activeProfile = resolveConflicts(unionFacts(profileFacts, queryProfileFacts || [])).active;
+  const activeCoaching = resolveConflicts(unionFacts(coachingFacts, queryCoachingFacts || [])).active;
 
   const storedSummary = {
     names: claimsOfKind(activeProfile, "candidate_identity"),
@@ -1106,16 +1202,19 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     }
   } else if (isFalseMemoryProbe) {
     const probeWords = lowerLatest.match(/\b(?:dog|cat|pet|car|food|movie|salary|born|wife|husband|spouse)\b/g) || [];
-    const hasKnown = [...activeProfile, ...activeCoaching].some((f) =>
-      probeWords.some((w) => f.text.toLowerCase().includes(w))
-    );
+    const hasKnown = [...activeProfile, ...activeCoaching]
+      .filter((f) => !f.text.includes("Learned Q&A:"))
+      .some((f) =>
+        probeWords.some((w) => f.text.toLowerCase().includes(w))
+      );
     if (!hasKnown) {
       directReply =
         "I do not have any record of that in your Walrus Sovereign Memory or uploaded CV. You can tell me, and I will remember it for you.";
     }
   } else if (isOSQuery) {
     const osFacts = [...activeCoaching, ...activeProfile].filter((f) =>
-      /operating system:\s*([a-zA-Z]+)/i.test(f.text) || /\b(linux|mac|macos|windows)\b/i.test(f.text)
+      !f.text.includes("Learned Q&A:") &&
+      (/operating system:\s*([a-zA-Z]+)/i.test(f.text) || /\b(linux|mac|macos|windows)\b/i.test(f.text))
     );
     const osFact = osFacts[0];
     if (osFact) {
@@ -1127,7 +1226,8 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     }
   } else if (isLocationQuery) {
     const locFacts = [...activeCoaching, ...activeProfile].filter((f) =>
-      /workplace preference:\s*([a-zA-Z\s]+)/i.test(f.text) || /location:\s*([a-zA-Z\s]+)/i.test(f.text)
+      !f.text.includes("Learned Q&A:") &&
+      (/workplace preference:\s*([a-zA-Z\s]+)/i.test(f.text) || /location:\s*([a-zA-Z\s]+)/i.test(f.text))
     );
     const locFact = locFacts[0];
     if (locFact) {
@@ -1389,6 +1489,28 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     directReply = `ATS Audit Complete for ${currentName || "Candidate"}:\n\n- Overall ATS Compatibility: ${score}/100\n- Contact & Header: Clean and parseable\n- Target Role: ${profileRole}\n- Core Competencies: ${profileSkills.length} verified skills\n- Experience Entries: ${Array.isArray(profileExperience) ? profileExperience.length : 1} position(s)\n- Recommendation: Ensure every work accomplishment starts with a strong action verb and includes quantifiable metrics (% growth, revenue, speed, or team size).`;
   }
 
+  // Check previously learned Q&A pairs from Walrus sovereign memory
+  if (!directReply) {
+    const allMemoryFacts = [...activeProfile, ...activeCoaching];
+    for (const fact of allMemoryFacts) {
+      if (fact.text.includes("Learned Q&A:")) {
+        const match = fact.text.match(/Learned Q&A:\s*"([^"]+)"\s*->\s*"([^"]+)"/i);
+        if (match) {
+          const learnedQ = match[1].toLowerCase().trim();
+          const learnedA = match[2].trim();
+          if (
+            lowerLatest === learnedQ ||
+            lowerLatest.includes(learnedQ) ||
+            learnedQ.includes(lowerLatest)
+          ) {
+            directReply = learnedA;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   if (!directReply && simulatedIntentReply) {
     directReply = simulatedIntentReply;
   }
@@ -1470,6 +1592,15 @@ RULES:
 
     if (reply) {
       reply = sanitizeAntiSlop(reply);
+      // Auto-add novel question and grounded answer to Walrus memory so it is permanently remembered
+      const cleanSnippet = reply.replace(/\s+/g, " ").trim();
+      rememberFact(
+        address,
+        "preference",
+        `Learned Q&A: "${latest}" -> "${cleanSnippet.slice(0, 300)}"`,
+        { userTurn: latest }
+      ).catch((err) => console.warn("[careerace] auto-learning persistence notice:", err));
+      newlyStored.push(`learned q&a: ${latest}`);
     }
   }
 
@@ -1494,6 +1625,9 @@ RULES:
       reply = sentences.slice(0, 2).join(" ").trim();
     }
   }
+
+  // Append turn to cross-device persistent chat history store
+  appendChatTurn(address, rawLatest, reply, "overview");
 
   return {
     role: "assistant",

@@ -284,10 +284,11 @@ export function resolveConflicts(facts: RecalledFact[]) {
     for (const sup of supersedingEntries) {
       if (body === sup.supBody) continue; // A claim cannot supersede itself
 
+      const bodyLower = body.toLowerCase();
       const matchesTarget =
-        body === sup.target ||
-        body.startsWith(sup.target) ||
-        sup.target.startsWith(body);
+        bodyLower === sup.target ||
+        bodyLower.startsWith(sup.target) ||
+        sup.target.startsWith(bodyLower);
 
       if (matchesTarget) {
         const isNewer =
