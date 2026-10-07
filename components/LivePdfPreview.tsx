@@ -31,7 +31,8 @@ import {
   ExternalLink,
   Eye,
   Globe,
-  Award
+  Award,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +108,7 @@ interface LivePdfPreviewProps {
   onCommitWalrusVersion?: () => void;
   onOpenWalrusHistory?: () => void;
   isSavingVersion?: boolean;
+  isParsing?: boolean;
   onUpdateProfile?: (updated: Partial<ParsedCv>) => void;
   highlightedBulletKey?: string | null;
 }
@@ -124,6 +126,7 @@ export function LivePdfPreview({
   onCommitWalrusVersion,
   onOpenWalrusHistory,
   isSavingVersion = false,
+  isParsing = false,
   onUpdateProfile,
   highlightedBulletKey = null,
 }: LivePdfPreviewProps) {
@@ -621,6 +624,20 @@ export function LivePdfPreview({
       </html>
     `);
     printWindow.document.close();
+  }
+
+  if (!profile && isParsing) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border-2 border-dashed border-emerald-500/50 bg-emerald-500/5 shadow-xs">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+        <h4 className="text-sm font-bold text-foreground">Reading & Formatting into Live ATS Canvas...</h4>
+        <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+          Extracting candidate credentials, work achievements, and technical skills into the interactive editor.
+        </p>
+      </div>
+    );
   }
 
   if (!profile) {

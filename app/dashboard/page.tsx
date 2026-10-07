@@ -1416,17 +1416,22 @@ function DashboardContent() {
     setIsParsing(true)
     const toastId = toast.loading(`Reading ${file.name}...`)
 
+    // Instantly bring user to the Resume Studio tab so the Editable ATS Canvas is active & visible
+    router.push('/dashboard?tab=resumes')
+    setResumeViewMode('editor')
+    setMobileResumeView('canvas')
+
     let extractedText = ''
 
     try {
       const lowerName = file.name.toLowerCase()
 
-      // Strategy A: Client-side PDF.js extraction (ultra-fast in browser)
+      // Strategy A: Ultra-fast native stream parser / PDF.js (<20ms)
       if (lowerName.endsWith('.pdf') || file.type === 'application/pdf') {
         try {
           extractedText = await extractPdfTextInBrowser(file)
         } catch (pdfErr) {
-          console.warn('[PDF.js] Client extraction failed:', pdfErr)
+          console.warn('[PDF] Client extraction notice:', pdfErr)
         }
       }
 
@@ -1454,13 +1459,15 @@ function DashboardContent() {
             }
             setParsedProfile(instantProfile)
             setResumeViewMode('editor')
+            setMobileResumeView('canvas')
+            router.push('/dashboard?tab=resumes')
             if (instantProfile.target_roles?.[0]) {
               setTailorRole(instantProfile.target_roles[0])
             }
             localStorage.setItem('careerace_sovereign_profile', JSON.stringify(instantProfile))
             localStorage.setItem('careerace_parsed_profile', JSON.stringify(instantProfile))
             syncCandidateDataToCloud({ profile: instantProfile })
-            toast.success(`Resume rendered instantly for ${instantProfile.applicant_name || 'Candidate'}!`, { id: toastId })
+            toast.success(`Resume rendered instantly in Editable ATS Canvas for ${instantProfile.applicant_name || 'Candidate'}!`, { id: toastId })
             setIsParsing(false)
           }
         } catch (parseErr) {
@@ -1497,6 +1504,9 @@ function DashboardContent() {
               syncCandidateDataToCloud({ profile: merged, walrusBlobId: data.blobId || data.walrusBlobId })
               return merged
             })
+            setResumeViewMode('editor')
+            setMobileResumeView('canvas')
+            router.push('/dashboard?tab=resumes')
             if (data.profile.target_roles?.[0]) {
               setTailorRole(data.profile.target_roles[0])
             }
@@ -1518,18 +1528,20 @@ function DashboardContent() {
               ...prev,
               {
                 role: 'assistant',
-                content: `Verified: **${file.name}** sealed to Walrus Sovereign Memory for **${candidateName}** (${(data.profile.target_roles || []).join(', ') || 'Professional'}). Your background, skills, and work history are now live!`
+                content: `Verified: **${file.name}** sealed to Walrus Sovereign Memory for **${candidateName}** (${(data.profile.target_roles || []).join(', ') || 'Professional'}). Your background, skills, and work history are now live in your Editable ATS Canvas!`
               }
             ])
-            toast.success('CV permanently anchored to Walrus!')
+            toast.success('CV permanently anchored to Walrus & updated in Canvas!')
           }
         })
         .catch((uploadErr) => {
           console.warn('Background Walrus sync non-fatal warning:', uploadErr)
         })
+        .finally(() => {
+          setIsParsing(false)
+        })
     } catch (e: any) {
       toast.error(e.message || 'Failed to read CV', { id: toastId })
-    } finally {
       setIsParsing(false)
     }
   }
@@ -1567,6 +1579,45 @@ function DashboardContent() {
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
+              </div>
+              <div className="flex items-center gap-2">
+                {parsedProfile ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 px-3 text-xs font-semibold gap-1.5 border-border/80 rounded-xl cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="hidden sm:inline">Upload New CV</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setResumeViewMode('editor')
+                        setMobileResumeView('canvas')
+                        router.push('/dashboard?tab=resumes')
+                      }}
+                      className="h-8 px-3 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs cursor-pointer"
+                    >
+                      <FileCheck className="w-3.5 h-3.5" />
+                      <span>Open ATS Canvas</span>
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Resume</span>
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1646,6 +1697,52 @@ function DashboardContent() {
                         <Upload className="w-3.5 h-3.5" />
                         <span>Upload Resume</span>
                       </Button>
+                    </div>
+                  )}
+
+                  {/* Live ATS Canvas Hub Banner: 1-Click Direct Access to Resume Studio Canvas */}
+                  {parsedProfile && (
+                    <div className="p-3.5 sm:p-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                          <FileCheck className="w-4.5 h-4.5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-bold text-sm text-foreground">
+                              {parsedProfile.applicant_name && parsedProfile.applicant_name !== 'Candidate'
+                                ? `${parsedProfile.applicant_name}’s Resume`
+                                : 'Active Candidate Resume'}
+                            </h4>
+                            <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 py-0">
+                              Editable ATS Canvas
+                            </Badge>
+                            {atsScorecard?.overall_score && (
+                              <Badge variant="secondary" className="text-[10px] py-0 font-bold">
+                                {atsScorecard.overall_score}% ATS Match
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                            {parsedProfile.work_experience?.length || 0} positions • {parsedProfile.skills?.length || 0} skills detected. Edit bullet points, inspect action verbs, and print clean vector PDF.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => {
+                            setResumeViewMode('editor')
+                            setMobileResumeView('canvas')
+                            router.push('/dashboard?tab=resumes')
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 h-8 gap-1.5 rounded-xl shadow-xs w-full sm:w-auto cursor-pointer"
+                        >
+                          <span>Open in Editable ATS Canvas</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   )}
 
@@ -1926,6 +2023,7 @@ function DashboardContent() {
                         onOpenWalrusHistory={() => setIsWalrusHistoryModalOpen(true)}
                         onCommitWalrusVersion={handlePromptSaveWalrusVersion}
                         isSavingVersion={isSavingWalrusVersion}
+                        isParsing={isParsing}
                         onUpdateProfile={updateProfileField}
                         highlightedBulletKey={highlightedBulletKey}
                       />
