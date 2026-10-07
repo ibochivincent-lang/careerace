@@ -14,6 +14,7 @@ import {
 import { callFreeLlm } from "./free_llm.ts";
 import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "./no_slop.ts";
 import { classifyUserIntent, generateIntentMemoryResponse } from "./user_intent_knowledge.ts";
+import { VERIFIED_COMPANY_HIRING_CONTACTS } from "./company_directory.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -77,42 +78,82 @@ export function getDaySuffix(day: number): string {
   }
 }
 
+export function getUtcToday(): { day: number; month: number; year: number; label: string } {
+  const now = new Date();
+  const day = now.getUTCDate();
+  const month = now.getUTCMonth() + 1;
+  const year = now.getUTCFullYear();
+  const monthName = MONTH_STRINGS[month - 1];
+  const suffix = getDaySuffix(day);
+  const label = `${day}${suffix} of ${monthName}, ${year}`;
+  return { day, month, year, label };
+}
+
+export function getUtcYesterday(): { day: number; month: number; year: number; label: string } {
+  const now = new Date();
+  const yDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+  const day = yDate.getUTCDate();
+  const month = yDate.getUTCMonth() + 1;
+  const year = yDate.getUTCFullYear();
+  const monthName = MONTH_STRINGS[month - 1];
+  const suffix = getDaySuffix(day);
+  const label = `${day}${suffix} of ${monthName}, ${year}`;
+  return { day, month, year, label };
+}
+
 export function parseSpecificDateQuery(text: string): ParsedDateQuery | null {
   const lower = text.toLowerCase();
+  const now = new Date();
+  const currentUtcYear = now.getUTCFullYear();
+  const currentUtcMonth = now.getUTCMonth() + 1;
 
-  // Format: "6th of October", "6 October", "6th October 2026", "on 7th of october"
+  // Format 1: "6th of October", "6 October", "6th October 2026", "on 7th of october", "7th of october, 2026"
   const dayFirstMatch = lower.match(
-    /\b(?:on\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)(?:\s+(\d{4}))?\b/i
+    /\b(?:on\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)(?:,?\s+(\d{4}))?\b/i
   );
   if (dayFirstMatch) {
     const day = parseInt(dayFirstMatch[1], 10);
     const month = MONTH_NAMES[dayFirstMatch[2].toLowerCase()];
-    const year = dayFirstMatch[3] ? parseInt(dayFirstMatch[3], 10) : undefined;
+    const year = dayFirstMatch[3] ? parseInt(dayFirstMatch[3], 10) : currentUtcYear;
     if (day >= 1 && day <= 31 && month) {
       const monthName = MONTH_STRINGS[month - 1];
       const suffix = getDaySuffix(day);
-      const label = `${day}${suffix} of ${monthName}${year ? `, ${year}` : ""}`;
+      const label = `${day}${suffix} of ${monthName}, ${year}`;
       return { day, month, year, label };
     }
   }
 
-  // Format: "October 6th", "October 6", "Oct 7th 2026", "on october 6th"
+  // Format 2: "October 6th", "October 6", "Oct 7th 2026", "on october 6th", "october 6th, 2026"
   const monthFirstMatch = lower.match(
-    /\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?\b/i
+    /\b(?:on\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/i
   );
   if (monthFirstMatch) {
     const month = MONTH_NAMES[monthFirstMatch[1].toLowerCase()];
     const day = parseInt(monthFirstMatch[2], 10);
-    const year = monthFirstMatch[3] ? parseInt(monthFirstMatch[3], 10) : undefined;
+    const year = monthFirstMatch[3] ? parseInt(monthFirstMatch[3], 10) : currentUtcYear;
     if (day >= 1 && day <= 31 && month) {
       const monthName = MONTH_STRINGS[month - 1];
       const suffix = getDaySuffix(day);
-      const label = `${day}${suffix} of ${monthName}${year ? `, ${year}` : ""}`;
+      const label = `${day}${suffix} of ${monthName}, ${year}`;
       return { day, month, year, label };
     }
   }
 
-  // Format: ISO "2026-10-06"
+  // Format 3: "on the 5th", "on the 6th", "on 5th", "on 6th", "did i apply on the 5th", "did i apply for any work on the 5th", "did i apply for any job on the 6th"
+  const dayOnlyMatch = lower.match(
+    /\b(?:on\s+(?:the\s+)?|did\s+i\s+apply\s+(?:on\s+)?(?:the\s+)?)(\d{1,2})(?:st|nd|rd|th)\b/i
+  );
+  if (dayOnlyMatch) {
+    const day = parseInt(dayOnlyMatch[1], 10);
+    if (day >= 1 && day <= 31) {
+      const monthName = MONTH_STRINGS[currentUtcMonth - 1];
+      const suffix = getDaySuffix(day);
+      const label = `${day}${suffix} of ${monthName}, ${currentUtcYear}`;
+      return { day, month: currentUtcMonth, year: currentUtcYear, label };
+    }
+  }
+
+  // Format 4: ISO "2026-10-06"
   const isoMatch = lower.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
   if (isoMatch) {
     const year = parseInt(isoMatch[1], 10);
@@ -148,10 +189,15 @@ export function isJobMatchingDate(job: any, target: ParsedDateQuery): boolean {
     }
   }
   if (!d || isNaN(d.getTime())) return false;
-  const matchDay = d.getDate() === target.day;
-  const matchMonth = d.getMonth() + 1 === target.month;
-  const matchYear = target.year ? d.getFullYear() === target.year : true;
-  return matchDay && matchMonth && matchYear;
+  const matchUtc =
+    d.getUTCDate() === target.day &&
+    d.getUTCMonth() + 1 === target.month &&
+    (target.year ? d.getUTCFullYear() === target.year : true);
+  const matchLocal =
+    d.getDate() === target.day &&
+    d.getMonth() + 1 === target.month &&
+    (target.year ? d.getFullYear() === target.year : true);
+  return matchUtc || matchLocal;
 }
 
 export function isYesterdayDate(timestampOrDate: number | string | undefined | null): boolean {
@@ -159,6 +205,11 @@ export function isYesterdayDate(timestampOrDate: number | string | undefined | n
   const d = typeof timestampOrDate === "number" ? new Date(timestampOrDate) : new Date(timestampOrDate);
   if (isNaN(d.getTime())) return false;
   const now = new Date();
+  const nowUtcMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const yesterdayUtcMidnight = nowUtcMidnight - 24 * 60 * 60 * 1000;
+  const dUtcMidnight = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  if (dUtcMidnight === yesterdayUtcMidnight) return true;
+
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
   return (
     d.getFullYear() === yesterday.getFullYear() &&
@@ -172,11 +223,66 @@ export function isTodayDate(timestampOrDate: number | string | undefined | null)
   const d = typeof timestampOrDate === "number" ? new Date(timestampOrDate) : new Date(timestampOrDate);
   if (isNaN(d.getTime())) return false;
   const now = new Date();
+  const matchUtc =
+    d.getUTCFullYear() === now.getUTCFullYear() &&
+    d.getUTCMonth() === now.getUTCMonth() &&
+    d.getUTCDate() === now.getUTCDate();
+  if (matchUtc) return true;
+
   return (
     d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate()
   );
+}
+
+export function getTopJobsForCategory(
+  categoryOrRole: string,
+  limit = 10
+): Array<{ title: string; company: string; location: string; contact: string; url: string }> {
+  const lower = (categoryOrRole || "").toLowerCase();
+  let targetCategory: 'Maritime / Offshore' | 'Software / Cloud' | 'AI / Robotics' | 'Engineering / Industrial' | 'Medical / Healthcare' | 'Management / Operations' = 'Software / Cloud';
+
+  if (lower.includes("marine") || lower.includes("offshore") || lower.includes("naval") || lower.includes("shipping") || lower.includes("cadet") || lower.includes("seafarer") || lower.includes("maritime")) {
+    targetCategory = 'Maritime / Offshore';
+  } else if (lower.includes("ai") || lower.includes("robot") || lower.includes("machine learning") || lower.includes("autonomous")) {
+    targetCategory = 'AI / Robotics';
+  } else if (lower.includes("medical") || lower.includes("health") || lower.includes("nursing") || lower.includes("clinical") || lower.includes("informatics")) {
+    targetCategory = 'Medical / Healthcare';
+  } else if (lower.includes("mechanical") || lower.includes("electrical") || lower.includes("civil") || lower.includes("industrial") || lower.includes("chemical")) {
+    targetCategory = 'Engineering / Industrial';
+  } else if (lower.includes("management") || lower.includes("operations") || lower.includes("product") || lower.includes("finance")) {
+    targetCategory = 'Management / Operations';
+  } else {
+    targetCategory = 'Software / Cloud';
+  }
+
+  const matchingContacts = VERIFIED_COMPANY_HIRING_CONTACTS.filter(
+    (c) => c.category === targetCategory
+  );
+
+  const fallbackContacts = VERIFIED_COMPANY_HIRING_CONTACTS.filter(
+    (c) => c.category !== targetCategory
+  );
+
+  const pool = [...matchingContacts, ...fallbackContacts].slice(0, limit);
+
+  return pool.map((c) => ({
+    title: c.typicalRoles[0] || "Specialist",
+    company: c.company,
+    location: c.location,
+    contact: c.contactEmail,
+    url: c.careersUrl,
+  }));
+}
+
+export function formatTopJobs(jobs: ReturnType<typeof getTopJobsForCategory>): string {
+  return jobs
+    .map(
+      (j, i) =>
+        `${i + 1}. **${j.title}** at **${j.company}**\n   • Location: ${j.location}\n   • Contact / Portal: ${j.contact || j.url}`
+    )
+    .join("\n\n");
 }
 
 export function extractHeuristicFacts(text: string, asked = ""): Array<{ kind: FactKind; text: string }> {
@@ -525,7 +631,7 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     cv_profile?.applicant_name ||
     "";
 
-  const profileRole =
+  let profileRole =
     storedSummary.targetRoles[0]?.replace(/^target role:\s*/i, "") ||
     cv_profile?.target_roles?.[0] ||
     "Software Engineer";
@@ -638,17 +744,63 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     lowerLatest.includes("profile review") ||
     lowerLatest.includes("background");
 
-  const isGreeting =
-    /^(hi|hello|hey|good\s+morning|good\s+afternoon|good\s+evening|greetings|help|howdy|start)\b/i.test(lowerLatest) ||
-    lowerLatest === "hi" ||
-    lowerLatest === "hello" ||
-    lowerLatest === "help" ||
-    lowerLatest.includes("who are you") ||
-    lowerLatest.includes("what can you do") ||
-    lowerLatest.includes("what do you do") ||
-    lowerLatest.includes("how does this work") ||
-    lowerLatest.includes("how can you assist") ||
-    lowerLatest.includes("get started");
+  // UTC Date representation for today and yesterday
+  const utcToday = getUtcToday();
+  const utcYesterday = getUtcYesterday();
+
+  // Binary "Yes or No?" query check
+  const isYesOrNoQuery =
+    lowerLatest === "yes or no" ||
+    lowerLatest === "yes or no?" ||
+    lowerLatest.startsWith("yes or no");
+
+  // Did I apply today query check
+  const isDidIApplyToday =
+    (lowerLatest.includes("did i apply") || lowerLatest.includes("have i applied") || lowerLatest.includes("did i dispatch") || lowerLatest.includes("have i dispatched")) &&
+    (lowerLatest.includes("today") || lowerLatest.includes("todays") || lowerLatest.endsWith("today?") || lowerLatest.endsWith("today"));
+
+  // Discipline switch matcher (e.g. "my target discipline is marine", "change my target discipline to marine")
+  const isDisciplineSwitch =
+    lowerLatest.includes("target discipline is") ||
+    lowerLatest.includes("target discipline:") ||
+    lowerLatest.includes("change my target discipline") ||
+    lowerLatest.includes("change target discipline") ||
+    lowerLatest.includes("switch my discipline") ||
+    lowerLatest.includes("switch discipline to") ||
+    lowerLatest.includes("switch to marine") ||
+    lowerLatest.includes("recommend marine") ||
+    lowerLatest.includes("i want marine jobs") ||
+    lowerLatest.includes("marine jobs") ||
+    (lowerLatest.includes("target discipline") && (lowerLatest.includes("marine") || lowerLatest.includes("software") || lowerLatest.includes("ai") || lowerLatest.includes("healthcare") || lowerLatest.includes("engineering") || lowerLatest.includes("management")));
+
+  // Job recommendation query matcher (e.g. "what jobs can I apply for today?", "what job do you recommend for me?")
+  const isJobRecommendationQuery =
+    lowerLatest.includes("what jobs can i apply for today") ||
+    lowerLatest.includes("what jobs can i apply for") ||
+    lowerLatest.includes("what job can i apply for") ||
+    lowerLatest.includes("what jobs are available for me to apply") ||
+    lowerLatest.includes("what jobs are available") ||
+    lowerLatest.includes("available jobs for me") ||
+    lowerLatest.includes("available jobs") ||
+    lowerLatest.includes("jobs for me") ||
+    lowerLatest.includes("jobs available") ||
+    lowerLatest.includes("what job do you recommend for me") ||
+    lowerLatest.includes("what jobs do you recommend for me") ||
+    lowerLatest.includes("what jobs do you recommend") ||
+    lowerLatest.includes("what job do you recommend") ||
+    lowerLatest.includes("recommend jobs") ||
+    lowerLatest.includes("recommend a job") ||
+    lowerLatest.includes("recommend job") ||
+    lowerLatest.includes("find jobs for me") ||
+    lowerLatest.includes("find jobs") ||
+    lowerLatest.includes("open roles") ||
+    lowerLatest.includes("job recommendations") ||
+    lowerLatest.includes("jobs in nigeria");
+
+  // Daily limit query matcher
+  const isDailyLimitQuery =
+    (lowerLatest.includes("daily application limit") || lowerLatest.includes("daily limit") || lowerLatest.includes("how many jobs") || lowerLatest.includes("maximum")) &&
+    (lowerLatest.includes("available for me to apply") || lowerLatest.includes("in a day") || lowerLatest.includes("per day") || lowerLatest.includes("can i apply in a day") || lowerLatest.includes("can i apply a day"));
 
   // Specific Date Application Query Matcher (Audio Rule & Test I)
   const specificDateQuery = parseSpecificDateQuery(latest);
@@ -664,6 +816,7 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
      lowerLatest.includes("what did i apply") ||
      lowerLatest.includes("did i apply") ||
      lowerLatest.includes("show me") ||
+     lowerLatest.includes("work") ||
      lowerLatest.includes("list"));
 
   const isWhatDatesQuery =
@@ -677,6 +830,38 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
      lowerLatest.includes("apply") ||
      lowerLatest.includes("application") ||
      lowerLatest.includes("applications"));
+
+  const hasSpecificInquiry =
+    Boolean(specificDateQuery) ||
+    isJobRecommendationQuery ||
+    isDisciplineSwitch ||
+    isDailyLimitQuery ||
+    isDidIApplyToday ||
+    isYesterdayJobs ||
+    isYesOrNoQuery ||
+    lowerLatest.includes("job") ||
+    lowerLatest.includes("apply") ||
+    lowerLatest.includes("applied") ||
+    lowerLatest.includes("application") ||
+    lowerLatest.includes("discipline") ||
+    lowerLatest.includes("cv") ||
+    lowerLatest.includes("resume") ||
+    lowerLatest.includes("skill") ||
+    lowerLatest.includes("study") ||
+    lowerLatest.includes("work");
+
+  const isGreeting =
+    !hasSpecificInquiry &&
+    (/^(hi|hello|hey|good\s+morning|good\s+afternoon|good\s+evening|greetings|help|howdy|start)\b/i.test(lowerLatest) ||
+     lowerLatest === "hi" ||
+     lowerLatest === "hello" ||
+     lowerLatest === "help" ||
+     lowerLatest.includes("who are you") ||
+     lowerLatest.includes("what can you do") ||
+     lowerLatest.includes("what do you do") ||
+     lowerLatest.includes("how does this work") ||
+     lowerLatest.includes("how can you assist") ||
+     lowerLatest.includes("get started"));
 
   const isFalseMemoryProbe =
     /what (?:is|was) my (?:dog|cat|pet|car|favorite food|favorite color|favorite car|favorite movie|salary|bonus|shoe size|height|blood type)/i.test(lowerLatest) ||
@@ -706,22 +891,98 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
   // Fine-Tuned Intent Classification & Grounded Walrus Sovereign Memory Recall
   const userIntent = classifyUserIntent(latest);
   const activeProfileData = cv_profile || body.profile;
-  const simulatedIntentReply = !isGreeting
+  const simulatedIntentReply = !isGreeting && !isJobRecommendationQuery && !isDisciplineSwitch && !isDailyLimitQuery
     ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest)
     : null;
 
-  if (isDateJobQuery && specificDateQuery) {
+  if (isYesOrNoQuery) {
+    const todayApplied = appliedJobs.filter((a: any) => isTodayDate(a.appliedTimestamp || a.appliedAt));
+    if (todayApplied.length === 0) {
+      directReply = "No.";
+    } else {
+      directReply = `Yes. Today being the ${utcToday.label}, you applied to ${todayApplied.length} job${todayApplied.length > 1 ? "s" : ""}:\n\n` +
+        todayApplied.map((j: any, i: number) => `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**`).join("\n");
+    }
+  } else if (isDateJobQuery && specificDateQuery) {
     const matchingJobs = appliedJobs.filter((j: any) => isJobMatchingDate(j, specificDateQuery));
     if (matchingJobs.length > 0) {
       const jobList = matchingJobs
         .map((j: any, i: number) => `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**`)
         .join("\n");
       directReply =
-        `According to your Walrus application records, you applied to ${matchingJobs.length} job${matchingJobs.length > 1 ? "s" : ""} on ${specificDateQuery.label}:\n\n${jobList}`;
+        `Yes. According to your Walrus application records, you applied to ${matchingJobs.length} job${matchingJobs.length > 1 ? "s" : ""} on ${specificDateQuery.label}:\n\n${jobList}`;
     } else {
       directReply =
-        `According to your Walrus application records, you did not apply for any jobs on ${specificDateQuery.label}. No applications are recorded for that date.`;
+        `From my scan: No. According to your Walrus application records, you did not apply for any jobs on ${specificDateQuery.label}. No applications are recorded for that date.`;
     }
+  } else if (isDidIApplyToday) {
+    const todayApplied = appliedJobs.filter((a: any) => isTodayDate(a.appliedTimestamp || a.appliedAt));
+    if (todayApplied.length === 0) {
+      directReply = `From my scan: No. Today being the ${utcToday.label}, you have not applied to any jobs yet. Head over to the **Application Board** to discover verified openings and auto-apply!`;
+    } else {
+      directReply = `Yes. Today being the ${utcToday.label}, you applied to ${todayApplied.length} job${todayApplied.length > 1 ? "s" : ""}:\n\n` +
+        todayApplied.map((j: any, i: number) => `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**`).join("\n");
+    }
+  } else if (isDisciplineSwitch) {
+    let newDisciplineName = "Marine Engineering & Offshore Systems";
+    let newCategory = "Maritime & Offshore Engineering";
+
+    if (lowerLatest.includes("marine") || lowerLatest.includes("offshore") || lowerLatest.includes("maritime") || lowerLatest.includes("naval")) {
+      newDisciplineName = "Marine Engineering & Offshore Systems";
+      newCategory = "Maritime & Offshore Engineering";
+    } else if (lowerLatest.includes("software") || lowerLatest.includes("cloud") || lowerLatest.includes("it support") || lowerLatest.includes("web") || lowerLatest.includes("full stack")) {
+      newDisciplineName = "Software & Cloud Systems";
+      newCategory = "Software / Cloud";
+    } else if (lowerLatest.includes("ai") || lowerLatest.includes("robot") || lowerLatest.includes("machine learning") || lowerLatest.includes("autonomous")) {
+      newDisciplineName = "AI & Autonomous Systems";
+      newCategory = "AI & Autonomous Systems";
+    } else if (lowerLatest.includes("medical") || lowerLatest.includes("health") || lowerLatest.includes("nursing") || lowerLatest.includes("clinical")) {
+      newDisciplineName = "Medical & Healthcare Informatics";
+      newCategory = "Medical / Healthcare";
+    } else if (lowerLatest.includes("engineering") || lowerLatest.includes("mechanical") || lowerLatest.includes("electrical") || lowerLatest.includes("industrial")) {
+      newDisciplineName = "Engineering & Industrial Systems";
+      newCategory = "Engineering & Industrial";
+    } else if (lowerLatest.includes("management") || lowerLatest.includes("operations") || lowerLatest.includes("product")) {
+      newDisciplineName = "Management & Operations";
+      newCategory = "Management & Operations";
+    }
+
+    await rememberFact(address, "target_role", `Target role: ${newDisciplineName}`).catch(() => {});
+    await rememberFact(address, "preference", `Target discipline: ${newCategory}`).catch(() => {});
+    newlyStored.push(`Target role: ${newDisciplineName}`);
+    newlyStored.push(`Target discipline: ${newCategory}`);
+    storedSummary.targetRoles.unshift(newDisciplineName);
+    profileRole = newDisciplineName;
+
+    const candidateGreeting = currentName && currentName !== "Candidate" ? `Hello ${currentName}` : "Hello";
+    const jobs = getTopJobsForCategory(newDisciplineName, 10);
+    directReply =
+      `${candidateGreeting}, give me a minute, let me scan through the job board for you to see the best possible jobs to get.\n\n` +
+      `I have updated your target discipline to **${newCategory}** (${newDisciplineName}) in your Walrus Sovereign Memory vault.\n\n` +
+      `Here are 10 verified openings matching your updated discipline from our live employer directory:\n\n` +
+      `${formatTopJobs(jobs)}\n\n` +
+      `You can explore all verified openings and auto-apply directly on the [Job Board](/job-board). If you'd like to switch to another discipline at any time, simply tell me (e.g. 'Change my target discipline to Software' or 'Change my target discipline to AI').`;
+  } else if (isJobRecommendationQuery) {
+    const candidateGreeting = currentName && currentName !== "Candidate" ? `Hello ${currentName}` : "Hello";
+    const jobs = getTopJobsForCategory(profileRole, 10);
+    directReply =
+      `${candidateGreeting}, give me a minute, let me scan through the job board for you to see the best possible jobs to get.\n\n` +
+      `Based on your target discipline (**${profileRole}**), here are 10 verified opportunities matching your profile from our verified employer directory:\n\n` +
+      `${formatTopJobs(jobs)}\n\n` +
+      `You can explore all 382+ verified openings and auto-apply directly on the [Job Board](/job-board). If you want to change your target discipline (for example to **Marine & Offshore**, **Software & Cloud**, or **AI & Autonomous Systems**), just let me know and I will update your preferences and reload matches!`;
+  } else if (isDailyLimitQuery) {
+    const candidateGreeting = currentName && currentName !== "Candidate" ? `Hello ${currentName}` : "Hello";
+    const todayCount = appliedJobs.filter((a: any) => isTodayDate(a.appliedTimestamp || a.appliedAt)).length;
+    const jobs = getTopJobsForCategory(profileRole, 10);
+    directReply =
+      `You can apply to as many jobs as possible in a day; CareerAce does not place an artificial limit on your daily dispatches.\n\n` +
+      `${candidateGreeting}, give me a minute, let me scan through the job board for you to see the best possible jobs to get.\n\n` +
+      `• **Daily Application Progress:** You have dispatched **${todayCount} of 5** recommended daily applications today.\n` +
+      `• **Pacing Safeguards:** Dispatches feature 2-5s humanized anti-spam pacing intervals and a 5-day company cooldown.\n` +
+      `• **Available Openings:** Over 382 verified employer contacts are available across our directory.\n\n` +
+      `Here are 10 preferred openings tailored to your target discipline (**${profileRole}**):\n\n` +
+      `${formatTopJobs(jobs)}\n\n` +
+      `You can review all verified vacancies and auto-apply directly on the [Job Board](/job-board).`;
   } else if (isWhatDatesQuery) {
     if (appliedJobs.length > 0) {
       const dateGroups = new Map<string, number>();
@@ -824,11 +1085,11 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
         .map((j: any, i: number) => `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**`)
         .join("\n");
       directReply =
-        `From our count, you were able to apply to ${yesterdayApplied.length} job${yesterdayApplied.length > 1 ? "s" : ""} yesterday.\n\n` +
+        `From our count, you were able to apply to ${yesterdayApplied.length} job${yesterdayApplied.length > 1 ? "s" : ""} yesterday (${utcYesterday.label}):\n\n` +
         `If you want, I can show you the names of the jobs you applied for:\n\n${jobList}`;
     } else {
       directReply =
-        `From our count, you were able to apply to 0 jobs yesterday.\n\n` +
+        `From our count, you were able to apply to 0 jobs yesterday (${utcYesterday.label}).\n\n` +
         `If you want, I can show you the names of the jobs you applied for across all dates (total tracked: ${appliedJobs.length}), or you can head over to the **Application Board** to discover new verified openings.`;
     }
   } else if (isShowJobNames) {
@@ -856,7 +1117,7 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     const dailyTarget = 5;
 
     directReply =
-      `From our count, you were able to apply to ${dailyCount} job${dailyCount === 1 ? "" : "s"} today (daily target: ${dailyTarget}).\n\n` +
+      `From our count, you were able to apply to ${dailyCount} job${dailyCount === 1 ? "" : "s"} today (${utcToday.label}, daily target: ${dailyTarget}).\n\n` +
       (dailyCount > 0
         ? `If you want, I can show you the names of the jobs you applied for:\n\n` +
           todayApplied.map((j: any, i: number) => `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**`).join("\n")
@@ -888,57 +1149,6 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
         `• **Application Board:** Explore verified openings, track your applications across Discovery, Saved, and Applied stages, and manage 7-day recruiter follow-up reminders.\n\n` +
         `To get started, head over to **Resume Studio** to upload your resume, or ask me any question about your career goals!`;
     }
-  } else if (
-    lowerLatest.includes("available job") ||
-    lowerLatest.includes("available jobs") ||
-    lowerLatest.includes("jobs for me") ||
-    lowerLatest.includes("what jobs") ||
-    lowerLatest.includes("find jobs") ||
-    lowerLatest.includes("open roles") ||
-    lowerLatest.includes("recommend jobs") ||
-    lowerLatest.includes("jobs in nigeria")
-  ) {
-    const todayStr = new Date().toDateString();
-    const todayApplied = appliedJobs.filter((a: any) => {
-      const t = a.appliedTimestamp || (a.appliedAt ? new Date(a.appliedAt).getTime() : 0);
-      return t && new Date(t).toDateString() === todayStr;
-    });
-    const dailyCount = todayApplied.length;
-    const dailyTarget = 5;
-
-    const roleLower = profileRole.toLowerCase();
-    let matchedCategory = "Software / Cloud";
-    let sampleRoles = [
-      { title: "Senior Backend Engineer (Payments)", company: "Paystack", loc: "Lagos, Nigeria · Hybrid" },
-      { title: "Cloud Infrastructure & DevOps Engineer", company: "Flutterwave", loc: "Lagos, Nigeria · Remote" },
-      { title: "Distributed Systems Architect", company: "Andela", loc: "Nigeria / Global Remote" },
-      { title: "Core Banking Distributed Systems Engineer", company: "Moniepoint", loc: "Lagos, Nigeria · Hybrid" },
-    ];
-
-    if (roleLower.includes("marine") || roleLower.includes("naval") || roleLower.includes("cadet") || roleLower.includes("offshore")) {
-      matchedCategory = "Marine & Offshore Engineering";
-      sampleRoles = [
-        { title: "Engine Cadet / Trainee Marine Engineer", company: "Maersk", loc: "Rotterdam, Netherlands · Fleet" },
-        { title: "3rd Marine Engineer Officer (DP Vessel)", company: "Ocean Professionals Nigeria", loc: "Port Harcourt / Offshore Niger Delta" },
-        { title: "Offshore Marine Systems Specialist", company: "Red Offshore", loc: "Lagos, Nigeria / West Africa Offshore" },
-        { title: "Subsea Systems Specialist", company: "TechnipFMC", loc: "Houston, TX / Global Offshore" },
-      ];
-    } else if (roleLower.includes("ai") || roleLower.includes("robot") || roleLower.includes("autonomous") || roleLower.includes("machine learning")) {
-      matchedCategory = "AI & Autonomous Systems";
-      sampleRoles = [
-        { title: "Autonomous Systems & ML Engineer", company: "Boston Dynamics", loc: "Waltham, MA / Global Remote" },
-        { title: "Research Engineer (Foundation Models)", company: "Anthropic", loc: "San Francisco, CA / Remote" },
-        { title: "Smart Contract & Distributed Consensus Engineer", company: "Mysten Labs", loc: "Worldwide Remote" },
-      ];
-    }
-
-    const roleList = sampleRoles.map((r, i) => `${i + 1}. **${r.title}** at **${r.company}**\n   • Location: ${r.loc}\n   • Dispatch: Native mailto or direct relay on Application Board`).join("\n\n");
-
-    directReply = `Here is your live daily progress and verified matching opportunities:\n\n` +
-      `• **Today's Application Goal:** **${dailyCount} of ${dailyTarget}** dispatched (${dailyCount >= dailyTarget ? "Daily Goal Achieved!" : `${dailyTarget - dailyCount} more to reach your daily target`}).\n` +
-      `• **Target Discipline:** ${profileRole} (${matchedCategory}).\n\n` +
-      `**Verified Openings Matching Your Profile:**\n\n${roleList}\n\n` +
-      `Head over to the **Application Board** to auto-apply, download RFC-compliant delivery receipts (.eml), and schedule automated 7-day follow-up reminders.`;
   } else if (
     lowerLatest.includes("applied job") ||
     lowerLatest.includes("jobs applied") ||
