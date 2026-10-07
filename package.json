@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Universal Autonomous AI Career Copilot & Decentralized Vault — Built with Google Gemini & Walrus Protocol",
   "author": "IboTV (ibochivincent-lang)",
+  "packageManager": "pnpm@9.15.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
