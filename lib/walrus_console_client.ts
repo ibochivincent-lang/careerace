@@ -51,15 +51,20 @@ const WALRUS_CONSOLE_BASE_URL =
 
 /**
  * Returns the Walrus Console API key from env vars.
+ * Supports standard WALRUS_CONSOLE_API_KEY, CONSOLE_API_KEY, and Vercel alias API_Key.
  * Falls back to reading .env.local via dynamic fs import (local script runners only).
  * Safe to call in serverless/Edge — the fs fallback is always caught.
  */
 export async function getWalrusConsoleApiKey(): Promise<string | null> {
-  if (process.env.WALRUS_CONSOLE_API_KEY) {
-    return process.env.WALRUS_CONSOLE_API_KEY.trim();
-  }
-  if (process.env.NEXT_PUBLIC_WALRUS_CONSOLE_API_KEY) {
-    return process.env.NEXT_PUBLIC_WALRUS_CONSOLE_API_KEY.trim();
+  const fromEnv =
+    process.env.WALRUS_CONSOLE_API_KEY ||
+    process.env.CONSOLE_API_KEY ||
+    process.env.API_Key ||
+    process.env.API_KEY ||
+    process.env.NEXT_PUBLIC_WALRUS_CONSOLE_API_KEY;
+
+  if (fromEnv) {
+    return fromEnv.trim();
   }
 
   // Local script runner fallback — dynamic import is caught if fs is unavailable
@@ -71,7 +76,10 @@ export async function getWalrusConsoleApiKey(): Promise<string | null> {
     const envPath = path.join(process.cwd(), ".env.local");
     if (fs.existsSync(envPath)) {
       const content = fs.readFileSync(envPath, "utf-8");
-      const match = content.match(/^WALRUS_CONSOLE_API_KEY=(.+)$/m);
+      const match =
+        content.match(/^WALRUS_CONSOLE_API_KEY=(.+)$/m) ||
+        content.match(/^CONSOLE_API_KEY=(.+)$/m) ||
+        content.match(/^API_Key=(.+)$/m);
       if (match?.[1]) return match[1].trim();
     }
   } catch {
@@ -79,6 +87,34 @@ export async function getWalrusConsoleApiKey(): Promise<string | null> {
   }
 
   return null;
+}
+
+/**
+ * Returns the Walrus Console Service Private Key from env vars.
+ * Supports WALRUS_CONSOLE_SERVICE_KEY, CONSOLE_SERVICE_PRIVATE_KEY, and Vercel alias Service_Private_Key.
+ */
+export function getWalrusConsoleServiceKey(): string | null {
+  const fromEnv =
+    process.env.WALRUS_CONSOLE_SERVICE_KEY ||
+    process.env.CONSOLE_SERVICE_PRIVATE_KEY ||
+    process.env.Service_Private_Key ||
+    process.env.SERVICE_PRIVATE_KEY;
+
+  return fromEnv ? fromEnv.trim() : null;
+}
+
+/**
+ * Returns the Walrus Console Account / Owner Address from env vars.
+ * Supports WALRUS_CONSOLE_ACCOUNT_ADDRESS, CONSOLE_WEB_ACCOUNT_ADDRESS, and Vercel alias Owner_Address.
+ */
+export function getWalrusConsoleAccountAddress(): string | null {
+  const fromEnv =
+    process.env.WALRUS_CONSOLE_ACCOUNT_ADDRESS ||
+    process.env.CONSOLE_WEB_ACCOUNT_ADDRESS ||
+    process.env.Owner_Address ||
+    process.env.OWNER_ADDRESS;
+
+  return fromEnv ? fromEnv.trim() : null;
 }
 
 
