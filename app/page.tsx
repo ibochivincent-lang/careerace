@@ -8,9 +8,9 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { AccountChip } from '@/components/AccountChip'
 import { ChatdeckHero } from '@/components/blocks/chatdeck_hero'
 import { ChatdeckFeatures } from '@/components/blocks/chatdeck_features'
+import { ChatdeckFaq } from '@/components/blocks/chatdeck_faq'
 import { ChatdeckFooter } from '@/components/blocks/chatdeck_footer'
 import { WalrusCentralArchitectureChart } from '@/components/WalrusCentralArchitectureChart'
-import { ProjectRoadmapSection } from '@/components/ProjectRoadmapSection'
 import { FeedbackModal } from '@/components/FeedbackModal'
 import {
   ShieldCheck, ArrowRight, ExternalLink, Globe, MessageSquare
@@ -79,7 +79,7 @@ export default function CareerAceLandingPage() {
           <nav className="hidden md:flex items-center gap-5 text-sm text-muted-foreground font-medium">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#architecture" className="hover:text-foreground transition-colors">Architecture</a>
-            <a href="#roadmap" className="hover:text-foreground transition-colors">Roadmap</a>
+            <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
             <a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a>
           </nav>
 
@@ -162,9 +162,6 @@ export default function CareerAceLandingPage() {
         {/* ── CENTRALIZED WALRUS SOVEREIGN MEMORY ARCHITECTURE CHART ── */}
         <WalrusCentralArchitectureChart />
 
-        {/* ── PRODUCT ROADMAP & AUTONOMOUS FRONTIERS ── */}
-        <ProjectRoadmapSection />
-
         {/* ── High-Impact Call to Action Banner ── */}
         <div className="p-8 md:p-10 rounded-2xl border border-border/80 bg-card/70 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
@@ -192,6 +189,9 @@ export default function CareerAceLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Frequently Asked Questions (Positioned after Private Sovereign Cockpit) ── */}
+      <ChatdeckFaq />
 
       {/* ── Chatdeck Footer ─────────────────────────────────────────────────── */}
       <ChatdeckFooter />
