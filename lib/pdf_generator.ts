@@ -4,7 +4,15 @@ import type { ParsedCv } from './cv_parser'
  * Clean, lightweight, 100% compliant PDF 1.4 generator in pure TypeScript.
  * Zero external dependencies. Generates ATS-friendly, single-column CV PDFs
  * matching the user's design standards.
+ *
+ * NOTE: Uses TextEncoder instead of Buffer.byteLength so this module is safe
+ * in Edge runtimes, Vercel serverless, and browser environments.
  */
+
+/** Cross-runtime byte length (UTF-8) — replaces Node.js Buffer.byteLength */
+function utf8ByteLength(str: string): number {
+  return new TextEncoder().encode(str).byteLength
+}
 
 function escapePdfText(text: string): string {
   if (!text) return ''
@@ -223,7 +231,7 @@ export function generateCvPdfBytes(cv: ParsedCv, tailoredSummary?: string): Uint
   drawText('Verified via CareerAce Sovereign Memory · Anchored Snapshot', '/F3', 7.5, marginX, 22, 0.5, 0.55, 0.6)
 
   const streamContent = streamLines.join('\n')
-  const streamLength = Buffer.byteLength(streamContent, 'utf-8')
+  const streamLength = utf8ByteLength(streamContent)
 
   // Object 1: Catalog
   // Object 2: Pages
@@ -252,11 +260,11 @@ export function generateCvPdfBytes(cv: ParsedCv, tailoredSummary?: string): Uint
   // Construct binary output with xref
   let pdfOutput = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'
   for (let i = 0; i < objects.length; i++) {
-    offsets.push(Buffer.byteLength(pdfOutput, 'utf-8'))
+    offsets.push(utf8ByteLength(pdfOutput))
     pdfOutput += `${i + 1} 0 obj\n${objects[i]}\nendobj\n`
   }
 
-  const startXref = Buffer.byteLength(pdfOutput, 'utf-8')
+  const startXref = utf8ByteLength(pdfOutput)
   pdfOutput += `xref\n0 ${objects.length + 1}\n`
   pdfOutput += '0000000000 65535 f \n'
   for (let i = 0; i < offsets.length; i++) {

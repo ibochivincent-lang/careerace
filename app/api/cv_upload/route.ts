@@ -4,7 +4,10 @@ import { getOwnerAddress } from "@/lib/session";
 import { resolveTargetAddress } from "@/lib/target_address";
 import { uploadEncryptedResumeToWalrus } from "@/lib/walrus_storage";
 import { rememberFact } from "@/lib/memory_contract";
-import zlib from "zlib";
+// NOTE: zlib is NOT imported at the top-level — a top-level static import of any
+// Node.js built-in (e.g. "zlib", "crypto", "fs") causes the entire route module
+// to fail to load in runtimes that don't bundle Node built-ins (Vercel Edge, etc.).
+// zlib is loaded lazily inside extractPdfText() on the exact code-path that needs it.
 
 export async function POST(req: Request) {
   try {
@@ -66,7 +69,7 @@ export async function POST(req: Request) {
           lowerName.endsWith(".docx") ||
           file.type.includes("officedocument.wordprocessingml")
         ) {
-          cvText = extractDocxText(buffer);
+          cvText = await extractDocxText(buffer);
           extractionMethod = "docx_extraction";
         } else {
           cvText = buffer
@@ -399,6 +402,14 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
   }
 
   // Strategy 2: Decompress flate streams in PDF
+  // zlib is a Node.js built-in — lazy-imported so it never crashes Edge runtimes.
+  let zlibModule: typeof import("zlib") | null = null;
+  try {
+    zlibModule = (await import("zlib")).default ?? (await import("zlib")) as any;
+  } catch {
+    // Edge runtime or environment without Node.js built-ins — skip decompression
+  }
+
   const textChunks: string[] = [];
   const rawLatin = buffer.toString("latin1");
 
@@ -409,13 +420,15 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     const streamBuffer = Buffer.from(rawStreamData, "latin1");
 
     let decompressed: string | null = null;
-    try {
-      decompressed = zlib.inflateSync(streamBuffer).toString("latin1");
-    } catch {
+    if (zlibModule) {
       try {
-        decompressed = zlib.inflateRawSync(streamBuffer).toString("latin1");
+        decompressed = zlibModule.inflateSync(streamBuffer).toString("latin1");
       } catch {
-        // Not compressed
+        try {
+          decompressed = zlibModule.inflateRawSync(streamBuffer).toString("latin1");
+        } catch {
+          // Not compressed
+        }
       }
     }
 
@@ -448,8 +461,15 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
  * Extract readable text from DOCX buffer (which is a ZIP containing word/document.xml).
  * Preserves paragraphs, bullet points, and table structures cleanly without artificial line chopping.
  */
-function extractDocxText(buffer: Buffer): string {
+async function extractDocxText(buffer: Buffer): Promise<string> {
   try {
+    let zlibModule: typeof import("zlib") | null = null;
+    try {
+      zlibModule = (await import("zlib")).default ?? (await import("zlib")) as any;
+    } catch {
+      // Edge runtime or environment without Node.js built-ins
+    }
+
     let offset = 0;
     while (offset < buffer.length - 30) {
       if (buffer.readUInt32LE(offset) === 0x04034b50) {
@@ -465,8 +485,8 @@ function extractDocxText(buffer: Buffer): string {
         if (fileName === "word/document.xml" && dataEnd <= buffer.length) {
           const fileData = buffer.subarray(dataStart, dataEnd);
           let xml = "";
-          if (compressionMethod === 8) {
-            xml = zlib.inflateRawSync(fileData).toString("utf8");
+          if (compressionMethod === 8 && zlibModule) {
+            xml = zlibModule.inflateRawSync(fileData).toString("utf8");
           } else if (compressionMethod === 0) {
             xml = fileData.toString("utf8");
           }

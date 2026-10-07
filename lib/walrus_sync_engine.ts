@@ -94,11 +94,11 @@ export async function executeWalrusToSupabaseSync(
   let successfulCandidates = 0;
 
   for (const candidate of targetCandidates) {
-    const fakeWallet = `0x${candidate.id.padEnd(64, "0")}`;
+    const candidateWallet = `0x${candidate.id.padEnd(64, "0")}`;
     const report: CandidateSyncReport = {
       candidateId: candidate.id,
       name: candidate.name,
-      wallet: fakeWallet,
+      wallet: candidateWallet,
       namespace: candidate.namespace,
       memoriesFound: 0,
       synced: false,
@@ -107,7 +107,7 @@ export async function executeWalrusToSupabaseSync(
     try {
       // 1. Upsert candidate profile into Supabase
       await db.upsertCandidate({
-        wallet_address: fakeWallet,
+        wallet_address: candidateWallet,
         name: candidate.name,
         target_role: candidate.domain,
         namespace: candidate.namespace,
@@ -131,7 +131,7 @@ export async function executeWalrusToSupabaseSync(
       for (const mem of memories) {
         const factKind = mem.text.split(":")[0]?.toLowerCase().trim() || "experience";
         await db.recordMemory({
-          candidate_wallet: fakeWallet,
+          candidate_wallet: candidateWallet,
           namespace: candidate.namespace,
           fact_kind: factKind,
           fact_text: mem.text,

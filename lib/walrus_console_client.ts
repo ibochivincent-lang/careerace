@@ -4,11 +4,11 @@
  * Provides persistent sovereign storage for chat transcripts, audit trails,
  * and candidate archives backed by Walrus decentralized storage.
  * Active deployment connection to Vercel production environment.
+ *
+ * NOTE: No top-level Node.js `fs`/`path` imports — this module runs in
+ * Vercel serverless AND Edge runtimes where those modules are unavailable.
+ * The .env.local fallback uses a dynamic import that is safely caught.
  */
-
-
-import fs from "node:fs";
-import path from "node:path";
 
 export interface WalrusConsoleSpace {
   id: string;
@@ -49,7 +49,12 @@ export interface WalrusConsoleStatus {
 const WALRUS_CONSOLE_BASE_URL =
   process.env.WALRUS_CONSOLE_BASE_URL || "https://api.console.walrus.xyz/api/v1";
 
-export function getWalrusConsoleApiKey(): string | null {
+/**
+ * Returns the Walrus Console API key from env vars.
+ * Falls back to reading .env.local via dynamic fs import (local script runners only).
+ * Safe to call in serverless/Edge — the fs fallback is always caught.
+ */
+export async function getWalrusConsoleApiKey(): Promise<string | null> {
   if (process.env.WALRUS_CONSOLE_API_KEY) {
     return process.env.WALRUS_CONSOLE_API_KEY.trim();
   }
@@ -57,18 +62,20 @@ export function getWalrusConsoleApiKey(): string | null {
     return process.env.NEXT_PUBLIC_WALRUS_CONSOLE_API_KEY.trim();
   }
 
+  // Local script runner fallback — dynamic import is caught if fs is unavailable
   try {
-    // Dynamic fallback for standalone script and test runners
+    const [{ default: fs }, { default: path }] = await Promise.all([
+      import("node:fs"),
+      import("node:path"),
+    ]);
     const envPath = path.join(process.cwd(), ".env.local");
     if (fs.existsSync(envPath)) {
       const content = fs.readFileSync(envPath, "utf-8");
       const match = content.match(/^WALRUS_CONSOLE_API_KEY=(.+)$/m);
-      if (match && match[1]) {
-        return match[1].trim();
-      }
+      if (match?.[1]) return match[1].trim();
     }
   } catch {
-    // Ignore in browser/edge environments
+    // fs unavailable in serverless/Edge — expected
   }
 
   return null;
@@ -80,7 +87,7 @@ export function getWalrusConsoleApiKey(): string | null {
  * Checks the real-time registration and health status of the Walrus Console API key.
  */
 export async function checkWalrusConsoleStatus(): Promise<WalrusConsoleStatus> {
-  const apiKey = getWalrusConsoleApiKey();
+  const apiKey = await getWalrusConsoleApiKey();
   if (!apiKey) {
     return {
       configured: false,
@@ -141,7 +148,7 @@ export async function checkWalrusConsoleStatus(): Promise<WalrusConsoleStatus> {
  * Retrieves spaces available to the API key.
  */
 export async function listWalrusSpaces(): Promise<WalrusConsoleSpace[]> {
-  const apiKey = getWalrusConsoleApiKey();
+  const apiKey = await getWalrusConsoleApiKey();
   if (!apiKey) return [];
 
   try {
@@ -169,7 +176,7 @@ export async function listWalrusSpaces(): Promise<WalrusConsoleSpace[]> {
  * Lists buckets (folders) within a given space.
  */
 export async function listWalrusBuckets(spaceId: string): Promise<WalrusConsoleBucket[]> {
-  const apiKey = getWalrusConsoleApiKey();
+  const apiKey = await getWalrusConsoleApiKey();
   if (!apiKey || !spaceId) return [];
 
   try {
@@ -194,7 +201,7 @@ export async function listWalrusBuckets(spaceId: string): Promise<WalrusConsoleB
  * Ensures a dedicated chat vault bucket exists in the target space.
  */
 export async function ensureChatVaultBucket(spaceId: string): Promise<string | null> {
-  const apiKey = getWalrusConsoleApiKey();
+  const apiKey = await getWalrusConsoleApiKey();
   if (!apiKey || !spaceId) return null;
 
   try {
@@ -239,7 +246,7 @@ export async function archiveChatSessionToWalrus(params: {
   channel: string;
   messages: Array<{ role: string; content: string; timestamp?: number }>;
 }): Promise<{ ok: boolean; fileId?: string; error?: string }> {
-  const apiKey = getWalrusConsoleApiKey();
+  const apiKey = await getWalrusConsoleApiKey();
   if (!apiKey) {
     return { ok: false, error: "Missing API key" };
   }
@@ -312,7 +319,7 @@ export async function fetchChatSessionFromWalrus(params: {
   address: string;
   channel: string;
 }): Promise<any[] | null> {
-  const apiKey = getWalrusConsoleApiKey();
+  const apiKey = await getWalrusConsoleApiKey();
   if (!apiKey) return null;
 
   try {

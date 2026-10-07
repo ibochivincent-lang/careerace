@@ -17,8 +17,8 @@ import {
 
 const TEST_ADDR = "0xwalrus_vault_test_00000000000000000000001";
 
-test("Walrus Console: loads API key from environment", () => {
-  const key = getWalrusConsoleApiKey();
+test("Walrus Console: loads API key from environment", async () => {
+  const key = await getWalrusConsoleApiKey();
   assert.ok(key, "Walrus Console API key should be present from environment");
   assert.ok(key.startsWith("hbr_"), "API key should have hbr_ prefix");
 });
