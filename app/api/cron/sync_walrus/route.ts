@@ -5,7 +5,7 @@ export const maxDuration = 60; // Up to 60s for Vercel serverless execution
 
 /**
  * Vercel Cron Endpoint: Automated Walrus -> Supabase Synchronization
- * Scheduled in vercel.json to run every 6 hours.
+ * Scheduled in vercel.json to run once daily at 04:00 UTC (Vercel Hobby plan compatible).
  *
  * Security: Verified via CRON_SECRET header or ADMIN_SERVICE_KEY
  */
