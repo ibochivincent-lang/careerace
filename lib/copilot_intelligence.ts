@@ -15,6 +15,7 @@ import { callFreeLlm } from "./free_llm.ts";
 import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "./no_slop.ts";
 import { classifyUserIntent, generateIntentMemoryResponse } from "./user_intent_knowledge.ts";
 import { VERIFIED_COMPANY_HIRING_CONTACTS } from "./company_directory.ts";
+import { isAutonomousGoalQuery, executeAutonomousGoal } from "./autonomous_agent.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -831,7 +832,10 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
      lowerLatest.includes("application") ||
      lowerLatest.includes("applications"));
 
+  const isAutonomousGoal = isAutonomousGoalQuery(latest);
+
   const hasSpecificInquiry =
+    isAutonomousGoal ||
     Boolean(specificDateQuery) ||
     isJobRecommendationQuery ||
     isDisciplineSwitch ||
@@ -895,7 +899,18 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest)
     : null;
 
-  if (isYesOrNoQuery) {
+  if (isAutonomousGoal) {
+    const autonomousResult = await executeAutonomousGoal({
+      goalText: latest,
+      candidateAddress: address,
+      candidateName: currentName,
+      targetDiscipline: profileRole,
+      candidateSkills: profileSkills,
+      appliedJobs,
+      cvProfile: cv_profile,
+    });
+    directReply = autonomousResult.markdownReport;
+  } else if (isYesOrNoQuery) {
     const todayApplied = appliedJobs.filter((a: any) => isTodayDate(a.appliedTimestamp || a.appliedAt));
     if (todayApplied.length === 0) {
       directReply = "No.";
