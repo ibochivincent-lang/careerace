@@ -16,6 +16,12 @@ import { NO_SLOP_PROMPT_DIRECTIVE, sanitizeAntiSlop } from "./no_slop.ts";
 import { classifyUserIntent, generateIntentMemoryResponse } from "./user_intent_knowledge.ts";
 import { VERIFIED_COMPANY_HIRING_CONTACTS } from "./company_directory.ts";
 import { isAutonomousGoalQuery, executeAutonomousGoal } from "./autonomous_agent.ts";
+import {
+  isFollowUpInquiryQuery,
+  processAutonomousFollowUpQuery,
+  scanApplicationsForFollowUp,
+  persistFollowUpMilestone,
+} from "./autonomous_followup.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -833,9 +839,11 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
      lowerLatest.includes("applications"));
 
   const isAutonomousGoal = isAutonomousGoalQuery(latest);
+  const isFollowUp = isFollowUpInquiryQuery(latest);
 
   const hasSpecificInquiry =
     isAutonomousGoal ||
+    isFollowUp ||
     Boolean(specificDateQuery) ||
     isJobRecommendationQuery ||
     isDisciplineSwitch ||
@@ -910,6 +918,15 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
       cvProfile: cv_profile,
     });
     directReply = autonomousResult.markdownReport;
+  } else if (isFollowUp) {
+    directReply = processAutonomousFollowUpQuery(
+      latest,
+      appliedJobs,
+      address,
+      currentName,
+      profileRole,
+      cv_profile
+    );
   } else if (isYesOrNoQuery) {
     const todayApplied = appliedJobs.filter((a: any) => isTodayDate(a.appliedTimestamp || a.appliedAt));
     if (todayApplied.length === 0) {
@@ -1115,9 +1132,14 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
           return `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}** (Applied: ${dateStr})`;
         })
         .join("\n");
+      const followUpScan = scanApplicationsForFollowUp(appliedJobs, address, currentName);
+      const followUpNotice = followUpScan.dueCount > 0
+        ? `\n\n💡 **Autonomous Follow-Up Notice:** You have **${followUpScan.dueCount} application(s)** that have passed 7 days without a recruiter response. I have drafted a polite follow-up inquiry referencing your submission digest \`${followUpScan.duePackages[0].submissionDigest}\`. Say *"draft follow-up"* to review or send it.`
+        : "";
+
       directReply =
         `Here are the verified jobs you have applied for from your sovereign application log:\n\n${jobList}\n\n` +
-        `You can track the 7-day follow-up status for each of these on the **Application Board**.`;
+        `You can track the 7-day follow-up status for each of these on the **Application Board**.\n\n${followUpNotice}`.trim();
     } else {
       directReply =
         `You have no tracked job applications yet.\n\n` +
