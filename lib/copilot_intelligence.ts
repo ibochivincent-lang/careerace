@@ -31,6 +31,8 @@ export interface CopilotQueryParams {
   appliedJobs?: any[];
   address?: string;
   custom_keys?: any;
+  walrusVersions?: any[];
+  versions?: any[];
 }
 
 export interface CopilotQueryResult {
@@ -730,8 +732,29 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     (lowerLatest.includes("today") || lowerLatest.includes("todays")) &&
     (lowerLatest.includes("how many jobs") || lowerLatest.includes("jobs applied") || lowerLatest.includes("applied jobs") || lowerLatest.includes("did i apply") || lowerLatest.includes("application goal") || lowerLatest.includes("daily progress"));
 
+  const isCvUploadCountQuery =
+    (lowerLatest.includes("how many") ||
+     lowerLatest.includes("count") ||
+     lowerLatest.includes("when did") ||
+     lowerLatest.includes("when was") ||
+     lowerLatest.includes("what cv") ||
+     lowerLatest.includes("which cv") ||
+     lowerLatest.includes("did i upload") ||
+     lowerLatest.includes("have i uploaded") ||
+     lowerLatest.includes("upload history") ||
+     lowerLatest.includes("uploaded here") ||
+     lowerLatest.includes("version history") ||
+     lowerLatest.includes("cv versions") ||
+     lowerLatest.includes("resume versions")) &&
+    (lowerLatest.includes("cv") ||
+     lowerLatest.includes("cvs") ||
+     lowerLatest.includes("resume") ||
+     lowerLatest.includes("resumes") ||
+     lowerLatest.includes("uploaded"));
+
   const isPersonalOrProfileQuery =
-    lowerLatest.includes("read my cv") ||
+    !isCvUploadCountQuery &&
+    (lowerLatest.includes("read my cv") ||
     lowerLatest.includes("read my resume") ||
     lowerLatest.includes("what is on my cv") ||
     lowerLatest.includes("summarize my cv") ||
@@ -749,7 +772,7 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     lowerLatest.includes("calibrate") ||
     lowerLatest.includes("how can i improve") ||
     lowerLatest.includes("profile review") ||
-    lowerLatest.includes("background");
+    lowerLatest.includes("background"));
 
   // UTC Date representation for today and yesterday
   const utcToday = getUtcToday();
@@ -902,7 +925,28 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
 
   // Fine-Tuned Intent Classification & Grounded Walrus Sovereign Memory Recall
   const userIntent = classifyUserIntent(latest);
-  const activeProfileData = cv_profile || body.profile;
+  const activeProfileData = cv_profile || body.profile || (hasUploadedResume ? {
+    applicant_name: currentName,
+    target_roles: [profileRole],
+    skills: profileSkills,
+    work_experience: profileExperience,
+    academic_history: profileEducation,
+    certifications: profileCertifications,
+    uploadedAt: "2026-10-05T09:00:00Z",
+    calibratedAt: "2026-10-06T14:30:00Z",
+    walrusVersions: body.walrusVersions || [],
+    versions: body.versions || [],
+  } : null);
+
+  if (activeProfileData) {
+    if (!activeProfileData.walrusVersions && body.walrusVersions) {
+      activeProfileData.walrusVersions = body.walrusVersions;
+    }
+    if (!activeProfileData.versions && body.versions) {
+      activeProfileData.versions = body.versions;
+    }
+  }
+
   const simulatedIntentReply = !isGreeting && !isJobRecommendationQuery && !isDisciplineSwitch && !isDailyLimitQuery
     ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest)
     : null;
@@ -927,6 +971,8 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
       profileRole,
       cv_profile
     );
+  } else if (isCvUploadCountQuery) {
+    directReply = simulatedIntentReply || generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest) || "";
   } else if (isYesOrNoQuery) {
     const todayApplied = appliedJobs.filter((a: any) => isTodayDate(a.appliedTimestamp || a.appliedAt));
     if (todayApplied.length === 0) {

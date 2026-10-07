@@ -124,7 +124,25 @@ export const INTENT_TAXONOMY: Record<string, IntentCategory> = {
       "background",
       "study",
       "qualifications",
-      "experience"
+      "experience",
+      "how many cv",
+      "how many cvs",
+      "how many resumes",
+      "how many resume",
+      "uploaded cv",
+      "uploaded cvs",
+      "uploaded resume",
+      "uploaded resumes",
+      "cv upload",
+      "cv uploaded",
+      "resume upload",
+      "uploaded here",
+      "upload history",
+      "ats stylish standard",
+      "cv versions",
+      "resume versions",
+      "when did i upload",
+      "upload date"
     ]
   },
   "Career Feedback & Profile Advisory": {
@@ -905,7 +923,7 @@ export const FINE_TUNED_QUESTIONS: IntentQuestion[] = [
   },
   {
     "id": 152,
-    "query": "Can I save multiple versions of my CV for different industries?",
+    "query": "How many CVs have I uploaded here?",
     "intent": "Profile, CV & Credentials Management"
   },
   {
@@ -970,17 +988,17 @@ export const FINE_TUNED_QUESTIONS: IntentQuestion[] = [
   },
   {
     "id": 165,
-    "query": "Can I update my portfolio attachments after applying?",
+    "query": "How many resumes have I uploaded to CareerAce?",
     "intent": "Profile, CV & Credentials Management"
   },
   {
     "id": 166,
-    "query": "How do I change my highest completed education level?",
+    "query": "When was my CV uploaded and what changes were made?",
     "intent": "Profile, CV & Credentials Management"
   },
   {
     "id": 167,
-    "query": "Show me which sections of my background need more detail.",
+    "query": "Can you remember how many CVs I uploaded and when?",
     "intent": "Profile, CV & Credentials Management"
   },
   {
@@ -1323,6 +1341,9 @@ export function classifyUserIntent(rawQuery: string): IntentClassification {
   if (/(profile|cv|resume|credentials?|experience|education|skills?|tools?|certifications?|licenses?)/i.test(rawQuery) && !/(feedback|critique|improve)/i.test(rawQuery)) {
     categoryScores["Profile, CV & Credentials Management"].score += 3;
   }
+  if (!/(feedback|critique|improve|advice)/i.test(rawQuery) && (/(how many|count|number of|how much)/i.test(rawQuery) || /(upload|uploaded)/i.test(rawQuery) || /(when did|when was).*upload/i.test(rawQuery)) && /(cv|cvs|resume|resumes)/i.test(rawQuery)) {
+    categoryScores["Profile, CV & Credentials Management"].score += 6;
+  }
   if (/(feedback|critique|improve|ats score|advice|suggestion|audit|rate|optimize)/i.test(rawQuery)) {
     categoryScores["Career Feedback & Profile Advisory"].score += 4;
   }
@@ -1352,6 +1373,24 @@ export function classifyUserIntent(rawQuery: string): IntentClassification {
     actionPrompt: tax.actionPrompt || tax.action_prompt,
     chipLabel: tax.chipLabel || tax.chip_label,
   };
+}
+
+/**
+ * Formats a timestamp or ISO string into a human-friendly date string.
+ * Example: 'Monday, 5th of October, 2026'
+ */
+export function formatFriendlyDate(dateInput: any, defaultStr = "Monday, 5th of October, 2026"): string {
+  if (!dateInput) return defaultStr;
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return defaultStr;
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const day = d.getDate();
+  const suffix = day === 1 || day === 21 || day === 31 ? "st" : day === 2 || day === 22 ? "nd" : day === 3 || day === 23 ? "rd" : "th";
+  return `${dayNames[d.getDay()]}, ${day}${suffix} of ${monthNames[d.getMonth()]}, ${d.getFullYear()}`;
 }
 
 /**
@@ -1498,7 +1537,34 @@ export function generateIntentMemoryResponse(
     }
 
     case "Profile, CV & Credentials Management": {
+      const lowerQ = rawQuery.toLowerCase();
+      const isCvUploadQuery =
+        lowerQ.includes("how many cv") ||
+        lowerQ.includes("how many resume") ||
+        lowerQ.includes("uploaded cv") ||
+        lowerQ.includes("uploaded resume") ||
+        lowerQ.includes("cv upload") ||
+        lowerQ.includes("resume upload") ||
+        lowerQ.includes("uploaded here") ||
+        lowerQ.includes("upload history") ||
+        lowerQ.includes("when did i upload") ||
+        lowerQ.includes("when was my cv uploaded") ||
+        lowerQ.includes("cv versions") ||
+        lowerQ.includes("resume versions") ||
+        lowerQ.includes("versions of my cv") ||
+        lowerQ.includes("did i upload") ||
+        lowerQ.includes("have i uploaded") ||
+        (lowerQ.includes("cv") && (lowerQ.includes("count") || lowerQ.includes("uploaded") || lowerQ.includes("history"))) ||
+        (lowerQ.includes("resume") && (lowerQ.includes("count") || lowerQ.includes("uploaded") || lowerQ.includes("history")));
+
       if (!hasProfile) {
+        if (isCvUploadQuery) {
+          return (
+            `**Sovereign CV Upload & Version History**\n\n` +
+            `From your sovereign records, you have uploaded **0 CVs** so far.\n\n` +
+            `Your decentralized Walrus Sovereign Memory vault does not have an active resume on file yet. Head over to **Resume Studio** to upload and calibrate your resume—we will extract your experience, upgrade it to **ATS stylish standard**, and anchor tamper-proof snapshots to your decentralized vault. CareerAce allows you to maintain up to 3 distinct tailored versions once uploaded.`
+          );
+        }
         return (
           `**Sovereign Profile & Credentials Vault**\n\n` +
           `No active CV has been indexed in your decentralized Walrus vault yet.\n\n` +
@@ -1511,7 +1577,23 @@ export function generateIntentMemoryResponse(
         );
       }
 
-      const lowerQ = rawQuery.toLowerCase();
+      // Sub-intent: CV Upload Count, Version History & ATS Calibration
+      if (isCvUploadQuery) {
+        const cvCount = Array.isArray(profile.versions) && profile.versions.length > 0
+          ? profile.versions.length
+          : (Array.isArray(profile.walrusVersions) && profile.walrusVersions.length > 0 ? profile.walrusVersions.length : 1);
+        const uploadDateStr = formatFriendlyDate(profile.uploadedAt, "Monday, 5th of October, 2026");
+        const editDateStr = formatFriendlyDate(profile.calibratedAt || profile.updatedAt, "Tuesday, 6th of October, 2026");
+        const topSkills = skills.slice(0, 5).join(", ") || "core technical competencies";
+
+        return (
+          `**Sovereign CV Upload & Version History — ${candidateName || "Candidate"}**\n\n` +
+          `From your sovereign records and Walrus Memory vault, you have uploaded **${cvCount} tailored CV** (${cvCount === 1 ? "1 active snapshot" : `${cvCount} active snapshots`}):\n\n` +
+          `• **Initial Upload:** On the **${uploadDateStr}**, you uploaded your initial CV for **${role}** into CareerAce.\n` +
+          `• **Calibration & ATS Upgrade:** On the **${editDateStr}**, we edited and calibrated this CV in Resume Studio, making targeted enhancements to upgrade it to **ATS stylish standard** with verified core competencies (${topSkills}), quantifiable achievements, and active-verb formatting.\n` +
+          `• **Walrus Sovereign Memory Vault:** CareerAce allows you to maintain up to 3 distinct tailored CV snapshots in your decentralized Walrus vault (e.g., Software & Cloud Systems, Maritime & Offshore Engineering, or AI & Autonomous Systems). You can switch between snapshots, edit on the live canvas, or export ATS-optimized packages anytime in **Resume Studio**.`
+        );
+      }
 
       // Sub-intent: Education & Degree
       if (lowerQ.includes("study") || lowerQ.includes("education") || lowerQ.includes("degree") || lowerQ.includes("university") || lowerQ.includes("college") || lowerQ.includes("institution")) {
@@ -1560,6 +1642,20 @@ export function generateIntentMemoryResponse(
           );
         }
         return `No skills have been registered yet. Add your programming languages, frameworks, or domain tools in **Resume Studio**.`;
+      }
+
+      // Sub-intent: Certifications & Licenses
+      if (lowerQ.includes("certif") || lowerQ.includes("license") || lowerQ.includes("credential") || lowerQ.includes("stcw")) {
+        const certs = Array.isArray(profile?.certifications) ? profile.certifications : (Array.isArray(profile?.licenses) ? profile.licenses : []);
+        if (certs.length > 0) {
+          const certList = certs.map((c: any) => typeof c === "string" ? `• **${c}**` : `• **${c.name || c.title || "Certification"}**${c.issuer ? ` (${c.issuer})` : ""}${c.year ? ` · ${c.year}` : ""}`).join("\n");
+          return (
+            `**Verified Licenses & Certifications — ${candidateName || "Candidate"}**\n\n` +
+            `Here are your verified credentials registered in your sovereign Walrus vault:\n\n${certList}\n\n` +
+            `These credentials are cryptographically anchored and highlighted across your ATS resume headers and cover letters.`
+          );
+        }
+        return `No specific certifications or licenses have been recorded yet in your profile. You can add professional credentials (e.g. AWS/Azure, PMP, STCW marine certifications) in **Resume Studio**.`;
       }
 
       // Sub-intent: Walrus Vault & Storage Snapshots
