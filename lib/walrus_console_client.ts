@@ -42,9 +42,19 @@ export interface WalrusConsoleStatus {
   configured: boolean;
   active: boolean;
   registering: boolean;
+  provider?: "direct-walrus" | "walrus-console";
+  network?: string;
+  directWalrusActive?: boolean;
+  latestBlobId?: string | null;
+  walrusUrl?: string | null;
   error?: string;
   spacesCount?: number;
 }
+
+export const DIRECT_WALRUS_PUBLISHER_URL =
+  process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-testnet.walrus.space";
+export const DIRECT_WALRUS_AGGREGATOR_URL =
+  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-testnet.walrus.space";
 
 const WALRUS_CONSOLE_BASE_URL =
   process.env.WALRUS_CONSOLE_BASE_URL || "https://api.console.walrus.xyz/api/v1";
@@ -274,10 +284,146 @@ export async function ensureChatVaultBucket(spaceId: string): Promise<string | n
   }
 }
 
+export interface CandidateWalrusVaultRecord {
+  blobId: string;
+  suiObjectId?: string | null;
+  walrusUrl: string;
+  timestamp: number;
+  messageCount: number;
+  storageEngine: "direct-walrus" | "walrus-console";
+}
+
+// In-memory index of latest blob per candidate address and channel
+const candidateVaultIndex = new Map<string, CandidateWalrusVaultRecord>();
+let isVaultIndexLoaded = false;
+
+async function loadVaultIndex(): Promise<void> {
+  if (isVaultIndexLoaded) return;
+  try {
+    const [{ default: fs }, { default: path }] = await Promise.all([
+      import("node:fs"),
+      import("node:path"),
+    ]);
+    const filePath = path.join(process.cwd(), ".walrus_vault.json");
+    if (fs.existsSync(filePath)) {
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const data = JSON.parse(raw);
+      if (typeof data === "object" && data !== null) {
+        for (const [key, val] of Object.entries(data)) {
+          candidateVaultIndex.set(key, val as CandidateWalrusVaultRecord);
+        }
+      }
+    }
+  } catch {
+    // Expected in serverless/Edge environments
+  } finally {
+    isVaultIndexLoaded = true;
+  }
+}
+
+async function saveVaultIndex(): Promise<void> {
+  try {
+    const [{ default: fs }, { default: path }] = await Promise.all([
+      import("node:fs"),
+      import("node:path"),
+    ]);
+    const filePath = path.join(process.cwd(), ".walrus_vault.json");
+    const obj: Record<string, CandidateWalrusVaultRecord> = {};
+    for (const [k, v] of candidateVaultIndex.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), "utf-8");
+  } catch {
+    // Safe in serverless/Edge environments
+  }
+}
+
 /**
- * Archives a candidate's chat transcript session to Walrus Console.
+ * Returns the cached Walrus vault record for a candidate address and channel.
  */
-export async function archiveChatSessionToWalrus(params: {
+export async function getCandidateWalrusVault(
+  address: string,
+  channel = "overview"
+): Promise<CandidateWalrusVaultRecord | null> {
+  await loadVaultIndex();
+  const cleanAddr = address.toLowerCase().trim();
+  return candidateVaultIndex.get(`${cleanAddr}_${channel}`) || null;
+}
+
+/**
+ * Direct Walrus Protocol Upload (Zero API Keys Required).
+ * Stores arbitrary JSON or binary payloads as content-addressed Walrus blobs.
+ */
+export async function uploadToDirectWalrus(
+  payload: Record<string, unknown>,
+  epochs = 5
+): Promise<{
+  ok: boolean;
+  blobId?: string;
+  suiObjectId?: string | null;
+  walrusUrl?: string;
+  error?: string;
+}> {
+  try {
+    const res = await fetch(`${DIRECT_WALRUS_PUBLISHER_URL}/v1/blobs?epochs=${epochs}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "CareerAce-DirectWalrus/1.0",
+      },
+      body: JSON.stringify(payload, null, 2),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      return { ok: false, error: `Direct Walrus HTTP ${res.status}: ${errText}` };
+    }
+
+    const data = await res.json();
+    const blobId = data?.newlyCreated?.blobObject?.blobId || data?.alreadyCertified?.blobId;
+    const suiObjectId = data?.newlyCreated?.blobObject?.id || null;
+
+    if (!blobId) {
+      return { ok: false, error: "Direct Walrus did not return a valid blob ID" };
+    }
+
+    const walrusUrl = `${DIRECT_WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
+    return {
+      ok: true,
+      blobId,
+      suiObjectId,
+      walrusUrl,
+    };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "Direct Walrus network error" };
+  }
+}
+
+/**
+ * Direct Walrus Protocol Aggregator Read (Public HTTP GET).
+ */
+export async function fetchFromDirectWalrus(blobId: string): Promise<any | null> {
+  if (!blobId) return null;
+  try {
+    const res = await fetch(`${DIRECT_WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`, {
+      headers: {
+        "User-Agent": "CareerAce-DirectWalrus/1.0",
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn("[direct_walrus] Notice fetching blob:", err);
+    return null;
+  }
+}
+
+/**
+ * Secondary Engine: Mirrors chat session to Walrus Console bucket when configured and active.
+ */
+async function mirrorToWalrusConsole(params: {
   address: string;
   channel: string;
   messages: Array<{ role: string; content: string; timestamp?: number }>;
@@ -305,7 +451,7 @@ export async function archiveChatSessionToWalrus(params: {
       {
         address: params.address,
         channel: params.channel,
-        version: "1.0",
+        version: "2.0",
         archivedAt: new Date().toISOString(),
         messageCount: params.messages.length,
         messages: params.messages,
@@ -349,9 +495,9 @@ export async function archiveChatSessionToWalrus(params: {
 }
 
 /**
- * Fetches an archived chat session from Walrus Console.
+ * Secondary Engine: Fetches an archived chat session from Walrus Console.
  */
-export async function fetchChatSessionFromWalrus(params: {
+async function fetchFromWalrusConsole(params: {
   address: string;
   channel: string;
 }): Promise<any[] | null> {
@@ -389,7 +535,6 @@ export async function fetchChatSessionFromWalrus(params: {
     const file = files.find((f) => f.name === targetName);
     if (!file) return null;
 
-    // Fetch download content
     const dlRes = await fetch(
       `${WALRUS_CONSOLE_BASE_URL}/buckets/${bucket.id}/files/${file.id}/download`,
       {
@@ -407,4 +552,96 @@ export async function fetchChatSessionFromWalrus(params: {
     console.warn("[walrus_console] Notice fetching chat session:", err);
     return null;
   }
+}
+
+/**
+ * Archives a candidate's chat transcript session to Walrus.
+ * Uses Direct Walrus Protocol as primary engine for instant zero-wait storage,
+ * and mirrors to Walrus Console as secondary engine.
+ */
+export async function archiveChatSessionToWalrus(params: {
+  address: string;
+  channel: string;
+  messages: Array<{ role: string; content: string; timestamp?: number }>;
+}): Promise<{
+  ok: boolean;
+  blobId?: string;
+  fileId?: string;
+  walrusUrl?: string;
+  storageEngine: "direct-walrus" | "walrus-console";
+  error?: string;
+}> {
+  const cleanAddr = params.address.toLowerCase().trim();
+  const payload = {
+    address: cleanAddr,
+    channel: params.channel,
+    version: "2.0",
+    storageEngine: "direct-walrus",
+    archivedAt: new Date().toISOString(),
+    messageCount: params.messages.length,
+    messages: params.messages,
+  };
+
+  // 1. Primary Engine: Direct Walrus Protocol (instant, zero-key, decentralized)
+  const directRes = await uploadToDirectWalrus(payload, 5);
+  if (directRes.ok && directRes.blobId && directRes.walrusUrl) {
+    await loadVaultIndex();
+    candidateVaultIndex.set(`${cleanAddr}_${params.channel}`, {
+      blobId: directRes.blobId,
+      suiObjectId: directRes.suiObjectId,
+      walrusUrl: directRes.walrusUrl,
+      timestamp: Date.now(),
+      messageCount: params.messages.length,
+      storageEngine: "direct-walrus",
+    });
+    await saveVaultIndex();
+
+    // Mirror to Walrus Console in background if active
+    mirrorToWalrusConsole(params).catch(() => {});
+
+    return {
+      ok: true,
+      blobId: directRes.blobId,
+      walrusUrl: directRes.walrusUrl,
+      storageEngine: "direct-walrus",
+    };
+  }
+
+  // 2. Secondary Engine: Walrus Console fallback
+  const consoleRes = await mirrorToWalrusConsole(params);
+  if (consoleRes.ok) {
+    return {
+      ok: true,
+      fileId: consoleRes.fileId,
+      storageEngine: "walrus-console",
+    };
+  }
+
+  return {
+    ok: false,
+    storageEngine: "direct-walrus",
+    error: directRes.error || consoleRes.error || "Failed to archive to Walrus",
+  };
+}
+
+/**
+ * Fetches an archived chat session from Walrus.
+ * Checks Direct Walrus blob record first, falls back to Walrus Console.
+ */
+export async function fetchChatSessionFromWalrus(params: {
+  address: string;
+  channel: string;
+}): Promise<any[] | null> {
+  const cleanAddr = params.address.toLowerCase().trim();
+  await loadVaultIndex();
+  const record = candidateVaultIndex.get(`${cleanAddr}_${params.channel}`);
+
+  if (record?.blobId) {
+    const directData = await fetchFromDirectWalrus(record.blobId);
+    if (Array.isArray(directData?.messages) && directData.messages.length > 0) {
+      return directData.messages;
+    }
+  }
+
+  return fetchFromWalrusConsole(params);
 }

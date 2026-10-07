@@ -4,6 +4,9 @@ import {
   checkWalrusConsoleStatus,
   getWalrusConsoleApiKey,
   archiveChatSessionToWalrus,
+  getCandidateWalrusVault,
+  uploadToDirectWalrus,
+  fetchFromDirectWalrus,
 } from "./walrus_console_client.ts";
 import {
   getChatHistory,
@@ -110,4 +113,26 @@ test("3-Tier Chat History Persistence: saveChatHistoryAsync and appendChatTurnAs
   clearChatHistory(TEST_PERSIST_ADDR, "overview");
   const cleared = getChatHistory(TEST_PERSIST_ADDR, "overview");
   assert.strictEqual(cleared.length, 0);
+});
+
+test("Direct Walrus: archives chat session directly, updates vault record, and retrieves via aggregator", async () => {
+  const TEST_DIRECT_ADDR = "0x5d42fbac2eae2fb7a30b3a35108141ab6aa2d9e4e382f77e82fd8a2ec11c8fb0";
+  const res = await archiveChatSessionToWalrus({
+    address: TEST_DIRECT_ADDR,
+    channel: "overview",
+    messages: [
+      { role: "user", content: "Direct Walrus decentralized vault test turn" },
+      { role: "assistant", content: "Stored permanently on Walrus Testnet without API key bottlenecks." },
+    ],
+  });
+
+  assert.strictEqual(res.ok, true);
+  assert.strictEqual(res.storageEngine, "direct-walrus");
+  assert.ok(typeof res.blobId === "string" && res.blobId.length > 10);
+  assert.ok(typeof res.walrusUrl === "string" && res.walrusUrl.includes(res.blobId));
+
+  const vault = await getCandidateWalrusVault(TEST_DIRECT_ADDR, "overview");
+  assert.ok(vault !== null);
+  assert.strictEqual(vault.blobId, res.blobId);
+  assert.strictEqual(vault.storageEngine, "direct-walrus");
 });

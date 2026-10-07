@@ -226,6 +226,11 @@ function DashboardContent() {
   // 1. Career Ace Centralized Overview Chatbot state (Grounded in Walrus Sovereign Memory)
   const [overviewChatInput, setOverviewChatInput] = useState('')
   const [isOverviewSending, setIsOverviewSending] = useState(false)
+  const [overviewWalrusVault, setOverviewWalrusVault] = useState<{
+    latestBlobId?: string | null
+    walrusUrl?: string | null
+    directWalrusActive?: boolean
+  } | null>(null)
   const overviewChatContainerRef = useRef<HTMLDivElement>(null)
   const overviewChatEndRef = useRef<HTMLDivElement>(null)
   const [overviewChatMessages, setOverviewChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
@@ -326,13 +331,18 @@ function DashboardContent() {
     fetch(`/api/copilot/history?address=${encodeURIComponent(sessionAddress)}&channel=overview`)
       .then((r) => r.json())
       .then((data) => {
-        if (isMounted && data.ok && Array.isArray(data.messages) && data.messages.length > 0) {
-          setOverviewChatMessages(
-            data.messages.map((m: any) => ({
-              role: m.role === 'assistant' ? 'assistant' : 'user',
-              content: m.content,
-            }))
-          )
+        if (isMounted) {
+          if (data.walrusVault) {
+            setOverviewWalrusVault(data.walrusVault)
+          }
+          if (data.ok && Array.isArray(data.messages) && data.messages.length > 0) {
+            setOverviewChatMessages(
+              data.messages.map((m: any) => ({
+                role: m.role === 'assistant' ? 'assistant' : 'user',
+                content: m.content,
+              }))
+            )
+          }
         }
       })
       .catch((err) => console.warn('[dashboard] Notice fetching persistent chat history:', err))
@@ -1056,6 +1066,16 @@ function DashboardContent() {
       ])
     } finally {
       setIsOverviewSending(false)
+      if (sessionAddress) {
+        fetch(`/api/copilot/history?address=${encodeURIComponent(sessionAddress)}&channel=overview`)
+          .then((r) => r.json())
+          .then((histData) => {
+            if (histData?.walrusVault) {
+              setOverviewWalrusVault(histData.walrusVault)
+            }
+          })
+          .catch(() => {})
+      }
     }
   }
 
@@ -1560,11 +1580,24 @@ function DashboardContent() {
                       </div>
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <h3 className="font-bold text-sm text-foreground">CareerAce Chatbot</h3>
-                      <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
-                        Walrus Memory
-                      </Badge>
+                      {overviewWalrusVault?.walrusUrl && overviewWalrusVault.latestBlobId ? (
+                        <a
+                          href={overviewWalrusVault.walrusUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[9px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md font-mono transition-colors"
+                          title={`Decentralized Walrus Blob ID: ${overviewWalrusVault.latestBlobId} — Click to inspect on Mysten Labs Aggregator`}
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>Walrus: {overviewWalrusVault.latestBlobId.slice(0, 6)}...</span>
+                        </a>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
+                          Walrus Vault Live
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
