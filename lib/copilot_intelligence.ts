@@ -27,6 +27,7 @@ import {
 } from "./autonomous_followup.ts";
 import { correctTypographicalErrors } from "./typo_tolerance.ts";
 import { appendChatTurn } from "./chat_history_store.ts";
+import { handleAutonomousConversationalDispatch } from "./autonomous_conversational_dispatch.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -46,6 +47,7 @@ export interface CopilotQueryResult {
   reply: string;
   stored: string[];
   candidate_name?: string;
+  newAppliedJobs?: any[];
   extracted_profile?: {
     name?: string;
     target_roles?: string[];
@@ -1054,7 +1056,27 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     ? generateIntentMemoryResponse(userIntent, activeProfileData, appliedJobs, latest)
     : null;
 
-  if (isAutonomousGoal) {
+  let conversationalDispatchJobs: any[] | undefined;
+  const conversationalDispatchResult = await handleAutonomousConversationalDispatch({
+    latestQuery: latest,
+    messages,
+    candidateAddress: address,
+    candidateName: currentName,
+    candidateEmail: cv_profile?.email || activeProfileData?.email || "applicant@careerace.online",
+    targetDiscipline: profileRole,
+    candidateSkills: profileSkills,
+    appliedJobs,
+    cvProfile: activeProfileData || cv_profile,
+    walrusVersions: body.walrusVersions || activeProfileData?.walrusVersions || [],
+  });
+
+  if (conversationalDispatchResult.handled && conversationalDispatchResult.reply) {
+    directReply = conversationalDispatchResult.reply;
+    conversationalDispatchJobs = conversationalDispatchResult.newAppliedJobs;
+    if (conversationalDispatchResult.storedFacts) {
+      newlyStored.push(...conversationalDispatchResult.storedFacts);
+    }
+  } else if (isAutonomousGoal) {
     const autonomousResult = await executeAutonomousGoal({
       goalText: latest,
       candidateAddress: address,
@@ -1635,6 +1657,7 @@ RULES:
     reply: reply,
     stored: newlyStored,
     candidate_name: currentName || undefined,
+    newAppliedJobs: conversationalDispatchJobs,
     extracted_profile: {
       name: currentName || undefined,
       target_roles: storedSummary.targetRoles,

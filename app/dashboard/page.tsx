@@ -1017,9 +1017,19 @@ function DashboardContent() {
           appliedJobs: storedAppliedJobs,
           address: sessionAddress || undefined,
           custom_keys: customAiKeys,
+          walrusVersions: walrusVersions || [],
         })
       })
       const data = await res.json()
+      if (Array.isArray(data.newAppliedJobs) && data.newAppliedJobs.length > 0) {
+        try {
+          const currentStored = typeof window !== 'undefined'
+            ? JSON.parse(localStorage.getItem('careerace_applied_jobs') || '[]')
+            : []
+          const merged = [...currentStored, ...data.newAppliedJobs]
+          localStorage.setItem('careerace_applied_jobs', JSON.stringify(merged))
+        } catch {}
+      }
       const assistantReply = data.reply || data.content
       if (assistantReply) {
         setOverviewChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])
