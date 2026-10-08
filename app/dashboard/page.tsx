@@ -25,6 +25,7 @@ import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
 import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
+import { convertPdfFileToDocxInBrowser } from '@/lib/pdf_to_docx_converter'
 import { parseCvText } from '@/lib/heuristic_cv_parser'
 import { LivePdfPreview } from '@/components/LivePdfPreview'
 import { WalrusVersionModal } from '@/components/WalrusVersionModal'
@@ -1422,16 +1423,30 @@ function DashboardContent() {
     setMobileResumeView('canvas')
 
     let extractedText = ''
+    let uploadFile: File = file
 
     try {
       const lowerName = file.name.toLowerCase()
 
-      // Strategy A: Ultra-fast native stream parser / PDF.js (<20ms)
+      // Strategy A: Ultra-fast native stream parser / PDF.js + silent ONLYOFFICE Word (.docx) conversion
       if (lowerName.endsWith('.pdf') || file.type === 'application/pdf') {
         try {
           extractedText = await extractPdfTextInBrowser(file)
         } catch (pdfErr) {
           console.warn('[PDF] Client extraction notice:', pdfErr)
+        }
+
+        // Under-the-hood ONLYOFFICE document model: convert PDF to Word (.docx) silently
+        try {
+          const { docxFile, text: docxText } = await convertPdfFileToDocxInBrowser(file, extractedText)
+          if (docxFile && docxFile.size > 0) {
+            uploadFile = docxFile
+            if (!extractedText && docxText) {
+              extractedText = docxText
+            }
+          }
+        } catch (convErr) {
+          console.warn('[Docx converter fallback]:', convErr)
         }
       }
 
@@ -1467,7 +1482,7 @@ function DashboardContent() {
             localStorage.setItem('careerace_sovereign_profile', JSON.stringify(instantProfile))
             localStorage.setItem('careerace_parsed_profile', JSON.stringify(instantProfile))
             syncCandidateDataToCloud({ profile: instantProfile })
-            toast.success(`Resume rendered instantly in Editable ATS Canvas for ${instantProfile.applicant_name || 'Candidate'}!`, { id: toastId })
+            toast.success(`Resume rendered in Editable ATS Canvas for ${instantProfile.applicant_name || 'Candidate'}!`, { id: toastId })
             setIsParsing(false)
           }
         } catch (parseErr) {
@@ -1477,7 +1492,7 @@ function DashboardContent() {
 
       // ── BACKGROUND ASYNC WALRUS UPLOAD & ENRICHMENT ──
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', uploadFile)
       if (sessionAddress) formData.append('address', sessionAddress)
       if (extractedText) formData.append('cv_text', extractedText.trim())
 

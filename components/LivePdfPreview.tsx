@@ -43,6 +43,7 @@ import type { ParsedCv } from "@/lib/cv_parser";
 import type { ProofAttachment } from "@/lib/heuristic_cv_parser";
 import type { WalrusResumeVersionItem } from "@/components/WalrusVersionDrawer";
 import { PdfJsViewer } from "@/components/PdfJsViewer";
+import { generateDocxBlob } from "@/lib/docx_exporter";
 
 export function isMaritimeCandidate(profile: ParsedCv | null, tailorRole?: string): boolean {
   if (!profile) return false;
@@ -627,6 +628,25 @@ export function LivePdfPreview({
     printWindow.document.close();
   }
 
+  async function handleDownloadDocx() {
+    if (!profile) return;
+    const toastId = toast.loading("Compiling 100% ATS-compliant Word (.docx)...");
+    try {
+      const blob = await generateDocxBlob(profile);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(profile.applicant_name || "Candidate").replace(/\s+/g, "_")}_Resume.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Downloaded Word (.docx) resume!", { id: toastId });
+    } catch (err) {
+      toast.error("Failed to compile Word (.docx) document", { id: toastId });
+    }
+  }
+
   if (!profile && isParsing) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border-2 border-dashed border-emerald-500/50 bg-emerald-500/5 shadow-xs">
@@ -717,6 +737,18 @@ export function LivePdfPreview({
           >
             <Printer className="w-3 h-3" />
             <span>Print / Save PDF</span>
+          </Button>
+
+          {/* Word (.docx) Export Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDownloadDocx}
+            className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-border/80 text-foreground hover:bg-muted rounded-lg shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
+            title="Download as 100% ATS-compliant Microsoft Word (.docx)"
+          >
+            <FileText className="w-3 h-3 text-blue-500" />
+            <span>Word (.docx)</span>
           </Button>
 
           {/* Walrus Save Action */}

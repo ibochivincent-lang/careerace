@@ -4,6 +4,7 @@ import { getOwnerAddress } from "@/lib/session";
 import { resolveTargetAddress } from "@/lib/target_address";
 import { uploadEncryptedResumeToWalrus } from "@/lib/walrus_storage";
 import { rememberFact } from "@/lib/memory_contract";
+import { convertPdfBufferToDocx } from "@/lib/pdf_to_docx_converter";
 // NOTE: zlib is NOT imported at the top-level — a top-level static import of any
 // Node.js built-in (e.g. "zlib", "crypto", "fs") causes the entire route module
 // to fail to load in runtimes that don't bundle Node built-ins (Vercel Edge, etc.).
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
         };
       }
 
-      // If client-side PDF.js already extracted the text in browser, prioritize it
+      // If client-side already extracted text, also perform ONLYOFFICE Word conversion if it was a PDF
       if (clientExtractedText && clientExtractedText.trim().length > 10) {
         cvText = clientExtractedText.trim();
         extractionMethod = "browser_pdf_extraction";
@@ -47,6 +48,22 @@ export async function POST(req: Request) {
           fileName = file.name;
           const arrayBuffer = await file.arrayBuffer();
           fileBuffer = Buffer.from(arrayBuffer);
+
+          const lowerName = file.name.toLowerCase();
+          if (lowerName.endsWith(".pdf") || file.type === "application/pdf") {
+            try {
+              const conversion = await convertPdfBufferToDocx(fileBuffer, fileName, cvText);
+              fileBuffer = conversion.docxBuffer;
+              fileName = conversion.fileName;
+              const docxExtracted = await extractDocxText(conversion.docxBuffer);
+              if (docxExtracted && docxExtracted.length > 20) {
+                cvText = docxExtracted;
+              }
+              extractionMethod = "onlyoffice_pdf_to_docx_converted";
+            } catch (err) {
+              console.warn("[cv_upload] PDF to Word background conversion notice:", err);
+            }
+          }
         }
       } else if (file) {
         fileName = file.name;
@@ -63,8 +80,26 @@ export async function POST(req: Request) {
           file.type.includes("pdf") ||
           file.type === "application/pdf"
         ) {
-          cvText = await extractPdfText(buffer);
-          extractionMethod = "pdf_extraction";
+          // ── ONLYOFFICE PIPELINE: AUTOMATICALLY CONVERT PDF TO WORD (.DOCX) ──
+          // Any time a PDF is uploaded, convert to standard OpenXML Word (.docx) first!
+          // Then extract text from the converted DOCX with 100% fidelity.
+          let rawPdfText = "";
+          try {
+            rawPdfText = await extractPdfText(buffer);
+          } catch {}
+
+          try {
+            const conversion = await convertPdfBufferToDocx(buffer, fileName, rawPdfText);
+            fileBuffer = conversion.docxBuffer;
+            fileName = conversion.fileName;
+            const docxExtracted = await extractDocxText(conversion.docxBuffer);
+            cvText = docxExtracted && docxExtracted.length > 20 ? docxExtracted : (conversion.text || rawPdfText);
+            extractionMethod = "onlyoffice_pdf_to_docx_converted";
+          } catch (convErr) {
+            console.warn("[cv_upload] PDF-to-Word conversion fallback:", convErr);
+            cvText = rawPdfText || (await extractPdfText(buffer));
+            extractionMethod = "pdf_extraction";
+          }
         } else if (
           lowerName.endsWith(".docx") ||
           file.type.includes("officedocument.wordprocessingml")
