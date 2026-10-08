@@ -1,3 +1,14 @@
+import dns from "node:dns";
+
+// Fix Windows Node DNS EAI_AGAIN / ENOTFOUND by prioritizing IPv4 over IPv6
+try {
+  if (typeof (dns as any)?.setDefaultResultOrder === "function") {
+    (dns as any).setDefaultResultOrder("ipv4first");
+  }
+} catch {
+  // Non-node runtime or edge fallback
+}
+
 export interface FreeLlmOptions {
   prompt: string;
   system_prompt?: string;
@@ -87,7 +98,98 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     chatMessages.push({ role: "user", content: options.prompt });
   }
 
-  // 1. Try OpenAI API if present (gpt-4o-mini, gpt-4o)
+  // 1. Try Groq Cloud (Ultra-fast, verified active: qwen3.8-27b, gpt-oss-120b, gpt-oss-20b)
+  if (groqKey) {
+    const groqPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]) {
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: groqPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+          signal: AbortSignal.timeout(3000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] Groq (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[careerace] Groq (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
+      }
+    }
+  }
+
+  // 2. Try OpenRouter (Verified active free models: nemotron, apodex, lfm, inkling)
+  if (openRouterKey) {
+    const openRouterPayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of [
+      "nvidia/nemotron-3.5-lightning:free",
+      "apodex/apodex-1.1-mini:free",
+      "liquid/lfm-2.5-2.6b:free",
+      "thinkingmachines/inkling-small:free",
+      "dots-studio/dots-3-note-preview:free",
+    ]) {
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openRouterKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://careerace.online",
+            "X-Title": "Career Ace",
+          },
+          body: JSON.stringify({
+            model,
+            messages: openRouterPayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+          signal: AbortSignal.timeout(3000),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] OpenRouter (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[careerace] OpenRouter (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
+      }
+    }
+  }
+
+  // 3. Try OpenAI API if user supplied an active key
   if (openaiKey) {
     const openaiPayloadMessages = [
       ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
@@ -121,89 +223,6 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
         }
       } catch (err: any) {
         console.warn(`[careerace] OpenAI (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
-  // 2. Try Groq Cloud (Ultra-fast open-source inference: Llama 3.3, Llama 3.1)
-  if (groqKey) {
-    const groqPayloadMessages = [
-      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-      ...chatMessages,
-    ];
-
-    for (const model of ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama-3.3-70b-versatile"]) {
-      try {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${groqKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: groqPayloadMessages,
-            max_tokens: options.max_tokens || 1000,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] Groq (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] Groq (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
-  // 3. Try OpenCode Zen/Go API if present (Fast open-weight coding models: deepseek-flash, qwen3.8-flash)
-  if (openCodeKey) {
-    const openCodePayloadMessages = [
-      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-      ...chatMessages,
-    ];
-
-    for (const model of ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash", "opencode-coder"]) {
-      try {
-        const res = await fetch("https://opencode.ai/zen/go/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${openCodeKey}`,
-            "Content-Type": "application/json",
-            "x-opencode-session": "careerace_session",
-          },
-          body: JSON.stringify({
-            model,
-            messages: openCodePayloadMessages,
-            max_tokens: options.max_tokens || 1000,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] OpenCode (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] OpenCode (${model}) connection notice:`, err);
         if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
           break;
         }
@@ -342,51 +361,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 6. Try OpenRouter (Free open-source models: Qwen, Nemotron, Gemma, DeepSeek R1, Mistral)
-  if (openRouterKey) {
-    const openRouterPayloadMessages = [
-      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-      ...chatMessages,
-    ];
-
-    for (const model of ["qwen/qwen3.8-27b:free", "nvidia/nemotron-3.5-lightning:free", "google/gemma-4-31b-it:free", "deepseek/deepseek-r1:free", "mistralai/mistral-7b-instruct:free"]) {
-      try {
-        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${openRouterKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://careerace.online",
-            "X-Title": "Career Ace",
-          },
-          body: JSON.stringify({
-            model,
-            messages: openRouterPayloadMessages,
-            max_tokens: options.max_tokens || 1000,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] OpenRouter (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] OpenRouter (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
-  // 7. Try Ollama Instance (local dev or remote via OLLAMA_BASE_URL env var)
+  // 6. Try Ollama Instance (local dev or remote via OLLAMA_BASE_URL env var)
   // In production on Vercel, OLLAMA_BASE_URL must be set to a reachable remote Ollama
   // server — localhost is never reachable in a serverless runtime and is silently skipped.
   const ollamaBase =

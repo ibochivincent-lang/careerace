@@ -43,7 +43,6 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
       "qwen/qwen3.8-27b",
       "openai/gpt-oss-120b",
       "openai/gpt-oss-20b",
-      "llama-3.3-70b-versatile",
     ],
   },
   opencode: {
@@ -60,19 +59,19 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
     chat: "gemini-3.8-flash",
     console: "https://aistudio.google.com/apikey",
     hint: "AIza... / AQ.Ab8...",
-    models: ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"],
+    models: ["gemini-3.8-flash", "gemini-flash-latest"],
   },
   openrouter: {
     label: "OpenRouter (Free / Open Models)",
     env: "OPENROUTER_API_KEY",
-    chat: "qwen/qwen3.8-27b:free",
+    chat: "nvidia/nemotron-3.5-lightning:free",
     console: "https://openrouter.ai/keys",
     hint: "sk-or-v1-...",
     models: [
-      "qwen/qwen3.8-27b:free",
       "nvidia/nemotron-3.5-lightning:free",
-      "google/gemma-4-31b-it:free",
-      "deepseek/deepseek-r1:free",
+      "apodex/apodex-1.1-mini:free",
+      "liquid/lfm-2.5-2.6b:free",
+      "thinkingmachines/inkling-small:free",
     ],
   },
   anthropic: {
@@ -95,9 +94,9 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
 
 /**
  * Preference order when several keys are present and none is pinned.
- * OpenAI, Groq, and OpenCode are placed first as primary chat/conversation engines.
+ * Verified live working providers (Groq, OpenRouter, Google) are prioritized.
  */
-export const ORDER: Provider[] = ["openai", "groq", "opencode", "google", "openrouter", "anthropic", "xai"];
+export const ORDER: Provider[] = ["groq", "openrouter", "google", "openai", "opencode", "anthropic", "xai"];
 
 export function isProvider(value: string): value is Provider {
   return (ORDER as string[]).includes(value);
