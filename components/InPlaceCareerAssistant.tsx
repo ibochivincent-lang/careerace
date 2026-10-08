@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '@/components/ui/utils'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import { downloadEmlReceipt } from '@/lib/email_receipt'
-import type { CareerRoadmapAnalysis } from '@/lib/career_advisory'
+import { generateCareerRoadmap, type CareerRoadmapAnalysis } from '@/lib/career_advisory'
 
 export interface InPlaceCareerAssistantProps {
   parsedProfile: any
@@ -488,10 +488,16 @@ export function InPlaceCareerAssistant({
   // ─────────────────────────────────────────────────────────────────────────────
   // FN-03 & FN-04 JOB SCANNER & AUTO-DISPATCH STATE (INLINE IN COPILOT)
   // ─────────────────────────────────────────────────────────────────────────────
+  const [jobDisciplineId, setJobDisciplineId] = useState<string | null>(null)
+  const [jobTimeWindow, setJobTimeWindow] = useState<'1h' | '24h'>('1h')
   const [jobSearchTerm, setJobSearchTerm] = useState('')
-  const [selectedJobCategory, setSelectedJobCategory] = useState<string>('all')
   const [isDispatching, setIsDispatching] = useState(false)
   const [dispatchProgress, setDispatchProgress] = useState<{ current: number; total: number; activeCompany?: string } | null>(null)
+
+  const selectedJobDiscipline = useMemo(() => {
+    if (!jobDisciplineId) return null
+    return DISCIPLINE_PRESETS.find((d) => d.id === jobDisciplineId) || null
+  }, [jobDisciplineId])
 
   // Deduplication & cooldown check
   const checkJobSubmissionStatus = (companyEmail: string) => {
@@ -505,9 +511,49 @@ export function InPlaceCareerAssistant({
     return { status: 'eligible_repeat' as const, existing }
   }
 
-  // Filtered jobs with semantic match
+  // Filtered jobs with semantic match and time-window filtering
   const filteredJobs = useMemo(() => {
-    return VERIFIED_COMPANY_HIRING_CONTACTS.map((contact) => {
+    if (!jobDisciplineId) return []
+
+    const matchedContacts = VERIFIED_COMPANY_HIRING_CONTACTS.filter((contact) => {
+      switch (jobDisciplineId) {
+        case 'maritime':
+          return (
+            contact.category === 'Maritime / Offshore' ||
+            contact.typicalRoles.some((r) => /marine|vessel|naval|subsea|offshore|stcw|cadet/i.test(r))
+          )
+        case 'software':
+          return (
+            contact.category === 'Software / Cloud' ||
+            contact.typicalRoles.some((r) => /software|cloud|frontend|backend|fullstack|devops|systems/i.test(r))
+          )
+        case 'ai':
+          return (
+            contact.category === 'AI / Robotics' ||
+            contact.typicalRoles.some((r) => /ai|robotics|machine learning|vision|deep learning/i.test(r))
+          )
+        case 'healthcare':
+          return (
+            contact.category === 'Medical / Healthcare' ||
+            contact.typicalRoles.some((r) => /health|clinical|medical|informatics|biomed/i.test(r))
+          )
+        case 'marine_ops':
+          return (
+            contact.category === 'Management / Operations' ||
+            (contact.category === 'Maritime / Offshore' &&
+              contact.typicalRoles.some((r) => /superintendent|fleet|manager|operations|crewing/i.test(r)))
+          )
+        case 'cybersecurity':
+          return (
+            contact.typicalRoles.some((r) => /security|cyber|infosec|compliance|architect/i.test(r)) ||
+            contact.category === 'Software / Cloud'
+          )
+        default:
+          return true
+      }
+    })
+
+    const processed = matchedContacts.map((contact) => {
       let matchedCount = 0
       const candSkills = cvForm.skills.map((s) => s.toLowerCase())
       const typicalRoles = contact.typicalRoles || []
@@ -516,7 +562,7 @@ export function InPlaceCareerAssistant({
           matchedCount++
         }
       }
-      const matchPct = Math.min(98, Math.max(68, Math.round((matchedCount / Math.max(1, typicalRoles.length)) * 35 + 65)))
+      const matchPct = Math.min(98, Math.max(72, Math.round((matchedCount / Math.max(1, typicalRoles.length)) * 35 + 65)))
       const subStatus = checkJobSubmissionStatus(contact.contactEmail)
       const roleTitle = typicalRoles[0] || 'Technical Specialist'
       const salaryRange = contact.category === 'Maritime / Offshore' ? '$650 - $950 / day' : '$140,000 - $190,000'
@@ -529,7 +575,6 @@ export function InPlaceCareerAssistant({
       }
     })
       .filter((job) => {
-        if (selectedJobCategory !== 'all' && job.category !== selectedJobCategory) return false
         if (jobSearchTerm.trim()) {
           const q = jobSearchTerm.toLowerCase()
           return (
@@ -541,7 +586,13 @@ export function InPlaceCareerAssistant({
         return true
       })
       .sort((a, b) => b.matchPct - a.matchPct)
-  }, [cvForm.skills, appliedJobs, selectedJobCategory, jobSearchTerm])
+
+    // 1 hour window represents top 6 freshest verified citations; 24h window shows all active openings (up to 25)
+    if (jobTimeWindow === '1h') {
+      return processed.slice(0, 6)
+    }
+    return processed.slice(0, 25)
+  }, [cvForm.skills, appliedJobs, jobDisciplineId, jobTimeWindow, jobSearchTerm])
 
   // Single job dispatch
   const handleDispatchSingle = async (job: (typeof filteredJobs)[0]) => {
@@ -623,40 +674,46 @@ export function InPlaceCareerAssistant({
   // ─────────────────────────────────────────────────────────────────────────────
   // FN-06 & FN-07 CAREER PATH ADVISORY STATE (INLINE IN COPILOT)
   // ─────────────────────────────────────────────────────────────────────────────
+  const [advisorDisciplineId, setAdvisorDisciplineId] = useState<string | null>(null)
   const [advisorAnalysis, setAdvisorAnalysis] = useState<CareerRoadmapAnalysis | null>(null)
   const [isLoadingRoadmap, setIsLoadingRoadmap] = useState(false)
 
-  const handleGenerateRoadmap = async () => {
+  const selectedAdvisorDiscipline = useMemo(() => {
+    if (!advisorDisciplineId) return null
+    return DISCIPLINE_PRESETS.find((d) => d.id === advisorDisciplineId) || null
+  }, [advisorDisciplineId])
+
+  const handleSelectAdvisorDiscipline = async (discId: string) => {
+    setAdvisorDisciplineId(discId)
+    const disc = DISCIPLINE_PRESETS.find((d) => d.id === discId) || DISCIPLINE_PRESETS[0]
     setIsLoadingRoadmap(true)
     try {
       const res = await fetch('/api/career_roadmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roleTitle: cvForm.targetRole,
-          existingSkills: cvForm.skills,
+          currentRole: cvForm.targetRole || 'Candidate',
+          targetRole: disc.defaultRole,
+          skills: disc.skills,
         }),
       })
       const data = await res.json()
       if (data.analysis) {
         setAdvisorAnalysis(data.analysis)
-        toast.success(`Roadmap calibrated for ${cvForm.targetRole}!`)
+        toast.success(`Roadmap calibrated for ${disc.label}!`)
       } else {
-        toast.error('Failed to generate career roadmap')
+        const fallback = generateCareerRoadmap(cvForm.targetRole, disc.defaultRole, disc.skills)
+        setAdvisorAnalysis(fallback)
+        toast.success(`Roadmap calibrated for ${disc.label}!`)
       }
     } catch (_err) {
-      toast.error('Network error generating roadmap')
+      const fallback = generateCareerRoadmap(cvForm.targetRole, disc.defaultRole, disc.skills)
+      setAdvisorAnalysis(fallback)
+      toast.success(`Roadmap calibrated for ${disc.label}!`)
     } finally {
       setIsLoadingRoadmap(false)
     }
   }
-
-  // Auto-generate roadmap when opening module if not loaded yet
-  useEffect(() => {
-    if (copilotModule === 'career_advisor' && !advisorAnalysis && !isLoadingRoadmap) {
-      handleGenerateRoadmap()
-    }
-  }, [copilotModule])
 
   // ─────────────────────────────────────────────────────────────────────────────
   // RENDER MAIN IN-SITU CONTAINER
@@ -840,27 +897,45 @@ export function InPlaceCareerAssistant({
                     </div>
                   </div>
 
-                  {/* Target Company & Problem Input */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <label className="text-[10px] text-muted-foreground font-medium">Target Company</label>
-                      <input
-                        type="text"
-                        value={clTargetCompany}
-                        onChange={(e) => setClTargetCompany(e.target.value)}
-                        className="w-full h-8 px-2.5 rounded-lg border border-border bg-background text-xs mt-0.5"
-                      />
+                  {/* Scope-dependent Target Role & Target Company Inputs */}
+                  {clScope === 'singular' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground font-medium">Target Company *</label>
+                        <input
+                          type="text"
+                          value={clTargetCompany}
+                          onChange={(e) => setClTargetCompany(e.target.value)}
+                          placeholder="e.g. Google, Maersk, Chevron"
+                          className="w-full h-8 px-2.5 rounded-lg border border-border bg-background text-xs mt-0.5"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground font-medium">Target Role *</label>
+                        <input
+                          type="text"
+                          value={clTargetRole}
+                          onChange={(e) => setClTargetRole(e.target.value)}
+                          placeholder="e.g. Systems Engineer, Chief Marine Engineer"
+                          className="w-full h-8 px-2.5 rounded-lg border border-border bg-background text-xs mt-0.5"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[10px] text-muted-foreground font-medium">Target Role</label>
+                  ) : (
+                    <div className="text-xs">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] text-muted-foreground font-medium">Target Role (Batch Scope across hiring directory) *</label>
+                        <span className="text-[9px] text-emerald-600 font-semibold">No Target Company (Dispatched to role directory)</span>
+                      </div>
                       <input
                         type="text"
                         value={clTargetRole}
                         onChange={(e) => setClTargetRole(e.target.value)}
+                        placeholder="e.g. Senior Cloud Solutions Architect, Chief Marine Engineer"
                         className="w-full h-8 px-2.5 rounded-lg border border-border bg-background text-xs mt-0.5"
                       />
                     </div>
-                  </div>
+                  )}
 
                   <div>
                     <label className="text-[10px] text-muted-foreground font-medium">Core Problem to Solve</label>
@@ -879,7 +954,11 @@ export function InPlaceCareerAssistant({
                     className="w-full h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer"
                   >
                     {isGeneratingCl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    <span>Generate Tailored Cover Letter</span>
+                    <span>
+                      {clScope === 'batch'
+                        ? `Generate Batch Cover Letter for ${clTargetRole || 'Target Role'}`
+                        : `Generate Tailored Cover Letter for ${clTargetCompany || 'Target Company'}`}
+                    </span>
                   </Button>
                 </div>
 
@@ -923,143 +1002,328 @@ export function InPlaceCareerAssistant({
             {/* INLINE MODULE: JOB BOARD SCANNER & AUTO-DISPATCH (INSIDE COPILOT) */}
             {copilotModule === 'job_scanner' && (
               <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                    <Search className="w-3.5 h-3.5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Filter verified jobs by role, skill, or employer..."
-                      value={jobSearchTerm}
-                      onChange={(e) => setJobSearchTerm(e.target.value)}
-                      className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background"
-                    />
-                  </div>
-
-                  <Button
-                    size="sm"
-                    onClick={handleBatchAutoDispatch}
-                    disabled={isDispatching}
-                    className="h-7 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-                  >
-                    {isDispatching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                    <span>Batch Auto-Dispatch (2-5s Pacing)</span>
-                  </Button>
-                </div>
-
-                {isDispatching && dispatchProgress && (
-                  <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
-                    <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-semibold">
-                      <span>Dispatching {dispatchProgress.activeCompany}...</span>
-                      <span>{dispatchProgress.current} / {dispatchProgress.total}</span>
+                {!jobDisciplineId ? (
+                  /* Discipline Question Prompt */
+                  <div className="p-4 bg-card border border-border/80 rounded-xl space-y-3">
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-xs text-foreground">What discipline are you targeting?</h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        Select your discipline to query verified job postings cited today:
+                      </p>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-emerald-500 h-1.5 transition-all duration-300"
-                        style={{ width: `${(dispatchProgress.current / dispatchProgress.total) * 100}%` }}
-                      />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {DISCIPLINE_PRESETS.map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => {
+                            setJobDisciplineId(d.id)
+                            setJobTimeWindow('1h')
+                          }}
+                          className="p-3 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/50 text-left transition-all cursor-pointer group"
+                        >
+                          <div className="text-xs font-bold text-foreground group-hover:text-emerald-600">{d.label}</div>
+                          <div className="text-[9.5px] text-muted-foreground mt-0.5 truncate">{d.defaultRole}</div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
+                ) : (
+                  /* Discipline Selected: Status Banner, 1h/24h Toggle, and Job List */
+                  <div className="space-y-3">
+                    {/* Discipline Header & Reset Option */}
+                    <div className="flex items-center justify-between p-2.5 bg-muted/20 border border-border/80 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-foreground">
+                          Discipline: <span className="text-emerald-600 dark:text-emerald-400">{selectedJobDiscipline?.label}</span>
+                        </span>
+                        <Badge variant="outline" className="text-[9px] py-0 font-medium">
+                          {selectedJobDiscipline?.defaultRole}
+                        </Badge>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setJobDisciplineId(null)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                      >
+                        Change Discipline
+                      </button>
+                    </div>
 
-                <div className="space-y-2">
-                  {filteredJobs.slice(0, 6).map((job) => (
-                    <div
-                      key={job.id}
-                      className="p-2.5 bg-card border border-border/80 rounded-xl flex items-center justify-between gap-3 text-xs"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-foreground">{job.roleTitle}</span>
-                          <span className="text-muted-foreground">· {job.company}</span>
-                          <Badge variant="secondary" className="text-[9px] py-0 font-bold bg-emerald-500/10 text-emerald-600">
-                            {job.matchPct}% ATS Match
-                          </Badge>
-                          {job.subStatus.status === 'cooldown' && (
-                            <Badge variant="outline" className="text-[9px] py-0 text-amber-600 border-amber-500/30 bg-amber-500/10">
-                              Cooldown: {job.subStatus.daysRemaining}d left
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          <span>{job.location}</span>
-                          <span>•</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">{job.salaryRange}</span>
-                          <span>•</span>
-                          <span className="font-mono text-muted-foreground">{job.contactEmail}</span>
-                        </div>
+                    {/* Real-time Status Banner with 1h vs 24h Window Expansion Prompt */}
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
+                      <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed font-medium">
+                        Due to your selected discipline <span className="font-bold text-foreground">{selectedJobDiscipline?.label}</span>, these are the available jobs cited in the last <span className="font-bold">{jobTimeWindow === '1h' ? '1 hour' : '24 hours'}</span> ({filteredJobs.length} jobs available to apply for today).
+                      </p>
+                      <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-emerald-500/20">
+                        {jobTimeWindow === '1h' ? (
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                              Do you want me to expand to 24 hours?
+                            </span>
+                            <Button
+                              size="sm"
+                              onClick={() => setJobTimeWindow('24h')}
+                              className="h-6 px-2.5 text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
+                            >
+                              Expand to 24 Hours
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                              Viewing full 24-hour job intake ({filteredJobs.length} jobs).
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setJobTimeWindow('1h')}
+                              className="h-6 px-2.5 text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
+                            >
+                              Narrow to Last 1 Hour
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filter and Dispatch Controls */}
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                        <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Filter verified jobs by role, skill, or employer..."
+                          value={jobSearchTerm}
+                          onChange={(e) => setJobSearchTerm(e.target.value)}
+                          className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background"
+                        />
                       </div>
 
                       <Button
                         size="sm"
-                        onClick={() => handleDispatchSingle(job)}
-                        disabled={job.subStatus.status === 'cooldown' || isDispatching}
-                        className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 cursor-pointer"
+                        onClick={handleBatchAutoDispatch}
+                        disabled={isDispatching || filteredJobs.length === 0}
+                        className="h-7 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
                       >
-                        <span>Dispatch EML</span>
+                        {isDispatching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                        <span>Batch Auto-Dispatch (2-5s Pacing)</span>
                       </Button>
                     </div>
-                  ))}
-                </div>
+
+                    {isDispatching && dispatchProgress && (
+                      <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-semibold">
+                          <span>Dispatching {dispatchProgress.activeCompany}...</span>
+                          <span>{dispatchProgress.current} / {dispatchProgress.total}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-emerald-500 h-1.5 transition-all duration-300"
+                            style={{ width: `${(dispatchProgress.current / dispatchProgress.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Job Cards */}
+                    <div className="space-y-2">
+                      {filteredJobs.map((job) => (
+                        <div
+                          key={job.id}
+                          className="p-2.5 bg-card border border-border/80 rounded-xl flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-foreground">{job.roleTitle}</span>
+                              <span className="text-muted-foreground">· {job.company}</span>
+                              <Badge variant="secondary" className="text-[9px] py-0 font-bold bg-emerald-500/10 text-emerald-600">
+                                {job.matchPct}% ATS Match
+                              </Badge>
+                              <Badge variant="outline" className="text-[9px] py-0 font-mono text-muted-foreground border-border/80">
+                                {jobTimeWindow === '1h' ? 'Cited < 1h ago' : 'Cited < 24h ago'}
+                              </Badge>
+                              {job.subStatus.status === 'cooldown' && (
+                                <Badge variant="outline" className="text-[9px] py-0 text-amber-600 border-amber-500/30 bg-amber-500/10">
+                                  Cooldown: {job.subStatus.daysRemaining}d left
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <span>{job.location}</span>
+                              <span>•</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">{job.salaryRange}</span>
+                              <span>•</span>
+                              <span className="font-mono text-muted-foreground">{job.contactEmail}</span>
+                            </div>
+                          </div>
+
+                          <Button
+                            size="sm"
+                            onClick={() => handleDispatchSingle(job)}
+                            disabled={job.subStatus.status === 'cooldown' || isDispatching}
+                            className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 cursor-pointer"
+                          >
+                            <span>Dispatch EML</span>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* INLINE MODULE: CAREER PATH ROADMAP (INSIDE COPILOT) */}
             {copilotModule === 'career_advisor' && (
               <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 text-xs">
-                {isLoadingRoadmap && (
-                  <div className="py-8 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
-                    <span>Calibrating 6-12 month roadmap for {cvForm.targetRole}...</span>
+                {!advisorDisciplineId ? (
+                  /* Initially show ONLY the discipline selection cards (Nothing else shows) */
+                  <div className="p-4 bg-card border border-border/80 rounded-xl space-y-3">
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-xs text-foreground">Select Your Target Discipline:</h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        Select a discipline to unlock quarterly progression milestones, skill gap analysis, and market compensation benchmarks.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {DISCIPLINE_PRESETS.map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => handleSelectAdvisorDiscipline(d.id)}
+                          className="p-3 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/50 text-left transition-all cursor-pointer group"
+                        >
+                          <div className="text-xs font-bold text-foreground group-hover:text-emerald-600">{d.label}</div>
+                          <div className="text-[9.5px] text-muted-foreground mt-0.5 truncate">{d.defaultRole}</div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                )}
-
-                {advisorAnalysis && !isLoadingRoadmap && (
+                ) : (
+                  /* Discipline Selected: Render Roadmap & Advisory Details */
                   <div className="space-y-3">
-                    <div className="p-3 bg-muted/20 border border-border/80 rounded-xl flex items-center justify-between flex-wrap gap-2">
+                    {/* Header with Selected Discipline & Change Option */}
+                    <div className="flex items-center justify-between p-2.5 bg-muted/20 border border-border/80 rounded-xl">
                       <div>
-                        <h4 className="font-bold text-sm text-foreground">{advisorAnalysis.targetRole}</h4>
-                        <p className="text-[10px] text-muted-foreground">Tier: {advisorAnalysis.targetTier}</p>
+                        <span className="text-[11px] font-bold text-foreground">
+                          According to your selected discipline:{' '}
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                            {selectedAdvisorDiscipline?.label}
+                          </span>
+                        </span>
+                        <p className="text-[9.5px] text-muted-foreground">
+                          Target Role: {selectedAdvisorDiscipline?.defaultRole}
+                        </p>
                       </div>
-                      <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-bold">
-                        {advisorAnalysis.compensation?.dayRateMaritimeUSD
-                          ? `$${advisorAnalysis.compensation.dayRateMaritimeUSD[0]} - $${advisorAnalysis.compensation.dayRateMaritimeUSD[1]} / day`
-                          : `$${advisorAnalysis.compensation?.baseRangeUSD[0]?.toLocaleString() || 120000} - $${advisorAnalysis.compensation?.baseRangeUSD[1]?.toLocaleString() || 180000} / yr`}
-                      </Badge>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdvisorDisciplineId(null)
+                          setAdvisorAnalysis(null)
+                        }}
+                        className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                      >
+                        Change Discipline
+                      </button>
                     </div>
 
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-bold text-foreground">Detected Skill Gaps</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {advisorAnalysis.skillGaps.map((g, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className={cn(
-                              'text-[10px] py-0.5',
-                              g.urgency === 'high' ? 'border-red-500/30 bg-red-500/10 text-red-600' : 'border-border/80'
-                            )}
-                          >
-                            {g.skill} ({g.category})
-                          </Badge>
-                        ))}
+                    {isLoadingRoadmap && (
+                      <div className="py-8 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                        <span>Calibrating roadmap for {selectedAdvisorDiscipline?.label}...</span>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-bold text-foreground">4-Quarter Progression Milestones</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {advisorAnalysis.roadmap.map((m) => (
-                          <div key={m.quarter} className="p-2.5 bg-card border border-border/80 rounded-xl space-y-1">
-                            <div className="flex items-center justify-between text-xs font-bold text-foreground">
-                              <span>{m.quarter}: {m.focus}</span>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                              {m.deliverables?.join(' • ') || 'Key competency milestones'}
-                            </p>
+                    {advisorAnalysis && !isLoadingRoadmap && (
+                      <div className="space-y-3">
+                        {/* Immediate Quarter & Month Priorities with Compensation Benchmark */}
+                        <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <span className="text-xs font-bold text-foreground">This Quarter & This Month Priorities</span>
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-bold text-[10px]">
+                              {advisorAnalysis.compensation?.dayRateMaritimeUSD
+                                ? `$${advisorAnalysis.compensation.dayRateMaritimeUSD[0]} - $${advisorAnalysis.compensation.dayRateMaritimeUSD[1]} / day`
+                                : `$${advisorAnalysis.compensation?.baseRangeUSD[0]?.toLocaleString() || 120000} - $${advisorAnalysis.compensation?.baseRangeUSD[1]?.toLocaleString() || 180000} / yr`}
+                            </Badge>
                           </div>
-                        ))}
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                            <div className="p-2 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                              <div className="font-bold text-foreground flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span>This Month (Immediate Sprint)</span>
+                              </div>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {advisorAnalysis.roadmap[0]?.deliverables[0] || 'Focus on high-impact production deliverables and CV metrics alignment.'}
+                              </p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                              <div className="font-bold text-foreground flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                <span>This Quarter (Q1 Milestone Focus)</span>
+                              </div>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {advisorAnalysis.roadmap[0]?.focus || 'Master core high-impact competencies in target discipline.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Detected Skill Gaps */}
+                        <div className="space-y-1.5">
+                          <span className="text-[11px] font-bold text-foreground">
+                            Detected Skill Gaps for {selectedAdvisorDiscipline?.label}:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {advisorAnalysis.skillGaps.map((g, idx) => (
+                              <Badge
+                                key={idx}
+                                variant="outline"
+                                className={cn(
+                                  'text-[10px] py-0.5',
+                                  g.urgency === 'high' ? 'border-red-500/30 bg-red-500/10 text-red-600' : 'border-border/80'
+                                )}
+                              >
+                                {g.skill} ({g.category})
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 4-Quarter Progression Milestones */}
+                        <div className="space-y-1.5">
+                          <span className="text-[11px] font-bold text-foreground">4-Quarter Progression Milestones</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {advisorAnalysis.roadmap.map((m) => (
+                              <div key={m.quarter} className="p-2.5 bg-card border border-border/80 rounded-xl space-y-1">
+                                <div className="text-xs font-bold text-foreground">
+                                  {m.quarter}
+                                </div>
+                                <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                  {m.focus}
+                                </div>
+                                <p className="text-[9.5px] text-muted-foreground leading-relaxed">
+                                  {m.deliverables?.join(' • ')}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Advancement Strategic Advice */}
+                        {advisorAnalysis.advancementAdvice && advisorAnalysis.advancementAdvice.length > 0 && (
+                          <div className="p-2.5 bg-muted/20 border border-border/60 rounded-xl space-y-1 text-[10px]">
+                            <span className="font-bold text-foreground">Advancement Strategy:</span>
+                            <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                              {advisorAnalysis.advancementAdvice.map((adv, idx) => (
+                                <li key={idx}>{adv}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1203,7 +1467,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">1. Candidate Identity & Contact Information</span>
                     {cvForm.name && (
                       <Badge variant="secondary" className="text-[9px] py-0 font-medium">
@@ -1334,7 +1597,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">2. Digital Footprint & Attestation</span>
                   </div>
                   {openBoxes.footprint ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -1386,7 +1648,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">3. Target Role & Core Discipline</span>
                     <Badge variant="outline" className="text-[9px] py-0 text-emerald-600 border-emerald-500/30">
                       {currentDiscipline.label}
@@ -1457,7 +1718,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">4. Technical Skills (Aligned to {currentDiscipline.category})</span>
                     <Badge variant="secondary" className="text-[9px] py-0 font-medium">
                       {cvForm.skills.length} Active
@@ -1551,7 +1811,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">5. Work Experience History</span>
                     <Badge variant="secondary" className="text-[9px] py-0 font-medium">
                       {cvForm.experience.length} Positions
@@ -1669,7 +1928,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">6. Educational Background</span>
                     <Badge variant="secondary" className="text-[9px] py-0 font-medium">
                       {cvForm.education.length} Credentials
@@ -1793,7 +2051,6 @@ export function InPlaceCareerAssistant({
                   className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-emerald-500" />
                     <span className="font-bold text-xs text-foreground">7. Tools, Certifications & Document Proof</span>
                     {cvForm.proofFile && (
                       <Badge variant="outline" className="text-[9px] py-0 text-emerald-600 border-emerald-500/40 bg-emerald-500/10">
