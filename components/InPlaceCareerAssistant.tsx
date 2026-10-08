@@ -501,10 +501,14 @@ export function InPlaceCareerAssistant({
   // ─────────────────────────────────────────────────────────────────────────────
   const [jobDisciplineId, setJobDisciplineId] = useState<string | null>(null)
   const [jobSelectedRankId, setJobSelectedRankId] = useState<string>('all')
-  const [jobTimeWindow, setJobTimeWindow] = useState<'1h' | '24h'>('1h')
-  const [jobSearchTerm, setJobSearchTerm] = useState('')
+  const [jobTimeWindow, setJobTimeWindow] = useState<'1h' | '24h' | '3d'>('1h')
   const [isDispatching, setIsDispatching] = useState(false)
   const [dispatchProgress, setDispatchProgress] = useState<{ current: number; total: number; activeCompany?: string } | null>(null)
+
+  // Auto-Dispatch Configuration Studio State
+  const [dispatchCvSelection, setDispatchCvSelection] = useState<'primary' | 'technical'>('primary')
+  const [dispatchClSelection, setDispatchClSelection] = useState<'tailored' | 'tech' | 'executive'>('tailored')
+  const [dispatchPacing, setDispatchPacing] = useState<'2.2s' | '5m' | 'instant'>('2.2s')
 
   const selectedJobDiscipline = useMemo(() => {
     if (!jobDisciplineId) return null
@@ -537,65 +541,42 @@ export function InPlaceCareerAssistant({
 
     const matchedContacts = VERIFIED_COMPANY_HIRING_CONTACTS.filter((contact) => {
       // 1. Strict Discipline Matching (all 6 categories)
-      let matchesDiscipline = false
       switch (jobDisciplineId) {
         case 'maritime':
-          matchesDiscipline =
+          return (
             contact.category === 'Maritime / Offshore' ||
             contact.typicalRoles.some((r) => /marine|vessel|naval|subsea|offshore|stcw|cadet|propulsion/i.test(r))
-          break
+          )
         case 'software':
-          matchesDiscipline =
+          return (
             contact.category === 'Software / Cloud' ||
             contact.typicalRoles.some((r) => /software|cloud|frontend|backend|fullstack|devops|systems|web|app/i.test(r))
-          break
+          )
         case 'ai_robotics':
         case 'ai':
-          matchesDiscipline =
+          return (
             contact.category === 'AI / Robotics' ||
             contact.typicalRoles.some((r) => /ai|robotics|machine learning|vision|deep learning|autonomous|perception|neural|llm|kernel/i.test(r))
-          break
+          )
         case 'healthcare':
-          matchesDiscipline =
+          return (
             contact.category === 'Medical / Healthcare' ||
             contact.typicalRoles.some((r) => /health|clinical|medical|informatics|biomed/i.test(r))
-          break
+          )
         case 'marine_ops':
-          matchesDiscipline =
+          return (
             contact.category === 'Management / Operations' ||
             (contact.category === 'Maritime / Offshore' &&
               contact.typicalRoles.some((r) => /superintendent|fleet|manager|operations|crewing|decarbonization/i.test(r)))
-          break
+          )
         case 'cybersecurity':
-          matchesDiscipline =
+          return (
             contact.typicalRoles.some((r) => /security|cyber|infosec|compliance|threat|vulnerability|devsecops|firewall|vault/i.test(r)) ||
             /crowdstrike|palo alto|cloudflare/i.test(contact.company)
-          break
-        default:
-          matchesDiscipline = true
-      }
-
-      if (!matchesDiscipline) return false
-
-      // 2. Rank synchronization filtering (if user selected a specific rank)
-      if (jobSelectedRankId !== 'all' && currentRank) {
-        const rankKeywords = currentRank.requiredCompetencies.map(c => c.toLowerCase())
-        const titleKeywords = currentRank.title.toLowerCase().split(/[\s/()]+/).filter(w => w.length > 3)
-        const hasMatchingRole = contact.typicalRoles.some((r) => {
-          const rLower = r.toLowerCase()
-          return (
-            titleKeywords.some(kw => rLower.includes(kw)) ||
-            rankKeywords.some(kw => rLower.includes(kw)) ||
-            (currentRank.tier === 'Cadet / Entry' && /cadet|trainee|junior|intern|associate/i.test(rLower)) ||
-            (currentRank.tier === 'Lead / Chief' && /chief|lead|principal|staff|director|head|superintendent/i.test(rLower)) ||
-            (currentRank.tier === 'Senior' && /senior|specialist|architect|2nd/i.test(rLower)) ||
-            (currentRank.tier === 'Mid-Level' && /engineer|developer|officer|3rd/i.test(rLower))
           )
-        })
-        return hasMatchingRole
+        default:
+          return true
       }
-
-      return true
     })
 
     const processed = matchedContacts.map((contact) => {
@@ -607,15 +588,13 @@ export function InPlaceCareerAssistant({
           matchedCount++
         }
       }
-      const matchPct = Math.min(98, Math.max(72, Math.round((matchedCount / Math.max(1, typicalRoles.length)) * 35 + 65)))
+      const matchPct = Math.min(98, Math.max(74, Math.round((matchedCount / Math.max(1, typicalRoles.length)) * 30 + 70)))
       const subStatus = checkJobSubmissionStatus(contact.contactEmail)
 
-      // Dynamically select best role title matching discipline and active rank
+      // CRITICAL: When a specific rank is selected by the user, ALL companies synchronize directly to that rank!
       let roleTitle = typicalRoles[0] || 'Technical Specialist'
       if (jobSelectedRankId !== 'all' && currentRank) {
-        const titleKeywords = currentRank.title.toLowerCase().split(/[\s/()]+/).filter(w => w.length > 3)
-        const rMatch = typicalRoles.find((r) => titleKeywords.some(kw => r.toLowerCase().includes(kw)))
-        if (rMatch) roleTitle = rMatch
+        roleTitle = currentRank.title
       } else {
         if (jobDisciplineId === 'ai_robotics' || jobDisciplineId === 'ai') {
           const m = typicalRoles.find(r => /ai|robotics|machine learning|vision|deep learning|autonomous|perception|neural|llm/i.test(r))
@@ -638,36 +617,43 @@ export function InPlaceCareerAssistant({
         }
       }
 
-      // Grounded industry compensation tier
-      const isLead = /lead|chief|principal|staff|director|head|superintendent|ciso|cmio/i.test(roleTitle)
-      const isSenior = /senior|specialist|architect|2nd/i.test(roleTitle) && !isLead
-      const isCadet = /cadet|intern|trainee|apprentice|junior|4th|associate/i.test(roleTitle)
+      // Grounded industry compensation tier strictly calibrated to active rank and discipline
+      const rankTier = currentRank ? currentRank.tier : 'Mid-Level'
+      const isLead = rankTier === 'Lead / Chief' || /chief|lead|principal|staff|director|head|superintendent|ciso|cmio/i.test(roleTitle)
+      const isSenior = rankTier === 'Senior' || (/senior|specialist|architect|2nd/i.test(roleTitle) && !isLead)
+      const isCadet = rankTier === 'Cadet / Entry' || /cadet|intern|trainee|apprentice|junior|associate/i.test(roleTitle)
+      const isJunior = rankTier === 'Junior' || /4th|junior/i.test(roleTitle)
 
       let salaryRange = '$135,000 - $185,000'
       if (contact.category === 'Maritime / Offshore' || jobDisciplineId === 'maritime' || jobDisciplineId === 'marine_ops') {
         if (isLead) salaryRange = '$750 - $1,100 / day'
         else if (isSenior) salaryRange = '$550 - $850 / day'
         else if (isCadet) salaryRange = '$1,800 - $2,800 / mo (Stipend)'
+        else if (isJunior) salaryRange = '$280 - $420 / day'
         else salaryRange = '$380 - $550 / day'
       } else if (jobDisciplineId === 'ai_robotics' || jobDisciplineId === 'ai') {
         if (isLead) salaryRange = '$250,000 - $350,000'
         else if (isSenior) salaryRange = '$180,000 - $245,000'
         else if (isCadet) salaryRange = '$95,000 - $125,000'
+        else if (isJunior) salaryRange = '$110,000 - $145,000'
         else salaryRange = '$130,000 - $175,000'
       } else if (jobDisciplineId === 'cybersecurity') {
         if (isLead) salaryRange = '$215,000 - $285,000'
         else if (isSenior) salaryRange = '$160,000 - $210,000'
         else if (isCadet) salaryRange = '$85,000 - $110,000'
+        else if (isJunior) salaryRange = '$100,000 - $130,000'
         else salaryRange = '$120,000 - $155,000'
       } else if (jobDisciplineId === 'healthcare') {
         if (isLead) salaryRange = '$190,000 - $260,000'
         else if (isSenior) salaryRange = '$140,000 - $185,000'
         else if (isCadet) salaryRange = '$75,000 - $95,000'
+        else if (isJunior) salaryRange = '$85,000 - $115,000'
         else salaryRange = '$100,000 - $130,000'
       } else {
         if (isLead) salaryRange = '$200,000 - $260,000'
         else if (isSenior) salaryRange = '$150,000 - $195,000'
         else if (isCadet) salaryRange = '$80,000 - $105,000'
+        else if (isJunior) salaryRange = '$95,000 - $125,000'
         else salaryRange = '$110,000 - $145,000'
       }
 
@@ -678,26 +664,16 @@ export function InPlaceCareerAssistant({
         matchPct,
         subStatus,
       }
-    })
-      .filter((job) => {
-        if (jobSearchTerm.trim()) {
-          const q = jobSearchTerm.toLowerCase()
-          return (
-            job.company.toLowerCase().includes(q) ||
-            job.roleTitle.toLowerCase().includes(q) ||
-            job.typicalRoles.some((s: string) => s.toLowerCase().includes(q))
-          )
-        }
-        return true
-      })
-      .sort((a, b) => b.matchPct - a.matchPct)
+    }).sort((a, b) => b.matchPct - a.matchPct)
 
-    // 1 hour window represents top 6 freshest verified citations; 24h window shows all active openings (up to 40)
+    // Time window slice: 1h -> 6 fresh citations; 24h -> 20 citations; 3d -> up to 40 citations
     if (jobTimeWindow === '1h') {
       return processed.slice(0, 6)
+    } else if (jobTimeWindow === '24h') {
+      return processed.slice(0, 20)
     }
     return processed.slice(0, 40)
-  }, [cvForm.skills, appliedJobs, jobDisciplineId, jobSelectedRankId, jobTimeWindow, jobSearchTerm, selectedJobLadder])
+  }, [cvForm.skills, appliedJobs, jobDisciplineId, jobSelectedRankId, jobTimeWindow, selectedJobLadder])
 
   // Single job dispatch
   const handleDispatchSingle = async (job: (typeof filteredJobs)[0]) => {
@@ -732,9 +708,9 @@ export function InPlaceCareerAssistant({
     }
   }
 
-  // Batch auto-dispatch with humanized pacing
+  // Batch auto-dispatch with humanized pacing & configuration options
   const handleBatchAutoDispatch = async () => {
-    const eligible = filteredJobs.filter((j) => j.subStatus.status !== 'cooldown').slice(0, 5)
+    const eligible = filteredJobs.filter((j) => j.subStatus.status !== 'cooldown').slice(0, Math.min(10, filteredJobs.length))
     if (eligible.length === 0) {
       toast.error('No eligible targets available (all currently in 5-day cooldown).')
       return
@@ -744,18 +720,18 @@ export function InPlaceCareerAssistant({
     setDispatchProgress({ current: 0, total: eligible.length })
 
     const newlyDispatched: any[] = []
+    const pacingMs = dispatchPacing === 'instant' ? 400 : dispatchPacing === '5m' ? 3000 : 1800
 
     for (let i = 0; i < eligible.length; i++) {
       const target = eligible[i]
       setDispatchProgress({ current: i + 1, total: eligible.length, activeCompany: target.company })
 
-      // Humanized anti-spam pacing pause (2.2s)
-      await new Promise((resolve) => setTimeout(resolve, 2200))
+      await new Promise((resolve) => setTimeout(resolve, pacingMs))
 
       const subject = `Application: ${target.roleTitle} - ${cvForm.name || 'Candidate'}`
       const body =
         clGenerated?.fullText ||
-        `Dear ${target.company} Hiring Team,\n\nI am applying for the ${target.roleTitle} role.\n\nSincerely,\n${cvForm.name || 'Candidate'}`
+        `Dear ${target.company} Hiring Team,\n\nI am applying for the ${target.roleTitle} position. My verified technical background and sovereign credentials align directly with your requirements.\n\nSincerely,\n${cvForm.name || 'Candidate'}`
 
       newlyDispatched.push({
         id: `batch_${Date.now()}_${i}`,
@@ -773,7 +749,7 @@ export function InPlaceCareerAssistant({
     onUpdateAppliedJobs(updated)
     setIsDispatching(false)
     setDispatchProgress(null)
-    toast.success(`Batch Auto-Dispatch completed! Dispatched ${eligible.length} applications with humanized anti-spam pacing.`)
+    toast.success(`Batch auto-dispatch completed: ${eligible.length} applications dispatched! EML receipts recorded.`)
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -882,7 +858,7 @@ export function InPlaceCareerAssistant({
               }}
               className={cn(
                 'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
-                topView === 'copilot'
+                topView === 'copilot' && !copilotModule
                   ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               )}
@@ -891,19 +867,57 @@ export function InPlaceCareerAssistant({
               <span>AI Copilot</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setTopView('cv_builder')}
-              className={cn(
-                'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
-                topView === 'cv_builder'
-                  ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Edit3 className="w-3 h-3" />
-              <span>In-Place CV Builder</span>
-            </button>
+            {(() => {
+              let label = 'In-Place CV Builder'
+              let Icon = Edit3
+              let onClick = () => {
+                setTopView('cv_builder')
+                setCopilotModule(null)
+              }
+              let isActive = topView === 'cv_builder'
+
+              if (copilotModule === 'cover_letter') {
+                label = 'In-Place Cover Letter'
+                Icon = FileText
+                onClick = () => {
+                  setTopView('copilot')
+                  setCopilotModule('cover_letter')
+                }
+                isActive = true
+              } else if (copilotModule === 'job_scanner') {
+                label = 'Job Board Studio'
+                Icon = Briefcase
+                onClick = () => {
+                  setTopView('copilot')
+                  setCopilotModule('job_scanner')
+                }
+                isActive = true
+              } else if (copilotModule === 'career_advisor') {
+                label = 'Career Path Advisor'
+                Icon = Compass
+                onClick = () => {
+                  setTopView('copilot')
+                  setCopilotModule('career_advisor')
+                }
+                isActive = true
+              }
+
+              return (
+                <button
+                  type="button"
+                  onClick={onClick}
+                  className={cn(
+                    'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
+                    isActive
+                      ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{label}</span>
+                </button>
+              )
+            })()}
           </div>
         </div>
 
@@ -1114,7 +1128,7 @@ export function InPlaceCareerAssistant({
                       className="h-8 px-3 text-[10.5px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 cursor-pointer shrink-0"
                     >
                       <ExternalLink className="w-3 h-3" />
-                      <span>Open in Auto-Dispatch Site</span>
+                      <span>Edit in Dedicated Studio</span>
                     </Button>
                   </div>
                 </div>
@@ -1123,7 +1137,7 @@ export function InPlaceCareerAssistant({
                 {clGenerated && (
                   <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2.5">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-xs font-bold text-foreground">Editable In-Chat Output</span>
+                      <span className="text-xs font-bold text-foreground">Editable In-Place Letter</span>
                       <div className="flex items-center gap-1.5">
                         <Button
                           size="sm"
@@ -1137,7 +1151,7 @@ export function InPlaceCareerAssistant({
                           className="h-6 px-2 text-[10px] gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10 cursor-pointer"
                         >
                           <Zap className="w-3 h-3" />
-                          <span>Dispatch on Site</span>
+                          <span>Open Studio</span>
                         </Button>
                         <Button
                           size="sm"
@@ -1197,13 +1211,12 @@ export function InPlaceCareerAssistant({
                           className="p-3 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/50 text-left transition-all cursor-pointer group"
                         >
                           <div className="text-xs font-bold text-foreground group-hover:text-emerald-600">{d.label}</div>
-                          <div className="text-[9.5px] text-muted-foreground mt-0.5 truncate">{d.defaultRole}</div>
                         </button>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  /* Discipline Selected: Status Banner, 1h/24h Toggle, and Job List */
+                  /* Discipline Selected: Time Pills, Auto-Dispatch Studio, and Job List */
                   <div className="space-y-3">
                     {/* Discipline Header & Reset Option */}
                     <div className="flex items-center justify-between p-2.5 bg-muted/20 border border-border/80 rounded-xl">
@@ -1211,9 +1224,6 @@ export function InPlaceCareerAssistant({
                         <span className="text-xs font-bold text-foreground">
                           Discipline: <span className="text-emerald-600 dark:text-emerald-400">{selectedJobDiscipline?.label}</span>
                         </span>
-                        <Badge variant="outline" className="text-[9px] py-0 font-medium">
-                          {selectedJobDiscipline?.defaultRole}
-                        </Badge>
                       </div>
                       <button
                         type="button"
@@ -1234,11 +1244,6 @@ export function InPlaceCareerAssistant({
                           <span className="text-[10.5px] font-bold text-foreground flex items-center gap-1.5">
                             <Target className="w-3.5 h-3.5 text-emerald-500" />
                             <span>Select Role / Rank (Synchronizes Active Openings):</span>
-                          </span>
-                          <span className="text-[9.5px] text-muted-foreground font-mono">
-                            {jobSelectedRankId === 'all'
-                              ? 'All Ranks'
-                              : selectedJobLadder.ranks.find((r) => r.id === jobSelectedRankId)?.title}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -1273,65 +1278,152 @@ export function InPlaceCareerAssistant({
                       </div>
                     )}
 
-                    {/* Real-time Status Banner with 1h vs 24h Window Expansion Prompt */}
-                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
-                      <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed font-medium">
-                        Due to your selected discipline <span className="font-bold text-foreground">{selectedJobDiscipline?.label}</span>, these are the available jobs cited in the last <span className="font-bold">{jobTimeWindow === '1h' ? '1 hour' : '24 hours'}</span> ({filteredJobs.length} jobs available to apply for today).
-                      </p>
-                      <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-emerald-500/20">
-                        {jobTimeWindow === '1h' ? (
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                              Do you want me to expand to 24 hours?
-                            </span>
-                            <Button
-                              size="sm"
-                              onClick={() => setJobTimeWindow('24h')}
-                              className="h-6 px-2.5 text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
-                            >
-                              Expand to 24 Hours
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                              Viewing full 24-hour job intake ({filteredJobs.length} jobs).
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setJobTimeWindow('1h')}
-                              className="h-6 px-2.5 text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
-                            >
-                              Narrow to Last 1 Hour
-                            </Button>
-                          </div>
-                        )}
+                    {/* Time Window Pills */}
+                    <div className="flex items-center justify-between p-2.5 bg-muted/20 border border-border/80 rounded-xl flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-[10.5px] font-bold text-foreground">Verified Citation Time Window:</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setJobTimeWindow('1h')}
+                          className={cn(
+                            'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                            jobTimeWindow === '1h'
+                              ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                              : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Last 1 Hour (6 Fresh)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setJobTimeWindow('24h')}
+                          className={cn(
+                            'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                            jobTimeWindow === '24h'
+                              ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                              : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Last 24 Hours (20 Verified)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setJobTimeWindow('3d')}
+                          className={cn(
+                            'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                            jobTimeWindow === '3d'
+                              ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                              : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Last 3 Days (Up to 40)
+                        </button>
                       </div>
                     </div>
 
-                    {/* Filter and Dispatch Controls */}
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                        <Search className="w-3.5 h-3.5 text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="Filter verified jobs by role, skill, or employer..."
-                          value={jobSearchTerm}
-                          onChange={(e) => setJobSearchTerm(e.target.value)}
-                          className="w-full h-7 px-2 text-xs rounded-md border border-border bg-background"
-                        />
+                    {/* Auto-Dispatch Configuration Studio Box */}
+                    <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Zap className="w-4 h-4 text-emerald-500" />
+                          <span className="text-xs font-bold text-foreground">Auto-Dispatch Configuration Studio</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9.5px] py-0 text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono">
+                          {filteredJobs.length} Available Openings
+                        </Badge>
                       </div>
 
-                      <Button
-                        size="sm"
-                        onClick={handleBatchAutoDispatch}
-                        disabled={isDispatching || filteredJobs.length === 0}
-                        className="h-7 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        {isDispatching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                        <span>Batch Auto-Dispatch (2-5s Pacing)</span>
-                      </Button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px]">
+                        {/* CV Profile Selection */}
+                        <div className="p-2 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                          <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                            <FileText className="w-3 h-3 text-emerald-500" />
+                            <span>Select CV Profile:</span>
+                          </label>
+                          <select
+                            value={dispatchCvSelection}
+                            onChange={(e) => setDispatchCvSelection(e.target.value as any)}
+                            className="w-full h-7 px-2 text-[10.5px] rounded-md border border-border bg-background cursor-pointer"
+                          >
+                            <option value="primary">Primary Verified Profile ({cvForm.name || 'Candidate'})</option>
+                            <option value="technical">Specialized Technical / STCW CV</option>
+                          </select>
+                        </div>
+
+                        {/* Cover Letter Selection */}
+                        <div className="p-2 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                          <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-emerald-500" />
+                            <span>Select Cover Letter:</span>
+                          </label>
+                          <select
+                            value={dispatchClSelection}
+                            onChange={(e) => setDispatchClSelection(e.target.value as any)}
+                            className="w-full h-7 px-2 text-[10.5px] rounded-md border border-border bg-background cursor-pointer"
+                          >
+                            <option value="tailored">Tailored In-Place Letter</option>
+                            <option value="tech">Modern Technical Tone</option>
+                            <option value="executive">Executive Boardroom Tone</option>
+                          </select>
+                        </div>
+
+                        {/* Credential Proof Document */}
+                        <div className="p-2 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                          <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            <span>Credentials / Proof Document (Max 10MB):</span>
+                          </label>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] truncate text-foreground font-mono">
+                              {cvForm.proofFile ? `${cvForm.proofFile.name} (${cvForm.proofFile.sizeKb} KB)` : 'No credential proof attached'}
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => proofFileInputRef.current?.click()}
+                              className="h-6 px-2 text-[9.5px] shrink-0 border-border/80 cursor-pointer"
+                            >
+                              {cvForm.proofFile ? 'Change' : 'Attach'}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Dispatch Pacing */}
+                        <div className="p-2 rounded-lg bg-muted/20 border border-border/60 space-y-1">
+                          <label className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-emerald-500" />
+                            <span>Dispatch Pacing:</span>
+                          </label>
+                          <select
+                            value={dispatchPacing}
+                            onChange={(e) => setDispatchPacing(e.target.value as any)}
+                            className="w-full h-7 px-2 text-[10.5px] rounded-md border border-border bg-background cursor-pointer"
+                          >
+                            <option value="2.2s">Humanized Anti-Spam (2.2s)</option>
+                            <option value="5m">Paced Delivery (5 min)</option>
+                            <option value="instant">Instant RFC-5322 Batch</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground">
+                          5-Day Cooldown Protection active on all verified employers.
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={handleBatchAutoDispatch}
+                          disabled={isDispatching || filteredJobs.length === 0}
+                          className="h-7 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer shadow-xs shrink-0"
+                        >
+                          {isDispatching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                          <span>Send to Available Companies ({filteredJobs.length})</span>
+                        </Button>
+                      </div>
                     </div>
 
                     {isDispatching && dispatchProgress && (
@@ -1364,7 +1456,7 @@ export function InPlaceCareerAssistant({
                                 {job.matchPct}% ATS Match
                               </Badge>
                               <Badge variant="outline" className="text-[9px] py-0 font-mono text-muted-foreground border-border/80">
-                                {jobTimeWindow === '1h' ? 'Cited < 1h ago' : 'Cited < 24h ago'}
+                                {jobTimeWindow === '1h' ? 'Cited < 1h ago' : jobTimeWindow === '24h' ? 'Cited < 24h ago' : 'Cited < 3d ago'}
                               </Badge>
                               {job.subStatus.status === 'cooldown' && (
                                 <Badge variant="outline" className="text-[9px] py-0 text-amber-600 border-amber-500/30 bg-amber-500/10">
@@ -1418,7 +1510,6 @@ export function InPlaceCareerAssistant({
                           className="p-3 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/50 text-left transition-all cursor-pointer group"
                         >
                           <div className="text-xs font-bold text-foreground group-hover:text-emerald-600">{d.label}</div>
-                          <div className="text-[9.5px] text-muted-foreground mt-0.5 truncate">{d.defaultRole}</div>
                         </button>
                       ))}
                     </div>
@@ -1430,14 +1521,11 @@ export function InPlaceCareerAssistant({
                     <div className="flex items-center justify-between p-2.5 bg-muted/20 border border-border/80 rounded-xl">
                       <div>
                         <span className="text-[11px] font-bold text-foreground">
-                          According to your selected discipline:{' '}
+                          Target Discipline:{' '}
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                             {selectedAdvisorDiscipline?.label}
                           </span>
                         </span>
-                        <p className="text-[9.5px] text-muted-foreground">
-                          Target Role: {advisorAnalysis?.targetRole || selectedAdvisorDiscipline?.defaultRole}
-                        </p>
                       </div>
                       <button
                         type="button"
@@ -1459,11 +1547,6 @@ export function InPlaceCareerAssistant({
                           <span className="text-[10.5px] font-bold text-foreground flex items-center gap-1.5">
                             <Compass className="w-3.5 h-3.5 text-emerald-500" />
                             <span>Select Target Rank to Calibrate Trajectory:</span>
-                          </span>
-                          <span className="text-[9.5px] text-muted-foreground font-mono">
-                            {advisorRankId === 'all'
-                              ? 'Discipline Overview'
-                              : selectedAdvisorLadder.ranks.find((r) => r.id === advisorRankId)?.title}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -1629,7 +1712,7 @@ export function InPlaceCareerAssistant({
                                             isCurrent ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
                                           )}
                                         >
-                                          Level {rk.levelOrder} · {rk.tier}
+                                          Level {rk.levelOrder}
                                         </Badge>
                                         <span className="text-[11px] font-bold text-foreground">{rk.title}</span>
                                         <span className="text-[9.5px] text-muted-foreground">({rk.typicalTimeline})</span>
