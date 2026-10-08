@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Bot, Send, User, Upload, FileText, CheckCircle2, ChevronRight, ChevronDown,
   Sparkles, ShieldCheck, Mail, ExternalLink, Download, Copy, Trash2,
@@ -18,7 +19,13 @@ import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '@/components/ui/utils'
 import { VERIFIED_COMPANY_HIRING_CONTACTS, type CompanyHiringContact } from '@/lib/company_directory'
 import { downloadEmlReceipt } from '@/lib/email_receipt'
-import { generateCareerRoadmap, type CareerRoadmapAnalysis } from '@/lib/career_advisory'
+import {
+  generateCareerRoadmap,
+  DISCIPLINE_CAREER_LADDERS,
+  type CareerRoadmapAnalysis,
+  type CareerRank,
+  type CareerPathwayOption
+} from '@/lib/career_advisory'
 
 export interface InPlaceCareerAssistantProps {
   parsedProfile: any
@@ -244,6 +251,7 @@ export function InPlaceCareerAssistant({
   onSendMessage,
   isSendingMessage,
 }: InPlaceCareerAssistantProps) {
+  const router = useRouter()
   // Primary view: AI Copilot vs In-Place CV Builder
   const [topView, setTopView] = useState<TopViewMode>('copilot')
   
@@ -357,12 +365,12 @@ export function InPlaceCareerAssistant({
     }))
   }
 
-  // Handle Proof Document Upload (STRICT <= 1 MB ENFORCEMENT)
+  // Handle Proof Document Upload (STRICT <= 10 MB ENFORCEMENT)
   const handleProofDocumentSelect = (file: File | null) => {
     if (!file) return
-    const maxBytes = 1024 * 1024 // 1 MB
+    const maxBytes = 10 * 1024 * 1024 // 10 MB
     if (file.size > maxBytes) {
-      toast.error(`Proof document exceeds 1 MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please upload a file under 1 MB.`)
+      toast.error(`Proof document exceeds 10 MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please upload a file under 10 MB.`)
       return
     }
 
@@ -455,19 +463,22 @@ export function InPlaceCareerAssistant({
         body: JSON.stringify({
           mode: clScope,
           tone: clTone,
-          company: clTargetCompany,
-          role: clTargetRole,
+          targetCompany: clTargetCompany || 'Hiring Team',
+          company: clTargetCompany || 'Hiring Team',
+          targetRole: clTargetRole || 'Engineering Specialist',
+          role: clTargetRole || 'Engineering Specialist',
+          keyProblems: clKeyProblem,
           problem: clKeyProblem,
           candidateName: cvForm.name || 'Candidate',
           candidateSkills: cvForm.skills,
         }),
       })
       const data = await res.json()
-      if (data.letter) {
-        const full = data.letter as string
+      const full = (data.coverLetter || data.letter) as string | undefined
+      if (full) {
         const paragraphs = full.split('\n\n').filter((p: string) => p.trim())
         setClGenerated({
-          salutation: paragraphs[0] || `Dear ${clTargetCompany} Hiring Team,`,
+          salutation: paragraphs[0] || `Dear ${clTargetCompany || 'Hiring'} Team,`,
           opening: paragraphs[1] || 'I am writing to express my strong interest...',
           bodyParagraph1: paragraphs[2] || 'In my previous tenure...',
           bodyParagraph2: paragraphs[3] || 'My technical toolkit directly addresses your team goals...',
@@ -489,6 +500,7 @@ export function InPlaceCareerAssistant({
   // FN-03 & FN-04 JOB SCANNER & AUTO-DISPATCH STATE (INLINE IN COPILOT)
   // ─────────────────────────────────────────────────────────────────────────────
   const [jobDisciplineId, setJobDisciplineId] = useState<string | null>(null)
+  const [jobSelectedRankId, setJobSelectedRankId] = useState<string>('all')
   const [jobTimeWindow, setJobTimeWindow] = useState<'1h' | '24h'>('1h')
   const [jobSearchTerm, setJobSearchTerm] = useState('')
   const [isDispatching, setIsDispatching] = useState(false)
@@ -497,6 +509,12 @@ export function InPlaceCareerAssistant({
   const selectedJobDiscipline = useMemo(() => {
     if (!jobDisciplineId) return null
     return DISCIPLINE_PRESETS.find((d) => d.id === jobDisciplineId) || null
+  }, [jobDisciplineId])
+
+  const selectedJobLadder = useMemo(() => {
+    if (!jobDisciplineId) return null
+    const key = jobDisciplineId === 'ai' ? 'ai_robotics' : jobDisciplineId
+    return DISCIPLINE_CAREER_LADDERS[key] || DISCIPLINE_CAREER_LADDERS.software
   }, [jobDisciplineId])
 
   // Deduplication & cooldown check
@@ -511,46 +529,73 @@ export function InPlaceCareerAssistant({
     return { status: 'eligible_repeat' as const, existing }
   }
 
-  // Filtered jobs with semantic match and time-window filtering
+  // Filtered jobs with semantic match, rank synchronization, and time-window filtering
   const filteredJobs = useMemo(() => {
     if (!jobDisciplineId) return []
 
+    const currentRank = selectedJobLadder?.ranks.find((r) => r.id === jobSelectedRankId)
+
     const matchedContacts = VERIFIED_COMPANY_HIRING_CONTACTS.filter((contact) => {
+      // 1. Strict Discipline Matching (all 6 categories)
+      let matchesDiscipline = false
       switch (jobDisciplineId) {
         case 'maritime':
-          return (
+          matchesDiscipline =
             contact.category === 'Maritime / Offshore' ||
-            contact.typicalRoles.some((r) => /marine|vessel|naval|subsea|offshore|stcw|cadet/i.test(r))
-          )
+            contact.typicalRoles.some((r) => /marine|vessel|naval|subsea|offshore|stcw|cadet|propulsion/i.test(r))
+          break
         case 'software':
-          return (
+          matchesDiscipline =
             contact.category === 'Software / Cloud' ||
-            contact.typicalRoles.some((r) => /software|cloud|frontend|backend|fullstack|devops|systems/i.test(r))
-          )
+            contact.typicalRoles.some((r) => /software|cloud|frontend|backend|fullstack|devops|systems|web|app/i.test(r))
+          break
+        case 'ai_robotics':
         case 'ai':
-          return (
+          matchesDiscipline =
             contact.category === 'AI / Robotics' ||
-            contact.typicalRoles.some((r) => /ai|robotics|machine learning|vision|deep learning/i.test(r))
-          )
+            contact.typicalRoles.some((r) => /ai|robotics|machine learning|vision|deep learning|autonomous|perception|neural|llm|kernel/i.test(r))
+          break
         case 'healthcare':
-          return (
+          matchesDiscipline =
             contact.category === 'Medical / Healthcare' ||
             contact.typicalRoles.some((r) => /health|clinical|medical|informatics|biomed/i.test(r))
-          )
+          break
         case 'marine_ops':
-          return (
+          matchesDiscipline =
             contact.category === 'Management / Operations' ||
             (contact.category === 'Maritime / Offshore' &&
-              contact.typicalRoles.some((r) => /superintendent|fleet|manager|operations|crewing/i.test(r)))
-          )
+              contact.typicalRoles.some((r) => /superintendent|fleet|manager|operations|crewing|decarbonization/i.test(r)))
+          break
         case 'cybersecurity':
-          return (
-            contact.typicalRoles.some((r) => /security|cyber|infosec|compliance|architect/i.test(r)) ||
-            contact.category === 'Software / Cloud'
-          )
+          matchesDiscipline =
+            contact.typicalRoles.some((r) => /security|cyber|infosec|compliance|threat|vulnerability|devsecops|firewall|vault/i.test(r)) ||
+            /crowdstrike|palo alto|cloudflare/i.test(contact.company)
+          break
         default:
-          return true
+          matchesDiscipline = true
       }
+
+      if (!matchesDiscipline) return false
+
+      // 2. Rank synchronization filtering (if user selected a specific rank)
+      if (jobSelectedRankId !== 'all' && currentRank) {
+        const rankKeywords = currentRank.requiredCompetencies.map(c => c.toLowerCase())
+        const titleKeywords = currentRank.title.toLowerCase().split(/[\s/()]+/).filter(w => w.length > 3)
+        const hasMatchingRole = contact.typicalRoles.some((r) => {
+          const rLower = r.toLowerCase()
+          return (
+            titleKeywords.some(kw => rLower.includes(kw)) ||
+            rankKeywords.some(kw => rLower.includes(kw)) ||
+            (currentRank.tier === 'Cadet / Entry' && /cadet|trainee|junior|intern|associate/i.test(rLower)) ||
+            (currentRank.tier === 'Lead / Chief' && /chief|lead|principal|staff|director|head|superintendent/i.test(rLower)) ||
+            (currentRank.tier === 'Senior' && /senior|specialist|architect|2nd/i.test(rLower)) ||
+            (currentRank.tier === 'Mid-Level' && /engineer|developer|officer|3rd/i.test(rLower))
+          )
+        })
+        return hasMatchingRole
+      }
+
+      return true
     })
 
     const processed = matchedContacts.map((contact) => {
@@ -564,8 +609,68 @@ export function InPlaceCareerAssistant({
       }
       const matchPct = Math.min(98, Math.max(72, Math.round((matchedCount / Math.max(1, typicalRoles.length)) * 35 + 65)))
       const subStatus = checkJobSubmissionStatus(contact.contactEmail)
-      const roleTitle = typicalRoles[0] || 'Technical Specialist'
-      const salaryRange = contact.category === 'Maritime / Offshore' ? '$650 - $950 / day' : '$140,000 - $190,000'
+
+      // Dynamically select best role title matching discipline and active rank
+      let roleTitle = typicalRoles[0] || 'Technical Specialist'
+      if (jobSelectedRankId !== 'all' && currentRank) {
+        const titleKeywords = currentRank.title.toLowerCase().split(/[\s/()]+/).filter(w => w.length > 3)
+        const rMatch = typicalRoles.find((r) => titleKeywords.some(kw => r.toLowerCase().includes(kw)))
+        if (rMatch) roleTitle = rMatch
+      } else {
+        if (jobDisciplineId === 'ai_robotics' || jobDisciplineId === 'ai') {
+          const m = typicalRoles.find(r => /ai|robotics|machine learning|vision|deep learning|autonomous|perception|neural|llm/i.test(r))
+          if (m) roleTitle = m
+        } else if (jobDisciplineId === 'cybersecurity') {
+          const m = typicalRoles.find(r => /security|cyber|infosec|compliance|threat|vulnerability|devsecops|firewall/i.test(r))
+          if (m) roleTitle = m
+        } else if (jobDisciplineId === 'marine_ops') {
+          const m = typicalRoles.find(r => /superintendent|fleet|manager|operations|crewing|decarbonization/i.test(r))
+          if (m) roleTitle = m
+        } else if (jobDisciplineId === 'maritime') {
+          const m = typicalRoles.find(r => /marine|engineer|propulsion|vessel|chief|cadet|stcw|naval|subsea/i.test(r))
+          if (m) roleTitle = m
+        } else if (jobDisciplineId === 'software') {
+          const m = typicalRoles.find(r => /software|cloud|frontend|backend|fullstack|devops|systems|sre|architect/i.test(r))
+          if (m) roleTitle = m
+        } else if (jobDisciplineId === 'healthcare') {
+          const m = typicalRoles.find(r => /health|clinical|medical|informatics|biomed/i.test(r))
+          if (m) roleTitle = m
+        }
+      }
+
+      // Grounded industry compensation tier
+      const isLead = /lead|chief|principal|staff|director|head|superintendent|ciso|cmio/i.test(roleTitle)
+      const isSenior = /senior|specialist|architect|2nd/i.test(roleTitle) && !isLead
+      const isCadet = /cadet|intern|trainee|apprentice|junior|4th|associate/i.test(roleTitle)
+
+      let salaryRange = '$135,000 - $185,000'
+      if (contact.category === 'Maritime / Offshore' || jobDisciplineId === 'maritime' || jobDisciplineId === 'marine_ops') {
+        if (isLead) salaryRange = '$750 - $1,100 / day'
+        else if (isSenior) salaryRange = '$550 - $850 / day'
+        else if (isCadet) salaryRange = '$1,800 - $2,800 / mo (Stipend)'
+        else salaryRange = '$380 - $550 / day'
+      } else if (jobDisciplineId === 'ai_robotics' || jobDisciplineId === 'ai') {
+        if (isLead) salaryRange = '$250,000 - $350,000'
+        else if (isSenior) salaryRange = '$180,000 - $245,000'
+        else if (isCadet) salaryRange = '$95,000 - $125,000'
+        else salaryRange = '$130,000 - $175,000'
+      } else if (jobDisciplineId === 'cybersecurity') {
+        if (isLead) salaryRange = '$215,000 - $285,000'
+        else if (isSenior) salaryRange = '$160,000 - $210,000'
+        else if (isCadet) salaryRange = '$85,000 - $110,000'
+        else salaryRange = '$120,000 - $155,000'
+      } else if (jobDisciplineId === 'healthcare') {
+        if (isLead) salaryRange = '$190,000 - $260,000'
+        else if (isSenior) salaryRange = '$140,000 - $185,000'
+        else if (isCadet) salaryRange = '$75,000 - $95,000'
+        else salaryRange = '$100,000 - $130,000'
+      } else {
+        if (isLead) salaryRange = '$200,000 - $260,000'
+        else if (isSenior) salaryRange = '$150,000 - $195,000'
+        else if (isCadet) salaryRange = '$80,000 - $105,000'
+        else salaryRange = '$110,000 - $145,000'
+      }
+
       return {
         ...contact,
         roleTitle,
@@ -587,12 +692,12 @@ export function InPlaceCareerAssistant({
       })
       .sort((a, b) => b.matchPct - a.matchPct)
 
-    // 1 hour window represents top 6 freshest verified citations; 24h window shows all active openings (up to 25)
+    // 1 hour window represents top 6 freshest verified citations; 24h window shows all active openings (up to 40)
     if (jobTimeWindow === '1h') {
       return processed.slice(0, 6)
     }
-    return processed.slice(0, 25)
-  }, [cvForm.skills, appliedJobs, jobDisciplineId, jobTimeWindow, jobSearchTerm])
+    return processed.slice(0, 40)
+  }, [cvForm.skills, appliedJobs, jobDisciplineId, jobSelectedRankId, jobTimeWindow, jobSearchTerm, selectedJobLadder])
 
   // Single job dispatch
   const handleDispatchSingle = async (job: (typeof filteredJobs)[0]) => {
@@ -675,6 +780,7 @@ export function InPlaceCareerAssistant({
   // FN-06 & FN-07 CAREER PATH ADVISORY STATE (INLINE IN COPILOT)
   // ─────────────────────────────────────────────────────────────────────────────
   const [advisorDisciplineId, setAdvisorDisciplineId] = useState<string | null>(null)
+  const [advisorRankId, setAdvisorRankId] = useState<string>('all')
   const [advisorAnalysis, setAdvisorAnalysis] = useState<CareerRoadmapAnalysis | null>(null)
   const [isLoadingRoadmap, setIsLoadingRoadmap] = useState(false)
 
@@ -683,9 +789,23 @@ export function InPlaceCareerAssistant({
     return DISCIPLINE_PRESETS.find((d) => d.id === advisorDisciplineId) || null
   }, [advisorDisciplineId])
 
-  const handleSelectAdvisorDiscipline = async (discId: string) => {
+  const selectedAdvisorLadder = useMemo(() => {
+    if (!advisorDisciplineId) return null
+    const key = advisorDisciplineId === 'ai' ? 'ai_robotics' : advisorDisciplineId
+    return DISCIPLINE_CAREER_LADDERS[key] || DISCIPLINE_CAREER_LADDERS.software
+  }, [advisorDisciplineId])
+
+  const handleSelectAdvisorDiscipline = async (discId: string, rankId?: string) => {
     setAdvisorDisciplineId(discId)
+    const activeRankId = rankId !== undefined ? rankId : advisorRankId
+    setAdvisorRankId(activeRankId)
     const disc = DISCIPLINE_PRESETS.find((d) => d.id === discId) || DISCIPLINE_PRESETS[0]
+    const ladderKey = discId === 'ai' ? 'ai_robotics' : discId
+    const ladder = DISCIPLINE_CAREER_LADDERS[ladderKey] || DISCIPLINE_CAREER_LADDERS.software
+    const targetRank = ladder.ranks.find((r) => r.id === activeRankId)
+    const targetRole = targetRank ? targetRank.title : disc.defaultRole
+    const candidateSkills = cvForm.skills && cvForm.skills.length > 0 ? cvForm.skills : []
+
     setIsLoadingRoadmap(true)
     try {
       const res = await fetch('/api/career_roadmap', {
@@ -693,23 +813,38 @@ export function InPlaceCareerAssistant({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentRole: cvForm.targetRole || 'Candidate',
-          targetRole: disc.defaultRole,
-          skills: disc.skills,
+          targetRole,
+          disciplineId: discId,
+          targetRankId: activeRankId,
+          skills: candidateSkills,
+          candidateSkills,
         }),
       })
       const data = await res.json()
       if (data.analysis) {
         setAdvisorAnalysis(data.analysis)
-        toast.success(`Roadmap calibrated for ${disc.label}!`)
+        toast.success(`Roadmap calibrated for ${targetRole}!`)
       } else {
-        const fallback = generateCareerRoadmap(cvForm.targetRole, disc.defaultRole, disc.skills)
+        const fallback = generateCareerRoadmap(
+          cvForm.targetRole,
+          targetRole,
+          candidateSkills,
+          discId,
+          activeRankId
+        )
         setAdvisorAnalysis(fallback)
-        toast.success(`Roadmap calibrated for ${disc.label}!`)
+        toast.success(`Roadmap calibrated for ${targetRole}!`)
       }
     } catch (_err) {
-      const fallback = generateCareerRoadmap(cvForm.targetRole, disc.defaultRole, disc.skills)
+      const fallback = generateCareerRoadmap(
+        cvForm.targetRole,
+        targetRole,
+        candidateSkills,
+        discId,
+        activeRankId
+      )
       setAdvisorAnalysis(fallback)
-      toast.success(`Roadmap calibrated for ${disc.label}!`)
+      toast.success(`Roadmap calibrated for ${targetRole}!`)
     } finally {
       setIsLoadingRoadmap(false)
     }
@@ -845,14 +980,16 @@ export function InPlaceCareerAssistant({
                       <Mail className="w-4 h-4 text-emerald-500" />
                       <span>In-Chat Cover Letter Generator</span>
                     </h4>
-                    {/* Scope toggle */}
-                    <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border/60 text-[10px]">
+                    {/* Scope toggle - Scaled down smaller than the title */}
+                    <div className="flex items-center gap-1 bg-muted/80 p-0.5 rounded-lg border border-border/60">
                       <button
                         type="button"
                         onClick={() => setClScope('singular')}
                         className={cn(
-                          'px-2 py-0.5 rounded font-medium transition-colors cursor-pointer',
-                          clScope === 'singular' ? 'bg-background text-foreground shadow-2xs' : 'text-muted-foreground'
+                          'px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors cursor-pointer',
+                          clScope === 'singular'
+                            ? 'bg-background text-foreground shadow-2xs font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
                         )}
                       >
                         Singular Target
@@ -861,8 +998,10 @@ export function InPlaceCareerAssistant({
                         type="button"
                         onClick={() => setClScope('batch')}
                         className={cn(
-                          'px-2 py-0.5 rounded font-medium transition-colors cursor-pointer',
-                          clScope === 'batch' ? 'bg-background text-foreground shadow-2xs' : 'text-muted-foreground'
+                          'px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors cursor-pointer',
+                          clScope === 'batch'
+                            ? 'bg-background text-foreground shadow-2xs font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
                         )}
                       >
                         Batch Dispatch
@@ -947,45 +1086,79 @@ export function InPlaceCareerAssistant({
                     />
                   </div>
 
-                  <Button
-                    size="sm"
-                    onClick={handleGenerateCoverLetter}
-                    disabled={isGeneratingCl}
-                    className="w-full h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer"
-                  >
-                    {isGeneratingCl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                    <span>
-                      {clScope === 'batch'
-                        ? `Generate Batch Cover Letter for ${clTargetRole || 'Target Role'}`
-                        : `Generate Tailored Cover Letter for ${clTargetCompany || 'Target Company'}`}
-                    </span>
-                  </Button>
+                  <div className="flex items-center gap-2 pt-1 flex-wrap sm:flex-nowrap">
+                    <Button
+                      size="sm"
+                      onClick={handleGenerateCoverLetter}
+                      disabled={isGeneratingCl}
+                      className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer shadow-xs min-w-[190px]"
+                    >
+                      {isGeneratingCl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      <span>
+                        {clScope === 'batch'
+                          ? `Generate Batch Letter for ${clTargetRole || 'Target Role'}`
+                          : `Generate Cover Letter for ${clTargetCompany || 'Target Company'}`}
+                      </span>
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        const q = new URLSearchParams()
+                        if (clTargetRole) q.set('role', clTargetRole)
+                        if (clTargetCompany && clScope === 'singular') q.set('company', clTargetCompany)
+                        router.push(`/cover_letter?${q.toString()}`)
+                      }}
+                      className="h-8 px-3 text-[10.5px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 cursor-pointer shrink-0"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Open in Auto-Dispatch Site</span>
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Generated Paragraphs Editor */}
                 {clGenerated && (
                   <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2.5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <span className="text-xs font-bold text-foreground">Editable In-Chat Output</span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          downloadEmlReceipt({
-                            to: 'hiring@' + clTargetCompany.toLowerCase() + '.com',
-                            fromName: cvForm.name || 'Candidate',
-                            fromEmail: cvForm.email || 'applicant@careerace.online',
-                            subject: `Cover Letter - ${clTargetCompany}`,
-                            body: clGenerated.fullText,
-                            company: clTargetCompany,
-                            role: clTargetRole,
-                          })
-                        }
-                        className="h-6 px-2 text-[10px] gap-1 cursor-pointer"
-                      >
-                        <Download className="w-3 h-3" />
-                        <span>Export RFC-5322 .EML</span>
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const q = new URLSearchParams()
+                            if (clTargetRole) q.set('role', clTargetRole)
+                            if (clTargetCompany && clScope === 'singular') q.set('company', clTargetCompany)
+                            router.push(`/cover_letter?${q.toString()}`)
+                          }}
+                          className="h-6 px-2 text-[10px] gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10 cursor-pointer"
+                        >
+                          <Zap className="w-3 h-3" />
+                          <span>Dispatch on Site</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            downloadEmlReceipt({
+                              to: 'hiring@' + clTargetCompany.toLowerCase() + '.com',
+                              fromName: cvForm.name || 'Candidate',
+                              fromEmail: cvForm.email || 'applicant@careerace.online',
+                              subject: `Cover Letter - ${clTargetCompany}`,
+                              body: clGenerated.fullText,
+                              company: clTargetCompany,
+                              role: clTargetRole,
+                            })
+                          }
+                          className="h-6 px-2 text-[10px] gap-1 cursor-pointer"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Export RFC-5322 .EML</span>
+                        </Button>
+                      </div>
                     </div>
 
                     <textarea
@@ -1018,6 +1191,7 @@ export function InPlaceCareerAssistant({
                           type="button"
                           onClick={() => {
                             setJobDisciplineId(d.id)
+                            setJobSelectedRankId('all')
                             setJobTimeWindow('1h')
                           }}
                           className="p-3 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/50 text-left transition-all cursor-pointer group"
@@ -1043,12 +1217,61 @@ export function InPlaceCareerAssistant({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setJobDisciplineId(null)}
+                        onClick={() => {
+                          setJobDisciplineId(null)
+                          setJobSelectedRankId('all')
+                        }}
                         className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
                       >
                         Change Discipline
                       </button>
                     </div>
+
+                    {/* Rank / Role Selector - Synchronizes Job Query */}
+                    {selectedJobLadder && (
+                      <div className="p-2.5 bg-card/80 border border-border/80 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10.5px] font-bold text-foreground flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Select Role / Rank (Synchronizes Active Openings):</span>
+                          </span>
+                          <span className="text-[9.5px] text-muted-foreground font-mono">
+                            {jobSelectedRankId === 'all'
+                              ? 'All Ranks'
+                              : selectedJobLadder.ranks.find((r) => r.id === jobSelectedRankId)?.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setJobSelectedRankId('all')}
+                            className={cn(
+                              'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                              jobSelectedRankId === 'all'
+                                ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                                : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            All Ranks / General
+                          </button>
+                          {selectedJobLadder.ranks.map((r) => (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => setJobSelectedRankId(r.id)}
+                              className={cn(
+                                'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                                jobSelectedRankId === r.id
+                                  ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                                  : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                              )}
+                            >
+                              {r.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Real-time Status Banner with 1h vs 24h Window Expansion Prompt */}
                     <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
@@ -1213,13 +1436,14 @@ export function InPlaceCareerAssistant({
                           </span>
                         </span>
                         <p className="text-[9.5px] text-muted-foreground">
-                          Target Role: {selectedAdvisorDiscipline?.defaultRole}
+                          Target Role: {advisorAnalysis?.targetRole || selectedAdvisorDiscipline?.defaultRole}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
                           setAdvisorDisciplineId(null)
+                          setAdvisorRankId('all')
                           setAdvisorAnalysis(null)
                         }}
                         className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
@@ -1227,6 +1451,52 @@ export function InPlaceCareerAssistant({
                         Change Discipline
                       </button>
                     </div>
+
+                    {/* Rank Selector for Career Progression */}
+                    {selectedAdvisorLadder && (
+                      <div className="p-2.5 bg-card/80 border border-border/80 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10.5px] font-bold text-foreground flex items-center gap-1.5">
+                            <Compass className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Select Target Rank to Calibrate Trajectory:</span>
+                          </span>
+                          <span className="text-[9.5px] text-muted-foreground font-mono">
+                            {advisorRankId === 'all'
+                              ? 'Discipline Overview'
+                              : selectedAdvisorLadder.ranks.find((r) => r.id === advisorRankId)?.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleSelectAdvisorDiscipline(advisorDisciplineId!, 'all')}
+                            className={cn(
+                              'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                              advisorRankId === 'all'
+                                ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                                : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            All Tiers / Full Ladder
+                          </button>
+                          {selectedAdvisorLadder.ranks.map((r) => (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => handleSelectAdvisorDiscipline(advisorDisciplineId!, r.id)}
+                              className={cn(
+                                'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                                advisorRankId === r.id
+                                  ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                                  : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                              )}
+                            >
+                              {r.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {isLoadingRoadmap && (
                       <div className="py-8 flex flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -1320,6 +1590,103 @@ export function InPlaceCareerAssistant({
                                 <li key={idx}>{adv}</li>
                               ))}
                             </ul>
+                          </div>
+                        )}
+
+                        {/* Discipline Career Progression Ladder */}
+                        {selectedAdvisorLadder && (
+                          <div className="space-y-2 pt-2 border-t border-border/60">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>{selectedAdvisorLadder.label} Promotion Ladder & Milestones</span>
+                              </span>
+                              <Badge variant="outline" className="text-[9px] py-0 font-medium">
+                                Market Demand: {selectedAdvisorLadder.marketTrend}
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              {selectedAdvisorLadder.ranks.map((rk) => {
+                                const isCurrent = advisorRankId === rk.id
+                                return (
+                                  <div
+                                    key={rk.id}
+                                    onClick={() => handleSelectAdvisorDiscipline(advisorDisciplineId!, rk.id)}
+                                    className={cn(
+                                      'p-2.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-2.5',
+                                      isCurrent
+                                        ? 'bg-emerald-500/10 border-emerald-500/50 shadow-2xs'
+                                        : 'bg-card border-border/80 hover:bg-muted/30'
+                                    )}
+                                  >
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge
+                                          variant="secondary"
+                                          className={cn(
+                                            'text-[9px] py-0 font-bold',
+                                            isCurrent ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
+                                          )}
+                                        >
+                                          Level {rk.levelOrder} · {rk.tier}
+                                        </Badge>
+                                        <span className="text-[11px] font-bold text-foreground">{rk.title}</span>
+                                        <span className="text-[9.5px] text-muted-foreground">({rk.typicalTimeline})</span>
+                                      </div>
+                                      <div className="text-[9.5px] text-muted-foreground leading-snug">
+                                        <span className="font-semibold text-foreground">Required Competencies: </span>
+                                        {rk.requiredCompetencies.join(' • ')}
+                                      </div>
+                                      <div className="text-[9.5px] text-emerald-700 dark:text-emerald-300 leading-snug">
+                                        <span className="font-semibold">Licensing / Credentials: </span>
+                                        {rk.certifications.join(', ')}
+                                      </div>
+                                    </div>
+                                    <ChevronRight
+                                      className={cn(
+                                        'w-4 h-4 mt-1 shrink-0 transition-transform',
+                                        isCurrent ? 'text-emerald-600 rotate-90' : 'text-muted-foreground'
+                                      )}
+                                    />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Lateral & Alternative Career Pathways */}
+                        {selectedAdvisorLadder && selectedAdvisorLadder.lateralPathways && (
+                          <div className="space-y-2 pt-2 border-t border-border/60">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                                <Layers className="w-3.5 h-3.5 text-blue-500" />
+                                <span>Alternative & Lateral Career Pathways</span>
+                              </span>
+                              <span className="text-[9.5px] text-muted-foreground">Cross-Discipline Pivots</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {selectedAdvisorLadder.lateralPathways.map((lp, idx) => (
+                                <div key={idx} className="p-2.5 bg-muted/20 border border-border/80 rounded-xl space-y-1">
+                                  <div className="flex items-center justify-between gap-1 flex-wrap">
+                                    <span className="text-[10.5px] font-bold text-foreground">{lp.title}</span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[8.5px] py-0 text-blue-600 border-blue-500/30 bg-blue-500/10"
+                                    >
+                                      {lp.type}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-[9.5px] text-muted-foreground leading-relaxed">{lp.description}</p>
+                                  <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium pt-0.5">
+                                    <span className="text-muted-foreground">Prerequisites: </span>
+                                    {lp.prerequisites}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1438,27 +1805,6 @@ export function InPlaceCareerAssistant({
         {topView === 'cv_builder' && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <div className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-3">
-              {/* Header Banner */}
-              <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <h4 className="font-bold text-xs sm:text-sm text-foreground">In-Place ATS Resume Builder</h4>
-                  <p className="text-[10.5px] text-muted-foreground mt-0.5">
-                    Fill out each section box below. Click each rectangle to expand or collapse. When finished, click Save to anchor your profile to Walrus memory.
-                  </p>
-                </div>
-                {onNavigateToCanvas && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onNavigateToCanvas}
-                    className="h-7 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10 cursor-pointer"
-                  >
-                    <span>Preview</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-
               {/* ── BOX 1: CANDIDATE IDENTITY & CONTACT ── */}
               <div className="border border-border/80 rounded-xl overflow-hidden bg-card shadow-xs">
                 <button
@@ -2077,16 +2423,16 @@ export function InPlaceCareerAssistant({
                       />
                     </div>
 
-                    {/* Proof Document Upload Input (Strictly <= 1 MB) */}
+                    {/* Proof Document Upload Input (Strictly <= 10 MB) */}
                     <div className="p-3 bg-muted/20 border border-dashed border-emerald-500/40 rounded-xl space-y-2">
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div>
                           <span className="font-bold text-xs text-foreground flex items-center gap-1.5">
                             <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>Upload Proof Document (Max 1 MB)</span>
+                            <span>Upload Proof Document (Max 10 MB)</span>
                           </span>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            Attach license scan, certificate of competency, or credential confirmation (must be under 1 MB).
+                            Attach license scan, certificate of competency, or credential confirmation (must be under 10 MB).
                           </p>
                         </div>
 
@@ -2106,7 +2452,7 @@ export function InPlaceCareerAssistant({
                           className="h-7 px-3 text-xs font-semibold gap-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 cursor-pointer"
                         >
                           <Upload className="w-3 h-3" />
-                          <span>Attach Proof (&lt; 1MB)</span>
+                          <span>Attach Proof (&lt; 10MB)</span>
                         </Button>
                       </div>
 

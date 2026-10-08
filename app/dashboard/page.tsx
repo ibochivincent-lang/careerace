@@ -1654,12 +1654,19 @@ function DashboardContent() {
             transition={{ duration: 0.3 }}
             className="space-y-3 sm:space-y-4"
           >
-            {/* Clean Standard Header (Shifted up, minimal vertical spacing) */}
-            <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/80">
-              <div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
+            {/* Clean Compact Header (Ultra-sleek, minimal vertical footprint) */}
+            <div className="flex items-center justify-between gap-3 pb-1 border-b border-border/60">
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-base font-semibold tracking-tight text-foreground/90">
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
+                <Badge variant="outline" className="text-[10px] py-0 px-2 font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
+                  Autonomous Studio
+                </Badge>
+              </div>
+              <div className="text-[11px] text-muted-foreground hidden sm:flex items-center gap-1.5 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Walrus Sovereign Memory Synced</span>
               </div>
             </div>
 

@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateCareerRoadmap, detectDisciplineCategory } from './career_advisory.ts';
 
-test('detectDisciplineCategory correctly classifies roles', () => {
+test('detectDisciplineCategory correctly classifies roles across all 6 disciplines', () => {
   assert.equal(detectDisciplineCategory('Senior Fullstack Engineer'), 'software');
   assert.equal(detectDisciplineCategory('Marine Systems Engineer'), 'marine');
   assert.equal(detectDisciplineCategory('Autonomous Systems & AI Researcher'), 'ai');
   assert.equal(detectDisciplineCategory('Clinical Informatics Specialist'), 'healthcare');
+  assert.equal(detectDisciplineCategory('Fleet Technical Superintendent'), 'marine_ops');
+  assert.equal(detectDisciplineCategory('Lead Security Architect & Compliance'), 'cybersecurity');
 });
 
 test('generateCareerRoadmap calculates skill gaps and creates quarterly milestones', () => {
@@ -35,4 +37,15 @@ test('generateCareerRoadmap accurately provides maritime day rates and certifica
   assert.ok(marineAnalysis.compensation.dayRateMaritimeUSD);
   assert.ok(marineAnalysis.compensation.dayRateMaritimeUSD[0] >= 400);
   assert.ok(marineAnalysis.skillGaps.length > 0);
+});
+
+test('generateCareerRoadmap supports all 6 discipline ladders and lateral pathways', () => {
+  const disciplines = ['maritime', 'software', 'ai_robotics', 'healthcare', 'marine_ops', 'cybersecurity'];
+  for (const discId of disciplines) {
+    const analysis = generateCareerRoadmap('Candidate', '', [], discId);
+    assert.ok(analysis.careerLadder && analysis.careerLadder.length >= 4, `Discipline ${discId} must have at least 4 ranks`);
+    assert.ok(analysis.alternativePathways && analysis.alternativePathways.length >= 2, `Discipline ${discId} must have lateral pathways`);
+    assert.ok(analysis.roadmap.length === 4, `Discipline ${discId} must have 4 quarterly milestones`);
+    assert.ok(analysis.compensation.baseRangeUSD[0] > 0);
+  }
 });

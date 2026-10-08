@@ -66,10 +66,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      targetRole = 'Engineering Specialist',
-      targetCompany = 'the Organization',
+      targetRole: rawTargetRole,
+      role: aliasRole,
+      targetCompany: rawTargetCompany,
+      company: aliasCompany,
       jobDescription = '',
-      keyProblems = '',
+      keyProblems: rawKeyProblems,
+      problem: aliasProblem,
       candidateName = 'Candidate',
       candidateEmail = 'applicant@careerace.online',
       candidatePhone = '',
@@ -80,6 +83,10 @@ export async function POST(req: NextRequest) {
       tone = 'modern_tech',
       mode = 'singular',
     } = body;
+
+    const targetRole = (rawTargetRole || aliasRole || 'Engineering Specialist').trim();
+    const targetCompany = (rawTargetCompany || aliasCompany || 'the Organization').trim();
+    const keyProblems = (rawKeyProblems || aliasProblem || '').trim();
 
     // 1. Target Role Intelligence Extraction
     const roleIntelligence = getRoleIntelligence(targetRole, jobDescription);
@@ -169,6 +176,7 @@ ${candidateName}`;
         measurableImpactMetrics: roleIntelligence.measurableImpactMetrics
       },
       coverLetter: sanitizedLetter,
+      letter: sanitizedLetter,
       antiSlopAudit: {
         clicheTermsRemoved: 0,
         tone: 'Direct, Accountable, Zero-Fluff',
