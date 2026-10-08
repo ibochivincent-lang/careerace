@@ -42,6 +42,7 @@ import { ProofAttachmentModal } from "@/components/ProofAttachmentModal";
 import type { ParsedCv } from "@/lib/cv_parser";
 import type { ProofAttachment } from "@/lib/heuristic_cv_parser";
 import type { WalrusResumeVersionItem } from "@/components/WalrusVersionDrawer";
+import { PdfJsViewer } from "@/components/PdfJsViewer";
 
 export function isMaritimeCandidate(profile: ParsedCv | null, tailorRole?: string): boolean {
   if (!profile) return false;
@@ -762,11 +763,12 @@ export function LivePdfPreview({
       {/* ── PREVIEW & EDITOR CANVAS BODY ── */}
       <div className="flex-1 bg-muted/40 p-1.5 sm:p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[500px] sm:min-h-[700px]">
         {activeView === "uploaded_source" && sourcePdfUrl ? (
-          <div className="w-full h-full min-h-[600px] rounded-xl overflow-hidden border border-border shadow-md bg-background">
-            <iframe
-              src={`${sourcePdfUrl}#view=FitH`}
-              className="w-full h-full min-h-[620px] border-none"
-              title="Uploaded Source PDF"
+          <div className="w-full h-full min-h-[620px] rounded-xl overflow-hidden border border-border shadow-md bg-background">
+            <PdfJsViewer
+              file={sourceFile}
+              url={sourcePdfUrl}
+              title={sourceFile?.name || `${applicantName}_Source.pdf`}
+              className="min-h-[620px]"
             />
           </div>
         ) : (

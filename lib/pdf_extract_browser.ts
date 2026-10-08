@@ -185,14 +185,17 @@ async function extractWithPdfJs(uint8Array: Uint8Array): Promise<string> {
     const pdfjs = await import("pdfjs-dist");
 
     if (typeof window !== "undefined") {
-      const workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-      pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+      // Prioritize self-hosted local worker copied directly into public/pdfjs/
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
     }
 
     const loadingTask = pdfjs.getDocument({
       data: uint8Array,
       useSystemFonts: true,
       disableFontFace: true,
+      cMapUrl: "/pdfjs/cmaps/",
+      cMapPacked: true,
+      standardFontDataUrl: "/pdfjs/standard_fonts/",
     });
 
     const pdf = await loadingTask.promise;
