@@ -501,7 +501,7 @@ export function InPlaceCareerAssistant({
   // ─────────────────────────────────────────────────────────────────────────────
   const [jobDisciplineId, setJobDisciplineId] = useState<string | null>(null)
   const [jobSelectedRankId, setJobSelectedRankId] = useState<string>('all')
-  const [jobTimeWindow, setJobTimeWindow] = useState<'1h' | '24h' | '3d'>('1h')
+  const [jobTimeWindow, setJobTimeWindow] = useState<'1h' | '24h' | '3d' | '7d'>('24h')
   const [isDispatching, setIsDispatching] = useState(false)
   const [dispatchProgress, setDispatchProgress] = useState<{ current: number; total: number; activeCompany?: string } | null>(null)
 
@@ -666,13 +666,15 @@ export function InPlaceCareerAssistant({
       }
     }).sort((a, b) => b.matchPct - a.matchPct)
 
-    // Time window slice: 1h -> 6 fresh citations; 24h -> 20 citations; 3d -> up to 40 citations
+    // Time window slice: 1h -> 6 fresh citations; 24h -> 20 citations; 3d -> 40 citations; 7d -> all verified openings
     if (jobTimeWindow === '1h') {
       return processed.slice(0, 6)
     } else if (jobTimeWindow === '24h') {
       return processed.slice(0, 20)
+    } else if (jobTimeWindow === '3d') {
+      return processed.slice(0, 40)
     }
-    return processed.slice(0, 40)
+    return processed
   }, [cvForm.skills, appliedJobs, jobDisciplineId, jobSelectedRankId, jobTimeWindow, selectedJobLadder])
 
   // Single job dispatch
@@ -868,6 +870,8 @@ export function InPlaceCareerAssistant({
             </button>
 
             {(() => {
+              if (topView === 'copilot' && !copilotModule) return null
+
               let label = 'In-Place CV Builder'
               let Icon = Edit3
               let onClick = () => {
@@ -877,7 +881,7 @@ export function InPlaceCareerAssistant({
               let isActive = topView === 'cv_builder'
 
               if (copilotModule === 'cover_letter') {
-                label = 'In-Place Cover Letter'
+                label = 'Edit Cover Letter'
                 Icon = FileText
                 onClick = () => {
                   setTopView('copilot')
@@ -1128,7 +1132,7 @@ export function InPlaceCareerAssistant({
                       className="h-8 px-3 text-[10.5px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 cursor-pointer shrink-0"
                     >
                       <ExternalLink className="w-3 h-3" />
-                      <span>Edit in Dedicated Studio</span>
+                      <span>Edit Cover Letter (Dedicated Studio)</span>
                     </Button>
                   </div>
                 </div>
@@ -1137,7 +1141,10 @@ export function InPlaceCareerAssistant({
                 {clGenerated && (
                   <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2.5">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-xs font-bold text-foreground">Editable In-Place Letter</span>
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Edit Cover Letter (In-Place Editor)</span>
+                      </span>
                       <div className="flex items-center gap-1.5">
                         <Button
                           size="sm"
@@ -1284,19 +1291,7 @@ export function InPlaceCareerAssistant({
                         <Clock className="w-3.5 h-3.5 text-emerald-500" />
                         <span className="text-[10.5px] font-bold text-foreground">Verified Citation Time Window:</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setJobTimeWindow('1h')}
-                          className={cn(
-                            'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
-                            jobTimeWindow === '1h'
-                              ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
-                              : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
-                          )}
-                        >
-                          Last 1 Hour (6 Fresh)
-                        </button>
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
                           onClick={() => setJobTimeWindow('24h')}
@@ -1307,7 +1302,7 @@ export function InPlaceCareerAssistant({
                               : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          Last 24 Hours (20 Verified)
+                          Last 24 Hours
                         </button>
                         <button
                           type="button"
@@ -1319,7 +1314,31 @@ export function InPlaceCareerAssistant({
                               : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          Last 3 Days (Up to 40)
+                          Last 3 Days
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setJobTimeWindow('7d')}
+                          className={cn(
+                            'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                            jobTimeWindow === '7d'
+                              ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                              : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Last 7 Days
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setJobTimeWindow('1h')}
+                          className={cn(
+                            'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors cursor-pointer border',
+                            jobTimeWindow === '1h'
+                              ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                              : 'bg-background border-border/60 text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Fresh (1h)
                         </button>
                       </div>
                     </div>
@@ -1456,7 +1475,7 @@ export function InPlaceCareerAssistant({
                                 {job.matchPct}% ATS Match
                               </Badge>
                               <Badge variant="outline" className="text-[9px] py-0 font-mono text-muted-foreground border-border/80">
-                                {jobTimeWindow === '1h' ? 'Cited < 1h ago' : jobTimeWindow === '24h' ? 'Cited < 24h ago' : 'Cited < 3d ago'}
+                                {jobTimeWindow === '1h' ? 'Cited < 1h ago' : jobTimeWindow === '24h' ? 'Cited < 24h ago' : jobTimeWindow === '3d' ? 'Cited < 3d ago' : 'Cited < 7d ago'}
                               </Badge>
                               {job.subStatus.status === 'cooldown' && (
                                 <Badge variant="outline" className="text-[9px] py-0 text-amber-600 border-amber-500/30 bg-amber-500/10">
@@ -1595,7 +1614,9 @@ export function InPlaceCareerAssistant({
                           <div className="flex items-center justify-between flex-wrap gap-2">
                             <span className="text-xs font-bold text-foreground">This Quarter & This Month Priorities</span>
                             <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-bold text-[10px]">
-                              {advisorAnalysis.compensation?.dayRateMaritimeUSD
+                              {advisorAnalysis.compensation?.maritimeMonthlyStipendUSD
+                                ? `$${advisorAnalysis.compensation.maritimeMonthlyStipendUSD[0].toLocaleString()} - $${advisorAnalysis.compensation.maritimeMonthlyStipendUSD[1].toLocaleString()} / mo (Stipend)`
+                                : advisorAnalysis.compensation?.dayRateMaritimeUSD
                                 ? `$${advisorAnalysis.compensation.dayRateMaritimeUSD[0]} - $${advisorAnalysis.compensation.dayRateMaritimeUSD[1]} / day`
                                 : `$${advisorAnalysis.compensation?.baseRangeUSD[0]?.toLocaleString() || 120000} - $${advisorAnalysis.compensation?.baseRangeUSD[1]?.toLocaleString() || 180000} / yr`}
                             </Badge>
@@ -1638,7 +1659,7 @@ export function InPlaceCareerAssistant({
                                   g.urgency === 'high' ? 'border-red-500/30 bg-red-500/10 text-red-600' : 'border-border/80'
                                 )}
                               >
-                                {g.skill} ({g.category})
+                                {g.skill}
                               </Badge>
                             ))}
                           </div>
@@ -1794,7 +1815,7 @@ export function InPlaceCareerAssistant({
                   <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
                 </button>
 
-                {/* 2. Cover Letter Studio */}
+                {/* 2. Edit Cover Letter */}
                 <button
                   type="button"
                   onClick={() => setCopilotModule('cover_letter')}
@@ -1806,7 +1827,7 @@ export function InPlaceCareerAssistant({
                   )}
                 >
                   <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
-                    2. Cover Letter
+                    2. Edit Cover Letter
                   </span>
                   <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
                 </button>

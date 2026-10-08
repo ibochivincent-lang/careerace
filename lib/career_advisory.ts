@@ -21,9 +21,10 @@ export interface RoadmapMilestone {
 
 export interface CompensationBenchmark {
   roleTitle: string;
-  tier: 'Entry' | 'Mid' | 'Senior' | 'Staff/Lead' | 'Executive';
+  tier: 'Entry' | 'Mid' | 'Senior' | 'Staff/Lead' | 'Executive' | 'Cadet / Entry' | 'Junior' | 'Mid-Level';
   baseRangeUSD: [number, number];
   dayRateMaritimeUSD?: [number, number];
+  maritimeMonthlyStipendUSD?: [number, number];
   marketTrend: 'High Growth' | 'Stable High Demand' | 'Critical Shortage';
 }
 
@@ -677,11 +678,34 @@ export function generateCareerRoadmap(
   const isSenior = /senior|lead|principal|staff|chief|head|director|superintendent/i.test(currentRole || '');
   const currentTier = isSenior ? 'Senior' : 'Mid-Level';
 
-  // Determine target tier
-  const isTargetLead = /lead|principal|chief|director|staff|head|superintendent|cmio|ciso/i.test(targetRole || '');
-  const isTargetSenior = /senior|specialist|architect|2nd/i.test(targetRole || '') && !isTargetLead;
-  const isTargetMid = /mid|officer|engineer|developer|3rd/i.test(targetRole || '') && !isTargetLead && !isTargetSenior;
-  const targetTier = isTargetLead ? 'Staff/Lead' : isTargetSenior ? 'Senior' : isTargetMid ? 'Mid-Level' : matchedRank ? (matchedRank.tier as any) : 'Senior';
+  // Determine target tier: If matchedRank exists, it is the absolute source of truth
+  let targetTier: 'Cadet / Entry' | 'Junior' | 'Mid-Level' | 'Senior' | 'Staff/Lead' = 'Senior';
+  if (matchedRank) {
+    if (matchedRank.tier === 'Cadet / Entry') targetTier = 'Cadet / Entry';
+    else if (matchedRank.tier === 'Junior') targetTier = 'Junior';
+    else if (matchedRank.tier === 'Mid-Level') targetTier = 'Mid-Level';
+    else if (matchedRank.tier === 'Senior') targetTier = 'Senior';
+    else if (matchedRank.tier === 'Lead / Chief' || (matchedRank.tier as string) === 'Staff/Lead') targetTier = 'Staff/Lead';
+    else targetTier = (matchedRank.tier as any) || 'Senior';
+  } else {
+    const isTargetLead = /lead|principal|chief|director|staff|head|superintendent|cmio|ciso/i.test(targetRole || '');
+    const isTargetSenior = /senior|specialist|architect|2nd/i.test(targetRole || '') && !isTargetLead;
+    const isTargetCadet = /cadet|trainee|apprentice|intern/i.test(targetRole || '');
+    const isTargetJunior = /junior|4th/i.test(targetRole || '') && !isTargetCadet;
+    const isTargetMid = /mid|officer|engineer|developer|3rd/i.test(targetRole || '') && !isTargetLead && !isTargetSenior && !isTargetCadet && !isTargetJunior;
+
+    targetTier = isTargetLead
+      ? 'Staff/Lead'
+      : isTargetSenior
+      ? 'Senior'
+      : isTargetCadet
+      ? 'Cadet / Entry'
+      : isTargetJunior
+      ? 'Junior'
+      : isTargetMid
+      ? 'Mid-Level'
+      : 'Senior';
+  }
 
   // Resolve target competencies to check against candidate's profile
   let targetCompetencies: string[] = [];
@@ -733,13 +757,13 @@ export function generateCareerRoadmap(
   const roadmap: RoadmapMilestone[] = [
     {
       quarter: 'Month 1-3 (Q1): Foundation & Gap Closure',
-      focus: `Master core high-impact competencies in ${targetRole || ladderData.label}`,
+      focus: `Master core high-impact competencies in ${targetRole || matchedRank?.title || ladderData.label}`,
       deliverables: [
         `Complete reference implementation and hands-on deliverables in ${skillGaps[0]?.skill || 'Core Systems'}`,
         'Update Resume Studio profile with STAR+R quantifiable impact metrics',
         'Verify required certifications on Walrus Sovereign Vault',
       ],
-      keyCompetencies: [skillGaps[0]?.skill || 'Core Systems Architecture', skillGaps[1]?.skill || 'Operational Reliability'],
+      keyCompetencies: [skillGaps[0]?.skill || 'Core Systems Engineering', skillGaps[1]?.skill || 'Operational Reliability'],
     },
     {
       quarter: 'Month 4-6 (Q2): Architecture & Scale',
@@ -772,16 +796,34 @@ export function generateCareerRoadmap(
   ];
 
   // Compensation Benchmark
-  const compKey = targetTier === 'Staff/Lead' ? 'lead' : targetTier === 'Senior' ? 'senior' : targetTier === 'Cadet / Entry' ? 'entry' : 'mid';
+  const compKey: 'entry' | 'mid' | 'senior' | 'lead' =
+    targetTier === 'Staff/Lead'
+      ? 'lead'
+      : targetTier === 'Senior'
+      ? 'senior'
+      : targetTier === 'Junior' || targetTier === 'Cadet / Entry'
+      ? 'entry'
+      : 'mid';
+
   const range = data.compensation[compKey] || data.compensation.mid;
 
   const isMaritimeIndustry = discipline === 'marine' || discipline === 'marine_ops';
   let maritimeDayRate: [number, number] | undefined = undefined;
+  let maritimeMonthlyStipendUSD: [number, number] | undefined = undefined;
+
   if (isMaritimeIndustry) {
-    if (targetTier === 'Staff/Lead') maritimeDayRate = [750, 1100];
-    else if (targetTier === 'Senior') maritimeDayRate = [550, 850];
-    else if (targetTier === 'Mid-Level') maritimeDayRate = [380, 550];
-    else maritimeDayRate = [150, 280];
+    if (targetTier === 'Staff/Lead') {
+      maritimeDayRate = [750, 1100];
+    } else if (targetTier === 'Senior') {
+      maritimeDayRate = [550, 850];
+    } else if (targetTier === 'Mid-Level') {
+      maritimeDayRate = [380, 550];
+    } else if (targetTier === 'Junior') {
+      maritimeDayRate = [280, 420];
+    } else {
+      // Cadet / Entry: Monthly stipend $1,800 - $2,800 / mo
+      maritimeMonthlyStipendUSD = [1800, 2800];
+    }
   }
 
   const compensation: CompensationBenchmark = {
@@ -789,6 +831,7 @@ export function generateCareerRoadmap(
     tier: targetTier as any,
     baseRangeUSD: range,
     dayRateMaritimeUSD: maritimeDayRate,
+    maritimeMonthlyStipendUSD,
     marketTrend: ladderData.marketTrend,
   };
 

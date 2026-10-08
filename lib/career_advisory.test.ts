@@ -39,6 +39,34 @@ test('generateCareerRoadmap accurately provides maritime day rates and certifica
   assert.ok(marineAnalysis.skillGaps.length > 0);
 });
 
+test('generateCareerRoadmap accurately provides Engine Cadet monthly stipend and officer day rates', () => {
+  const cadetAnalysis = generateCareerRoadmap(
+    'Candidate',
+    'Engine Cadet / Trainee Marine Engineer',
+    [],
+    'maritime',
+    'cadet_marine_engineer'
+  );
+
+  assert.equal(cadetAnalysis.targetTier, 'Cadet / Entry');
+  assert.ok(cadetAnalysis.compensation.maritimeMonthlyStipendUSD);
+  assert.equal(cadetAnalysis.compensation.maritimeMonthlyStipendUSD[0], 1800);
+  assert.equal(cadetAnalysis.compensation.maritimeMonthlyStipendUSD[1], 2800);
+
+  const secondOfficerAnalysis = generateCareerRoadmap(
+    'Candidate',
+    '2nd Marine Engineer Officer (First Assistant)',
+    [],
+    'maritime',
+    'second_marine_engineer'
+  );
+
+  assert.equal(secondOfficerAnalysis.targetTier, 'Senior');
+  assert.ok(secondOfficerAnalysis.compensation.dayRateMaritimeUSD);
+  assert.equal(secondOfficerAnalysis.compensation.dayRateMaritimeUSD[0], 550);
+  assert.equal(secondOfficerAnalysis.compensation.dayRateMaritimeUSD[1], 850);
+});
+
 test('generateCareerRoadmap supports all 6 discipline ladders and lateral pathways', () => {
   const disciplines = ['maritime', 'software', 'ai_robotics', 'healthcare', 'marine_ops', 'cybersecurity'];
   for (const discId of disciplines) {

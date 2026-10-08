@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -245,8 +245,12 @@ Sincerely,
 ${params.candidateName || 'Candidate'}`;
 }
 
-export default function CoverLetterStudioPage() {
+function CoverLetterStudioContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryRole = searchParams?.get('role') || '';
+  const queryCompany = searchParams?.get('company') || '';
+  const queryDiscipline = searchParams?.get('discipline') || '';
 
   // Discipline & Role Selector State
   const [selectedDisciplineId, setSelectedDisciplineId] = useState<string>('marine');
@@ -336,40 +340,81 @@ export default function CoverLetterStudioPage() {
         setWalrusBlobId(storedBlob);
       }
 
-      // Check detected role
+      // Check query parameters first, then detected role
       const detectedRole = loadedProfile?.target_roles?.[0] || loadedProfile?.work_experience?.[0]?.role || '';
       let initialDisciplineId = 'marine';
-      let initialRole = 'Engine Cadet / Trainee Marine Engineer';
-      let initialCompany = 'Maersk';
+      let initialRole = queryRole || 'Engine Cadet / Trainee Marine Engineer';
+      let initialCompany = queryCompany || 'Maersk';
 
-      if (detectedRole) {
-        const lower = detectedRole.toLowerCase();
-        if (lower.includes('software') || lower.includes('frontend') || lower.includes('full stack') || lower.includes('developer')) {
+      const roleForCheck = queryRole || detectedRole;
+      if (roleForCheck) {
+        const lower = roleForCheck.toLowerCase();
+        if (queryDiscipline && DISCIPLINE_DEFINITIONS.some(d => d.id === queryDiscipline)) {
+          initialDisciplineId = queryDiscipline;
+        } else if (lower.includes('software') || lower.includes('frontend') || lower.includes('backend') || lower.includes('full stack') || lower.includes('developer') || lower.includes('architect') || lower.includes('devops') || lower.includes('sre') || lower.includes('security') || lower.includes('cyber') || lower.includes('cloud')) {
           initialDisciplineId = 'software';
-          initialRole = 'Full Stack Software Engineer';
-          initialCompany = 'Vercel';
+          if (!queryRole) {
+            initialRole = 'Full Stack Software Engineer';
+            initialCompany = 'Vercel';
+          }
         } else if (lower.includes('ai') || lower.includes('machine learning') || lower.includes('robotics')) {
           initialDisciplineId = 'ai';
-          initialRole = 'Autonomous Systems & ML Engineer';
-          initialCompany = 'xAI';
+          if (!queryRole) {
+            initialRole = 'Autonomous Systems & ML Engineer';
+            initialCompany = 'xAI';
+          }
         } else if (lower.includes('health') || lower.includes('medical') || lower.includes('clinical')) {
           initialDisciplineId = 'medical';
-          initialRole = 'Lead Healthcare Systems & Informatics Engineer';
-          initialCompany = 'Siemens Healthineers';
-        } else if (lower.includes('fleet') || lower.includes('operations')) {
+          if (!queryRole) {
+            initialRole = 'Lead Healthcare Systems & Informatics Engineer';
+            initialCompany = 'Siemens Healthineers';
+          }
+        } else if (lower.includes('fleet') || lower.includes('operations') || lower.includes('superintendent') || lower.includes('manager')) {
           initialDisciplineId = 'management';
-          initialRole = 'Global Fleet Operations & Decarbonization Manager';
-          initialCompany = 'Maersk Fleet Management';
-        } else if (lower.includes('cadet') || lower.includes('marine') || lower.includes('propulsion') || lower.includes('captain')) {
+          if (!queryRole) {
+            initialRole = 'Global Fleet Operations & Decarbonization Manager';
+            initialCompany = 'Maersk Fleet Management';
+          }
+        } else if (lower.includes('cadet') || lower.includes('marine') || lower.includes('propulsion') || lower.includes('vessel') || lower.includes('captain')) {
           initialDisciplineId = 'marine';
-          initialRole = lower.includes('captain') ? 'Ship Captain / Master Mariner (Navigation & Bridge)' : 'Engine Cadet / Trainee Marine Engineer';
-          initialCompany = 'Maersk';
+          if (!queryRole) {
+            initialRole = lower.includes('captain') ? 'Ship Captain / Master Mariner (Navigation & Bridge)' : 'Engine Cadet / Trainee Marine Engineer';
+            initialCompany = 'Maersk';
+          }
+        } else if (lower.includes('automation') || lower.includes('plc') || lower.includes('scada')) {
+          initialDisciplineId = 'industrial';
+          if (!queryRole) {
+            initialRole = 'Industrial Automation & Test Systems Engineer';
+            initialCompany = 'ABB Marine & Ports';
+          }
+        } else if (queryRole) {
+          initialDisciplineId = 'custom';
         }
       }
 
       setSelectedDisciplineId(initialDisciplineId);
       setTargetRole(initialRole);
       setTargetCompany(initialCompany);
+
+      // If user came specifically with a role query parameter, synthesize fresh draft for that role immediately
+      if (queryRole) {
+        const instant = generateLocalDraft({
+          role: initialRole,
+          company: initialCompany,
+          candidateName: loadedProfile?.applicant_name || 'Candidate',
+          candidateEmail: loadedProfile?.email || '',
+          candidatePhone: loadedProfile?.phone || '',
+          candidateLocation: loadedProfile?.location || 'Global Remote',
+          recentExperience: loadedProfile?.work_experience?.[0],
+          walrusBlobId: storedBlob,
+          disciplineId: initialDisciplineId,
+          filteredHighlights: getFilteredCvHighlights(loadedProfile, initialDisciplineId)
+        });
+        setCoverLetterText(instant);
+        localStorage.setItem('careerace_tailored_cover_letter', instant);
+        syncCandidateDataToCloud({ coverLetter: instant });
+        return;
+      }
 
       // Check saved letter
       const savedLetter = localStorage.getItem('careerace_tailored_cover_letter');
@@ -1011,3 +1056,12 @@ export default function CoverLetterStudioPage() {
     </AppShell>
   );
 }
+
+export default function CoverLetterStudioPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center p-8 text-muted-foreground text-xs">Loading Cover Letter Studio...</div>}>
+      <CoverLetterStudioContent />
+    </Suspense>
+  );
+}
+
