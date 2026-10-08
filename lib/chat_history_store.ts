@@ -11,6 +11,8 @@ import {
   archiveChatSessionToWalrus,
   fetchChatSessionFromWalrus,
 } from "./walrus_console_client.ts";
+import { archiveChatSessionToIpfs } from "./pinata_ipfs_client.ts";
+import { rememberFact } from "./memory_core.ts";
 import { SupabaseDatabaseService } from "./supabase.ts";
 
 const supabaseService = new SupabaseDatabaseService();
@@ -171,25 +173,48 @@ export function saveChatHistory(
 
   const channelMessages = merged.filter((m) => !m.channel || m.channel === channel);
 
-  // Background Cloud Persistence Tier 2: Supabase
-  supabaseService.saveCandidateChatHistory(address, channel, channelMessages).catch((err) => {
-    console.warn("[chat_history] Notice background Supabase persistence:", err);
-  });
+  // ── 3-TIER SOVEREIGN PERSISTENCE ENGINE (STRICT USER ISOLATION) ──
+  // Tier 1: Walrus Memory (Decentralized Vector Memory)
+  if (channelMessages.length > 0) {
+    const lastUser = [...channelMessages].reverse().find((m) => m.role === "user")?.content || "";
+    const lastBot = [...channelMessages].reverse().find((m) => m.role === "assistant")?.content || "";
+    if (lastUser && lastBot) {
+      rememberFact(
+        address,
+        "preference",
+        `Chat history session [${channel}]: Candidate asked "${lastUser.slice(0, 100)}" -> CareerAce: "${lastBot.slice(0, 120)}"`
+      ).catch((err) => console.warn("[chat_history] Walrus memory persistence notice:", err));
+    }
+  }
 
-  // Background Cloud Persistence Tier 3: Walrus Console
+  // Tier 2: Walrus Console (Decentralized Sovereign Cold Vault)
   archiveChatSessionToWalrus({
     address,
     channel,
     messages: channelMessages,
   }).catch((err) => {
-    console.warn("[chat_history] Notice background Walrus Console archive:", err);
+    console.warn("[chat_history] Walrus Console archive notice:", err);
+  });
+
+  // Tier 3: Pinata IPFS (Immutable Content-Addressed Decentralized Storage)
+  archiveChatSessionToIpfs({
+    address,
+    channel,
+    messages: channelMessages,
+  }).catch((err) => {
+    console.warn("[chat_history] Pinata IPFS archive notice:", err);
+  });
+
+  // Hot Cloud Tier: Supabase PostgreSQL
+  supabaseService.saveCandidateChatHistory(address, channel, channelMessages).catch((err) => {
+    console.warn("[chat_history] Notice background Supabase persistence:", err);
   });
 
   return formatted;
 }
 
 /**
- * Appends a complete user-assistant turn to the persistent history.
+ * Appends a complete user-assistant turn to the persistent history across all 3 sovereign tiers.
  */
 export function appendChatTurn(
   rawAddress: string | null | undefined,
@@ -223,25 +248,42 @@ export function appendChatTurn(
 
   const channelMessages = updated.filter((m) => !m.channel || m.channel === channel);
 
-  // Background Cloud Persistence Tier 2: Supabase
-  supabaseService.saveCandidateChatHistory(address, channel, channelMessages).catch((err) => {
-    console.warn("[chat_history] Notice background Supabase persistence on turn:", err);
-  });
+  // ── 3-TIER SOVEREIGN PERSISTENCE ENGINE (STRICT USER ISOLATION) ──
+  // Tier 1: Walrus Memory (Candidate Semantic Recall Vault)
+  rememberFact(
+    address,
+    "preference",
+    `Chat Turn [${channel}]: Candidate: "${userMessage.slice(0, 100)}" -> AceBot: "${assistantReply.slice(0, 120)}"`
+  ).catch((err) => console.warn("[chat_history] Walrus Memory turn sync notice:", err));
 
-  // Background Cloud Persistence Tier 3: Walrus Console
+  // Tier 2: Walrus Console (Candidate Sovereign Cold Vault)
   archiveChatSessionToWalrus({
     address,
     channel,
     messages: channelMessages,
   }).catch((err) => {
-    console.warn("[chat_history] Notice background Walrus Console turn sync:", err);
+    console.warn("[chat_history] Walrus Console turn sync notice:", err);
+  });
+
+  // Tier 3: Pinata IPFS (Decentralized Immutable IPFS Archive)
+  archiveChatSessionToIpfs({
+    address,
+    channel,
+    messages: channelMessages,
+  }).catch((err) => {
+    console.warn("[chat_history] Pinata IPFS turn sync notice:", err);
+  });
+
+  // Hot Cloud Tier: Supabase PostgreSQL
+  supabaseService.saveCandidateChatHistory(address, channel, channelMessages).catch((err) => {
+    console.warn("[chat_history] Notice background Supabase persistence on turn:", err);
   });
 
   return channelMessages;
 }
 
 /**
- * Awaitable versions for API endpoints requiring guaranteed cloud delivery before responding
+ * Awaitable versions for API endpoints requiring guaranteed 3-tier delivery before responding
  */
 export async function saveChatHistoryAsync(
   rawAddress: string | null | undefined,
@@ -253,6 +295,7 @@ export async function saveChatHistoryAsync(
   await Promise.allSettled([
     supabaseService.saveCandidateChatHistory(address, channel, formatted),
     archiveChatSessionToWalrus({ address, channel, messages: formatted }),
+    archiveChatSessionToIpfs({ address, channel, messages: formatted }),
   ]);
   return formatted;
 }
@@ -268,6 +311,12 @@ export async function appendChatTurnAsync(
   await Promise.allSettled([
     supabaseService.saveCandidateChatHistory(address, channel, updated),
     archiveChatSessionToWalrus({ address, channel, messages: updated }),
+    archiveChatSessionToIpfs({ address, channel, messages: updated }),
+    rememberFact(
+      address,
+      "preference",
+      `Chat Turn [${channel}]: Candidate: "${userMessage.slice(0, 100)}" -> AceBot: "${assistantReply.slice(0, 120)}"`
+    ),
   ]);
   return updated;
 }

@@ -25,6 +25,7 @@
 *.pem
 .chat_history.json
 .walrus_vault.json
+.cv_builder_drafts.json
 
 # debug
 npm-debug.log*

@@ -155,3 +155,73 @@ test("Multi-Model Engine: Fallover and Rotation Safety", async () => {
   assert.ok(res && res.length > 0);
   assert.match(res, /Systems Engineer/i);
 });
+
+test("Copilot Intelligence: 'I don't have a CV' triggers Guided CV Builder interview", async () => {
+  const result = await processCopilotQuery({
+    message: "I don't have a CV, can you help me create one?",
+    address: "0xbuilder_query_test_0001",
+    profile: null,
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /Career Ace Sovereign CV Builder/i);
+  assert.match(reply, /Step 1 of 10/i);
+  assert.match(reply, /Full legal or professional name/i);
+});
+
+test("Copilot Intelligence: 'What is the career pathway for software engineering?' query", async () => {
+  const result = await processCopilotQuery({
+    message: "What is the career pathway for software engineering?",
+    address: "0xpathway_test_0002",
+    profile: { applicant_name: "Devon", target_roles: ["Software Engineer"] },
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /Software Engineering/i);
+  assert.match(reply, /Junior Software Engineer/i);
+  assert.match(reply, /Senior Software Engineer/i);
+  assert.match(reply, /Staff \/ Principal/i);
+});
+
+test("Copilot Intelligence: 'What skills am I missing for Senior Software Engineer?' skill gap query", async () => {
+  const result = await processCopilotQuery({
+    message: "What skills am I missing for Senior Software Engineer?",
+    address: "0xgap_test_0003",
+    profile: {
+      applicant_name: "Jordan",
+      target_roles: ["Senior Software Engineer"],
+      skills: ["JavaScript", "HTML", "CSS"],
+    },
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /Skill Gap Analysis/i);
+  assert.match(reply, /Missing Skills/i);
+});
+
+test("Copilot Intelligence: 'Recalibrate my CV' conversational ATS optimization", async () => {
+  const result = await processCopilotQuery({
+    message: "Recalibrate my CV for Staff Cloud Engineer",
+    address: "0xrecal_test_0004",
+    profile: {
+      applicant_name: "Morgan",
+      target_roles: ["Staff Cloud Engineer"],
+      skills: ["Kubernetes", "AWS", "Terraform"],
+      work_experience: [
+        {
+          company: "Cloud Corp",
+          role: "Cloud Engineer",
+          duration: "2022 - Present",
+          highlights: ["Maintained AWS infrastructure and deployment scripts."],
+        },
+      ],
+    },
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /Successfully Recalibrated/i);
+  assert.match(reply, /ATS Score/i);
+  assert.ok(result.profile);
+  assert.ok(result.extracted_profile);
+});
+

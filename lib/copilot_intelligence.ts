@@ -28,6 +28,19 @@ import {
 import { correctTypographicalErrors } from "./typo_tolerance.ts";
 import { appendChatTurn } from "./chat_history_store.ts";
 import { handleAutonomousConversationalDispatch } from "./autonomous_conversational_dispatch.ts";
+import {
+  isGuidedCvBuilderActive,
+  isCvCreationRequest,
+  handleGuidedCvBuilderTurn,
+  cancelGuidedCvBuilder,
+  startGuidedCvBuilder,
+} from "./guided_cv_builder.ts";
+import {
+  matchCareerPathway,
+  formatCareerPathwayResponse,
+  analyzeSkillGaps,
+  recalibrateCvProfile,
+} from "./career_pathways.ts";
 
 export interface CopilotQueryParams {
   message?: string;
@@ -48,12 +61,14 @@ export interface CopilotQueryResult {
   stored: string[];
   candidate_name?: string;
   newAppliedJobs?: any[];
+  profile?: any;
   extracted_profile?: {
     name?: string;
     target_roles?: string[];
     skills?: string[];
-    education?: string[];
-    experience?: string[];
+    education?: any[];
+    experience?: any[];
+    [key: string]: any;
   };
 }
 
@@ -676,6 +691,54 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
 
   // 1. Resolve canonical address for sovereign Walrus Memory
   const address = await resolveTargetAddress(body.address);
+  const lowerLatest = latest.toLowerCase().trim();
+
+  // 1.1 Check Cancel CV Builder
+  if (
+    lowerLatest.includes("cancel cv builder") ||
+    lowerLatest.includes("exit cv builder") ||
+    lowerLatest.includes("stop cv builder")
+  ) {
+    const cancelRes = cancelGuidedCvBuilder(address);
+    appendChatTurn(address, rawLatest, cancelRes.reply, "overview");
+    return {
+      role: "assistant",
+      content: cancelRes.reply,
+      reply: cancelRes.reply,
+      stored: [],
+    };
+  }
+
+  // 1.2 Check Guided CV Builder Creation Request OR Active Session
+  if (isCvCreationRequest(latest)) {
+    const started = startGuidedCvBuilder(address);
+    appendChatTurn(address, rawLatest, started.reply, "overview");
+    return {
+      role: "assistant",
+      content: started.reply,
+      reply: started.reply,
+      stored: [],
+    };
+  } else if (isGuidedCvBuilderActive(address)) {
+    const turnResult = await handleGuidedCvBuilderTurn(address, latest);
+    appendChatTurn(address, rawLatest, turnResult.reply, "overview");
+    return {
+      role: "assistant",
+      content: turnResult.reply,
+      reply: turnResult.reply,
+      stored: turnResult.completed ? ["generated cv profile", "calibrated ats canvas"] : [],
+      candidate_name: turnResult.profile?.applicant_name || undefined,
+      profile: turnResult.profile,
+      extracted_profile: turnResult.profile
+        ? {
+            ...turnResult.profile,
+            name: turnResult.profile.applicant_name,
+            education: turnResult.profile.academic_history,
+            experience: turnResult.profile.work_experience,
+          }
+        : undefined,
+    };
+  }
 
   // 2. Recall existing verified facts from Walrus Memory with fast bounded timeout (<350ms)
   const memoryPromise = Promise.all([
@@ -782,8 +845,8 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     (Array.isArray(cv_profile?.work_experience) && cv_profile.work_experience.length > 0)
   );
 
-  const lowerLatest = latest.toLowerCase().trim();
   let directReply = "";
+  let recalibratedCvResult: any = null;
 
   // Query Matchers
   const isHowManyJobsInADay =
@@ -1234,10 +1297,19 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
         "I do not have any record of that in your Walrus Sovereign Memory or uploaded CV. You can tell me, and I will remember it for you.";
     }
   } else if (isOSQuery) {
-    const osFacts = [...activeCoaching, ...activeProfile].filter((f) =>
+    // 1. Prioritize explicit operating system facts, ignoring historical chat turn logs
+    const explicitOsFacts = [...activeCoaching, ...activeProfile].filter((f) =>
       !f.text.includes("Learned Q&A:") &&
-      (/operating system:\s*([a-zA-Z]+)/i.test(f.text) || /\b(linux|mac|macos|windows)\b/i.test(f.text))
+      !f.text.includes("Chat Turn [") &&
+      /operating system:\s*([a-zA-Z]+)/i.test(f.text)
     );
+    const osFacts = explicitOsFacts.length > 0
+      ? explicitOsFacts
+      : [...activeCoaching, ...activeProfile].filter((f) =>
+          !f.text.includes("Learned Q&A:") &&
+          !f.text.includes("Chat Turn [") &&
+          /\b(linux|mac|macos|windows)\b/i.test(f.text)
+        );
     const osFact = osFacts[0];
     if (osFact) {
       const match = osFact.text.match(/operating system:\s*([a-zA-Z]+)/i) || osFact.text.match(/\b(linux|mac|macos|windows)\b/i);
@@ -1249,6 +1321,7 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
   } else if (isLocationQuery) {
     const locFacts = [...activeCoaching, ...activeProfile].filter((f) =>
       !f.text.includes("Learned Q&A:") &&
+      !f.text.includes("Chat Turn [") &&
       (/workplace preference:\s*([a-zA-Z\s]+)/i.test(f.text) || /location:\s*([a-zA-Z\s]+)/i.test(f.text))
     );
     const locFact = locFacts[0];
@@ -1509,6 +1582,64 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
       )
     );
     directReply = `ATS Audit Complete for ${currentName || "Candidate"}:\n\n- Overall ATS Compatibility: ${score}/100\n- Contact & Header: Clean and parseable\n- Target Role: ${profileRole}\n- Core Competencies: ${profileSkills.length} verified skills\n- Experience Entries: ${Array.isArray(profileExperience) ? profileExperience.length : 1} position(s)\n- Recommendation: Ensure every work accomplishment starts with a strong action verb and includes quantifiable metrics (% growth, revenue, speed, or team size).`;
+  } else if (
+    (lowerLatest.includes("recalibrate") || lowerLatest.includes("re-calibrate")) &&
+    (lowerLatest.includes("cv") || lowerLatest.includes("resume") || lowerLatest.includes("profile") || lowerLatest.includes("skills"))
+  ) {
+    if (hasUploadedResume || Boolean(cv_profile)) {
+      const activeCv: any = cv_profile || {
+        applicant_name: currentName || "Candidate",
+        target_roles: [profileRole],
+        skills: profileSkills,
+        work_experience: Array.isArray(profileExperience) ? profileExperience : [],
+        academic_history: Array.isArray(profileEducation) ? profileEducation : [],
+      };
+
+      const recal = recalibrateCvProfile(activeCv, profileRole);
+      directReply = recal.reply;
+      recalibratedCvResult = recal.calibratedProfile;
+
+      // Remember recalibration in Walrus sovereign memory
+      rememberFact(
+        address,
+        "tailored_cv",
+        `Recalibrated CV: Target Role: ${profileRole} | ATS Score: ${recal.atsScore}/100 | High-impact STAR+R optimization`
+      ).catch(() => {});
+    } else {
+      directReply =
+        "You do not have a CV loaded yet. Would you like me to build one for you? Simply say **'Help me build a CV'** or **'I don't have a CV'**, and I will guide you step-by-step through our 10-step interview to generate a 100% ATS-compliant resume right here!";
+    }
+  } else if (
+    lowerLatest.includes("career pathway") ||
+    lowerLatest.includes("career path") ||
+    lowerLatest.includes("career roadmap") ||
+    lowerLatest.includes("career progression") ||
+    lowerLatest.includes("career trajectory") ||
+    lowerLatest.includes("promotion path") ||
+    lowerLatest.includes("promotion milestone") ||
+    (lowerLatest.includes("pathway") && (lowerLatest.includes("role") || lowerLatest.includes("job") || lowerLatest.includes("career") || lowerLatest.includes("engineer") || lowerLatest.includes("cadet") || lowerLatest.includes("developer")))
+  ) {
+    const matched = matchCareerPathway(latest) || matchCareerPathway(profileRole);
+    if (matched) {
+      directReply = formatCareerPathwayResponse(matched, profileRole);
+    } else {
+      directReply = `Career progression for ${profileRole} focuses on technical mastery (0-2 yrs), system ownership and architecture (2-5 yrs), cross-functional leadership (5-8 yrs), and strategic impact (8+ yrs). Ask me: **"What skills am I missing for Senior level?"** to analyze your exact skill gaps.`;
+    }
+  } else if (
+    lowerLatest.includes("skill gap") ||
+    lowerLatest.includes("skills gap") ||
+    lowerLatest.includes("skills am i missing") ||
+    lowerLatest.includes("skills do i need") ||
+    lowerLatest.includes("what skills do i need") ||
+    lowerLatest.includes("what am i missing for")
+  ) {
+    const gaps = analyzeSkillGaps(profileSkills, profileRole);
+    directReply =
+      `### Skill Gap Analysis for ${profileRole}\n\n` +
+      `• **Verified Competencies Found:** ${gaps.matchedSkills.length > 0 ? gaps.matchedSkills.join(", ") : "Baseline indexed"}\n` +
+      `• **High-Impact Missing Skills:** ${gaps.missingSkills.join(", ")}\n\n` +
+      `**Strategic Recommendation:** ${gaps.recommendation}\n\n` +
+      `Would you like me to recalibrate your CV bullets to highlight transferable experience in these domains? Just say **'Recalibrate my CV'**!`;
   }
 
   // Check previously learned Q&A pairs from Walrus sovereign memory
@@ -1658,12 +1789,20 @@ RULES:
     stored: newlyStored,
     candidate_name: currentName || undefined,
     newAppliedJobs: conversationalDispatchJobs,
-    extracted_profile: {
-      name: currentName || undefined,
-      target_roles: storedSummary.targetRoles,
-      skills: storedSummary.skills,
-      education: storedSummary.education,
-      experience: storedSummary.experience,
-    },
+    profile: recalibratedCvResult || undefined,
+    extracted_profile: recalibratedCvResult
+      ? {
+          ...recalibratedCvResult,
+          name: recalibratedCvResult.applicant_name,
+          education: recalibratedCvResult.academic_history,
+          experience: recalibratedCvResult.work_experience,
+        }
+      : {
+          name: currentName || undefined,
+          target_roles: storedSummary.targetRoles,
+          skills: storedSummary.skills,
+          education: storedSummary.education,
+          experience: storedSummary.experience,
+        },
   };
 }

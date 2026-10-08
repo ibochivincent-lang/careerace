@@ -1043,6 +1043,25 @@ function DashboardContent() {
           localStorage.setItem('careerace_applied_jobs', JSON.stringify(merged))
         } catch {}
       }
+
+      if (data.profile || data.extracted_profile) {
+        const generatedOrRecalibrated = data.profile || data.extracted_profile
+        if (
+          generatedOrRecalibrated &&
+          (generatedOrRecalibrated.applicant_name ||
+            (Array.isArray(generatedOrRecalibrated.skills) && generatedOrRecalibrated.skills.length > 0) ||
+            (Array.isArray(generatedOrRecalibrated.work_experience) && generatedOrRecalibrated.work_experience.length > 0))
+        ) {
+          setParsedProfile((prev: any) => ({ ...(prev || {}), ...generatedOrRecalibrated }))
+          try {
+            localStorage.setItem(
+              'careerace_parsed_profile',
+              JSON.stringify({ ...(parsedProfile || {}), ...generatedOrRecalibrated })
+            )
+          } catch {}
+        }
+      }
+
       const assistantReply = data.reply || data.content
       if (assistantReply) {
         setOverviewChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])
@@ -1179,6 +1198,25 @@ function DashboardContent() {
         })
       })
       const data = await res.json()
+
+      if (data.profile || data.extracted_profile) {
+        const generatedOrRecalibrated = data.profile || data.extracted_profile
+        if (
+          generatedOrRecalibrated &&
+          (generatedOrRecalibrated.applicant_name ||
+            (Array.isArray(generatedOrRecalibrated.skills) && generatedOrRecalibrated.skills.length > 0) ||
+            (Array.isArray(generatedOrRecalibrated.work_experience) && generatedOrRecalibrated.work_experience.length > 0))
+        ) {
+          setParsedProfile((prev: any) => ({ ...(prev || {}), ...generatedOrRecalibrated }))
+          try {
+            localStorage.setItem(
+              'careerace_parsed_profile',
+              JSON.stringify({ ...(parsedProfile || {}), ...generatedOrRecalibrated })
+            )
+          } catch {}
+        }
+      }
+
       const assistantReply = data.reply || data.content
       if (assistantReply) {
         setResumeAssistantMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])

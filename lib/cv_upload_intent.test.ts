@@ -100,4 +100,39 @@ describe("CV Upload Intent Classification & Grounded Memory Recall", () => {
     assert.match(reply, /ATS stylish standard/i);
     assert.match(reply, /Resume Studio/i);
   });
+
+  test("CV Upload API: Enforces 150,000 character text limit", async () => {
+    const { validateCvTextLength, MAX_CV_TEXT_LENGTH } = await import("./cv_upload_validator.ts");
+    assert.strictEqual(MAX_CV_TEXT_LENGTH, 150_000);
+
+    const validCheck = validateCvTextLength(5000);
+    assert.strictEqual(validCheck.valid, true);
+
+    const overCheck = validateCvTextLength(150_005);
+    assert.strictEqual(overCheck.valid, false);
+    assert.strictEqual(overCheck.code, "TEXT_TOO_LONG");
+    assert.strictEqual(overCheck.statusCode, 413);
+    assert.match(overCheck.error || "", /150,000 character limit/i);
+
+    const corruptCheck = validateCvTextLength(5);
+    assert.strictEqual(corruptCheck.valid, false);
+    assert.strictEqual(corruptCheck.code, "EMPTY_OR_CORRUPT");
+    assert.strictEqual(corruptCheck.statusCode, 400);
+  });
+
+  test("CV Upload API: Enforces 10MB file size limit", async () => {
+    const { validateFileSize, MAX_UPLOAD_FILE_SIZE } = await import("./cv_upload_validator.ts");
+    assert.strictEqual(MAX_UPLOAD_FILE_SIZE, 10 * 1024 * 1024);
+
+    const validCheck = validateFileSize(2 * 1024 * 1024); // 2MB
+    assert.strictEqual(validCheck.valid, true);
+
+    const overCheck = validateFileSize(11 * 1024 * 1024); // 11MB
+    assert.strictEqual(overCheck.valid, false);
+    assert.strictEqual(overCheck.code, "FILE_TOO_LARGE");
+    assert.strictEqual(overCheck.statusCode, 413);
+    assert.match(overCheck.error || "", /10MB limit/i);
+  });
 });
+
+

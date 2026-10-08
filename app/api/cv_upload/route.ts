@@ -6,6 +6,8 @@ import { uploadEncryptedResumeToWalrus } from "@/lib/walrus_storage";
 import { rememberFact } from "@/lib/memory_contract";
 import { convertPdfBufferToDocx } from "@/lib/pdf_to_docx_converter";
 import { isLikelyGenuineDocumentText } from "@/lib/pdf_extract_browser";
+import { pinFileToIpfs } from "@/lib/pinata_ipfs_client";
+import { validateFileSize, validateCvTextLength } from "@/lib/cv_upload_validator";
 // NOTE: zlib is NOT imported at the top-level — a top-level static import of any
 // Node.js built-in (e.g. "zlib", "crypto", "fs") causes the entire route module
 // to fail to load in runtimes that don't bundle Node built-ins (Vercel Edge, etc.).
@@ -25,6 +27,18 @@ export async function POST(req: Request) {
     if (contentType.includes("multipart/form-data")) {
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
+
+      // ── DATA CAP ENFORCEMENT: 10MB CEILING (User Audio Rule) ──
+      if (file) {
+        const fileValidation = validateFileSize(file.size);
+        if (!fileValidation.valid) {
+          return NextResponse.json(
+            { error: fileValidation.error, code: fileValidation.code },
+            { status: fileValidation.statusCode || 413 }
+          );
+        }
+      }
+
       const clientExtractedText = formData.get("cv_text") as string | null;
       explicitAddress = (formData.get("address") as string) || null;
 
@@ -128,15 +142,17 @@ export async function POST(req: Request) {
     // Clean up extracted text
     cvText = cvText.replace(/\r\n/g, "\n").trim();
 
-    if (!cvText || cvText.length < 10) {
+    // ── DATA CAP ENFORCEMENT: 150,000 CHARACTER ATS CEILING (User Audio Rule) ──
+    const textValidation = validateCvTextLength(cvText.length);
+    if (!textValidation.valid) {
       return NextResponse.json(
         {
-          error:
-            "Could not extract readable text from the uploaded file. Please paste your CV text directly into the text area instead.",
+          error: textValidation.error,
+          code: textValidation.code,
           extraction_method: extractionMethod,
           extracted_length: cvText.length,
         },
-        { status: 400 }
+        { status: textValidation.statusCode || 400 }
       );
     }
 
@@ -149,6 +165,11 @@ export async function POST(req: Request) {
     // Walrus Sovereign Encrypted Resume Storage
     const uploadBuffer = fileBuffer || Buffer.from(cvText, "utf-8");
     const safeDocName = (fileName || `${(finalProfile.applicant_name || "Candidate").replace(/[^a-zA-Z0-9_-]/g, "_")}_Resume.txt`).trim();
+
+    // ── DUAL SOVEREIGN STORAGE: PIN TO PINATA IPFS IN PARALLEL ──
+    pinFileToIpfs(uploadBuffer, safeDocName, "application/octet-stream", {
+      keyvalues: { address, category: "resume", engine: "dual_sovereign" },
+    }).catch((ipfsErr) => console.warn("[cv_upload] Notice background IPFS resume pin:", ipfsErr));
 
     let walrusBlobResult: { blobId: string; sha256Digest: string } | null = null;
     try {
