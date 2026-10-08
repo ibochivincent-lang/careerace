@@ -25,6 +25,7 @@ import { generateDocxBlob } from '@/lib/docx_exporter'
 import { exportToJsonResume, importFromJsonResume } from '@/lib/json_resume'
 import { analyzeAtsMatch, type AtsScorecard, type KeywordDiffItem } from '@/lib/ats_engine'
 import { extractPdfTextInBrowser } from '@/lib/pdf_extract_browser'
+import { extractDocxTextInBrowser } from '@/lib/docx_extract_browser'
 import { convertPdfFileToDocxInBrowser } from '@/lib/pdf_to_docx_converter'
 import { parseCvText } from '@/lib/heuristic_cv_parser'
 import { LivePdfPreview } from '@/components/LivePdfPreview'
@@ -54,7 +55,7 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
 
   const lines = content.split('\n')
   return (
-    <div className="space-y-0.5 leading-snug text-[10px] sm:text-[11px]">
+    <div className="space-y-1 leading-snug text-[10px] sm:text-[11px]">
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
           return <div key={lineIdx} className="h-0.5" />
@@ -65,7 +66,7 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
         const textToFormat = bulletMatch ? bulletMatch[3] : line
 
         const parts: React.ReactNode[] = []
-        const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g
+        const regex = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g
         let lastIndex = 0
         let match: RegExpExecArray | null
 
@@ -74,7 +75,13 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
             parts.push(textToFormat.slice(lastIndex, match.index))
           }
           const token = match[0]
-          if (token.startsWith('**') && token.endsWith('**')) {
+          if (token.startsWith('***') && token.endsWith('***')) {
+            parts.push(
+              <strong key={match.index} className="font-bold text-foreground">
+                <em>{token.slice(3, -3)}</em>
+              </strong>
+            )
+          } else if (token.startsWith('**') && token.endsWith('**')) {
             parts.push(
               <strong key={match.index} className="font-bold text-foreground">
                 {token.slice(2, -2)}
@@ -98,8 +105,8 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
           const prefix = bulletMatch![2]
           const isNumber = /^\d+\./.test(prefix)
           return (
-            <div key={lineIdx} className="flex items-start gap-1 pl-0.5 my-0.5">
-              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[9px] sm:text-[10px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-[9px] sm:text-[10px]"}>
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-0.5 my-0.5">
+              <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[10px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-[10px]"}>
                 {prefix}
               </span>
               <div className="flex-1 text-[10px] sm:text-[11px]">{parts}</div>
@@ -116,13 +123,13 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
 const FRESH_OVERVIEW_WELCOME_MESSAGE = {
   role: 'assistant' as const,
   content:
-    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\n• **Resume Studio:** Polish CV bullets with active metrics and seal snapshots to Walrus.\n• **Cover Letter Studio:** Generate targeted, problem-solving cover letters without AI slop.\n• **Application Board:** Discover verified roles and track 7-day recruiter milestones.\n\nTap a topic below or ask any question to get started!"
+    "Hello! I am your CareerAce Career Assistant, connected to your decentralized Walrus Sovereign Memory vault.\n\n• **Resume Studio:** Polish CV bullets with active metrics and seal snapshots to Walrus.\n• **Cover Letter Studio:** Generate targeted, problem-solving cover letters without AI slop.\n• **Application Board:** Discover verified roles and track 7-day recruiter milestones.\n\n**Tap any topic below or ask any question to get started!**"
 }
 
 const FRESH_RESUME_ASSISTANT_WELCOME = {
   role: 'assistant' as const,
   content:
-    "Welcome to the Resume Tailoring Assistant! I am focused directly on your active CV canvas.\n\nI can help you:\n• Recalibrate target role & industry keywords\n• Polish work experience bullets with quantifiable metrics\n• Audit ATS alignment against live job descriptions\n• Commit cryptographic snapshots directly to Walrus storage\n\nType a command or select an action below to begin tailoring."
+    "Welcome to the Resume Tailoring Assistant! I am focused directly on your active CV canvas.\n\nI can help you:\n• Recalibrate target role & industry keywords\n• Polish work experience bullets with quantifiable metrics\n• Audit ATS alignment against live job descriptions\n• Commit cryptographic snapshots directly to Walrus storage\n\n**Type a command or select an action below to begin tailoring.**"
 }
 
 function DashboardContent() {
@@ -1465,6 +1472,14 @@ function DashboardContent() {
     setSelectedFile(file)
     if (!file) return
 
+    const lowerName = file.name.toLowerCase()
+
+    // ── STRICT USER RULE: DOC/DOCX ONLY (NO MORE PDF INTAKE!) ──
+    if (lowerName.endsWith('.pdf') || file.type === 'application/pdf') {
+      toast.error('PDF uploads have been retired. Please upload your resume in Microsoft Word (.docx or .doc) format.')
+      return
+    }
+
     setIsParsing(true)
     const toastId = toast.loading(`Reading ${file.name}...`)
 
@@ -1477,29 +1492,12 @@ function DashboardContent() {
     let uploadFile: File = file
 
     try {
-      const lowerName = file.name.toLowerCase()
-
-      // Strategy A: Ultra-fast native stream parser / PDF.js + silent ONLYOFFICE Word (.docx) conversion
-      if (lowerName.endsWith('.pdf') || file.type === 'application/pdf') {
+      // Strategy A: Ultra-fast native browser DOCX stream parser (<15ms)
+      if (lowerName.endsWith('.docx') || file.type.includes('wordprocessingml') || lowerName.endsWith('.doc')) {
         try {
-          extractedText = await extractPdfTextInBrowser(file)
-        } catch (pdfErr) {
-          console.warn('[PDF] Client extraction notice:', pdfErr)
-        }
-
-        // Under-the-hood ONLYOFFICE document model: convert PDF to Word (.docx) silently
-        if (extractedText && extractedText.trim().length > 30) {
-          try {
-            const { docxFile, text: docxText } = await convertPdfFileToDocxInBrowser(file, extractedText)
-            if (docxFile && docxFile.size > 0) {
-              uploadFile = docxFile
-              if (!extractedText && docxText) {
-                extractedText = docxText
-              }
-            }
-          } catch (convErr) {
-            console.warn('[Docx converter fallback]:', convErr)
-          }
+          extractedText = await extractDocxTextInBrowser(file)
+        } catch (docxErr) {
+          console.warn('[DOCX] Browser extraction error:', docxErr)
         }
       }
 
@@ -1617,18 +1615,18 @@ function DashboardContent() {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 pt-2 sm:pt-6 pb-8 space-y-4 sm:space-y-6">
-        {/* Hidden File Inputs */}
+        {/* Hidden File Inputs - DOC/DOCX ONLY (NO MORE PDF INTAKE) */}
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.docx,.txt"
+          accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
           className="hidden"
           onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
         />
         <input
           ref={chatFileInputRef}
           type="file"
-          accept=".pdf,.docx,.txt"
+          accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
           className="hidden"
           onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
         />
@@ -1659,7 +1657,7 @@ function DashboardContent() {
                       className="h-8 px-3 text-xs font-semibold gap-1.5 border-border/80 rounded-xl cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="hidden sm:inline">Upload New CV</span>
+                      <span className="hidden sm:inline">Upload New CV (.docx)</span>
                     </Button>
                     <Button
                       type="button"
@@ -1683,7 +1681,7 @@ function DashboardContent() {
                     className="h-8 px-3 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Resume</span>
+                    <span>Upload Resume (.docx)</span>
                   </Button>
                 )}
               </div>
@@ -1740,7 +1738,7 @@ function DashboardContent() {
                     <div>
                       <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Upload your resume</h1>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Upload your PDF, DOCX, or TXT file. Career Ace indexes your real credentials directly into sovereign Walrus Memory.
+                        Upload your Microsoft Word (.docx) resume. Career Ace indexes your real credentials directly into sovereign Walrus Memory.
                       </p>
                     </div>
                   </div>
@@ -1772,10 +1770,10 @@ function DashboardContent() {
                       <Upload className="w-7 h-7" />
                     </div>
                     <p className="text-base font-bold text-foreground mb-1">
-                      {isDraggingFile ? 'Drop your resume here for instant parsing!' : selectedFile ? selectedFile.name : 'Click to select or drag your resume here'}
+                      {isDraggingFile ? 'Drop your Word (.docx) resume here for instant parsing!' : selectedFile ? selectedFile.name : 'Click to select or drag your Word (.docx) resume here'}
                     </p>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Supported formats: <span className="font-semibold text-foreground">PDF, DOC, DOCX, TXT</span> (Max 10 MB) · <span className="text-emerald-600 dark:text-emerald-400 font-medium">Instant client parsing (&lt;200ms)</span>
+                      Supported format: <span className="font-semibold text-foreground">Microsoft Word (.docx, .doc)</span> (Max 10 MB) · <span className="text-emerald-600 dark:text-emerald-400 font-medium">Instant client parsing (&lt;20ms)</span>
                     </p>
                     <Badge variant="outline" className="text-xs font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
                       Client-Side Parsed &amp; Encrypted with Seal
@@ -1837,7 +1835,7 @@ function DashboardContent() {
                         className="text-xs h-8 px-2 sm:px-2.5 gap-1.5 border-border/80 cursor-pointer shrink-0"
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Attach / Replace CV</span>
+                        <span className="hidden sm:inline">Attach / Replace CV (.docx)</span>
                         <span className="inline sm:hidden">Replace CV</span>
                       </Button>
                     </div>
@@ -2066,7 +2064,7 @@ function DashboardContent() {
                             variant="outline"
                             size="sm"
                             onClick={() => chatFileInputRef.current?.click()}
-                            title="Attach CV File (.pdf, .docx)"
+                            title="Attach Resume File (.docx)"
                             className="h-8 w-8 p-0 rounded-lg border border-border shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             <Paperclip className="w-3.5 h-3.5" />
