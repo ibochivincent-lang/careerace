@@ -76,7 +76,9 @@ export async function POST(req: NextRequest) {
       candidateLocation = 'Global Remote',
       candidateSkills = ['Systems Architecture', 'Operational Rigor', 'High Uptime Delivery'],
       recentExperience,
-      walrusBlobId = ''
+      walrusBlobId = '',
+      tone = 'modern_tech',
+      mode = 'singular',
     } = body;
 
     // 1. Target Role Intelligence Extraction
@@ -105,25 +107,43 @@ export async function POST(req: NextRequest) {
       year: 'numeric'
     });
 
-    // 2. Compose High-Impact, Tailored Cover Letter (No AI Slop)
+    const companyTarget = mode === 'batch' ? '[Company Name]' : targetCompany;
+    const roleTarget = targetRole;
+
+    // 2. Adaptive Tone Synthesizer (Modern Tech / Executive / Narrative)
+    let openingParagraph = '';
+    let closingParagraph = '';
+
+    if (tone === 'executive') {
+      openingParagraph = `I am writing to formally submit my candidacy for the ${roleTarget} role at ${companyTarget}. Throughout my leadership trajectory, I have focused on translating strategic objectives into high-reliability execution, ensuring systems, processes, and teams deliver measurable operational impact.`;
+      closingParagraph = `I welcome the opportunity to discuss how my strategic discipline, operational governance, and verified track record can support ${companyTarget}'s upcoming organizational objectives.`;
+    } else if (tone === 'narrative') {
+      openingParagraph = `Throughout my technical career, I have been driven by a singular focus: resolving complex bottlenecks and building systems that perform under high-stakes conditions. In reviewing the ${roleTarget} opening at ${companyTarget}, I recognized an immediate alignment with my hands-on problem-solving background.`;
+      closingParagraph = `I would appreciate the chance to discuss how my disciplined background, problem-solving journey, and practical execution align with ${companyTarget}'s technical milestones.`;
+    } else {
+      // Modern Tech (Default)
+      openingParagraph = `I am writing to formally submit my application for the position of ${roleTarget} at ${companyTarget}. With a background centered on ${topKeywords}, I take direct accountability for engineering reliability, operational discipline, and technical execution.`;
+      closingParagraph = `I would welcome the opportunity to discuss how my disciplined background and practical problem-solving approach align with ${companyTarget}'s upcoming milestones.`;
+    }
+
     const letterRaw = 
 `${candidateName}
 ${candidateEmail} · ${candidatePhone} · ${candidateLocation}
 
 ${todayDate}
 
-Hiring Team · ${targetCompany}
+Hiring Team · ${companyTarget}
 
-Dear ${targetCompany} Hiring Team,
+Dear ${companyTarget} Hiring Team,
 
-I am writing to formally submit my application for the position of ${targetRole} at ${targetCompany}. With a background centered on ${topKeywords}, I take direct accountability for engineering reliability, operational discipline, and technical execution.
+${openingParagraph}
 
-The scope of the ${targetRole} role demands focused execution across critical operational priorities:
+The scope of the ${roleTarget} role demands focused execution across critical operational priorities:
 • ${primaryResponsibilities[0]}
 • ${primaryResponsibilities[1]}
 • ${primaryResponsibilities[2]}
 
-Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact ${targetCompany}:
+Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact ${companyTarget}:
 1. ${problemsToSolve[0]}
 2. ${problemsToSolve[1] || problemsToSolve[0]}
 
@@ -131,7 +151,7 @@ ${recentExpSummary}
 
 ${walrusAttestationLine}
 
-I would welcome the opportunity to discuss how my disciplined background and practical problem-solving approach align with ${targetCompany}'s upcoming milestones. Thank you for your time and consideration.
+${closingParagraph}
 
 Sincerely,
 

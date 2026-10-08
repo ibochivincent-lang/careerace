@@ -34,6 +34,7 @@ import { SaveWalrusSnapshotModal } from '@/components/SaveWalrusSnapshotModal'
 import { BulletWithActionVerbs } from '@/components/BulletWithActionVerbs'
 import { restoreCandidateDataFromCloud, syncCandidateDataToCloud, subscribeCandidateRealtime, type RealtimeSyncEvent } from '@/lib/cloud_sync'
 import { ComingSoonModal, type ComingSoonFeature } from '@/components/ComingSoonModal'
+import { InPlaceCareerAssistant } from '@/components/InPlaceCareerAssistant'
 import { cn } from '@/components/ui/utils'
 import { getClientSessionAddress, setClientSession } from '@/lib/client_auth'
 import { STREAMLINED_PROMPT_CHIPS } from '@/lib/user_intent_knowledge'
@@ -239,6 +240,18 @@ function DashboardContent() {
   const [overviewChatMessages, setOverviewChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
     FRESH_OVERVIEW_WELCOME_MESSAGE
   ])
+
+  // Applied Jobs Submission Ledger (Cross-session deduplication)
+  const [appliedJobs, setAppliedJobs] = useState<any[]>([])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = JSON.parse(localStorage.getItem('careerace_applied_jobs') || '[]')
+        setAppliedJobs(stored)
+      } catch {}
+    }
+  }, [])
 
   // 2. Resume Studio Assistant state (Dedicated to active CV canvas tailoring & bullets)
   const [resumeAssistantInput, setResumeAssistantInput] = useState('')
@@ -1676,222 +1689,35 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* 1. EXPANDED PRIMARY CAREERACE CHATBOT (FULL-WIDTH, HIGH VISIBILITY, ROOMY MESSAGES) */}
-            <div className="w-full">
-              <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[740px] sm:h-[780px] lg:h-[820px] min-h-[580px]">
-                {/* Status Bar (No redundant subtitle - compact & clean) */}
-                <div className="px-3.5 py-2.5 sm:py-3 border-b border-border/80 bg-muted/30 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="relative">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                        <Bot className="w-4 h-4" />
-                      </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background rounded-full" />
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <h3 className="font-bold text-sm text-foreground">CareerAce Chatbot</h3>
-                      {overviewWalrusVault?.walrusUrl && overviewWalrusVault.latestBlobId ? (
-                        <a
-                          href={overviewWalrusVault.walrusUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[9px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md font-mono transition-colors"
-                          title={`Decentralized Walrus Blob ID: ${overviewWalrusVault.latestBlobId} — Click to inspect on Mysten Labs Aggregator`}
-                        >
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          <span>Walrus: {overviewWalrusVault.latestBlobId.slice(0, 6)}...</span>
-                        </a>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
-                          Walrus Vault Live
-                        </Badge>
-                      )}
-
-                      {overviewWalrusVault?.gatewayUrl && overviewWalrusVault.ipfsHash && (
-                        <a
-                          href={overviewWalrusVault.gatewayUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[9px] text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 px-2 py-0.5 rounded-md font-mono transition-colors"
-                          title={`Decentralized Pinata IPFS CID: ${overviewWalrusVault.ipfsHash} — Click to inspect on Pinata Gateway`}
-                        >
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          <span>IPFS: {overviewWalrusVault.ipfsHash.slice(0, 6)}...</span>
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/80">
-                    <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin Verified
-                  </Badge>
-                </div>
-
-                {/* Chat Messages Feed (Compact typography so multiple responses fit comfortably) */}
-                <div ref={overviewChatContainerRef} className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 text-[10px] sm:text-xs">
-                  {/* First-time User Onboarding Callout: Prominent upload card */}
-                  {!parsedProfile && (
-                    <div className="p-4 rounded-2xl border-2 border-dashed border-emerald-500/40 bg-emerald-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-                      <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                          <Upload className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-foreground">Attach your CV to unlock CareerAce</h4>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                            First-time setup: Upload your resume (PDF/DOCX) to calibrate AI matching, enable ATS audits, and activate decentralized Walrus memory.
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 h-8 gap-1.5 rounded-xl shadow-xs w-full sm:w-auto cursor-pointer"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Upload Resume</span>
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Live ATS Canvas Hub Banner: 1-Click Direct Access to Resume Studio Canvas */}
-                  {parsedProfile && (
-                    <div className="p-3.5 sm:p-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-                      <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                          <FileCheck className="w-4.5 h-4.5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-bold text-sm text-foreground">
-                              {parsedProfile.applicant_name && parsedProfile.applicant_name !== 'Candidate'
-                                ? `${parsedProfile.applicant_name}’s Resume`
-                                : 'Active Candidate Resume'}
-                            </h4>
-                            <Badge variant="outline" className="text-[10px] text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 py-0">
-                              Editable ATS Canvas
-                            </Badge>
-                            {atsScorecard?.overall_score && (
-                              <Badge variant="secondary" className="text-[10px] py-0 font-bold">
-                                {atsScorecard.overall_score}% ATS Match
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                            {parsedProfile.work_experience?.length || 0} positions • {parsedProfile.skills?.length || 0} skills detected. Edit bullet points, inspect action verbs, and print clean vector PDF.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => {
-                            setResumeViewMode('editor')
-                            setMobileResumeView('canvas')
-                            router.push('/dashboard?tab=resumes')
-                          }}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 h-8 gap-1.5 rounded-xl shadow-xs w-full sm:w-auto cursor-pointer"
-                        >
-                          <span>Open in Editable ATS Canvas</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {overviewChatMessages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-start gap-2.5 leading-relaxed ${
-                        msg.role === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      {msg.role === 'assistant' && (
-                        <div className="w-6 h-6 rounded-lg bg-emerald-600/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <Bot className="w-3.5 h-3.5" />
-                        </div>
-                      )}
-
-                      <div
-                        className={`max-w-[88%] sm:max-w-[78%] p-2 sm:p-2.5 rounded-xl text-[10px] sm:text-[11px] leading-snug ${
-                          msg.role === 'assistant'
-                            ? 'bg-muted/40 border border-border/80 text-foreground shadow-2xs'
-                            : 'bg-emerald-600 text-white font-medium shadow-xs'
-                        }`}
-                      >
-                        <FormattedChatMessage content={msg.content} role={msg.role} />
-                      </div>
-                    </div>
-                  ))}
-
-                  {isOverviewSending && (
-                    <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground p-2 rounded-lg bg-muted/30 border border-border/60">
-                      <Bot className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-                      <span>Querying Walrus Memory</span>
-                    </div>
-                  )}
-                  <div ref={overviewChatEndRef} />
-                </div>
-
-                {/* Streamlined Prompt Chips (2x2 Grid: Recommended Jobs, Application Tracker, Daily Limits & Goals, Profile & Qualifications) */}
-                <div className="p-1.5 sm:p-2 bg-muted/20 border-t border-border/60">
-                  <div className="grid grid-cols-2 gap-1 sm:gap-1.5 max-w-3xl mx-auto">
-                    {STREAMLINED_PROMPT_CHIPS.slice(0, 4).map((chip) => (
-                      <button
-                        key={chip.id}
-                        type="button"
-                        onClick={() => {
-                          handleSendOverviewMessage(chip.prompt)
-                        }}
-                        disabled={isOverviewSending}
-                        title={chip.prompt}
-                        className="text-[10px] sm:text-[11px] px-2 py-1 sm:py-1.5 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center justify-between gap-1 font-medium text-left cursor-pointer shadow-2xs group"
-                      >
-                        <span className="font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
-                          {chip.label}
-                        </span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {chip.badge && (
-                            <span className="text-[8.5px] uppercase px-1 py-0.5 rounded bg-muted/80 text-muted-foreground font-mono hidden sm:inline-block">
-                              {chip.badge}
-                            </span>
-                          )}
-                          <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-opacity" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom Input (Zero attachment clutter - spacious & direct) */}
-                <div className="p-3 sm:p-4 border-t border-border/80 bg-card flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={overviewChatInput}
-                    onChange={(e) => setOverviewChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendOverviewMessage()}
-                    placeholder={
-                      parsedProfile 
-                        ? "Ask about your education, work experience, certifications, applied jobs, or 7-day follow-ups..." 
-                        : "Ask any question about your career, target roles, or type 'hello' to explore..."
-                    }
-                    className="flex-1 h-10 px-3.5 rounded-xl border border-border bg-background text-xs sm:text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-2xs"
-                  />
-
-                  <Button
-                    size="sm"
-                    onClick={() => handleSendOverviewMessage()}
-                    disabled={isOverviewSending || !overviewChatInput.trim()}
-                    className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-semibold text-xs sm:text-sm cursor-pointer shadow-xs"
-                  >
-                    <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" />
-                    <span>Send</span>
-                  </Button>
-                </div>
-              </Card>
-            </div>
+            {/* 1. AUTONOMOUS IN-PLACE CAREER COPILOT (FN-01 to FN-07 INTEGRATED) */}
+            <InPlaceCareerAssistant
+              parsedProfile={parsedProfile}
+              onUpdateProfile={(updated) => {
+                setParsedProfile(updated)
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('careerace_sovereign_profile', JSON.stringify(updated))
+                  localStorage.setItem('careerace_parsed_profile', JSON.stringify(updated))
+                }
+              }}
+              sessionAddress={sessionAddress}
+              overviewWalrusVault={overviewWalrusVault}
+              appliedJobs={appliedJobs}
+              onUpdateAppliedJobs={(updated) => {
+                setAppliedJobs(updated)
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('careerace_applied_jobs', JSON.stringify(updated))
+                }
+              }}
+              onNavigateToCanvas={() => {
+                setResumeViewMode('editor')
+                setMobileResumeView('canvas')
+                router.push('/dashboard?tab=resumes')
+              }}
+              onUploadCvClick={() => fileInputRef.current?.click()}
+              overviewChatMessages={overviewChatMessages}
+              onSendMessage={handleSendOverviewMessage}
+              isSendingMessage={isOverviewSending}
+            />
           </motion.div>
         )}
 
