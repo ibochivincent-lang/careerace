@@ -7,7 +7,8 @@ import {
   AlertCircle, Plus, Edit3, Database, TrendingUp, Target, AlertTriangle,
   RotateCcw, Compass, Clock, Check, Layers, Briefcase, Filter, Search,
   Zap, Award, Play, CheckSquare, RefreshCw, X, ArrowRight, ShieldAlert,
-  Calendar, Building2, MapPin, Globe, Loader2, DollarSign, Paperclip, ChevronUp
+  Calendar, Building2, MapPin, Globe, Loader2, DollarSign, Paperclip, ChevronUp,
+  GraduationCap
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -52,7 +53,7 @@ const COOLDOWN_MS = 5 * 24 * 60 * 60 * 1000
 export const DISCIPLINE_PRESETS = [
   {
     id: 'maritime',
-    label: '⚓ Maritime & Marine Engineering',
+    label: 'Maritime & Marine Engineering',
     category: 'Marine Engineering',
     defaultRole: 'Chief Marine Engineer (STCW III/2)',
     skills: [
@@ -72,7 +73,7 @@ export const DISCIPLINE_PRESETS = [
   },
   {
     id: 'software',
-    label: '💻 Software, Cloud & DevOps',
+    label: 'Software, Cloud & DevOps',
     category: 'Software Engineering',
     defaultRole: 'Senior Cloud Solutions Architect',
     skills: [
@@ -93,7 +94,7 @@ export const DISCIPLINE_PRESETS = [
   },
   {
     id: 'ai_robotics',
-    label: '🤖 AI, Machine Learning & Robotics',
+    label: 'AI, Machine Learning & Robotics',
     category: 'Artificial Intelligence',
     defaultRole: 'Lead Autonomous Systems & AI Architect',
     skills: [
@@ -111,7 +112,7 @@ export const DISCIPLINE_PRESETS = [
   },
   {
     id: 'healthcare',
-    label: '🏥 Healthcare & Clinical Informatics',
+    label: 'Healthcare & Clinical Informatics',
     category: 'Healthcare Informatics',
     defaultRole: 'Clinical Informatics Specialist',
     skills: [
@@ -127,7 +128,7 @@ export const DISCIPLINE_PRESETS = [
   },
   {
     id: 'marine_ops',
-    label: '🚢 Fleet Operations & Marine Management',
+    label: 'Fleet Operations & Marine Management',
     category: 'Fleet Operations',
     defaultRole: 'Fleet Technical Superintendent',
     skills: [
@@ -143,7 +144,7 @@ export const DISCIPLINE_PRESETS = [
   },
   {
     id: 'cybersecurity',
-    label: '🛡️ Cybersecurity & InfoSec',
+    label: 'Cybersecurity & InfoSec',
     category: 'Cybersecurity',
     defaultRole: 'Lead Security Architect & Compliance',
     skills: [
@@ -266,13 +267,16 @@ export function InPlaceCareerAssistant({
   // ─────────────────────────────────────────────────────────────────────────────
   // FN-01 IN-PLACE MENU CV WRITER STATE & ACCORDION EXPANSION
   // ─────────────────────────────────────────────────────────────────────────────
-  // Accordion state for the 6 boxes:
+  // FN-01 IN-PLACE MENU CV WRITER STATE & ACCORDION EXPANSION
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Accordion state for the 7 boxes:
   const [openBoxes, setOpenBoxes] = useState<Record<string, boolean>>({
     contact: true,
     footprint: false,
     role: false,
     skills: false,
     experience: false,
+    education: false,
     proof: false,
   })
 
@@ -287,7 +291,7 @@ export function InPlaceCareerAssistant({
     return DISCIPLINE_PRESETS.find((d) => d.id === selectedDisciplineId) || DISCIPLINE_PRESETS[0]
   }, [selectedDisciplineId])
 
-  // CV Form state supporting multiple emails and phones
+  // CV Form state supporting multiple emails, phones, and academic education
   const [cvForm, setCvForm] = useState({
     name: parsedProfile?.applicant_name || '',
     email: parsedProfile?.email || '',
@@ -306,6 +310,7 @@ export function InPlaceCareerAssistant({
       'TypeScript', 'Next.js', 'Distributed Systems', 'Cloud Infrastructure', 'PostgreSQL', 'Docker'
     ],
     experience: (parsedProfile?.work_experience as any[]) || [],
+    education: (parsedProfile?.academic_history as any[]) || [],
     certifications: (parsedProfile?.certifications as string[]) || [],
     proofFile: null as { name: string; sizeKb: number } | null,
   })
@@ -325,6 +330,7 @@ export function InPlaceCareerAssistant({
         portfolio: parsedProfile.portfolio || prev.portfolio,
         skills: Array.isArray(parsedProfile.skills) && parsedProfile.skills.length > 0 ? parsedProfile.skills : prev.skills,
         experience: Array.isArray(parsedProfile.work_experience) && parsedProfile.work_experience.length > 0 ? parsedProfile.work_experience : prev.experience,
+        education: Array.isArray(parsedProfile.academic_history) && parsedProfile.academic_history.length > 0 ? parsedProfile.academic_history : prev.education,
         certifications: Array.isArray(parsedProfile.certifications) && parsedProfile.certifications.length > 0 ? parsedProfile.certifications : prev.certifications,
       }))
     }
@@ -389,6 +395,7 @@ export function InPlaceCareerAssistant({
         additional_links: cvForm.additionalLinks,
         skills: cvForm.skills,
         work_experience: cvForm.experience,
+        academic_history: cvForm.education,
         certifications: cvForm.certifications,
         proof_document: cvForm.proofFile,
       }
@@ -1058,25 +1065,19 @@ export function InPlaceCareerAssistant({
               </div>
             )}
 
-            {/* 4 IN-SITU MENUS (1, 2, 3, 4) UNDER CHAT FEED (EXACT AUDIO INSTRUCTION) */}
-            <div className="p-2 sm:p-2.5 bg-muted/20 border-t border-border/60">
-              <div className="text-[10px] font-bold text-foreground px-1 mb-1.5">
-                Quick Actions & In-Chat Modules:
-              </div>
+            {/* 4 IN-SITU MENUS (1, 2, 3, 4) UNDER CHAT FEED - COMPACT & SUBTITLE-FREE */}
+            <div className="p-2 bg-muted/20 border-t border-border/60">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {/* 1. In-Place CV Builder */}
                 <button
                   type="button"
                   onClick={() => setTopView('cv_builder')}
-                  className="p-1.5 rounded-xl border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-left transition-all cursor-pointer group"
+                  className="px-2.5 py-1.5 rounded-lg border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-left transition-all cursor-pointer group flex items-center justify-between"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
-                      1. CV Writer
-                    </span>
-                    <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-                  </div>
-                  <p className="text-[9px] text-muted-foreground truncate mt-0.5">Accordion builder</p>
+                  <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
+                    1. CV Writer
+                  </span>
+                  <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
                 </button>
 
                 {/* 2. Cover Letter Studio */}
@@ -1084,19 +1085,16 @@ export function InPlaceCareerAssistant({
                   type="button"
                   onClick={() => setCopilotModule('cover_letter')}
                   className={cn(
-                    'p-1.5 rounded-xl border text-left transition-all cursor-pointer group',
+                    'px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer group flex items-center justify-between',
                     copilotModule === 'cover_letter'
-                      ? 'border-emerald-500 bg-emerald-500/10'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
                       : 'border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40'
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
-                      2. Cover Letter
-                    </span>
-                    <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-                  </div>
-                  <p className="text-[9px] text-muted-foreground truncate mt-0.5">Scope & adaptive tone</p>
+                  <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
+                    2. Cover Letter
+                  </span>
+                  <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
                 </button>
 
                 {/* 3. Job Board & Auto-Apply */}
@@ -1104,19 +1102,16 @@ export function InPlaceCareerAssistant({
                   type="button"
                   onClick={() => setCopilotModule('job_scanner')}
                   className={cn(
-                    'p-1.5 rounded-xl border text-left transition-all cursor-pointer group',
+                    'px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer group flex items-center justify-between',
                     copilotModule === 'job_scanner'
-                      ? 'border-emerald-500 bg-emerald-500/10'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
                       : 'border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40'
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
-                      3. Job Board
-                    </span>
-                    <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-                  </div>
-                  <p className="text-[9px] text-muted-foreground truncate mt-0.5">5-day cooldown dispatch</p>
+                  <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
+                    3. Job Board
+                  </span>
+                  <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
                 </button>
 
                 {/* 4. Career Path Advisory */}
@@ -1124,19 +1119,16 @@ export function InPlaceCareerAssistant({
                   type="button"
                   onClick={() => setCopilotModule('career_advisor')}
                   className={cn(
-                    'p-1.5 rounded-xl border text-left transition-all cursor-pointer group',
+                    'px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer group flex items-center justify-between',
                     copilotModule === 'career_advisor'
-                      ? 'border-emerald-500 bg-emerald-500/10'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
                       : 'border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40'
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
-                      4. Career Advisor
-                    </span>
-                    <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-                  </div>
-                  <p className="text-[9px] text-muted-foreground truncate mt-0.5">Roadmap & benchmarks</p>
+                  <span className="text-[10.5px] font-bold text-foreground group-hover:text-emerald-600">
+                    4. Career Advisor
+                  </span>
+                  <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
                 </button>
               </div>
             </div>
@@ -1197,7 +1189,7 @@ export function InPlaceCareerAssistant({
                     onClick={onNavigateToCanvas}
                     className="h-7 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10 cursor-pointer"
                   >
-                    <span>Open in ATS Canvas</span>
+                    <span>Preview</span>
                     <ArrowRight className="w-3 h-3" />
                   </Button>
                 )}
@@ -1669,7 +1661,131 @@ export function InPlaceCareerAssistant({
                 )}
               </div>
 
-              {/* ── BOX 6: TOOLS, CERTIFICATIONS & PROOF (<= 1 MB) ── */}
+              {/* ── BOX 6: EDUCATIONAL BACKGROUND ── */}
+              <div className="border border-border/80 rounded-xl overflow-hidden bg-card shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => toggleBox('education')}
+                  className="w-full px-3.5 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-emerald-500" />
+                    <span className="font-bold text-xs text-foreground">6. Educational Background</span>
+                    <Badge variant="secondary" className="text-[9px] py-0 font-medium">
+                      {cvForm.education.length} Credentials
+                    </Badge>
+                  </div>
+                  {openBoxes.education ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </button>
+
+                {openBoxes.education && (
+                  <div className="p-3.5 border-t border-border/60 space-y-3 text-xs">
+                    {cvForm.education.map((edu: any, eIdx: number) => (
+                      <div key={eIdx} className="p-3 bg-muted/20 border border-border/80 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="font-bold text-xs text-foreground">Education #{eIdx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCvForm({
+                                ...cvForm,
+                                education: cvForm.education.filter((_, i) => i !== eIdx),
+                              })
+                            }}
+                            className="text-[10px] text-red-500 hover:text-red-600 font-semibold cursor-pointer flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" /> Remove
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Degree / Qualification *</label>
+                            <input
+                              type="text"
+                              value={edu.degree || ''}
+                              onChange={(e) => {
+                                const copy = [...cvForm.education]
+                                copy[eIdx] = { ...copy[eIdx], degree: e.target.value }
+                                setCvForm({ ...cvForm, education: copy })
+                              }}
+                              placeholder="e.g. B.Sc. Computer Science / B.Eng. Marine"
+                              className="w-full h-7 px-2 rounded-md border border-border bg-background text-xs mt-0.5"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Institution / University *</label>
+                            <input
+                              type="text"
+                              value={edu.institution || edu.school || ''}
+                              onChange={(e) => {
+                                const copy = [...cvForm.education]
+                                copy[eIdx] = { ...copy[eIdx], institution: e.target.value, school: e.target.value }
+                                setCvForm({ ...cvForm, education: copy })
+                              }}
+                              placeholder="e.g. Federal University of Technology"
+                              className="w-full h-7 px-2 rounded-md border border-border bg-background text-xs mt-0.5"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Field of Study</label>
+                            <input
+                              type="text"
+                              value={edu.field_of_study || ''}
+                              onChange={(e) => {
+                                const copy = [...cvForm.education]
+                                copy[eIdx] = { ...copy[eIdx], field_of_study: e.target.value }
+                                setCvForm({ ...cvForm, education: copy })
+                              }}
+                              placeholder="e.g. Software Systems / Marine Propulsion"
+                              className="w-full h-7 px-2 rounded-md border border-border bg-background text-xs mt-0.5"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground">Graduation Year / Dates</label>
+                            <input
+                              type="text"
+                              value={edu.graduation_year || edu.year || edu.dates || ''}
+                              onChange={(e) => {
+                                const copy = [...cvForm.education]
+                                copy[eIdx] = { ...copy[eIdx], graduation_year: e.target.value, year: e.target.value }
+                                setCvForm({ ...cvForm, education: copy })
+                              }}
+                              placeholder="e.g. 2018 - 2022"
+                              className="w-full h-7 px-2 rounded-md border border-border bg-background text-xs mt-0.5"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setCvForm({
+                          ...cvForm,
+                          education: [
+                            ...cvForm.education,
+                            {
+                              degree: '',
+                              institution: '',
+                              field_of_study: '',
+                              graduation_year: '',
+                            },
+                          ],
+                        })
+                      }}
+                      className="w-full h-8 text-xs font-semibold gap-1.5 cursor-pointer text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Add Degree / Qualification</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* ── BOX 7: TOOLS, CERTIFICATIONS & PROOF (<= 1 MB) ── */}
               <div className="border border-border/80 rounded-xl overflow-hidden bg-card shadow-xs">
                 <button
                   type="button"
@@ -1678,7 +1794,7 @@ export function InPlaceCareerAssistant({
                 >
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4 text-emerald-500" />
-                    <span className="font-bold text-xs text-foreground">6. Tools, Certifications & Document Proof</span>
+                    <span className="font-bold text-xs text-foreground">7. Tools, Certifications & Document Proof</span>
                     {cvForm.proofFile && (
                       <Badge variant="outline" className="text-[9px] py-0 text-emerald-600 border-emerald-500/40 bg-emerald-500/10">
                         Proof Verified ({cvForm.proofFile.sizeKb} KB)
@@ -1778,7 +1894,7 @@ export function InPlaceCareerAssistant({
                     onClick={onNavigateToCanvas}
                     className="h-9 px-4 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/40 cursor-pointer"
                   >
-                    <span>Open in ATS Canvas</span>
+                    <span>Preview</span>
                   </Button>
                 )}
 

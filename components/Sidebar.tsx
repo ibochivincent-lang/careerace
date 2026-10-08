@@ -58,22 +58,10 @@ function SidebarContent() {
       active: false,
     },
     {
-      label: 'Career Pathway',
-      onClick: () => setComingSoonFeature('career_pathway'),
-      icon: Compass,
-      active: false,
-    },
-    {
       label: 'Notifications',
       href: '/notifications',
       icon: Bell,
       active: pathname.startsWith('/notifications')
-    },
-    {
-      label: 'System Design',
-      href: '/architecture',
-      icon: Cpu,
-      active: pathname === '/architecture'
     },
   ]
 

@@ -1332,6 +1332,21 @@ function DashboardContent() {
     }
   }
 
+  function handleDeleteProfile() {
+    if (confirm('Are you sure you want to delete this CV and reset your canvas?')) {
+      setParsedProfile(null)
+      setSelectedFile(null)
+      setTailoredResumeText('')
+      setTailoredCoverLetterText('')
+      setResumeViewMode('upload')
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('careerace_parsed_profile')
+        localStorage.removeItem('careerace_sovereign_profile')
+      }
+      toast.success('CV deleted. You can now upload or create a new one.')
+    }
+  }
+
   async function handleDownloadDocxResume() {
     if (!parsedProfile) {
       toast.error('Please upload a resume first.')
@@ -1646,45 +1661,6 @@ function DashboardContent() {
                   {getGreeting()}{parsedProfile?.applicant_name ? `, ${parsedProfile.applicant_name.split(' ')[0]}` : ''}.
                 </h1>
               </div>
-              <div className="flex items-center gap-2">
-                {parsedProfile ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-8 px-3 text-xs font-semibold gap-1.5 border-border/80 rounded-xl cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="hidden sm:inline">Upload New CV (.docx)</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => {
-                        setResumeViewMode('editor')
-                        setMobileResumeView('canvas')
-                        router.push('/dashboard?tab=resumes')
-                      }}
-                      className="h-8 px-3 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs cursor-pointer"
-                    >
-                      <FileCheck className="w-3.5 h-3.5" />
-                      <span>Open ATS Canvas</span>
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-8 px-3 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs cursor-pointer"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Resume (.docx)</span>
-                  </Button>
-                )}
-              </div>
             </div>
 
             {/* 1. AUTONOMOUS IN-PLACE CAREER COPILOT (FN-01 to FN-07 INTEGRATED) */}
@@ -1838,6 +1814,18 @@ function DashboardContent() {
                         <span className="hidden sm:inline">Attach / Replace CV (.docx)</span>
                         <span className="inline sm:hidden">Replace CV</span>
                       </Button>
+
+                      {/* Delete CV Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteProfile}
+                        className="text-xs h-8 px-2 sm:px-2.5 gap-1.5 border-red-500/30 text-red-600 hover:bg-red-500/10 hover:border-red-500/50 cursor-pointer shrink-0"
+                        title="Delete current CV and reset canvas"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        <span className="hidden sm:inline">Delete CV</span>
+                      </Button>
                     </div>
                   </div>
 
@@ -1904,6 +1892,7 @@ function DashboardContent() {
                         isSavingVersion={isSavingWalrusVersion}
                         isParsing={isParsing}
                         onUpdateProfile={updateProfileField}
+                        onDeleteProfile={handleDeleteProfile}
                         highlightedBulletKey={highlightedBulletKey}
                       />
                     </div>

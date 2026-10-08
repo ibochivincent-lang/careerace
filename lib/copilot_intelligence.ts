@@ -1514,6 +1514,30 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
 
     directReply = `Yes! I have read and verified your background from your Walrus Sovereign Memory vault:\n\n• **Candidate Name:** ${candidateDisplayName}\n• **Target Role:** ${profileRole}\n• **Core Skills:** ${profileSkills.slice(0, 10).join(", ") || "Technical competencies"}\n• **Work History:** ${expFormatted}\n• **Academic Background:** ${eduFormatted}\n\nYour profile is cryptographically anchored to Walrus decentralized storage. Select a quick action below or ask about specific roles, certifications, or applications!`;
   } else if (
+    lowerLatest.includes("what is my name") ||
+    lowerLatest.includes("what is my full name") ||
+    lowerLatest === "my name" ||
+    lowerLatest.includes("my full name")
+  ) {
+    if (currentName && currentName !== "Candidate") {
+      directReply = `Based on your Walrus Sovereign Memory and verified CV, your full name is **${currentName}**.`;
+    } else {
+      directReply = "Your full name has not been indexed yet. You can fill out your name in the In-Place CV Builder under Identity & Contact.";
+    }
+  } else if (
+    lowerLatest.includes("what is my location") ||
+    lowerLatest.includes("where am i located") ||
+    lowerLatest.includes("where do i live") ||
+    lowerLatest.includes("my location") ||
+    lowerLatest.includes("what city")
+  ) {
+    const loc = activeProfileData?.location || cv_profile?.location;
+    if (loc) {
+      directReply = `Based on your Walrus Sovereign Memory and verified CV, your location is **${loc}**.`;
+    } else {
+      directReply = "Your location has not been indexed yet. You can add your city or location in the In-Place CV Builder under Identity & Contact.";
+    }
+  } else if (
     lowerLatest.includes("what did i study") ||
     lowerLatest.includes("what is my degree") ||
     lowerLatest.includes("where did i study") ||

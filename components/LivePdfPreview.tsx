@@ -112,6 +112,7 @@ interface LivePdfPreviewProps {
   isSavingVersion?: boolean;
   isParsing?: boolean;
   onUpdateProfile?: (updated: Partial<ParsedCv>) => void;
+  onDeleteProfile?: () => void;
   highlightedBulletKey?: string | null;
 }
 
@@ -130,6 +131,7 @@ export function LivePdfPreview({
   isSavingVersion = false,
   isParsing = false,
   onUpdateProfile,
+  onDeleteProfile,
   highlightedBulletKey = null,
 }: LivePdfPreviewProps) {
   const [activeTemplate, setActiveTemplate] = useState<AtsTemplateId>(initialTemplate);
@@ -739,17 +741,19 @@ export function LivePdfPreview({
             <span>Print / Save PDF</span>
           </Button>
 
-          {/* Word (.docx) Export Button */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDownloadDocx}
-            className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-border/80 text-foreground hover:bg-muted rounded-lg shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
-            title="Download as 100% ATS-compliant Microsoft Word (.docx)"
-          >
-            <FileText className="w-3 h-3 text-blue-500" />
-            <span>Word (.docx)</span>
-          </Button>
+          {/* Delete CV Button */}
+          {onDeleteProfile && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDeleteProfile}
+              className="h-7 px-2.5 text-xs font-semibold gap-1.5 border-red-500/40 text-red-600 hover:bg-red-500/10 rounded-lg shadow-xs shrink-0 whitespace-nowrap cursor-pointer"
+              title="Delete current CV and reset canvas"
+            >
+              <Trash2 className="w-3 h-3 text-red-500" />
+              <span>Delete CV</span>
+            </Button>
+          )}
 
           {/* Walrus Save Action */}
           {onCommitWalrusVersion && (
