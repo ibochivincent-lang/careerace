@@ -5,6 +5,7 @@ import { resolveTargetAddress } from "@/lib/target_address";
 import { uploadEncryptedResumeToWalrus } from "@/lib/walrus_storage";
 import { rememberFact } from "@/lib/memory_contract";
 import { convertPdfBufferToDocx } from "@/lib/pdf_to_docx_converter";
+import { isLikelyGenuineDocumentText } from "@/lib/pdf_extract_browser";
 // NOTE: zlib is NOT imported at the top-level — a top-level static import of any
 // Node.js built-in (e.g. "zlib", "crypto", "fs") causes the entire route module
 // to fail to load in runtimes that don't bundle Node built-ins (Vercel Edge, etc.).
@@ -40,8 +41,9 @@ export async function POST(req: Request) {
         };
       }
 
-      // If client-side already extracted text, also perform ONLYOFFICE Word conversion if it was a PDF
-      if (clientExtractedText && clientExtractedText.trim().length > 10) {
+      // If client-side already extracted text and it is genuine document prose, use it
+      const clientHasGenuineText = clientExtractedText && isLikelyGenuineDocumentText(clientExtractedText);
+      if (clientHasGenuineText) {
         cvText = clientExtractedText.trim();
         extractionMethod = "browser_pdf_extraction";
         if (file) {
@@ -402,7 +404,37 @@ function extractFromPdfStream(streamString: string, outputChunks: string[]) {
  * Extract readable text from PDF buffer using dynamic PDFParse with multiple fallbacks.
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  // Strategy 1: Ultra-fast stream decompression & token extraction (0.3ms)
+  // Strategy 1: High-fidelity pdf-parse v2 PDFParse class (fast, full CMap/font resolution)
+  try {
+    const pdfParseModule = await import("pdf-parse");
+    const PDFParseClass =
+      pdfParseModule.PDFParse ||
+      (pdfParseModule as any).default?.PDFParse;
+
+    if (typeof PDFParseClass === "function") {
+      const parser = new PDFParseClass(new Uint8Array(buffer));
+      const result = await parser.getText();
+      const rawText = (
+        typeof result === "string"
+          ? result
+          : result?.text ||
+            (result?.pages || []).map((p: any) => p?.text || "").join("\n\n") ||
+            ""
+      ).trim();
+      if (rawText.length > 20 && isLikelyGenuineDocumentText(rawText)) {
+        const clean = rawText
+          .replace(/-- \d+ of \d+ --/g, "")
+          .replace(/\r\n/g, "\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        if (clean.length > 10) return clean;
+      }
+    }
+  } catch (err) {
+    console.warn("[cv_upload] PDFParse extraction notice:", err);
+  }
+
+  // Strategy 2: Stream decompression fallback
   let zlibModule: typeof import("zlib") | null = null;
   try {
     zlibModule = (await import("zlib")).default ?? ((await import("zlib")) as any);
@@ -437,47 +469,9 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     }
   }
 
-  extractFromPdfStream(rawLatin, textChunks);
-
-  if (textChunks.length >= 4) {
-    const result = textChunks.join("\n").replace(/[ \t]+/g, " ").trim();
-    if (result.length > 30) {
-      return result;
-    }
-  }
-
-  // Strategy 2: pdf-parse v2 PDFParse class fallback
-  try {
-    const pdfParseModule = await import("pdf-parse");
-    const PDFParseClass =
-      pdfParseModule.PDFParse ||
-      (pdfParseModule as any).default?.PDFParse;
-
-    if (typeof PDFParseClass === "function") {
-      const parser = new PDFParseClass({ data: buffer });
-      await (parser as any).load();
-      const result = await parser.getText();
-      if (typeof parser.destroy === "function") {
-        await parser.destroy();
-      }
-      const rawText = (
-        typeof result === "string"
-          ? result
-          : result?.text ||
-            (result?.pages || []).map((p: any) => p?.text || "").join("\n\n") ||
-            ""
-      ).trim();
-      if (rawText.length > 10) {
-        const clean = rawText
-          .replace(/-- \d+ of \d+ --/g, "")
-          .replace(/\r\n/g, "\n")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
-        if (clean.length > 10) return clean;
-      }
-    }
-  } catch (err) {
-    console.warn("[cv_upload] PDFParse v2 parsing notice, falling back:", err);
+  const streamCandidate = textChunks.join("\n").replace(/[ \t]+/g, " ").trim();
+  if (streamCandidate.length > 30 && isLikelyGenuineDocumentText(streamCandidate)) {
+    return streamCandidate;
   }
 
   // Strategy 3: Printable ASCII strings with loose threshold

@@ -1437,16 +1437,18 @@ function DashboardContent() {
         }
 
         // Under-the-hood ONLYOFFICE document model: convert PDF to Word (.docx) silently
-        try {
-          const { docxFile, text: docxText } = await convertPdfFileToDocxInBrowser(file, extractedText)
-          if (docxFile && docxFile.size > 0) {
-            uploadFile = docxFile
-            if (!extractedText && docxText) {
-              extractedText = docxText
+        if (extractedText && extractedText.trim().length > 30) {
+          try {
+            const { docxFile, text: docxText } = await convertPdfFileToDocxInBrowser(file, extractedText)
+            if (docxFile && docxFile.size > 0) {
+              uploadFile = docxFile
+              if (!extractedText && docxText) {
+                extractedText = docxText
+              }
             }
+          } catch (convErr) {
+            console.warn('[Docx converter fallback]:', convErr)
           }
-        } catch (convErr) {
-          console.warn('[Docx converter fallback]:', convErr)
         }
       }
 

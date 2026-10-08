@@ -7,6 +7,7 @@ import {
   BorderStyle,
   Packer,
 } from "docx";
+import { isLikelyGenuineDocumentText } from "./pdf_extract_browser.ts";
 
 /**
  * ONLYOFFICE-Inspired PDF-to-Word (DOCX) Document Engine
@@ -283,15 +284,32 @@ export async function convertPdfBufferToDocx(
 ): Promise<{ docxBuffer: Buffer; text: string; fileName: string; doc: Document }> {
   let text = extractedRawText || "";
 
-  // If text not already supplied, extract via zlib or fallback
-  if (!text) {
-    try {
-      const zlib = (await import("zlib")).default ?? (await import("zlib"));
-      const decompressed = zlib.inflateSync(pdfBuffer).toString("latin1");
-      text = decompressed;
-    } catch {
-      text = pdfBuffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, " ");
+  // If text not already supplied or failed genuine prose check, extract via high-fidelity PDFParse!
+  if (!text || !isLikelyGenuineDocumentText(text)) {
+    const isPdfHeader = pdfBuffer.length >= 5 && pdfBuffer.subarray(0, 5).toString("ascii").startsWith("%PDF");
+    if (isPdfHeader) {
+      try {
+        const pdfParseModule = await import("pdf-parse");
+        const PDFParseClass = pdfParseModule.PDFParse || (pdfParseModule as any).default?.PDFParse;
+        if (typeof PDFParseClass === "function") {
+          const parser = new PDFParseClass(new Uint8Array(pdfBuffer));
+          const res = await parser.getText();
+          const extracted = (typeof res === "string" ? res : res?.text || "").trim();
+          if (extracted && (isLikelyGenuineDocumentText(extracted) || extracted.length > 30)) {
+            text = extracted;
+          }
+        }
+      } catch (parseErr) {
+        console.warn("[convertPdfBufferToDocx] Server PDFParse extraction notice:", parseErr);
+      }
     }
+  }
+
+  // Fallback: clean printable strings if still empty
+  if (!text) {
+    const raw = pdfBuffer.toString("utf-8");
+    const runs = raw.match(/[\x20-\x7E\n\r\t]{8,}/g) || [];
+    text = runs.filter((r) => !r.startsWith("%PDF") && !r.includes("obj")).join("\n").trim();
   }
 
   const docxName = originalFileName.replace(/\.pdf$/i, ".docx");

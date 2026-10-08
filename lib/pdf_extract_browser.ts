@@ -124,19 +124,35 @@ async function decompressFlateBytes(bytes: Uint8Array): Promise<string | null> {
 }
 
 /**
+ * Validate that extracted string represents genuine resume / document prose
+ * rather than PDF binary, metadata dictionary dumps, or unmapped font glyph tables.
+ */
+export function isLikelyGenuineDocumentText(text: string): boolean {
+  if (!text || typeof text !== "string") return false;
+  const trimmed = text.trim();
+  if (trimmed.length < 40) return false;
+
+  // Reject raw PDF metadata dictionary dumps
+  if (/^opensource[\s\\]+anonymous/i.test(trimmed)) return false;
+  if (/^D:\d{8}/.test(trimmed)) return false;
+  if (/^%\s*PDF/i.test(trimmed)) return false;
+
+  // Check alphanumeric density
+  const letters = (trimmed.match(/[a-zA-Z]/g) || []).length;
+  if (letters < 25) return false;
+  if (letters / trimmed.length < 0.25) return false;
+
+  // Document & resume natural language signals
+  const commonSignals = /\b(?:the|and|for|with|from|this|that|experience|education|skills|summary|work|developer|engineer|manager|project|role|university|college|school|certified|contact|email|phone|linkedin|github|achievements|responsibility|responsible|professional|curriculum|vitae|resume|objective|profile|history|management|analyst|associate|lead|team|operations|business)\b/i;
+  return commonSignals.test(trimmed);
+}
+
+/**
  * Super-fast in-memory stream parser (<20ms).
  */
 export async function extractPdfTextFast(uint8Array: Uint8Array): Promise<string> {
   const latin = new TextDecoder("latin1").decode(uint8Array);
   const textChunks: string[] = [];
-
-  // Extract from uncompressed streams directly
-  extractTokensFromStreamString(latin, textChunks);
-
-  // If we already found candidate text, return immediately
-  if (textChunks.length > 8) {
-    return cleanPdfText(textChunks);
-  }
 
   // Decompress compressed streams if DecompressionStream is available
   const streamRegex = /stream[\r\n]+([\s\S]*?)[\r\n]+endstream/g;
@@ -165,7 +181,12 @@ export async function extractPdfTextFast(uint8Array: Uint8Array): Promise<string
     await Promise.all(promises);
   }
 
-  return cleanPdfText(textChunks);
+  const cleaned = cleanPdfText(textChunks);
+  if (isLikelyGenuineDocumentText(cleaned)) {
+    return cleaned;
+  }
+
+  return "";
 }
 
 function cleanPdfText(chunks: string[]): string {
@@ -255,7 +276,7 @@ export async function extractPdfTextInBrowser(file: File): Promise<string> {
   // Strategy 1: Ultra-fast native stream parser (<20ms)
   try {
     const fastText = await extractPdfTextFast(uint8Array);
-    if (fastText && fastText.length >= 60) {
+    if (fastText && isLikelyGenuineDocumentText(fastText)) {
       return fastText;
     }
   } catch (fastErr) {
@@ -269,6 +290,9 @@ export async function extractPdfTextInBrowser(file: File): Promise<string> {
       setTimeout(() => resolve(""), 2500)
     );
     const pdfJsText = await Promise.race([pdfJsPromise, timeoutPromise]);
+    if (pdfJsText && isLikelyGenuineDocumentText(pdfJsText)) {
+      return pdfJsText;
+    }
     if (pdfJsText && pdfJsText.length >= 20) {
       return pdfJsText;
     }

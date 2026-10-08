@@ -4,6 +4,7 @@ import {
   buildWordDocumentFromPdfText,
   convertPdfBufferToDocx
 } from "./pdf_to_docx_converter.ts";
+import { isLikelyGenuineDocumentText } from "./pdf_extract_browser.ts";
 
 describe("ONLYOFFICE PDF-to-Word (DOCX) Conversion Engine", () => {
   const samplePdfText = `
@@ -50,6 +51,23 @@ Commercial Lending, Credit Analysis, Portfolio Management, Risk Assessment
 
     // Output filename should end in .docx
     assert.ok(result.fileName.endsWith(".docx"), "Filename must end with .docx");
+    assert.equal(result.fileName, "Candidate_Resume.docx");
+  });
+
+  test("isLikelyGenuineDocumentText accurately discriminates genuine CV prose from binary/font metadata", () => {
+    assert.equal(isLikelyGenuineDocumentText(""), false);
+    assert.equal(isLikelyGenuineDocumentText("opensource\\nanonymous\\nD:20261007141158+00'00'\\nunspecified"), false);
+    assert.equal(isLikelyGenuineDocumentText("mhi8/mPhp*07s\\nVYK4%-:?G-^hYe#8[d>r8<B$8GO1@ToEPWln"), false);
+    assert.equal(isLikelyGenuineDocumentText(samplePdfText), true);
+  });
+
+  test("convertPdfBufferToDocx extracts text and compiles docx even when raw text is omitted", async () => {
+    const rawBuffer = Buffer.from(samplePdfText, "utf-8");
+    // Omit third argument to test internal extraction fallback
+    const result = await convertPdfBufferToDocx(rawBuffer, "Candidate_Resume.pdf");
+
+    assert.ok(result.docxBuffer instanceof Buffer);
+    assert.ok(result.docxBuffer.length > 500);
     assert.equal(result.fileName, "Candidate_Resume.docx");
   });
 });
