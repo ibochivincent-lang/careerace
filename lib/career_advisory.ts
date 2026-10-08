@@ -75,6 +75,33 @@ export const DISCIPLINE_CAREER_LADDERS: Record<string, {
     marketTrend: 'Critical Shortage',
     ranks: [
       {
+        id: 'mar_wiper',
+        title: 'Wiper / Engine Rating',
+        tier: 'Cadet / Entry',
+        levelOrder: 1,
+        requiredCompetencies: ['Engine Room Housekeeping', 'Bilge Cleaning', 'Bunkering Assistance', 'Basic Safety at Sea'],
+        certifications: ['STCW Basic Safety Training (BST / VI/1)', 'ENG1 Medical Clearance', 'Seaman Book / CDC'],
+        typicalTimeline: '6 - 12 Months Sea Time',
+      },
+      {
+        id: 'mar_oiler',
+        title: 'Oiler / Motorman',
+        tier: 'Junior',
+        levelOrder: 2,
+        requiredCompetencies: ['Lubrication & Purifier Monitoring', 'Auxiliary Machinery Rounds', 'Centrifugal Pump Maintenance', 'Engine Watch Support'],
+        certifications: ['STCW III/4 Rating Forming Part of an Engineering Watch', 'ENG1 Medical Clearance', 'Seaman Book / CDC'],
+        typicalTimeline: '12 - 24 Months in Rank',
+      },
+      {
+        id: 'mar_ab',
+        title: 'Able Seaman (AB) / Deck Rating',
+        tier: 'Junior',
+        levelOrder: 2,
+        requiredCompetencies: ['Deck Watchkeeping', 'Mooring & Cargo Operations', 'Steering & Helmsman Duty', 'Safety Equipment Maintenance'],
+        certifications: ['STCW II/5 Able Seafarer Deck', 'PSCRB Survival Craft', 'ENG1 Medical Clearance'],
+        typicalTimeline: '12 - 24 Months in Rank',
+      },
+      {
         id: 'mar_cadet',
         title: 'Engine Cadet / Trainee Marine Engineer',
         tier: 'Cadet / Entry',
@@ -87,7 +114,7 @@ export const DISCIPLINE_CAREER_LADDERS: Record<string, {
         id: 'mar_4th_eng',
         title: '4th Marine Engineer Officer',
         tier: 'Junior',
-        levelOrder: 2,
+        levelOrder: 3,
         requiredCompetencies: ['Auxiliary Boilers & Feedwater', 'Fuel Oil Transfer & Separators', 'Bilge & Ballast Systems', 'Compressors & Evaporators'],
         certifications: ['STCW III/1 Officer in Charge of Engineering Watch (OICEW)', 'Proficiency in Survival Craft (PSCRB)'],
         typicalTimeline: '12 - 24 Months in Rank',
@@ -96,7 +123,7 @@ export const DISCIPLINE_CAREER_LADDERS: Record<string, {
         id: 'mar_3rd_eng',
         title: '3rd Marine Engineer Officer',
         tier: 'Mid-Level',
-        levelOrder: 3,
+        levelOrder: 4,
         requiredCompetencies: ['Auxiliary Diesel Generators', 'Air Conditioning & Refrigeration', 'Freshwater Generators', 'Planned Maintenance Systems (PMS)'],
         certifications: ['STCW III/1 Advanced Endorsement', 'High Voltage Marine Power Certification (HV-Marine)'],
         typicalTimeline: '18 - 36 Months in Rank',
@@ -105,7 +132,7 @@ export const DISCIPLINE_CAREER_LADDERS: Record<string, {
         id: 'mar_2nd_eng',
         title: '2nd Marine Engineer Officer (First Assistant)',
         tier: 'Senior',
-        levelOrder: 4,
+        levelOrder: 5,
         requiredCompetencies: ['2-Stroke & 4-Stroke Main Propulsion Overhaul', 'Fuel Bunkering & Centrifuges', 'MARPOL Annex VI & SOLAS Protocols', 'Crew Task Allocation & Engine Safety'],
         certifications: ['STCW III/2 Second Engineer (Unlimited Power)', 'Advanced Fire Fighting (VI/3)', 'Medical First Aid (VI/4)'],
         typicalTimeline: '24 - 48 Months in Rank',
@@ -114,19 +141,10 @@ export const DISCIPLINE_CAREER_LADDERS: Record<string, {
         id: 'mar_chief_eng',
         title: 'Chief Marine Engineer (STCW III/2)',
         tier: 'Lead / Chief',
-        levelOrder: 5,
+        levelOrder: 6,
         requiredCompetencies: ['Chief Engineer License Management', 'Thermal Efficiency Optimization', 'Drydock & Class Renewal Supervision', 'OPEX & Fuel Budget Control', 'Flag State & Port State Control Compliance'],
         certifications: ['STCW III/2 Chief Engineer (Unlimited kW)', 'Ship Security Officer (SSO / VI/5)', 'ERM Engine Resource Management'],
         typicalTimeline: '5+ Years Senior Engineering Experience',
-      },
-      {
-        id: 'mar_eto',
-        title: 'Electro-Technical Officer (ETO / STCW III/6)',
-        tier: 'Senior',
-        levelOrder: 4,
-        requiredCompetencies: ['High Voltage Marine Distribution (6.6kV)', 'Dynamic Positioning Control (DP-2 / DP-3)', 'Bridge Navigation Sensors & Automation', 'Power Management Systems (PMS PLC)'],
-        certifications: ['STCW III/6 Electro-Technical Officer', 'Dynamic Positioning Maintenance (DPM)', 'GMDSS / Marine Automation'],
-        typicalTimeline: 'Specialist Rank',
       },
     ],
     lateralPathways: [
@@ -639,7 +657,20 @@ export function detectDisciplineCategory(
   if (lower.includes('health') || lower.includes('doctor') || lower.includes('clinical') || lower.includes('medical') || lower.includes('nurse') || lower.includes('hospital') || lower.includes('fhir') || lower.includes('ehr')) {
     return 'healthcare';
   }
-  if (lower.includes('marine') || lower.includes('vessel') || lower.includes('cadet') || lower.includes('maritime') || lower.includes('stcw') || lower.includes('ship') || lower.includes('propulsion') || lower.includes('chief engineer')) {
+  if (
+    lower.includes('marine') ||
+    lower.includes('vessel') ||
+    lower.includes('cadet') ||
+    lower.includes('maritime') ||
+    lower.includes('stcw') ||
+    lower.includes('ship') ||
+    lower.includes('propulsion') ||
+    lower.includes('chief engineer') ||
+    lower.includes('wiper') ||
+    lower.includes('oiler') ||
+    lower.includes('motorman') ||
+    lower.includes('seaman')
+  ) {
     return 'marine';
   }
   return 'software';
