@@ -377,6 +377,7 @@ export async function uploadToDirectWalrus(
         "User-Agent": "CareerAce-DirectWalrus/1.0",
       },
       body: JSON.stringify(payload, null, 2),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {
@@ -415,6 +416,7 @@ export async function fetchFromDirectWalrus(blobId: string): Promise<any | null>
         "User-Agent": "CareerAce-DirectWalrus/1.0",
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) return null;
