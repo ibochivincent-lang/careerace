@@ -49,6 +49,11 @@ async function factory(provider: Provider, apiKey: string) {
       return (await import("@ai-sdk/xai")).createXai({ apiKey });
     case "groq":
       return (await import("@ai-sdk/groq")).createGroq({ apiKey });
+    case "opencode":
+      return (await import("@ai-sdk/openai")).createOpenAI({
+        apiKey,
+        baseURL: "https://opencode.ai/zen/go/v1",
+      });
   }
 }
 
@@ -59,6 +64,7 @@ async function model(role: "chat" | "extract"): Promise<LanguageModelV1> {
   if (!apiKey) throw new Error(`${NO_KEY_CODE}: No key for ${provider}.`);
 
   const create = await factory(provider, apiKey);
+  if (!create) throw new Error(`Unsupported AI SDK provider: ${provider}`);
   return create(modelId(provider, role, bag)) as LanguageModelV1;
 }
 

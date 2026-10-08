@@ -5,7 +5,7 @@
  * dragging five vendor packages into it.
  */
 
-export type Provider = "anthropic" | "openai" | "google" | "xai" | "groq" | "openrouter";
+export type Provider = "openai" | "groq" | "opencode" | "google" | "openrouter" | "anthropic" | "xai";
 
 export type ProviderInfo = {
   label: string;
@@ -25,18 +25,13 @@ export type ProviderInfo = {
 };
 
 export const PROVIDERS: Record<Provider, ProviderInfo> = {
-  openrouter: {
-    label: "OpenRouter (Free / Open Models)",
-    env: "OPENROUTER_API_KEY",
-    chat: "qwen/qwen3.8-27b:free",
-    console: "https://openrouter.ai/keys",
-    hint: "sk-or-v1-...",
-    models: [
-      "qwen/qwen3.8-27b:free",
-      "nvidia/nemotron-3.5-lightning:free",
-      "google/gemma-4-31b-it:free",
-      "deepseek/deepseek-r1:free",
-    ],
+  openai: {
+    label: "OpenAI",
+    env: "OPENAI_API_KEY",
+    chat: "gpt-4o-mini",
+    console: "https://platform.openai.com/api-keys",
+    hint: "sk-...",
+    models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o", "o4-mini"],
   },
   groq: {
     label: "Groq (Fast / Free Tier)",
@@ -51,6 +46,14 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
       "llama-3.3-70b-versatile",
     ],
   },
+  opencode: {
+    label: "OpenCode (Zen / Code Models)",
+    env: "OPENCODE_API_KEY",
+    chat: "deepseek-flash",
+    console: "https://opencode.ai/keys",
+    hint: "opencode_...",
+    models: ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash", "opencode-coder"],
+  },
   google: {
     label: "Google Gemini",
     env: "GOOGLE_GENERATIVE_AI_API_KEY",
@@ -59,6 +62,19 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
     hint: "AIza... / AQ.Ab8...",
     models: ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"],
   },
+  openrouter: {
+    label: "OpenRouter (Free / Open Models)",
+    env: "OPENROUTER_API_KEY",
+    chat: "qwen/qwen3.8-27b:free",
+    console: "https://openrouter.ai/keys",
+    hint: "sk-or-v1-...",
+    models: [
+      "qwen/qwen3.8-27b:free",
+      "nvidia/nemotron-3.5-lightning:free",
+      "google/gemma-4-31b-it:free",
+      "deepseek/deepseek-r1:free",
+    ],
+  },
   anthropic: {
     label: "Anthropic",
     env: "ANTHROPIC_API_KEY",
@@ -66,14 +82,6 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
     console: "https://console.anthropic.com/settings/keys",
     hint: "sk-ant-...",
     models: ["anthropic-sonnet-4-5", "anthropic-haiku-4-5", "anthropic-opus-4-5"],
-  },
-  openai: {
-    label: "OpenAI",
-    env: "OPENAI_API_KEY",
-    chat: "gpt-4o",
-    console: "https://platform.openai.com/api-keys",
-    hint: "sk-...",
-    models: ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini", "o4-mini"],
   },
   xai: {
     label: "xAI Grok",
@@ -87,9 +95,9 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
 
 /**
  * Preference order when several keys are present and none is pinned.
- * OpenRouter and Groq are placed first so free open-source models work out-of-the-box.
+ * OpenAI, Groq, and OpenCode are placed first as primary chat/conversation engines.
  */
-export const ORDER: Provider[] = ["openrouter", "groq", "google", "anthropic", "openai", "xai"];
+export const ORDER: Provider[] = ["openai", "groq", "opencode", "google", "openrouter", "anthropic", "xai"];
 
 export function isProvider(value: string): value is Provider {
   return (ORDER as string[]).includes(value);

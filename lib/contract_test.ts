@@ -260,10 +260,10 @@ test("the conversation and the write gate resolve to the SAME model", () => {
 });
 
 test("EA_EXTRACT_MODEL is the only thing that splits them", () => {
-  const env = { OPENAI_API_KEY: "k", EA_EXTRACT_MODEL: "gpt-4o-mini" };
+  const env = { OPENAI_API_KEY: "k", EA_EXTRACT_MODEL: "gpt-4o" };
   const resolved = resolveModels(bag(), env);
   assert.notEqual(resolved.chat, resolved.extract);
-  assert.equal(resolved.extract, "gpt-4o-mini");
+  assert.equal(resolved.extract, "gpt-4o");
 });
 
 test("a pinned provider with no key fails loudly rather than falling through", () => {

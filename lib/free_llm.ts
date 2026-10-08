@@ -169,7 +169,49 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 3. Try Google Gemini API (gemini-3.8-flash / gemini-3.5-flash / gemini-flash-latest)
+  // 3. Try OpenCode Zen/Go API if present (Fast open-weight coding models: deepseek-flash, qwen3.8-flash)
+  if (openCodeKey) {
+    const openCodePayloadMessages = [
+      ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
+      ...chatMessages,
+    ];
+
+    for (const model of ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash", "opencode-coder"]) {
+      try {
+        const res = await fetch("https://opencode.ai/zen/go/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openCodeKey}`,
+            "Content-Type": "application/json",
+            "x-opencode-session": "careerace_session",
+          },
+          body: JSON.stringify({
+            model,
+            messages: openCodePayloadMessages,
+            max_tokens: options.max_tokens || 1000,
+          }),
+          signal: AbortSignal.timeout(2000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[careerace] OpenCode (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
+          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
+            break;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[careerace] OpenCode (${model}) connection notice:`, err);
+        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
+          break;
+        }
+      }
+    }
+  }
+
+  // 4. Try Google Gemini API (gemini-3.8-flash / gemini-3.5-flash / gemini-flash-latest)
   if (geminiKey) {
     const geminiContents = chatMessages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -344,47 +386,7 @@ export async function callFreeLlm(options: FreeLlmOptions): Promise<string> {
     }
   }
 
-  // 7. Try OpenCode Zen/Go API if present
-  if (openCodeKey) {
-    for (const model of ["deepseek-flash", "deepseek-v4-flash", "qwen3.8-flash"]) {
-      try {
-        const res = await fetch("https://opencode.ai/zen/go/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${openCodeKey}`,
-            "Content-Type": "application/json",
-            "x-opencode-session": "careerace_session",
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              ...(options.system_prompt ? [{ role: "system", content: options.system_prompt }] : []),
-              { role: "user", content: options.prompt },
-            ],
-            max_tokens: options.max_tokens || 800,
-          }),
-          signal: AbortSignal.timeout(2000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) return content;
-        } else {
-          console.warn(`[careerace] OpenCode (${model}) returned HTTP ${res.status}. Rotating to next model/provider...`);
-          if (res.status === 401 || res.status === 403 || res.status === 400 || res.status === 429) {
-            break;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[careerace] OpenCode (${model}) connection notice:`, err);
-        if (err?.cause?.code === "ENOTFOUND" || err?.cause?.code === "EAI_AGAIN") {
-          break;
-        }
-      }
-    }
-  }
-
-  // 8. Try Ollama Instance (local dev or remote via OLLAMA_BASE_URL env var)
+  // 7. Try Ollama Instance (local dev or remote via OLLAMA_BASE_URL env var)
   // In production on Vercel, OLLAMA_BASE_URL must be set to a reachable remote Ollama
   // server — localhost is never reachable in a serverless runtime and is silently skipped.
   const ollamaBase =
