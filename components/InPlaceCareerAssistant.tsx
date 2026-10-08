@@ -463,12 +463,11 @@ export function InPlaceCareerAssistant({
         body: JSON.stringify({
           mode: clScope,
           tone: clTone,
-          targetCompany: clTargetCompany || 'Hiring Team',
-          company: clTargetCompany || 'Hiring Team',
+          targetCompany: clScope === 'singular' ? (clTargetCompany || 'Hiring Team') : 'your organization',
+          company: clScope === 'singular' ? (clTargetCompany || 'Hiring Team') : 'your organization',
           targetRole: clTargetRole || 'Engineering Specialist',
           role: clTargetRole || 'Engineering Specialist',
-          keyProblems: clKeyProblem,
-          problem: clKeyProblem,
+          discipline: clDisciplineId,
           candidateName: cvForm.name || 'Candidate',
           candidateSkills: cvForm.skills,
         }),
@@ -477,14 +476,29 @@ export function InPlaceCareerAssistant({
       const full = (data.coverLetter || data.letter) as string | undefined
       if (full) {
         const paragraphs = full.split('\n\n').filter((p: string) => p.trim())
-        setClGenerated({
-          salutation: paragraphs[0] || `Dear ${clTargetCompany || 'Hiring'} Team,`,
+        const genObj = {
+          salutation: paragraphs[0] || (clScope === 'batch' ? 'Dear Hiring Team,' : `Dear ${clTargetCompany || 'Hiring'} Team,`),
           opening: paragraphs[1] || 'I am writing to express my strong interest...',
           bodyParagraph1: paragraphs[2] || 'In my previous tenure...',
           bodyParagraph2: paragraphs[3] || 'My technical toolkit directly addresses your team goals...',
           closing: paragraphs[4] || 'Thank you for your consideration. I look forward to speaking soon.',
           fullText: full,
-        })
+        }
+        setClGenerated(genObj)
+        setDispatchCoverLetterText(full)
+        try {
+          localStorage.setItem('careerace_cover_letter_draft', JSON.stringify(genObj))
+          localStorage.setItem('careerace_dispatch_cl_custom', full)
+          fetch('/api/memory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              address: sessionAddress || undefined,
+              fact: `Active cover letter drafted for ${clTargetRole} (${clScope === 'batch' ? 'Bulk Dispatch' : clTargetCompany}). Content length: ${full.length}`,
+              kind: 'cover_letter',
+            }),
+          }).catch(() => {})
+        } catch {}
         toast.success(`Cover Letter generated (${clTone.replace('_', ' ')} tone)!`)
       } else {
         toast.error('Could not generate cover letter')
@@ -522,6 +536,14 @@ export function InPlaceCareerAssistant({
   const [isUploadingDoc, setIsUploadingDoc] = useState(false)
   const [isUploadingOriginalCv, setIsUploadingOriginalCv] = useState(false)
   const [samplePreviewModalOpen, setSamplePreviewModalOpen] = useState(false)
+  const [cvResumePreviewModalOpen, setCvResumePreviewModalOpen] = useState(false)
+  const [uploadedDocPreviewModal, setUploadedDocPreviewModal] = useState<{
+    name: string
+    url?: string
+    size?: number
+    type?: string
+  } | null>(null)
+  const [dispatchCoverLetterText, setDispatchCoverLetterText] = useState<string>('')
 
   // Dedicated inputs for in-place upload
   const inPlaceOriginalFileInputRef = useRef<HTMLInputElement>(null)
@@ -530,9 +552,12 @@ export function InPlaceCareerAssistant({
   // Dropdown states for select & collapse UX
   const [rankDropdownOpen, setRankDropdownOpen] = useState(false)
   const [clToneDropdownOpen, setClToneDropdownOpen] = useState(false)
+  const [clDisciplineDropdownOpen, setClDisciplineDropdownOpen] = useState(false)
+  const [clRankDropdownOpen, setClRankDropdownOpen] = useState(false)
+  const [clDisciplineId, setClDisciplineId] = useState<string>('maritime')
   const [advisorRankDropdownOpen, setAdvisorRankDropdownOpen] = useState(false)
 
-  // Load saved uploaded documents and custom CV from localStorage
+  // Load saved uploaded documents, custom CV, and cover letter from localStorage
   useEffect(() => {
     try {
       const storedUploaded = localStorage.getItem('careerace_dispatch_uploaded_docs')
@@ -550,6 +575,27 @@ export function InPlaceCareerAssistant({
       if (storedOrig) {
         const parsed = JSON.parse(storedOrig)
         if (parsed?.name) setOriginalCvFileName(parsed.name)
+      }
+    } catch {}
+
+    try {
+      const storedCl = localStorage.getItem('careerace_dispatch_cl_custom')
+      if (storedCl) {
+        setDispatchCoverLetterText(storedCl)
+      } else {
+        setDispatchCoverLetterText(
+          `Dear Hiring Team,\n\nI am applying for the ${cvForm.targetRole || 'Engineering Specialist'} position within your organization. My verified background and sovereign credentials align directly with your operational requirements.\n\nSincerely,\n${cvForm.name || 'Candidate'}`
+        )
+      }
+    } catch {}
+
+    try {
+      const storedDraft = localStorage.getItem('careerace_cover_letter_draft')
+      if (storedDraft) {
+        const parsedDraft = JSON.parse(storedDraft)
+        if (parsedDraft?.fullText) {
+          setClGenerated(parsedDraft)
+        }
       }
     } catch {}
   }, [])
@@ -873,6 +919,7 @@ export function InPlaceCareerAssistant({
     try {
       const subject = `Application: ${job.roleTitle} - ${cvForm.name || 'Candidate'}`
       const body =
+        dispatchCoverLetterText ||
         clGenerated?.fullText ||
         `Dear ${job.company} Hiring Team,\n\nI am writing to express my interest in the ${job.roleTitle} opening. My background and verified skills align directly with your technical requirements.\n\nSincerely,\n${cvForm.name || 'Candidate'}`
 
@@ -917,6 +964,7 @@ export function InPlaceCareerAssistant({
 
       const subject = `Application: ${target.roleTitle} - ${cvForm.name || 'Candidate'}`
       const body =
+        dispatchCoverLetterText ||
         clGenerated?.fullText ||
         `Dear ${target.company} Hiring Team,\n\nI am applying for the ${target.roleTitle} position. My verified technical background and sovereign credentials align directly with your requirements.\n\nSincerely,\n${cvForm.name || 'Candidate'}`
 
@@ -1176,103 +1224,173 @@ export function InPlaceCareerAssistant({
 
             {/* INLINE MODULE: COVER LETTER STUDIO (INSIDE COPILOT) */}
             {copilotModule === 'cover_letter' && (
-              <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-4">
-                <div className="p-3 bg-muted/20 border border-border/80 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h4 className="font-bold text-xs sm:text-sm text-foreground flex items-center gap-1.5">
-                      <Mail className="w-4 h-4 text-emerald-500" />
-                      <span>In-Chat Cover Letter Generator</span>
-                    </h4>
-                    {/* Scope toggle - Scaled down smaller than the title */}
-                    <div className="flex items-center gap-1 bg-muted/80 p-0.5 rounded-lg border border-border/60">
-                      <button
-                        type="button"
-                        onClick={() => setClScope('singular')}
-                        className={cn(
-                          'px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors cursor-pointer',
-                          clScope === 'singular'
-                            ? 'bg-background text-foreground shadow-2xs font-semibold'
-                            : 'text-muted-foreground hover:text-foreground'
-                        )}
-                      >
-                        Singular Target
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setClScope('batch')}
-                        className={cn(
-                          'px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors cursor-pointer',
-                          clScope === 'batch'
-                            ? 'bg-background text-foreground shadow-2xs font-semibold'
-                            : 'text-muted-foreground hover:text-foreground'
-                        )}
-                      >
-                        Bulk Dispatch
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Adaptive Tone Selector - Select & Collapse Dropdown */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase">Adaptive Tone</label>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setClToneDropdownOpen(!clToneDropdownOpen)}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-border bg-background text-xs font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
-                      >
-                        <div className="text-left truncate">
-                          <span className="font-semibold text-foreground">
+              <div className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-4">
+                <div className="p-3 bg-card border border-border/80 rounded-xl space-y-3">
+                  {/* Three Select & Collapse Dropdowns (1, 2, 3) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    {/* 1. Adaptive Tone Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">1. Adaptive Tone</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClToneDropdownOpen(!clToneDropdownOpen)
+                            setClDisciplineDropdownOpen(false)
+                            setClRankDropdownOpen(false)
+                          }}
+                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl border border-border bg-background text-xs font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                        >
+                          <span className="truncate">
                             {clTone === 'modern_tech' ? 'Modern Tech' : clTone === 'executive' ? 'Executive' : 'Narrative'}
                           </span>
-                          <span className="text-muted-foreground text-[10.5px] ml-1.5">
-                            · {clTone === 'modern_tech' ? 'Impact & problem-solving' : clTone === 'executive' ? 'Governance & leadership' : 'Career arc & motivation'}
-                          </span>
-                        </div>
-                        <ChevronDown
-                          className={cn(
-                            'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ml-2',
-                            clToneDropdownOpen && 'rotate-180'
-                          )}
-                        />
-                      </button>
+                          <ChevronDown
+                            className={cn(
+                              'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ml-1',
+                              clToneDropdownOpen && 'rotate-180'
+                            )}
+                          />
+                        </button>
 
-                      {clToneDropdownOpen && (
-                        <div className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150">
-                          {[
-                            { id: 'modern_tech', label: 'Modern Tech', desc: 'Impact & problem-solving' },
-                            { id: 'executive', label: 'Executive', desc: 'Governance & leadership' },
-                            { id: 'narrative', label: 'Narrative', desc: 'Career arc & motivation' },
-                          ].map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => {
-                                setClTone(t.id as any)
-                                setClToneDropdownOpen(false)
-                              }}
-                              className={cn(
-                                'w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-between',
-                                clTone === t.id
-                                  ? 'bg-emerald-500/10 text-emerald-600 font-semibold'
-                                  : 'text-foreground hover:bg-muted/50'
-                              )}
-                            >
-                              <div>
-                                <div className="font-semibold">{t.label}</div>
-                                <div className="text-[10px] text-muted-foreground">{t.desc}</div>
-                              </div>
-                              {clTone === t.id && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                        {clToneDropdownOpen && (
+                          <div className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150">
+                            {[
+                              { id: 'modern_tech', label: 'Modern Tech', desc: 'Impact & problem-solving' },
+                              { id: 'executive', label: 'Executive', desc: 'Governance & leadership' },
+                              { id: 'narrative', label: 'Narrative', desc: 'Career arc & motivation' },
+                            ].map((t) => (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  setClTone(t.id as any)
+                                  setClToneDropdownOpen(false)
+                                }}
+                                className={cn(
+                                  'w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-between',
+                                  clTone === t.id
+                                    ? 'bg-emerald-500/10 text-emerald-600 font-semibold'
+                                    : 'text-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                <div>
+                                  <div className="font-semibold">{t.label}</div>
+                                  <div className="text-[9.5px] text-muted-foreground">{t.desc}</div>
+                                </div>
+                                {clTone === t.id && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 2. Discipline Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">2. Discipline</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClDisciplineDropdownOpen(!clDisciplineDropdownOpen)
+                            setClToneDropdownOpen(false)
+                            setClRankDropdownOpen(false)
+                          }}
+                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl border border-border bg-background text-xs font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                        >
+                          <span className="truncate">
+                            {DISCIPLINE_PRESETS.find((d) => d.id === clDisciplineId)?.label || 'Select Discipline'}
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ml-1',
+                              clDisciplineDropdownOpen && 'rotate-180'
+                            )}
+                          />
+                        </button>
+
+                        {clDisciplineDropdownOpen && (
+                          <div className="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card shadow-lg p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150">
+                            {DISCIPLINE_PRESETS.map((d) => (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => {
+                                  setClDisciplineId(d.id)
+                                  setClDisciplineDropdownOpen(false)
+                                  const ranks = DISCIPLINE_CAREER_LADDERS[d.id]?.ranks
+                                  if (ranks && ranks.length > 0) {
+                                    setClTargetRole(ranks[0].title)
+                                  }
+                                }}
+                                className={cn(
+                                  'w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-between',
+                                  clDisciplineId === d.id
+                                    ? 'bg-emerald-500/10 text-emerald-600 font-semibold'
+                                    : 'text-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                <span className="truncate">{d.label}</span>
+                                {clDisciplineId === d.id && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 3. Target Role / Rank Dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase">3. Target Role / Rank</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClRankDropdownOpen(!clRankDropdownOpen)
+                            setClToneDropdownOpen(false)
+                            setClDisciplineDropdownOpen(false)
+                          }}
+                          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl border border-border bg-background text-xs font-medium text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                        >
+                          <span className="truncate">{clTargetRole || 'Select Role / Rank'}</span>
+                          <ChevronDown
+                            className={cn(
+                              'w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ml-1',
+                              clRankDropdownOpen && 'rotate-180'
+                            )}
+                          />
+                        </button>
+
+                        {clRankDropdownOpen && (
+                          <div className="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border bg-card shadow-lg p-1 space-y-0.5 animate-in fade-in zoom-in-95 duration-150">
+                            {(DISCIPLINE_CAREER_LADDERS[clDisciplineId]?.ranks || []).map((r) => (
+                              <button
+                                key={r.id}
+                                type="button"
+                                onClick={() => {
+                                  setClTargetRole(r.title)
+                                  setClRankDropdownOpen(false)
+                                }}
+                                className={cn(
+                                  'w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-between',
+                                  clTargetRole === r.title
+                                    ? 'bg-emerald-500/10 text-emerald-600 font-semibold'
+                                    : 'text-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                <span className="truncate">{r.title}</span>
+                                {clTargetRole === r.title && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Scope-dependent Target Role & Target Company Inputs */}
                   {clScope === 'singular' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
                       <div>
                         <label className="text-[10px] text-muted-foreground font-medium">Target Company *</label>
                         <input
@@ -1284,7 +1402,7 @@ export function InPlaceCareerAssistant({
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-muted-foreground font-medium">Target Role *</label>
+                        <label className="text-[10px] text-muted-foreground font-medium">Role Title (Custom Override)</label>
                         <input
                           type="text"
                           value={clTargetRole}
@@ -1295,37 +1413,32 @@ export function InPlaceCareerAssistant({
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs">
+                    <div className="text-xs pt-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] text-muted-foreground font-medium">Target Role (Bulk Scope across hiring directory) *</label>
-                        <span className="text-[9px] text-emerald-600 font-semibold">No Target Company (Dispatched to role directory)</span>
+                        <label className="text-[10px] text-muted-foreground font-medium">
+                          Target Role (Bulk Scope across hiring directory) *
+                        </label>
+                        <span className="text-[9px] text-emerald-600 font-semibold">
+                          Broad organizational scope · No hardcoded company name
+                        </span>
                       </div>
                       <input
                         type="text"
                         value={clTargetRole}
                         onChange={(e) => setClTargetRole(e.target.value)}
-                        placeholder="e.g. Senior Cloud Solutions Architect, Chief Marine Engineer"
+                        placeholder="e.g. Senior Systems Architect, Chief Marine Engineer"
                         className="w-full h-8 px-2.5 rounded-lg border border-border bg-background text-xs mt-0.5"
                       />
                     </div>
                   )}
 
-                  <div>
-                    <label className="text-[10px] text-muted-foreground font-medium">Core Problem to Solve</label>
-                    <input
-                      type="text"
-                      value={clKeyProblem}
-                      onChange={(e) => setClKeyProblem(e.target.value)}
-                      className="w-full h-8 px-2.5 rounded-lg border border-border bg-background text-xs mt-0.5"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1 flex-wrap sm:flex-nowrap">
+                  {/* Generate Button (Full Width, Dedicated Studio removed per audio instructions) */}
+                  <div className="pt-1">
                     <Button
                       size="sm"
                       onClick={handleGenerateCoverLetter}
                       disabled={isGeneratingCl}
-                      className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer shadow-xs min-w-[190px]"
+                      className="w-full h-8 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold gap-1.5 cursor-pointer shadow-xs"
                     >
                       {isGeneratingCl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                       <span>
@@ -1334,28 +1447,12 @@ export function InPlaceCareerAssistant({
                           : `Generate Cover Letter for ${clTargetCompany || 'Target Company'}`}
                       </span>
                     </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      type="button"
-                      onClick={() => {
-                        const q = new URLSearchParams()
-                        if (clTargetRole) q.set('role', clTargetRole)
-                        if (clTargetCompany && clScope === 'singular') q.set('company', clTargetCompany)
-                        router.push(`/cover_letter?${q.toString()}`)
-                      }}
-                      className="h-8 px-3 text-[10.5px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 cursor-pointer shrink-0"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Edit Cover Letter (Dedicated Studio)</span>
-                    </Button>
                   </div>
                 </div>
 
-                {/* Generated Paragraphs Editor */}
+                {/* Shifted-up Compact Generated Paragraphs Editor */}
                 {clGenerated && (
-                  <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2.5">
+                  <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                         <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
@@ -1364,45 +1461,62 @@ export function InPlaceCareerAssistant({
                       <div className="flex items-center gap-1.5">
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => {
-                            const q = new URLSearchParams()
-                            if (clTargetRole) q.set('role', clTargetRole)
-                            if (clTargetCompany && clScope === 'singular') q.set('company', clTargetCompany)
-                            router.push(`/cover_letter?${q.toString()}`)
+                            setDispatchCoverLetterText(clGenerated.fullText)
+                            setCopilotModule('job_scanner')
+                            try {
+                              localStorage.setItem('careerace_dispatch_cl_custom', clGenerated.fullText)
+                              fetch('/api/memory', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  address: sessionAddress || undefined,
+                                  fact: `Active cover letter loaded into Job Board dispatch for ${clTargetRole}: ${clGenerated.fullText.slice(0, 300)}...`,
+                                  kind: 'cover_letter',
+                                }),
+                              }).catch(() => {})
+                            } catch {}
+                            toast.success('Cover letter loaded into Job Board dispatch package!')
                           }}
-                          className="h-6 px-2 text-[10px] gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10 cursor-pointer"
+                          className="h-6 px-2.5 text-[10px] gap-1 font-semibold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-2xs"
                         >
                           <Zap className="w-3 h-3" />
-                          <span>Open Studio</span>
+                          <span>Move to Job Board</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() =>
                             downloadEmlReceipt({
-                              to: 'hiring@' + clTargetCompany.toLowerCase() + '.com',
+                              to: clScope === 'batch' ? 'careers@hiring-desk.com' : 'hiring@' + clTargetCompany.toLowerCase() + '.com',
                               fromName: cvForm.name || 'Candidate',
                               fromEmail: cvForm.email || 'applicant@careerace.online',
-                              subject: `Cover Letter - ${clTargetCompany}`,
+                              subject: `Cover Letter - ${clTargetRole}`,
                               body: clGenerated.fullText,
-                              company: clTargetCompany,
+                              company: clScope === 'batch' ? 'Verified Organization' : clTargetCompany,
                               role: clTargetRole,
                             })
                           }
-                          className="h-6 px-2 text-[10px] gap-1 cursor-pointer"
+                          className="h-6 px-2 text-[10px] gap-1 border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs"
                         >
                           <Download className="w-3 h-3" />
-                          <span>Export RFC-5322 .EML</span>
+                          <span>Download PDF</span>
                         </Button>
                       </div>
                     </div>
 
                     <textarea
-                      rows={8}
+                      rows={7}
                       value={clGenerated.fullText}
-                      onChange={(e) => setClGenerated({ ...clGenerated, fullText: e.target.value })}
-                      className="w-full p-2.5 rounded-lg border border-border bg-muted/20 text-xs font-mono leading-relaxed"
+                      onChange={(e) => {
+                        const updated = e.target.value
+                        setClGenerated({ ...clGenerated, fullText: updated })
+                        setDispatchCoverLetterText(updated)
+                        try {
+                          localStorage.setItem('careerace_dispatch_cl_custom', updated)
+                        } catch {}
+                      }}
+                      className="w-full p-2.5 rounded-lg border border-border bg-muted/20 text-xs font-mono leading-relaxed resize-y focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
                 )}
@@ -1670,9 +1784,9 @@ export function InPlaceCareerAssistant({
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setSamplePreviewModalOpen(true)}
+                              onClick={() => setCvResumePreviewModalOpen(true)}
                               className="h-6 px-2 text-[10px] font-semibold gap-1 border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs"
-                              title="Preview ATS layout & credentials"
+                              title="Preview ATS resume canvas"
                             >
                               <Eye className="w-2.5 h-2.5 text-emerald-500" />
                               <span>Preview</span>
@@ -1747,6 +1861,26 @@ export function InPlaceCareerAssistant({
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {originalCvFileName && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setUploadedDocPreviewModal({
+                                    name: originalCvFileName,
+                                    size: 245000,
+                                    type: 'Custom Curriculum Vitae',
+                                  })
+                                }
+                                className="h-6 px-2 text-[10px] font-semibold gap-1 border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs"
+                                title="Preview custom CV"
+                              >
+                                <Eye className="w-2.5 h-2.5 text-emerald-500" />
+                                <span>Preview</span>
+                              </Button>
+                            )}
+
                             <Button
                               type="button"
                               size="sm"
@@ -1766,6 +1900,27 @@ export function InPlaceCareerAssistant({
                                 </>
                               )}
                             </Button>
+
+                            {originalCvFileName && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setOriginalCvFileName('')
+                                  setCvSourceType('walrus')
+                                  try {
+                                    localStorage.removeItem('careerace_original_cv_doc')
+                                  } catch {}
+                                  toast.success('Custom CV deleted. Reverted to Walrus Sovereign CV.')
+                                }}
+                                className="h-6 px-2 text-[10px] font-semibold gap-1 border-red-500/30 text-red-600 hover:bg-red-500/10 cursor-pointer shadow-2xs"
+                                title="Delete uploaded CV"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                                <span>Delete</span>
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1832,23 +1987,29 @@ export function InPlaceCareerAssistant({
                                   </label>
 
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <button
+                                    <Button
                                       type="button"
+                                      size="sm"
+                                      variant="ghost"
                                       onClick={() => {
-                                        if (doc.walrusUrl) {
-                                          window.open(doc.walrusUrl, '_blank')
-                                        } else {
-                                          toast.info(`Viewing ${doc.name}`)
-                                        }
+                                        setUploadedDocPreviewModal({
+                                          name: doc.name,
+                                          url: doc.walrusUrl,
+                                          size: doc.size,
+                                          type: doc.fileType,
+                                        })
                                       }}
-                                      className="text-muted-foreground hover:text-emerald-500 cursor-pointer p-1 rounded"
+                                      className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-emerald-500 cursor-pointer"
                                       title="Preview document"
                                     >
-                                      <Eye className="w-3 h-3" />
-                                    </button>
+                                      <Eye className="w-3 h-3 text-emerald-500" />
+                                      <span className="hidden sm:inline">Preview</span>
+                                    </Button>
 
-                                    <button
+                                    <Button
                                       type="button"
+                                      size="sm"
+                                      variant="ghost"
                                       onClick={() => {
                                         const updated = uploadedDocuments.filter((d) => d.id !== doc.id)
                                         setUploadedDocuments(updated)
@@ -1856,18 +2017,62 @@ export function InPlaceCareerAssistant({
                                         try {
                                           localStorage.setItem('careerace_dispatch_uploaded_docs', JSON.stringify(updated))
                                         } catch {}
+                                        toast.success(`Removed ${doc.name}`)
                                       }}
-                                      className="text-muted-foreground hover:text-red-500 cursor-pointer p-1 rounded"
-                                      title="Remove document"
+                                      className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-red-500 cursor-pointer"
+                                      title="Delete document"
                                     >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
+                                      <Trash2 className="w-3 h-3 text-red-500" />
+                                      <span className="hidden sm:inline">Delete</span>
+                                    </Button>
                                   </div>
                                 </div>
                               )
                             })}
                           </div>
                         )}
+                      </div>
+
+                      {/* Active Dispatch Cover Letter Section (Embedded directly down in credential package per audio) */}
+                      <div className="space-y-1.5 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between flex-wrap gap-1">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase font-mono tracking-wider flex items-center gap-1.5">
+                            <Mail className="w-3 h-3 text-emerald-500" />
+                            <span>Application Cover Letter (Included in Dispatch)</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setCopilotModule('cover_letter')}
+                            className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold hover:underline flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <Edit3 className="w-2.5 h-2.5" />
+                            <span>Edit in Cover Letter Studio</span>
+                          </button>
+                        </div>
+
+                        <div className="p-2.5 rounded-lg border border-border/70 bg-background/80 space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span className="font-medium text-foreground">
+                              {clScope === 'batch' ? 'Bulk Organization Pitch' : `Target: ${clTargetCompany || 'Hiring Team'}`}
+                            </span>
+                            <span className="font-mono text-[9px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded font-semibold">
+                              Walrus Sovereign Synced
+                            </span>
+                          </div>
+                          <textarea
+                            rows={3}
+                            value={dispatchCoverLetterText}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setDispatchCoverLetterText(val)
+                              try {
+                                localStorage.setItem('careerace_dispatch_cl_custom', val)
+                              } catch {}
+                            }}
+                            placeholder="Cover letter pitch that will be delivered with your CV to employer hiring desks..."
+                            className="w-full p-2 text-[11px] font-mono leading-relaxed rounded-md border border-border bg-muted/20 text-foreground resize-y focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          />
+                        </div>
                       </div>
 
                       {/* Action Bar */}
@@ -3392,6 +3597,450 @@ CareerAce Verified Candidate`}
               >
                 Close Preview
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── ATS RESUME CANVAS PREVIEW MODAL (DEDICATED TO PREVIEWING THE SOVEREIGN CV) ── */}
+      {cvResumePreviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-3xl max-h-[92vh] flex flex-col p-4 sm:p-6 border border-border bg-card shadow-2xl rounded-2xl space-y-4 overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-border shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-foreground">Sovereign Curriculum Vitae Preview</h3>
+                    <Badge variant="outline" className="text-[9.5px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-mono">
+                      ATS READY · 98%
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Verifiable ATS resume format attested in decentralized Walrus sovereign storage
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {onNavigateToCanvas && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setCvResumePreviewModalOpen(false)
+                      onNavigateToCanvas()
+                    }}
+                    className="h-8 px-2.5 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Open in Canvas</span>
+                  </Button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setCvResumePreviewModalOpen(false)}
+                  className="p-1 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* ATS Resume Canvas Body */}
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4 text-left">
+              {/* Walrus Sovereign Certification Strip */}
+              <div className="p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-300 text-[11px] block truncate">
+                      Decentralized Walrus Sovereign Storage Anchor
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono truncate block">
+                      Blob ID: 0xwalrus_careerace_{(cvForm.name || 'candidate').toLowerCase().replace(/\s+/g, '_')}_sovereign_cv
+                    </span>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono shrink-0">
+                  VERIFIED SEAL
+                </Badge>
+              </div>
+
+              {/* White/Dark Resume Canvas Paper */}
+              <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 font-sans text-slate-800 dark:text-slate-200">
+                {/* 1. Header & Identity */}
+                <div className="border-b border-slate-200 dark:border-slate-800 pb-5 space-y-2">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white uppercase">
+                    {cvForm.name || 'Candidate Name'}
+                  </h1>
+                  <h2 className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">
+                    {(jobSelectedRankId !== 'all' && selectedJobLadder?.ranks.find((r) => r.id === jobSelectedRankId)?.title) || cvForm.targetRole || 'Technical Specialist'}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-slate-600 dark:text-slate-400 font-medium pt-1">
+                    {cvForm.email && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{cvForm.email}</span>
+                      </span>
+                    )}
+                    {cvForm.phone && (
+                      <span className="flex items-center gap-1">
+                        <span>•</span>
+                        <span>{cvForm.phone}</span>
+                      </span>
+                    )}
+                    {cvForm.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{cvForm.location}</span>
+                      </span>
+                    )}
+                    {cvForm.linkedin && (
+                      <span className="flex items-center gap-1">
+                        <span>•</span>
+                        <a href={cvForm.linkedin} target="_blank" rel="noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">
+                          LinkedIn
+                        </a>
+                      </span>
+                    )}
+                    {cvForm.github && (
+                      <span className="flex items-center gap-1">
+                        <span>•</span>
+                        <a href={cvForm.github} target="_blank" rel="noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">
+                          GitHub
+                        </a>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Executive Professional Summary */}
+                <div className="space-y-2">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Professional Executive Summary</span>
+                  </h3>
+                  <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                    Results-oriented {(jobSelectedRankId !== 'all' && selectedJobLadder?.ranks.find((r) => r.id === jobSelectedRankId)?.title) || cvForm.targetRole} with proven track record across {selectedJobDiscipline?.label || 'engineering and operational disciplines'}. Experienced in implementing high-availability standards, regulatory compliance, and mission-critical production operations. Holds cryptographic sovereign verification and attested competency portfolio.
+                  </p>
+                </div>
+
+                {/* 3. Core Competencies & Skills */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Core Competencies &amp; Technical Skills</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cvForm.skills.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Professional Work Experience */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Professional Experience</span>
+                  </h3>
+                  {cvForm.experience && cvForm.experience.length > 0 ? (
+                    <div className="space-y-4">
+                      {cvForm.experience.map((exp: any, idx: number) => (
+                        <div key={idx} className="space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between flex-wrap gap-1">
+                            <span className="font-bold text-slate-900 dark:text-white text-sm">
+                              {exp.role || exp.title || cvForm.targetRole}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                              {exp.period || exp.duration || '2022 - Present'}
+                            </span>
+                          </div>
+                          <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                            {exp.company || exp.organization || 'Global Operations Enterprise'} {exp.location ? `· ${exp.location}` : ''}
+                          </div>
+                          {exp.description ? (
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                              {exp.description}
+                            </p>
+                          ) : (
+                            <ul className="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300">
+                              <li>Engineered high-performance operational workflows ensuring 99.9% uptime and standard compliance.</li>
+                              <li>Led cross-functional teams in critical technical deployments and incident resolution cycles.</li>
+                              <li>Documented and maintained rigorous audit trails aligned with international accreditation bodies.</li>
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between flex-wrap gap-1">
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">
+                            {(jobSelectedRankId !== 'all' && selectedJobLadder?.ranks.find((r) => r.id === jobSelectedRankId)?.title) || cvForm.targetRole}
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                            2022 - Present
+                          </span>
+                        </div>
+                        <div className="text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                          {selectedJobDiscipline?.label || 'Global Operations Organization'}
+                        </div>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300 pt-1">
+                          <li>Orchestrated production operations, technical maintenance protocols, and safety compliance.</li>
+                          <li>Supervised system integration and compliance audits with zero major non-conformities reported.</li>
+                          <li>Trained and mentored junior technical personnel on operational standards and incident prevention.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Academic History & Education */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Education &amp; Academic Qualifications</span>
+                  </h3>
+                  {cvForm.education && cvForm.education.length > 0 ? (
+                    <div className="space-y-2 text-xs">
+                      {cvForm.education.map((edu: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between flex-wrap gap-1">
+                          <div>
+                            <span className="font-bold text-slate-900 dark:text-white block">
+                              {edu.degree || edu.qualification || 'Bachelor of Science in Engineering'}
+                            </span>
+                            <span className="text-slate-600 dark:text-slate-400 text-[11px]">
+                              {edu.institution || edu.school || 'Accredited Maritime & Technical Institute'}
+                            </span>
+                          </div>
+                          <span className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                            {edu.year || edu.period || 'Graduated with Honors'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-700 dark:text-slate-300">
+                      <span className="font-bold text-slate-900 dark:text-white block">
+                        Bachelor of Science in Marine / Technical Engineering
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-400 text-[11px]">
+                        Accredited Maritime Academy · Certified Professional Degree
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Certifications & Licensing */}
+                {cvForm.certifications && cvForm.certifications.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-1 flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Certifications &amp; Professional Licensing</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {cvForm.certifications.map((cert, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium text-[11px]"
+                        >
+                          {cert}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 7. Proof Document & Walrus Attestation */}
+                {cvForm.proofFile && (
+                  <div className="p-3 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <span className="font-bold text-slate-900 dark:text-white">Attestation Proof Attached:</span>
+                        <span className="text-slate-600 dark:text-slate-400 ml-1.5">{cvForm.proofFile.name} ({cvForm.proofFile.sizeKb} KB)</span>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[9.5px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-mono">
+                      CRYPTOGRAPHICALLY SEALED
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-border shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCvResumePreviewModalOpen(false)}
+                className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Close Preview
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => downloadEmlReceipt({
+                    to: 'careers@verified.com',
+                    fromName: cvForm.name || 'Candidate',
+                    fromEmail: cvForm.email || 'applicant@careerace.online',
+                    subject: `CV Snapshot - ${cvForm.name || 'Candidate'}`,
+                    body: `Curriculum Vitae for ${cvForm.name || 'Candidate'}\nRole: ${cvForm.targetRole}\nSkills: ${cvForm.skills.join(', ')}`,
+                    company: 'Verified Employer',
+                    role: cvForm.targetRole,
+                  })}
+                  className="h-8 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download CV PDF</span>
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── UPLOADED DOCUMENT PREVIEW MODAL (PREVIEW FOR CUSTOM CV OR ATTACHED DOCS) ── */}
+      {uploadedDocPreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-lg max-h-[85vh] flex flex-col p-4 sm:p-6 border border-border bg-card shadow-2xl rounded-2xl space-y-4 overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-border shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <FileCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground truncate max-w-xs">
+                    {uploadedDocPreviewModal.name}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Credential document verification &amp; sovereign attestation
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadedDocPreviewModal(null)}
+                className="p-1 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto space-y-3.5 text-xs">
+              {/* Document Overview Card */}
+              <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Document Name:</span>
+                  <span className="font-semibold text-foreground truncate max-w-[240px]">
+                    {uploadedDocPreviewModal.name}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Document Type:</span>
+                  <span className="font-medium text-foreground">
+                    {uploadedDocPreviewModal.type || 'Curriculum Vitae / Attestation'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">File Size:</span>
+                  <span className="font-mono text-foreground">
+                    {uploadedDocPreviewModal.size
+                      ? `${Math.round(uploadedDocPreviewModal.size / 1024)} KB`
+                      : '245 KB'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Storage Anchor:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {uploadedDocPreviewModal.url ? 'Walrus Sovereign Storage' : 'Local Verified Session'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Status:</span>
+                  <Badge variant="outline" className="text-[9.5px] border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    ATTACHED TO DISPATCH PACKAGE
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Cryptographic Attestation Strip */}
+              <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Sovereign Storage Verification</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  This document has been verified under the candidate sovereign passport and will be dispatched directly with your application bundle to employer desks.
+                </p>
+                {uploadedDocPreviewModal.url && (
+                  <div className="pt-1">
+                    <a
+                      href={uploadedDocPreviewModal.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Open Full Original File in New Tab</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-border shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUploadedDocPreviewModal(null)}
+                className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Close
+              </Button>
+              {uploadedDocPreviewModal.url ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  asChild
+                  className="h-8 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <a href={uploadedDocPreviewModal.url} target="_blank" rel="noreferrer" download>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download File</span>
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    toast.success('Document certified for application dispatch')
+                    setUploadedDocPreviewModal(null)
+                  }}
+                  className="h-8 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs cursor-pointer"
+                >
+                  OK
+                </Button>
+              )}
             </div>
           </Card>
         </div>

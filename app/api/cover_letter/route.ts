@@ -114,7 +114,8 @@ export async function POST(req: NextRequest) {
       year: 'numeric'
     });
 
-    const companyTarget = mode === 'batch' ? '[Company Name]' : targetCompany;
+    const isBulk = mode === 'batch';
+    const companyTarget = isBulk ? 'your organization' : targetCompany;
     const roleTarget = targetRole;
 
     // 2. Adaptive Tone Synthesizer (Modern Tech / Executive / Narrative)
@@ -122,16 +123,34 @@ export async function POST(req: NextRequest) {
     let closingParagraph = '';
 
     if (tone === 'executive') {
-      openingParagraph = `I am writing to formally submit my candidacy for the ${roleTarget} role at ${companyTarget}. Throughout my leadership trajectory, I have focused on translating strategic objectives into high-reliability execution, ensuring systems, processes, and teams deliver measurable operational impact.`;
-      closingParagraph = `I welcome the opportunity to discuss how my strategic discipline, operational governance, and verified track record can support ${companyTarget}'s upcoming organizational objectives.`;
+      openingParagraph = isBulk
+        ? `I am writing to formally submit my candidacy for the ${roleTarget} role within your organization. Throughout my leadership trajectory, I have focused on translating strategic objectives into high-reliability execution, ensuring systems, processes, and teams deliver measurable operational impact.`
+        : `I am writing to formally submit my candidacy for the ${roleTarget} role at ${companyTarget}. Throughout my leadership trajectory, I have focused on translating strategic objectives into high-reliability execution, ensuring systems, processes, and teams deliver measurable operational impact.`;
+      closingParagraph = isBulk
+        ? `I welcome the opportunity to discuss how my strategic discipline, operational governance, and verified track record can support your upcoming organizational objectives.`
+        : `I welcome the opportunity to discuss how my strategic discipline, operational governance, and verified track record can support ${companyTarget}'s upcoming organizational objectives.`;
     } else if (tone === 'narrative') {
-      openingParagraph = `Throughout my technical career, I have been driven by a singular focus: resolving complex bottlenecks and building systems that perform under high-stakes conditions. In reviewing the ${roleTarget} opening at ${companyTarget}, I recognized an immediate alignment with my hands-on problem-solving background.`;
-      closingParagraph = `I would appreciate the chance to discuss how my disciplined background, problem-solving journey, and practical execution align with ${companyTarget}'s technical milestones.`;
+      openingParagraph = isBulk
+        ? `Throughout my professional career, I have been driven by a singular focus: resolving complex bottlenecks and operating under high-stakes conditions. In pursuing the ${roleTarget} role within your organization, I recognize an immediate alignment with my hands-on problem-solving background.`
+        : `Throughout my technical career, I have been driven by a singular focus: resolving complex bottlenecks and building systems that perform under high-stakes conditions. In reviewing the ${roleTarget} opening at ${companyTarget}, I recognized an immediate alignment with my hands-on problem-solving background.`;
+      closingParagraph = isBulk
+        ? `I would appreciate the chance to discuss how my disciplined background, problem-solving journey, and practical execution align with your upcoming milestones.`
+        : `I would appreciate the chance to discuss how my disciplined background, problem-solving journey, and practical execution align with ${companyTarget}'s technical milestones.`;
     } else {
       // Modern Tech (Default)
-      openingParagraph = `I am writing to formally submit my application for the position of ${roleTarget} at ${companyTarget}. With a background centered on ${topKeywords}, I take direct accountability for engineering reliability, operational discipline, and technical execution.`;
-      closingParagraph = `I would welcome the opportunity to discuss how my disciplined background and practical problem-solving approach align with ${companyTarget}'s upcoming milestones.`;
+      openingParagraph = isBulk
+        ? `I am writing to formally submit my application for the position of ${roleTarget} within your organization. With a background centered on ${topKeywords}, I take direct accountability for engineering reliability, operational discipline, and technical execution.`
+        : `I am writing to formally submit my application for the position of ${roleTarget} at ${companyTarget}. With a background centered on ${topKeywords}, I take direct accountability for engineering reliability, operational discipline, and technical execution.`;
+      closingParagraph = isBulk
+        ? `I would welcome the opportunity to discuss how my disciplined background and practical problem-solving approach align with your upcoming technical and operational milestones.`
+        : `I would welcome the opportunity to discuss how my disciplined background and practical problem-solving approach align with ${companyTarget}'s upcoming milestones.`;
     }
+
+    const recipientHeading = isBulk ? 'Hiring Team · [Target Organization]' : `Hiring Team · ${companyTarget}`;
+    const salutation = isBulk ? 'Dear Hiring Team,' : `Dear ${companyTarget} Hiring Team,`;
+    const problemIntro = isBulk
+      ? `Specifically, I tailor my technical approach around addressing and resolving key industry challenges in production operations:`
+      : `Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact ${companyTarget}:`;
 
     const letterRaw = 
 `${candidateName}
@@ -139,9 +158,9 @@ ${candidateEmail} · ${candidatePhone} · ${candidateLocation}
 
 ${todayDate}
 
-Hiring Team · ${companyTarget}
+${recipientHeading}
 
-Dear ${companyTarget} Hiring Team,
+${salutation}
 
 ${openingParagraph}
 
@@ -150,7 +169,7 @@ The scope of the ${roleTarget} role demands focused execution across critical op
 • ${primaryResponsibilities[1]}
 • ${primaryResponsibilities[2]}
 
-Specifically, I tailor my technical approach around addressing and resolving key industry challenges that directly impact ${companyTarget}:
+${problemIntro}
 1. ${problemsToSolve[0]}
 2. ${problemsToSolve[1] || problemsToSolve[0]}
 
