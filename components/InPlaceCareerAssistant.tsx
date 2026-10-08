@@ -657,39 +657,24 @@ export function InPlaceCareerAssistant({
   return (
     <div className="w-full">
       <Card className="border border-border/80 shadow-md rounded-2xl bg-card overflow-hidden flex flex-col h-[760px] sm:h-[800px] lg:h-[840px] min-h-[620px]">
-        {/* TOP STATUS BAR: CLEAN, SLEEK (NO CLUTTERED 6-PILL ROW) */}
-        <div className="px-3.5 py-2 sm:py-2.5 border-b border-border/80 bg-muted/30 flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+        {/* TOP STATUS BAR: SINGLE STRAIGHT LINE, CLEAN & COMPACT */}
+        <div className="px-3 py-2 border-b border-border/80 bg-muted/30 flex items-center justify-between flex-nowrap gap-2">
+          {/* Left: Brand Icon + Title (Smaller as requested) */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <div className="relative">
-              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                <Bot className="w-4 h-4" />
+              <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shadow-2xs">
+                <Bot className="w-3 h-3" />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-background rounded-full" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 bg-emerald-500 border border-background rounded-full" />
             </div>
 
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="font-bold text-xs sm:text-sm text-foreground">CareerAce Copilot</h3>
-              {overviewWalrusVault?.latestBlobId ? (
-                <a
-                  href={overviewWalrusVault.walrusUrl || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[9px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-mono"
-                  title={`Walrus Blob ID: ${overviewWalrusVault.latestBlobId}`}
-                >
-                  <ExternalLink className="w-2.5 h-2.5" />
-                  <span>Walrus: {overviewWalrusVault.latestBlobId.slice(0, 6)}...</span>
-                </a>
-              ) : (
-                <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono py-0">
-                  Walrus Sovereign Vault Live
-                </Badge>
-              )}
-            </div>
+            <h3 className="font-semibold text-[11px] sm:text-xs text-foreground whitespace-nowrap">
+              CareerAce Copilot
+            </h3>
           </div>
 
-          {/* TWO-WAY PRIMARY TOGGLE: AI Copilot vs In-Place CV Builder */}
-          <div className="flex items-center gap-1.5 bg-muted/50 p-0.5 rounded-xl border border-border/60">
+          {/* Right: Two-Way Toggle on the same straight line (Smaller as requested) */}
+          <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -697,13 +682,13 @@ export function InPlaceCareerAssistant({
                 setCopilotModule(null)
               }}
               className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
                 topView === 'copilot'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <Bot className="w-3.5 h-3.5" />
+              <Bot className="w-3 h-3" />
               <span>AI Copilot</span>
             </button>
 
@@ -711,20 +696,16 @@ export function InPlaceCareerAssistant({
               type="button"
               onClick={() => setTopView('cv_builder')}
               className={cn(
-                'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
                 topView === 'cv_builder'
-                  ? 'bg-emerald-600 text-white shadow-xs'
+                  ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <Edit3 className="w-3 h-3" />
               <span>In-Place CV Builder</span>
             </button>
           </div>
-
-          <Badge variant="outline" className="text-[9px] sm:text-[10px] text-muted-foreground border-border/80 hidden sm:inline-flex">
-            <ShieldCheck className="w-3 h-3 text-emerald-500 mr-1" /> zkLogin Verified
-          </Badge>
         </div>
 
         {/* ═════════════════════════════════════════════════════════════════════ */}
