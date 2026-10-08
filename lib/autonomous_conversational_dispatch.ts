@@ -110,9 +110,17 @@ export function isJobDiscoveryQuery(query: string): boolean {
 
   return (
     typoFixed.includes("what jobs can i apply for today") ||
+    typoFixed.includes("what jobs can i apply to today") ||
+    typoFixed.includes("what jobs can i apply today") ||
+    typoFixed.includes("what jobs should i apply for today") ||
+    typoFixed.includes("what jobs can i apply for right now") ||
     typoFixed.includes("what jobs can i apply for") ||
+    typoFixed.includes("what jobs can i apply to") ||
     typoFixed.includes("what job can i apply for") ||
+    typoFixed.includes("what job can i apply to") ||
     typoFixed.includes("what jobs are available today") ||
+    typoFixed.includes("what jobs are available for me today") ||
+    typoFixed.includes("what jobs are available for me") ||
     typoFixed.includes("jobs i can apply for today") ||
     typoFixed.includes("jobs can i apply for today") ||
     typoFixed.includes("jobs can i apply today") ||
@@ -121,6 +129,8 @@ export function isJobDiscoveryQuery(query: string): boolean {
     typoFixed.includes("can i apply for any jobs today") ||
     typoFixed.includes("can i apply for jobs today") ||
     typoFixed.includes("find jobs i can apply for today") ||
+    typoFixed.includes("find jobs i can apply to today") ||
+    typoFixed.includes("show me jobs i can apply for today") ||
     typoFixed.includes("what jobs match my cv today") ||
     typoFixed.includes("jobs to apply for today")
   );

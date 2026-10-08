@@ -108,6 +108,11 @@ export async function POST(req: Request) {
         storageEngine: archiveRes.storageEngine,
         blobId: archiveRes.blobId || vaultRecord?.blobId || null,
         walrusUrl: archiveRes.walrusUrl || vaultRecord?.walrusUrl || null,
+        ipfsHash: archiveRes.ipfsHash || vaultRecord?.ipfsHash || null,
+        gatewayUrl: archiveRes.gatewayUrl || vaultRecord?.gatewayUrl || null,
+        ipfsUrl:
+          vaultRecord?.ipfsUrl ||
+          (archiveRes.ipfsHash ? `ipfs://${archiveRes.ipfsHash}` : null),
         messageCount: messagesToArchive.length,
         error: archiveRes.error,
       });
@@ -127,8 +132,12 @@ export async function POST(req: Request) {
         walrusVault: {
           directWalrusActive: true,
           provider: "direct-walrus",
+          storageEngine: vaultRecord?.storageEngine || "direct-walrus",
           latestBlobId: vaultRecord?.blobId || null,
           walrusUrl: vaultRecord?.walrusUrl || null,
+          ipfsHash: vaultRecord?.ipfsHash || null,
+          gatewayUrl: vaultRecord?.gatewayUrl || null,
+          ipfsUrl: vaultRecord?.ipfsUrl || null,
         },
       });
     }
@@ -142,8 +151,12 @@ export async function POST(req: Request) {
         walrusVault: {
           directWalrusActive: true,
           provider: "direct-walrus",
+          storageEngine: vaultRecord?.storageEngine || "direct-walrus",
           latestBlobId: vaultRecord?.blobId || null,
           walrusUrl: vaultRecord?.walrusUrl || null,
+          ipfsHash: vaultRecord?.ipfsHash || null,
+          gatewayUrl: vaultRecord?.gatewayUrl || null,
+          ipfsUrl: vaultRecord?.ipfsUrl || null,
         },
       });
     }

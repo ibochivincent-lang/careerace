@@ -25,11 +25,16 @@ import { MemWal, MemWalMock } from "@mysten-incubation/memwal";
  * If all attempts fail the original error is rethrown, so a genuinely bad key
  * still surfaces the message that tells you to go check it.
  */
-const AUTH_RETRY_DELAYS_MS = [5_000, 15_000, 45_000, 90_000];
+const AUTH_RETRY_DELAYS_MS = [500, 1500, 3000];
 
 function isThrottle(error: unknown) {
-  const e = error as { status?: number; serverCode?: string };
-  return e?.status === 401 && e?.serverCode === "AUTH_REJECTED";
+  const e = error as { status?: number; serverCode?: string; message?: string };
+  return (
+    (e?.status === 401 && e?.serverCode === "AUTH_REJECTED") ||
+    e?.status === 429 ||
+    e?.serverCode === "RATE_LIMIT_EXCEEDED" ||
+    (typeof e?.message === "string" && e.message.toLowerCase().includes("rate limit"))
+  );
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -42,9 +47,8 @@ export async function withRelayerRetry<T>(label: string, fn: () => Promise<T>): 
       if (!isThrottle(error) || attempt >= AUTH_RETRY_DELAYS_MS.length) throw error;
       const wait = AUTH_RETRY_DELAYS_MS[attempt];
       console.warn(
-        `[careerace] ${label}: relayer returned 401 AUTH_REJECTED — ` +
-          `retrying in ${wait / 1000}s (${attempt + 1}/${AUTH_RETRY_DELAYS_MS.length}). ` +
-          `If every attempt fails, check the delegate key is registered on this account.`,
+        `[careerace] ${label}: relayer returned throttle / rate-limit — ` +
+          `retrying in ${wait / 1000}s (${attempt + 1}/${AUTH_RETRY_DELAYS_MS.length}).`,
       );
       await sleep(wait);
     }

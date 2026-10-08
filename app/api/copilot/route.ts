@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     const result = await processCopilotQuery(body);
     return NextResponse.json(result);
   } catch (_error) {
+    console.error("[copilot] Query handler caught error:", _error);
     return NextResponse.json(
       {
         role: "assistant",

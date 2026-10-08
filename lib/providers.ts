@@ -47,17 +47,17 @@ export const PROVIDERS: Record<Provider, ProviderInfo> = {
     models: [
       "qwen/qwen3.8-27b",
       "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
       "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant",
     ],
   },
   google: {
     label: "Google Gemini",
     env: "GOOGLE_GENERATIVE_AI_API_KEY",
-    chat: "gemini-3.5-flash",
+    chat: "gemini-3.8-flash",
     console: "https://aistudio.google.com/apikey",
     hint: "AIza... / AQ.Ab8...",
-    models: ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"],
+    models: ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"],
   },
   anthropic: {
     label: "Anthropic",
