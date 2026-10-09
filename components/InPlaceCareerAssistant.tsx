@@ -181,14 +181,22 @@ export const DISCIPLINE_PRESETS = [
  * Robust markdown message formatter that cleans all *** and ** asterisks
  * and renders bold typography without raw asterisks on screen.
  */
-function FormattedChatMessage({ content, role }: { content: string; role: 'user' | 'assistant' }) {
+function FormattedChatMessage({
+  content,
+  role,
+  textSizeClass = 'text-[10px] sm:text-[11px]',
+}: {
+  content: string
+  role: 'user' | 'assistant'
+  textSizeClass?: string
+}) {
   if (role === 'user') {
-    return <div className="whitespace-pre-wrap text-[10px] sm:text-[11px] leading-snug">{content}</div>
+    return <div className={cn('whitespace-pre-wrap leading-snug', textSizeClass)}>{content}</div>
   }
 
   const lines = content.split('\n')
   return (
-    <div className="space-y-1 leading-snug text-[10px] sm:text-[11px]">
+    <div className={cn('space-y-1 leading-snug', textSizeClass)}>
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
           return <div key={lineIdx} className="h-0.5" />
@@ -1504,13 +1512,13 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
               type="button"
               onClick={() => setConversationHistoryOpen(true)}
               title="View Daily Conversation History"
-              className="h-6 px-2 rounded-md border border-border/80 bg-background hover:bg-muted text-[10.5px] font-semibold text-foreground flex items-center gap-1 transition-all shadow-2xs hover:border-emerald-500/40 cursor-pointer"
+              className="h-5.5 px-2 rounded-md border border-border/80 bg-background hover:bg-muted text-[9.5px] font-semibold text-foreground flex items-center gap-1 transition-all shadow-2xs hover:border-emerald-500/40 cursor-pointer"
             >
-              <Clock className="w-3 h-3 text-emerald-500" />
+              <Clock className="w-2.5 h-2.5 text-emerald-500" />
               <span className="hidden sm:inline">Conversation History</span>
               <span className="sm:hidden">History</span>
               {computedDailySessions.length > 0 && (
-                <Badge variant="secondary" className="text-[8.5px] px-1 py-0 h-3.5 font-mono text-emerald-600 bg-emerald-500/10">
+                <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5 font-mono text-emerald-600 bg-emerald-500/10">
                   {computedDailySessions.length}
                 </Badge>
               )}
@@ -1622,18 +1630,18 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
             {!copilotModule && (
               <div ref={chatContainerRef} className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 text-[10px] sm:text-xs">
                 {/* Daily Conversation Sovereign Archive Banner */}
-                <div className="flex items-center justify-between p-2 px-2.5 rounded-xl border border-border/70 bg-muted/20 text-[10px] text-muted-foreground shadow-2xs">
+                <div className="flex items-center justify-between p-1.5 px-2 rounded-lg border border-border/70 bg-muted/20 text-[9px] text-muted-foreground shadow-2xs">
                   <span className="flex items-center gap-1.5 min-w-0">
-                    <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <Clock className="w-3 h-3 text-emerald-500 shrink-0" />
                     <span className="truncate">Daily conversations indexed in Walrus Sovereign Memory</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => setConversationHistoryOpen(true)}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 shrink-0 cursor-pointer text-[10px]"
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 shrink-0 cursor-pointer text-[9px]"
                   >
                     <span>View History ({computedDailySessions.length})</span>
-                    <ChevronRight className="w-3 h-3" />
+                    <ChevronRight className="w-2.5 h-2.5" />
                   </button>
                 </div>
                 {overviewChatMessages.map((msg, i) => (
@@ -5113,23 +5121,23 @@ CareerAce Verified Candidate`}
       {/* ── DAILY CONVERSATION HISTORY MODAL (TODAY, YESTERDAY & ARCHIVE RETRIEVAL) ── */}
       {conversationHistoryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <Card className="w-full max-w-4xl h-[90vh] max-h-[740px] flex flex-col border border-border bg-card shadow-2xl rounded-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
-                  <Clock className="w-4 h-4" />
+          <Card className="w-full max-w-4xl h-[90vh] max-h-[740px] flex flex-col border border-border bg-card shadow-2xl rounded-2xl overflow-hidden text-xs">
+            {/* Modal Header (Very small font) */}
+            <div className="px-3.5 py-2 sm:px-4 sm:py-2.5 border-b border-border/80 bg-muted/30 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                  <Clock className="w-3 h-3" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-bold text-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs font-bold text-foreground">
                       Conversation History
                     </h3>
-                    <Badge variant="outline" className="text-[9.5px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400 py-0">
+                    <Badge variant="outline" className="text-[8px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400 py-0 h-3.5">
                       WALRUS SYNCED
                     </Badge>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[9.5px] text-muted-foreground leading-tight">
                     Retrieve and restore daily copilot sessions across dates (Today, Yesterday &amp; Sovereign Archive)
                   </p>
                 </div>
@@ -5137,21 +5145,21 @@ CareerAce Verified Candidate`}
               <button
                 type="button"
                 onClick={() => setConversationHistoryOpen(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Filter Pills & Search Input Toolbar */}
-            <div className="p-3 sm:px-5 sm:py-2.5 border-b border-border/70 bg-card/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
+            {/* Filter Pills & Search Input Toolbar (Very small font) */}
+            <div className="p-2 sm:px-4 sm:py-2 border-b border-border/70 bg-card/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 shrink-0 text-[9.5px]">
               {/* Day Filter Tabs */}
-              <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60 overflow-x-auto scrollbar-none text-[11px]">
+              <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-md border border-border/60 overflow-x-auto scrollbar-none text-[9px]">
                 <button
                   type="button"
                   onClick={() => setHistoryFilterTab('all')}
                   className={cn(
-                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    'px-2 py-0.5 rounded font-semibold transition-all cursor-pointer whitespace-nowrap',
                     historyFilterTab === 'all'
                       ? 'bg-emerald-600 text-white shadow-2xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -5163,7 +5171,7 @@ CareerAce Verified Candidate`}
                   type="button"
                   onClick={() => setHistoryFilterTab('today')}
                   className={cn(
-                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    'px-2 py-0.5 rounded font-semibold transition-all cursor-pointer whitespace-nowrap',
                     historyFilterTab === 'today'
                       ? 'bg-emerald-600 text-white shadow-2xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -5175,7 +5183,7 @@ CareerAce Verified Candidate`}
                   type="button"
                   onClick={() => setHistoryFilterTab('yesterday')}
                   className={cn(
-                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    'px-2 py-0.5 rounded font-semibold transition-all cursor-pointer whitespace-nowrap',
                     historyFilterTab === 'yesterday'
                       ? 'bg-emerald-600 text-white shadow-2xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -5187,7 +5195,7 @@ CareerAce Verified Candidate`}
                   type="button"
                   onClick={() => setHistoryFilterTab('archive')}
                   className={cn(
-                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    'px-2 py-0.5 rounded font-semibold transition-all cursor-pointer whitespace-nowrap',
                     historyFilterTab === 'archive'
                       ? 'bg-emerald-600 text-white shadow-2xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -5197,23 +5205,23 @@ CareerAce Verified Candidate`}
                 </button>
               </div>
 
-              {/* Search Bar */}
+              {/* Search Bar (Very small font) */}
               <div className="relative flex-1 sm:max-w-xs">
-                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3 h-3 text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
                   placeholder="Search by keyword, topic or date..."
-                  className="w-full h-8 pl-8 pr-7 rounded-lg border border-border text-xs bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
+                  className="w-full h-6.5 pl-6 pr-5 rounded-md border border-border text-[9.5px] bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
                 />
                 {historySearchQuery && (
                   <button
                     type="button"
                     onClick={() => setHistorySearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-2.5 h-2.5" />
                   </button>
                 )}
               </div>
@@ -5221,17 +5229,17 @@ CareerAce Verified Candidate`}
 
             {/* Modal Body: 2 Columns (Sessions List & Selected Transcript) */}
             <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
-              {/* Left Column: Daily Sessions Cards */}
-              <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-border/80 flex flex-col bg-muted/10 overflow-y-auto p-2.5 space-y-2 shrink-0 max-h-[35vh] md:max-h-none">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+              {/* Left Column: Daily Sessions Cards (Very small font) */}
+              <div className="w-full md:w-72 border-b md:border-b-0 md:border-r border-border/80 flex flex-col bg-muted/10 overflow-y-auto p-2 space-y-1.5 shrink-0 max-h-[35vh] md:max-h-none text-[9.5px]">
+                <span className="text-[8.5px] font-bold text-muted-foreground uppercase tracking-wider px-1">
                   Daily Sessions ({filteredDailySessions.length})
                 </span>
 
                 {filteredDailySessions.length === 0 ? (
-                  <div className="p-4 rounded-xl border border-dashed border-border text-center space-y-1 text-muted-foreground">
-                    <Clock className="w-5 h-5 mx-auto opacity-50" />
-                    <p className="text-xs font-semibold">No daily sessions found</p>
-                    <p className="text-[10px]">Try adjusting your search query or filter tab.</p>
+                  <div className="p-3 rounded-lg border border-dashed border-border text-center space-y-1 text-muted-foreground">
+                    <Clock className="w-4 h-4 mx-auto opacity-50" />
+                    <p className="text-[10px] font-semibold">No daily sessions found</p>
+                    <p className="text-[8.5px]">Try adjusting your search query or filter tab.</p>
                   </div>
                 ) : (
                   filteredDailySessions.map((session) => {
@@ -5241,20 +5249,20 @@ CareerAce Verified Candidate`}
                         key={session.dateKey}
                         onClick={() => setSelectedHistoryDateKey(session.dateKey)}
                         className={cn(
-                          'p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all space-y-1 text-left',
+                          'p-2 rounded-lg border cursor-pointer select-none transition-all space-y-1 text-left',
                           isSelected
                             ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/30'
                             : 'border-border/70 bg-card hover:bg-muted/40'
                         )}
                       >
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-bold text-foreground text-[11.5px] truncate">
+                          <span className="font-bold text-foreground text-[9.5px] truncate">
                             {session.dateLabel}
                           </span>
                           <Badge
                             variant={session.isToday ? 'default' : 'secondary'}
                             className={cn(
-                              'text-[9px] font-mono py-0 shrink-0',
+                              'text-[7.5px] font-mono py-0 h-3.5 px-1 shrink-0',
                               session.isToday ? 'bg-emerald-600 text-white' : ''
                             )}
                           >
@@ -5262,11 +5270,11 @@ CareerAce Verified Candidate`}
                           </Badge>
                         </div>
 
-                        <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">
+                        <p className="text-[8.5px] text-muted-foreground line-clamp-2 leading-tight">
                           {session.firstQuery}
                         </p>
 
-                        <div className="flex items-center justify-between pt-1 text-[9px] text-muted-foreground font-mono">
+                        <div className="flex items-center justify-between pt-0.5 text-[7.5px] text-muted-foreground font-mono">
                           <span>{formatTimeAmPm(session.firstTimestamp)}</span>
                           <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
                             <ShieldCheck className="w-2.5 h-2.5" />
@@ -5279,36 +5287,36 @@ CareerAce Verified Candidate`}
                 )}
               </div>
 
-              {/* Right Column: Active Session Transcript Viewer */}
+              {/* Right Column: Active Session Transcript Viewer (Very small font) */}
               <div className="flex-1 flex flex-col min-h-0 bg-card overflow-hidden">
                 {activeSelectedSession ? (
                   <>
-                    {/* Transcript Toolbar */}
-                    <div className="px-4 py-2.5 border-b border-border/80 bg-muted/20 flex items-center justify-between gap-2 flex-wrap shrink-0">
+                    {/* Transcript Toolbar (Very small font) */}
+                    <div className="px-3 py-2 border-b border-border/80 bg-muted/20 flex items-center justify-between gap-1.5 flex-wrap shrink-0">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-[10px] font-bold text-foreground truncate">
                             {activeSelectedSession.dateTitle}
                           </h4>
-                          <Badge variant="outline" className="text-[9px] font-mono border-emerald-500/40 text-emerald-600 py-0">
+                          <Badge variant="outline" className="text-[7.5px] font-mono border-emerald-500/40 text-emerald-600 py-0 h-3.5 px-1">
                             {activeSelectedSession.turnCount} Turn{activeSelectedSession.turnCount !== 1 ? 's' : ''}
                           </Badge>
                         </div>
-                        <p className="text-[10px] text-muted-foreground font-mono">
+                        <p className="text-[8px] text-muted-foreground font-mono">
                           {formatTimeAmPm(activeSelectedSession.firstTimestamp)} – {formatTimeAmPm(activeSelectedSession.lastTimestamp)}
                         </p>
                       </div>
 
                       {/* Action Buttons: Restore to Active Chat, Export, Copy */}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         <Button
                           type="button"
                           size="sm"
                           variant="ghost"
                           onClick={() => handleCopyDailyTranscript(activeSelectedSession)}
-                          className="h-7 px-2 text-[10.5px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                          className="h-5.5 px-1.5 text-[8.5px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
-                          <Copy className="w-3 h-3" />
+                          <Copy className="w-2.5 h-2.5" />
                           <span>{isCopiedTranscript ? 'Copied' : 'Copy'}</span>
                         </Button>
                         <Button
@@ -5316,63 +5324,63 @@ CareerAce Verified Candidate`}
                           size="sm"
                           variant="outline"
                           onClick={() => handleExportDailyTranscript(activeSelectedSession)}
-                          className="h-7 px-2 text-[10.5px] gap-1 border-border text-foreground hover:bg-muted cursor-pointer shadow-2xs"
+                          className="h-5.5 px-1.5 text-[8.5px] gap-1 border-border text-foreground hover:bg-muted cursor-pointer shadow-2xs"
                         >
-                          <Download className="w-3 h-3 text-emerald-500" />
+                          <Download className="w-2.5 h-2.5 text-emerald-500" />
                           <span>Export .md</span>
                         </Button>
                         <Button
                           type="button"
                           size="sm"
                           onClick={() => handleRestoreDailySession(activeSelectedSession)}
-                          className="h-7 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10.5px] gap-1.5 shadow-xs cursor-pointer"
+                          className="h-5.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[8.5px] gap-1 shadow-xs cursor-pointer"
                         >
-                          <RotateCcw className="w-3 h-3" />
+                          <RotateCcw className="w-2.5 h-2.5" />
                           <span>Restore to Active Chat</span>
                         </Button>
                       </div>
                     </div>
 
-                    {/* Transcript Message Feed */}
-                    <div className="flex-1 p-3 sm:p-5 overflow-y-auto space-y-3 text-xs">
+                    {/* Transcript Message Feed (Very small font) */}
+                    <div className="flex-1 p-2.5 sm:p-3 overflow-y-auto space-y-2 text-[8.5px]">
                       {activeSelectedSession.messages.map((m, idx) => (
                         <div
                           key={idx}
                           className={cn(
-                            'p-3 rounded-xl border space-y-1.5 text-left',
+                            'p-2 rounded-lg border space-y-1 text-left',
                             m.role === 'user'
                               ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
                               : 'border-border/80 bg-muted/20 text-foreground'
                           )}
                         >
-                          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono border-b border-border/40 pb-1">
-                            <span className="font-bold flex items-center gap-1.5 text-foreground">
+                          <div className="flex items-center justify-between text-[8px] text-muted-foreground font-mono border-b border-border/40 pb-0.5">
+                            <span className="font-bold flex items-center gap-1 text-foreground">
                               {m.role === 'user' ? (
                                 <>
-                                  <User className="w-3 h-3 text-emerald-500" />
+                                  <User className="w-2.5 h-2.5 text-emerald-500" />
                                   <span>{cvForm.name || 'Candidate'}</span>
                                 </>
                               ) : (
                                 <>
-                                  <Bot className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                  <Bot className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                                   <span>CareerAce Copilot</span>
                                 </>
                               )}
                             </span>
                             <span>{formatTimeAmPm(m.timestamp)}</span>
                           </div>
-                          <div className="text-[11px] leading-relaxed pt-0.5">
-                            <FormattedChatMessage content={m.content} role={m.role} />
+                          <div className="pt-0.5">
+                            <FormattedChatMessage content={m.content} role={m.role} textSizeClass="text-[8.5px] sm:text-[9px] leading-relaxed" />
                           </div>
                         </div>
                       ))}
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-muted-foreground space-y-2">
-                    <Clock className="w-8 h-8 opacity-40 text-emerald-500" />
-                    <p className="text-sm font-semibold text-foreground">No session selected</p>
-                    <p className="text-xs max-w-sm">Select any daily session from the list to preview the transcript or restore it to your active chat.</p>
+                  <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-muted-foreground space-y-1.5">
+                    <Clock className="w-6 h-6 opacity-40 text-emerald-500" />
+                    <p className="text-[11px] font-semibold text-foreground">No session selected</p>
+                    <p className="text-[9px] max-w-xs">Select any daily session from the list to preview the transcript or restore it to your active chat.</p>
                   </div>
                 )}
               </div>
