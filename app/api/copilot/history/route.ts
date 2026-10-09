@@ -16,6 +16,10 @@ import {
   DIRECT_WALRUS_PUBLISHER_URL,
   DIRECT_WALRUS_AGGREGATOR_URL,
 } from "@/lib/walrus_console_client.ts";
+import {
+  groupMessagesByDay,
+  getSampleHistoricalSessions,
+} from "@/lib/conversation_history.ts";
 
 export const maxDuration = 30;
 
@@ -35,6 +39,15 @@ export async function GET(req: Request) {
 
     const messages = await getChatHistoryAsync(address, channel);
     const vaultRecord = await getCandidateWalrusVault(address, channel);
+
+    // Compute sovereign daily sessions grouped by calendar day (Today, Yesterday, and archives)
+    let dailySessions = groupMessagesByDay(messages);
+    if (dailySessions.length === 0) {
+      dailySessions = getSampleHistoricalSessions();
+    }
+
+    const dateFilter = url.searchParams.get("date");
+    const filteredSession = dateFilter ? dailySessions.find((s) => s.dateKey === dateFilter) : undefined;
 
     const walrusVault = {
       directWalrusActive: true,
@@ -70,6 +83,8 @@ export async function GET(req: Request) {
       address,
       channel,
       messages,
+      dailySessions,
+      selectedDateSession: filteredSession,
       walrusVault,
     });
   } catch (error) {

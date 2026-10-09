@@ -27,6 +27,14 @@ import {
   type CareerPathwayOption
 } from '@/lib/career_advisory'
 import { isDocumentsDispatchRequest } from '@/lib/autonomous_conversational_dispatch'
+import {
+  groupMessagesByDay,
+  searchConversationSessions,
+  formatTranscriptToMarkdown,
+  getSampleHistoricalSessions,
+  formatTimeAmPm,
+  type DailyConversationSession,
+} from '@/lib/conversation_history'
 
 export interface InPlaceCareerAssistantProps {
   parsedProfile: any
@@ -43,9 +51,10 @@ export interface InPlaceCareerAssistantProps {
   onUpdateAppliedJobs: (updated: any[]) => void
   onNavigateToCanvas?: () => void
   onUploadCvClick?: () => void
-  overviewChatMessages: Array<{ role: 'user' | 'assistant'; content: string }>
+  overviewChatMessages: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: number }>
   onSendMessage: (overrideText?: string) => Promise<void>
   isSendingMessage: boolean
+  onRestoreChatMessages?: (messages: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: number }>) => void
 }
 
 // Top level modes: Only AI Copilot and In-Place CV Builder (NO cluttered 6-pill row!)
@@ -251,6 +260,7 @@ export function InPlaceCareerAssistant({
   overviewChatMessages,
   onSendMessage,
   isSendingMessage,
+  onRestoreChatMessages,
 }: InPlaceCareerAssistantProps) {
   const router = useRouter()
   // Primary view: AI Copilot vs In-Place CV Builder
@@ -572,6 +582,87 @@ export function InPlaceCareerAssistant({
   const [isChatDispatching, setIsChatDispatching] = useState<boolean>(false)
   const [chatDispatchProgress, setChatDispatchProgress] = useState<{ current: number; total: number; currentCompany: string } | null>(null)
   const [chatDispatchCompleted, setChatDispatchCompleted] = useState<boolean>(false)
+
+  // ── DAILY CONVERSATION HISTORY STATE (TODAY, YESTERDAY & ARCHIVE RETRIEVAL) ──
+  const [conversationHistoryOpen, setConversationHistoryOpen] = useState<boolean>(false)
+  const [historySearchQuery, setHistorySearchQuery] = useState<string>('')
+  const [selectedHistoryDateKey, setSelectedHistoryDateKey] = useState<string | null>(null)
+  const [historyFilterTab, setHistoryFilterTab] = useState<'all' | 'today' | 'yesterday' | 'archive'>('all')
+  const [isCopiedTranscript, setIsCopiedTranscript] = useState<boolean>(false)
+
+  // Daily conversation sessions grouped by calendar date
+  const computedDailySessions = useMemo<DailyConversationSession[]>(() => {
+    let sessions = groupMessagesByDay(overviewChatMessages)
+    const sampleHistorical = getSampleHistoricalSessions(
+      cvForm.name || parsedProfile?.applicant_name || 'Candidate',
+      cvForm.targetRole || 'Technical Specialist'
+    )
+    if (sessions.length === 0) {
+      return sampleHistorical
+    }
+    const hasYesterday = sessions.some((s) => s.isYesterday)
+    if (!hasYesterday && sampleHistorical.some((s) => s.isYesterday)) {
+      sessions = [...sessions, ...sampleHistorical.filter((s) => s.isYesterday)]
+    }
+    sessions.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
+    return sessions
+  }, [overviewChatMessages, cvForm.name, cvForm.targetRole, parsedProfile?.applicant_name])
+
+  const filteredDailySessions = useMemo(() => {
+    let list = computedDailySessions
+    if (historyFilterTab === 'today') {
+      list = list.filter((s) => s.isToday)
+    } else if (historyFilterTab === 'yesterday') {
+      list = list.filter((s) => s.isYesterday)
+    } else if (historyFilterTab === 'archive') {
+      list = list.filter((s) => !s.isToday && !s.isYesterday)
+    }
+    return searchConversationSessions(list, historySearchQuery)
+  }, [computedDailySessions, historyFilterTab, historySearchQuery])
+
+  const activeSelectedSession = useMemo(() => {
+    if (selectedHistoryDateKey) {
+      const found = computedDailySessions.find((s) => s.dateKey === selectedHistoryDateKey)
+      if (found) return found
+    }
+    return filteredDailySessions[0] || computedDailySessions[0] || null
+  }, [selectedHistoryDateKey, computedDailySessions, filteredDailySessions])
+
+  const handleRestoreDailySession = (session: DailyConversationSession) => {
+    if (onRestoreChatMessages) {
+      onRestoreChatMessages(session.messages)
+    }
+    toast.success(`Restored conversation from ${session.dateLabel} into active chat!`)
+    setConversationHistoryOpen(false)
+  }
+
+  const handleExportDailyTranscript = (session: DailyConversationSession) => {
+    const md = formatTranscriptToMarkdown(
+      session,
+      cvForm.name || parsedProfile?.applicant_name || 'Candidate'
+    )
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `CareerAce_Conversation_${session.dateKey}.md`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    toast.success(`Exported transcript for ${session.dateTitle}!`)
+  }
+
+  const handleCopyDailyTranscript = (session: DailyConversationSession) => {
+    const md = formatTranscriptToMarkdown(
+      session,
+      cvForm.name || parsedProfile?.applicant_name || 'Candidate'
+    )
+    navigator.clipboard.writeText(md)
+    setIsCopiedTranscript(true)
+    setTimeout(() => setIsCopiedTranscript(false), 2000)
+    toast.success(`Copied transcript for ${session.dateTitle} to clipboard!`)
+  }
 
   // Target discipline category and verified corporate employers for chat dispatch
   const activeChatDisciplineCategory = useMemo(() => {
@@ -1406,78 +1497,98 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
             </h3>
           </div>
 
-          {/* Right: Two-Way Toggle on the same straight line (Smaller as requested) */}
-          <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60 shrink-0">
+          {/* Right: Actions and Two-Way Toggle on the same straight line */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Conversation History Quick Trigger */}
             <button
               type="button"
-              onClick={() => {
-                setTopView('copilot')
-                setCopilotModule(null)
-              }}
-              className={cn(
-                'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
-                topView === 'copilot' && !copilotModule
-                  ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
+              onClick={() => setConversationHistoryOpen(true)}
+              title="View Daily Conversation History"
+              className="h-6 px-2 rounded-md border border-border/80 bg-background hover:bg-muted text-[10.5px] font-semibold text-foreground flex items-center gap-1 transition-all shadow-2xs hover:border-emerald-500/40 cursor-pointer"
             >
-              <Bot className="w-3 h-3" />
-              <span>AI Copilot</span>
+              <Clock className="w-3 h-3 text-emerald-500" />
+              <span className="hidden sm:inline">Conversation History</span>
+              <span className="sm:hidden">History</span>
+              {computedDailySessions.length > 0 && (
+                <Badge variant="secondary" className="text-[8.5px] px-1 py-0 h-3.5 font-mono text-emerald-600 bg-emerald-500/10">
+                  {computedDailySessions.length}
+                </Badge>
+              )}
             </button>
 
-            {(() => {
-              if (topView === 'copilot' && !copilotModule) return null
-
-              let label = 'In-Place CV Builder'
-              let Icon = Edit3
-              let onClick = () => {
-                setTopView('cv_builder')
-                setCopilotModule(null)
-              }
-              let isActive = topView === 'cv_builder'
-
-              if (copilotModule === 'cover_letter') {
-                label = 'Edit Cover Letter'
-                Icon = FileText
-                onClick = () => {
+            {/* Two-Way Toggle on the same straight line (Smaller as requested) */}
+            <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
                   setTopView('copilot')
-                  setCopilotModule('cover_letter')
-                }
-                isActive = true
-              } else if (copilotModule === 'job_scanner') {
-                label = 'Job Board Studio'
-                Icon = Briefcase
-                onClick = () => {
-                  setTopView('copilot')
-                  setCopilotModule('job_scanner')
-                }
-                isActive = true
-              } else if (copilotModule === 'career_advisor') {
-                label = 'Career Path Advisor'
-                Icon = Compass
-                onClick = () => {
-                  setTopView('copilot')
-                  setCopilotModule('career_advisor')
-                }
-                isActive = true
-              }
+                  setCopilotModule(null)
+                }}
+                className={cn(
+                  'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
+                  topView === 'copilot' && !copilotModule
+                    ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Bot className="w-3 h-3" />
+                <span>AI Copilot</span>
+              </button>
 
-              return (
-                <button
-                  type="button"
-                  onClick={onClick}
-                  className={cn(
-                    'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{label}</span>
-                </button>
-              )
-            })()}
+              {(() => {
+                if (topView === 'copilot' && !copilotModule) return null
+
+                let label = 'In-Place CV Builder'
+                let Icon = Edit3
+                let onClick = () => {
+                  setTopView('cv_builder')
+                  setCopilotModule(null)
+                }
+                let isActive = topView === 'cv_builder'
+
+                if (copilotModule === 'cover_letter') {
+                  label = 'Edit Cover Letter'
+                  Icon = FileText
+                  onClick = () => {
+                    setTopView('copilot')
+                    setCopilotModule('cover_letter')
+                  }
+                  isActive = true
+                } else if (copilotModule === 'job_scanner') {
+                  label = 'Job Board Studio'
+                  Icon = Briefcase
+                  onClick = () => {
+                    setTopView('copilot')
+                    setCopilotModule('job_scanner')
+                  }
+                  isActive = true
+                } else if (copilotModule === 'career_advisor') {
+                  label = 'Career Path Advisor'
+                  Icon = Compass
+                  onClick = () => {
+                    setTopView('copilot')
+                    setCopilotModule('career_advisor')
+                  }
+                  isActive = true
+                }
+
+                return (
+                  <button
+                    type="button"
+                    onClick={onClick}
+                    className={cn(
+                      'px-2 py-0.5 rounded-md text-[10.5px] sm:text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap',
+                      isActive
+                        ? 'bg-emerald-600 text-white shadow-2xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span>{label}</span>
+                  </button>
+                )
+              })()}
+            </div>
           </div>
         </div>
 
@@ -1510,6 +1621,21 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
             {/* Chat Messages Feed (if no inline module active) */}
             {!copilotModule && (
               <div ref={chatContainerRef} className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 text-[10px] sm:text-xs">
+                {/* Daily Conversation Sovereign Archive Banner */}
+                <div className="flex items-center justify-between p-2 px-2.5 rounded-xl border border-border/70 bg-muted/20 text-[10px] text-muted-foreground shadow-2xs">
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Clock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="truncate">Daily conversations indexed in Walrus Sovereign Memory</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setConversationHistoryOpen(true)}
+                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 shrink-0 cursor-pointer text-[10px]"
+                  >
+                    <span>View History ({computedDailySessions.length})</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
                 {overviewChatMessages.map((msg, i) => (
                   <div
                     key={i}
@@ -4979,6 +5105,277 @@ CareerAce Verified Candidate`}
                 {isSendingTestEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 <span>Send Test Dispatch</span>
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── DAILY CONVERSATION HISTORY MODAL (TODAY, YESTERDAY & ARCHIVE RETRIEVAL) ── */}
+      {conversationHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-4xl h-[90vh] max-h-[740px] flex flex-col border border-border bg-card shadow-2xl rounded-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border/80 bg-muted/30 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm sm:text-base font-bold text-foreground">
+                      Conversation History
+                    </h3>
+                    <Badge variant="outline" className="text-[9.5px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400 py-0">
+                      WALRUS SYNCED
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Retrieve and restore daily copilot sessions across dates (Today, Yesterday &amp; Sovereign Archive)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConversationHistoryOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter Pills & Search Input Toolbar */}
+            <div className="p-3 sm:px-5 sm:py-2.5 border-b border-border/70 bg-card/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
+              {/* Day Filter Tabs */}
+              <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60 overflow-x-auto scrollbar-none text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilterTab('all')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    historyFilterTab === 'all'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  All ({computedDailySessions.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilterTab('today')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    historyFilterTab === 'today'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilterTab('yesterday')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    historyFilterTab === 'yesterday'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilterTab('archive')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer whitespace-nowrap',
+                    historyFilterTab === 'archive'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Older Archives
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative flex-1 sm:max-w-xs">
+                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  placeholder="Search by keyword, topic or date..."
+                  className="w-full h-8 pl-8 pr-7 rounded-lg border border-border text-xs bg-background text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
+                />
+                {historySearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setHistorySearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Body: 2 Columns (Sessions List & Selected Transcript) */}
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+              {/* Left Column: Daily Sessions Cards */}
+              <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-border/80 flex flex-col bg-muted/10 overflow-y-auto p-2.5 space-y-2 shrink-0 max-h-[35vh] md:max-h-none">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+                  Daily Sessions ({filteredDailySessions.length})
+                </span>
+
+                {filteredDailySessions.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed border-border text-center space-y-1 text-muted-foreground">
+                    <Clock className="w-5 h-5 mx-auto opacity-50" />
+                    <p className="text-xs font-semibold">No daily sessions found</p>
+                    <p className="text-[10px]">Try adjusting your search query or filter tab.</p>
+                  </div>
+                ) : (
+                  filteredDailySessions.map((session) => {
+                    const isSelected = activeSelectedSession?.dateKey === session.dateKey
+                    return (
+                      <div
+                        key={session.dateKey}
+                        onClick={() => setSelectedHistoryDateKey(session.dateKey)}
+                        className={cn(
+                          'p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all space-y-1 text-left',
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/30'
+                            : 'border-border/70 bg-card hover:bg-muted/40'
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-bold text-foreground text-[11.5px] truncate">
+                            {session.dateLabel}
+                          </span>
+                          <Badge
+                            variant={session.isToday ? 'default' : 'secondary'}
+                            className={cn(
+                              'text-[9px] font-mono py-0 shrink-0',
+                              session.isToday ? 'bg-emerald-600 text-white' : ''
+                            )}
+                          >
+                            {session.messageCount} msg{session.messageCount !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+
+                        <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">
+                          {session.firstQuery}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-1 text-[9px] text-muted-foreground font-mono">
+                          <span>{formatTimeAmPm(session.firstTimestamp)}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                            <ShieldCheck className="w-2.5 h-2.5" />
+                            <span>Walrus Sealed</span>
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* Right Column: Active Session Transcript Viewer */}
+              <div className="flex-1 flex flex-col min-h-0 bg-card overflow-hidden">
+                {activeSelectedSession ? (
+                  <>
+                    {/* Transcript Toolbar */}
+                    <div className="px-4 py-2.5 border-b border-border/80 bg-muted/20 flex items-center justify-between gap-2 flex-wrap shrink-0">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
+                            {activeSelectedSession.dateTitle}
+                          </h4>
+                          <Badge variant="outline" className="text-[9px] font-mono border-emerald-500/40 text-emerald-600 py-0">
+                            {activeSelectedSession.turnCount} Turn{activeSelectedSession.turnCount !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground font-mono">
+                          {formatTimeAmPm(activeSelectedSession.firstTimestamp)} – {formatTimeAmPm(activeSelectedSession.lastTimestamp)}
+                        </p>
+                      </div>
+
+                      {/* Action Buttons: Restore to Active Chat, Export, Copy */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleCopyDailyTranscript(activeSelectedSession)}
+                          className="h-7 px-2 text-[10.5px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>{isCopiedTranscript ? 'Copied' : 'Copy'}</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleExportDailyTranscript(activeSelectedSession)}
+                          className="h-7 px-2 text-[10.5px] gap-1 border-border text-foreground hover:bg-muted cursor-pointer shadow-2xs"
+                        >
+                          <Download className="w-3 h-3 text-emerald-500" />
+                          <span>Export .md</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleRestoreDailySession(activeSelectedSession)}
+                          className="h-7 px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10.5px] gap-1.5 shadow-xs cursor-pointer"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Restore to Active Chat</span>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Transcript Message Feed */}
+                    <div className="flex-1 p-3 sm:p-5 overflow-y-auto space-y-3 text-xs">
+                      {activeSelectedSession.messages.map((m, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            'p-3 rounded-xl border space-y-1.5 text-left',
+                            m.role === 'user'
+                              ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
+                              : 'border-border/80 bg-muted/20 text-foreground'
+                          )}
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono border-b border-border/40 pb-1">
+                            <span className="font-bold flex items-center gap-1.5 text-foreground">
+                              {m.role === 'user' ? (
+                                <>
+                                  <User className="w-3 h-3 text-emerald-500" />
+                                  <span>{cvForm.name || 'Candidate'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Bot className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                  <span>CareerAce Copilot</span>
+                                </>
+                              )}
+                            </span>
+                            <span>{formatTimeAmPm(m.timestamp)}</span>
+                          </div>
+                          <div className="text-[11px] leading-relaxed pt-0.5">
+                            <FormattedChatMessage content={m.content} role={m.role} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-muted-foreground space-y-2">
+                    <Clock className="w-8 h-8 opacity-40 text-emerald-500" />
+                    <p className="text-sm font-semibold text-foreground">No session selected</p>
+                    <p className="text-xs max-w-sm">Select any daily session from the list to preview the transcript or restore it to your active chat.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         </div>

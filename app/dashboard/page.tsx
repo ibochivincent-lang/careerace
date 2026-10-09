@@ -251,7 +251,7 @@ function DashboardContent() {
   } | null>(null)
   const overviewChatContainerRef = useRef<HTMLDivElement>(null)
   const overviewChatEndRef = useRef<HTMLDivElement>(null)
-  const [overviewChatMessages, setOverviewChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+  const [overviewChatMessages, setOverviewChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; timestamp?: number }>>([
     FRESH_OVERVIEW_WELCOME_MESSAGE
   ])
 
@@ -370,6 +370,7 @@ function DashboardContent() {
               data.messages.map((m: any) => ({
                 role: m.role === 'assistant' ? 'assistant' : 'user',
                 content: m.content,
+                timestamp: typeof m.timestamp === 'number' ? m.timestamp : Date.now(),
               }))
             )
           }
@@ -1028,7 +1029,8 @@ function DashboardContent() {
     if (!rawText.trim() || isOverviewSending) return
     const text = rawText.trim()
     setOverviewChatInput('')
-    const updatedMessages = [...overviewChatMessages, { role: 'user' as const, content: text }]
+    const now = Date.now()
+    const updatedMessages = [...overviewChatMessages, { role: 'user' as const, content: text, timestamp: now }]
     setOverviewChatMessages(updatedMessages)
     setIsOverviewSending(true)
 
@@ -1090,8 +1092,9 @@ function DashboardContent() {
       }
 
       const assistantReply = data.reply || data.content
+      const replyTs = Date.now()
       if (assistantReply) {
-        setOverviewChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply }])
+        setOverviewChatMessages((prev) => [...prev, { role: 'assistant', content: assistantReply, timestamp: replyTs }])
       } else {
         setOverviewChatMessages((prev) => [
           ...prev,
@@ -1101,7 +1104,8 @@ function DashboardContent() {
               parsedProfile 
                 ? `I am leveraging your verified profile for ${parsedProfile.applicant_name || 'Candidate'} from your Walrus Memory vault.` 
                 : 'Head over to Resume Studio to upload your CV to unlock personalized answers tailored to your exact work history and skills.'
-            }`
+            }`,
+            timestamp: replyTs,
           }
         ])
       }
@@ -1110,7 +1114,8 @@ function DashboardContent() {
         ...prev,
         {
           role: 'assistant',
-          content: 'CareerAce Chatbot is connected to your Walrus Sovereign Memory. Select a keyword topic below to proceed or ask a career query.'
+          content: 'CareerAce Chatbot is connected to your Walrus Sovereign Memory. Select a keyword topic below to proceed or ask a career query.',
+          timestamp: Date.now(),
         }
       ])
     } finally {
@@ -1705,6 +1710,7 @@ function DashboardContent() {
               overviewChatMessages={overviewChatMessages}
               onSendMessage={handleSendOverviewMessage}
               isSendingMessage={isOverviewSending}
+              onRestoreChatMessages={setOverviewChatMessages}
             />
           </motion.div>
         )}
