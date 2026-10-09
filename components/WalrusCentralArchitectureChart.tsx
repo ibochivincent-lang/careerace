@@ -136,7 +136,7 @@ export function WalrusCentralArchitectureChart() {
   }
 
   return (
-    <section id="architecture" className="max-w-7xl mx-auto px-4 py-16 scroll-mt-20">
+    <div className="w-full pb-10">
       <div className="space-y-12">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3.5">
@@ -152,17 +152,17 @@ export function WalrusCentralArchitectureChart() {
           </p>
         </div>
 
-        {/* Central Architecture Interactive Diagram Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Central Architecture Interactive Diagram Container (Strict Equal Height on Same Line) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Visual Hub & Spoke Interactive Canvas (7 Cols) */}
-          <div className="lg:col-span-7 bg-card/70 border border-border/80 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden backdrop-blur">
+          <div className="lg:col-span-7 bg-card/70 border border-border/80 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden backdrop-blur h-full flex flex-col justify-between">
             {/* Ambient Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] bg-emerald-500/10 rounded-full blur-[90px] pointer-events-none" />
 
-            <div className="flex items-center justify-between pb-4 border-b border-border/60 mb-6">
+            <div className="flex items-center justify-between pb-4 border-b border-border/60 mb-6 h-11 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold text-foreground">Active Topology Visualizer</span>
+                <span className="text-xs sm:text-sm font-bold text-foreground">Active Topology Visualizer</span>
               </div>
               <Button
                 size="sm"
@@ -202,8 +202,8 @@ export function WalrusCentralArchitectureChart() {
                 </span>
               </div>
 
-              {/* Surrounding 5 Spoke Nodes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Surrounding 5 Spoke Nodes + 1 Security Guard (Equal Heights) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
                 {NODES.map((node) => {
                   const Icon = node.icon
                   const isSelected = selectedNodeId === node.id
@@ -213,7 +213,7 @@ export function WalrusCentralArchitectureChart() {
                       key={node.id}
                       type="button"
                       onClick={() => setSelectedNodeId(node.id)}
-                      className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-full ${
                         isSelected
                           ? 'border-emerald-500 bg-emerald-500/10 shadow-md ring-1 ring-emerald-500/30'
                           : 'border-border/80 bg-background/50 hover:bg-muted/40 hover:border-border'
@@ -249,7 +249,7 @@ export function WalrusCentralArchitectureChart() {
                 })}
 
                 {/* 6th Tile: Security Pillar */}
-                <div className="p-3.5 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/[0.03] flex flex-col justify-between text-left">
+                <div className="p-3.5 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/[0.03] flex flex-col justify-between text-left h-full">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                       <ShieldCheck className="w-4 h-4" />
@@ -267,17 +267,17 @@ export function WalrusCentralArchitectureChart() {
             </div>
           </div>
 
-          {/* Node Detail & Technical Inspector (5 Cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <Card className="p-6 border border-border bg-card rounded-2xl shadow-xl space-y-5">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
+          {/* Node Detail & Technical Inspector (5 Cols, Equal Height to Left Column) */}
+          <div className="lg:col-span-5 h-full flex flex-col">
+            <Card className="p-6 sm:p-8 border border-border bg-card rounded-2xl shadow-xl h-full flex flex-col justify-between space-y-5">
+              <div className="flex items-center justify-between pb-4 border-b border-border/60 mb-1 h-11 shrink-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                    <activeNode.icon className="w-4 h-4" />
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <activeNode.icon className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono text-emerald-600 uppercase font-semibold">Subsystem Inspector</span>
-                    <h4 className="text-sm font-bold text-foreground">{activeNode.shortLabel}</h4>
+                    <span className="text-[10px] font-mono text-emerald-600 uppercase font-semibold block leading-tight">Subsystem Inspector</span>
+                    <h4 className="text-xs sm:text-sm font-bold text-foreground leading-tight">{activeNode.shortLabel}</h4>
                   </div>
                 </div>
                 <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 font-mono">
@@ -334,6 +334,6 @@ export function WalrusCentralArchitectureChart() {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   )
 }

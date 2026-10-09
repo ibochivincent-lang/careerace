@@ -238,7 +238,7 @@ export function ChatdeckFeatures() {
     {
       number: "03",
       title: "Polish, tailor, and apply.",
-      description: "Jobs are curated to you, tailored to job description, cover letters written from your resume and the job post.",
+      description: "Jobs are curated to your background, tailored to job requirements, and cover letters are crafted directly from your verified resume.",
       badge: "Workday & Taleo Ready",
       visual: <TailorVisual play={true} />
     }
@@ -260,7 +260,7 @@ export function ChatdeckFeatures() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 items-stretch">
           {steps.map((step, idx) => (
             <motion.div
               key={step.title}
@@ -268,12 +268,12 @@ export function ChatdeckFeatures() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.12, duration: 0.5 }}
-              className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-card/60 backdrop-blur shadow-lg hover:border-emerald-500/40 hover:shadow-emerald-500/5 transition-all flex flex-col justify-between space-y-6"
+              className="p-5 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-card/60 backdrop-blur shadow-lg hover:border-emerald-500/40 hover:shadow-emerald-500/5 transition-all flex flex-col justify-between h-full space-y-6"
             >
               {/* Interactive Visual Animation at the top of the card */}
-              <div>{step.visual}</div>
+              <div className="w-full shrink-0">{step.visual}</div>
 
-              <div className="space-y-3">
+              <div className="flex-1 flex flex-col justify-between space-y-3 pt-1">
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary" className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
                     {step.badge}
@@ -292,7 +292,7 @@ export function ChatdeckFeatures() {
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-border/40 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 gap-1.5">
+              <div className="pt-3 border-t border-border/40 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 gap-1.5 mt-auto">
                 <span>Learn more</span> <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </motion.div>
@@ -300,17 +300,17 @@ export function ChatdeckFeatures() {
         </div>
       </section>
 
-      {/* ── SHOWCASE: CURATED JOBS + TAILORED COVER LETTERS ── */}
+      {/* ── SHOWCASE: CURATED JOBS + TAILORED COVER LETTERS (EQUAL HEIGHTS SIDE-BY-SIDE) ── */}
       <section className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* Left: Curated Jobs Showcase */}
-          <div className="p-8 rounded-2xl border border-emerald-500/20 bg-card/50 shadow-xl space-y-6">
+          <div className="p-6 sm:p-8 rounded-2xl border border-emerald-500/20 bg-card/50 shadow-xl flex flex-col justify-between h-full space-y-6">
             <div className="space-y-2">
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-xs">
                 Real-Time Opportunities
               </Badge>
               <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Jobs are curated to you, tailored to job description.
+                Jobs curated to your background, tailored to job posts.
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Career Ace evaluates active job feeds across the web and computes your exact ATS fit score before you even apply.
@@ -318,38 +318,45 @@ export function ChatdeckFeatures() {
             </div>
 
             {/* Mock Job Rows */}
-            <div className="space-y-3">
-              {[
-                { title: 'Senior Infrastructure Engineer', company: 'Stripe', location: 'United States · Remote', match: '96% Fit', color: 'text-emerald-500 bg-emerald-500/10' },
-                { title: 'Fullstack Distributed Systems Engineer', company: 'Mysten Labs', location: 'Global · Remote', match: '94% Fit', color: 'text-emerald-500 bg-emerald-500/10' },
-                { title: 'Software Engineer (Machine Learning)', company: 'Affirm', location: 'San Francisco, CA', match: '88% Fit', color: 'text-emerald-500 bg-emerald-500/10' },
-              ].map((job) => (
-                <div key={job.title} className="p-3.5 rounded-xl border border-border/70 bg-background/80 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center font-bold text-foreground">
-                      {job.company.slice(0, 1)}
+            <div className="flex-1 flex flex-col justify-between space-y-3">
+              <div className="space-y-3">
+                {[
+                  { title: 'Senior Infrastructure Engineer', company: 'Stripe', location: 'United States · Remote', match: '96% Fit', color: 'text-emerald-500 bg-emerald-500/10' },
+                  { title: 'Fullstack Distributed Systems Engineer', company: 'Mysten Labs', location: 'Global · Remote', match: '94% Fit', color: 'text-emerald-500 bg-emerald-500/10' },
+                  { title: 'Software Engineer (Machine Learning)', company: 'Affirm', location: 'San Francisco, CA', match: '88% Fit', color: 'text-emerald-500 bg-emerald-500/10' },
+                ].map((job) => (
+                  <div key={job.title} className="p-3.5 rounded-xl border border-border/70 bg-background/80 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center font-bold text-foreground">
+                        {job.company.slice(0, 1)}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-foreground block">{job.title}</span>
+                        <span className="text-muted-foreground">{job.company} · {job.location}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-semibold text-foreground block">{job.title}</span>
-                      <span className="text-muted-foreground">{job.company} · {job.location}</span>
-                    </div>
+                    <Badge variant="outline" className={`font-mono text-xs ${job.color} border-transparent`}>
+                      {job.match}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className={`font-mono text-xs ${job.color} border-transparent`}>
-                    {job.match}
-                  </Badge>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 text-[11px] text-muted-foreground flex items-center justify-between mt-auto">
+                <span>Evaluated across 9 live hiring networks</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">100% Pre-Scored</span>
+              </div>
             </div>
           </div>
 
           {/* Right: Automated Cover Letters Showcase */}
-          <div className="p-8 rounded-2xl border border-emerald-500/20 bg-card/50 shadow-xl space-y-6">
+          <div className="p-6 sm:p-8 rounded-2xl border border-emerald-500/20 bg-card/50 shadow-xl flex flex-col justify-between h-full space-y-6">
             <div className="space-y-2">
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-xs">
                 Instant Cover Letter Studio
               </Badge>
               <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Cover letters written from your resume and the job post.
+                Cover letters crafted from your resume and target roles.
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Your real wins, in the company's own language. Edit it, regenerate with a different problem-solving angle, and export.
@@ -357,8 +364,8 @@ export function ChatdeckFeatures() {
             </div>
 
             {/* Letter Preview Mockup */}
-            <div className="p-5 rounded-xl border border-border/80 bg-background shadow-inner space-y-4 text-xs relative">
-              <div className="flex flex-wrap items-center gap-2 pb-3 border-b">
+            <div className="flex-1 flex flex-col justify-between p-5 rounded-xl border border-border/80 bg-background shadow-inner space-y-3.5 text-xs">
+              <div className="flex flex-wrap items-center gap-2 pb-2.5 border-b">
                 <Badge variant="secondary" className="text-xs">Google</Badge>
                 <Badge variant="secondary" className="text-xs">Staff Engineer, Infrastructure</Badge>
                 <Badge variant="outline" className="text-xs text-muted-foreground font-mono">Alex_Chen_Resume.pdf</Badge>
