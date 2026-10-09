@@ -265,16 +265,14 @@ function CoverLetterStudioContent() {
   const [walrusBlobId, setWalrusBlobId] = useState<string>('');
 
   // Output & Generation State
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingToWalrus, setIsSavingToWalrus] = useState(false);
-  const [roleScope, setRoleScope] = useState<RoleIntelligenceProfile>(() => getRoleIntelligence('Engine Cadet'));
   const [coverLetterText, setCoverLetterText] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
-  // Consolidated into Career Copilot overview tab per user architecture
-  useEffect(() => {
-    router.replace('/dashboard?tab=overview');
-  }, [router]);
+  const effectiveRole = customRoleInput.trim() || targetRole;
+  const roleScope = useMemo(() => {
+    return getRoleIntelligence(effectiveRole || 'Engine Cadet', jobDescription);
+  }, [effectiveRole, jobDescription]);
 
   // Active discipline definition
   const activeDiscipline = useMemo(() => {
@@ -483,15 +481,6 @@ function CoverLetterStudioContent() {
     };
   }, []);
 
-  // Update role intelligence preview whenever role changes
-  useEffect(() => {
-    const effectiveRole = customRoleInput.trim() || targetRole;
-    if (effectiveRole) {
-      const intel = getRoleIntelligence(effectiveRole, jobDescription);
-      setRoleScope(intel);
-    }
-  }, [targetRole, customRoleInput, jobDescription]);
-
   // Handle switching discipline from the Selector Box
   function handleSelectDiscipline(disciplineId: string) {
     const def = DISCIPLINE_DEFINITIONS.find((d) => d.id === disciplineId);
@@ -532,85 +521,6 @@ function CoverLetterStudioContent() {
     setTargetCompany(newCompany);
     const effectiveRole = customRoleInput.trim() || targetRole;
     updateDraft(effectiveRole, newCompany, selectedDisciplineId, profile, walrusBlobId, jobDescription, keyProblemsInput);
-  }
-
-  // Generate / Synthesize Tailored Cover Letter (Strict client-side execution, no redirect, no 404)
-  async function handleGenerate(e?: React.MouseEvent) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    const role = customRoleInput.trim() || targetRole.trim() || 'Engineering Specialist';
-    const company = targetCompany.trim();
-
-    setIsGenerating(true);
-    const toastId = toast.loading('Extracting role scope & synthesizing tailored cover letter...');
-
-    try {
-      const res = await fetch('/api/cover_letter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetRole: role,
-          targetCompany: company || 'Hiring Team',
-          jobDescription,
-          keyProblems: keyProblemsInput,
-          candidateName: profile?.applicant_name || 'Candidate',
-          candidateEmail: profile?.email || '',
-          candidatePhone: profile?.phone || '',
-          candidateLocation: profile?.location || 'Global Remote',
-          candidateSkills: profile?.skills || roleScope.technicalKeywords,
-          recentExperience: profile?.work_experience?.[0],
-          walrusBlobId
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (!data.success || !data.coverLetter) {
-        throw new Error(data.error || 'Failed to generate cover letter.');
-      }
-
-      setCoverLetterText(data.coverLetter);
-      try {
-        localStorage.setItem('careerace_tailored_cover_letter', data.coverLetter);
-        syncCandidateDataToCloud({ coverLetter: data.coverLetter });
-      } catch {}
-
-      if (data.roleScope) {
-        setRoleScope(data.roleScope);
-      }
-
-      toast.success(company ? `Tailored cover letter calibrated for ${company}!` : 'Tailored cover letter synthesized for batch application!', { id: toastId });
-    } catch (err: any) {
-      // Local sovereign fallback ensures zero downtime and no 404
-      const fallbackDraft = generateLocalDraft({
-        role,
-        company,
-        jobDescription,
-        keyProblems: keyProblemsInput,
-        candidateName: profile?.applicant_name || 'Candidate',
-        candidateEmail: profile?.email || '',
-        candidatePhone: profile?.phone || '',
-        candidateLocation: profile?.location || 'Global Remote',
-        recentExperience: profile?.work_experience?.[0],
-        walrusBlobId,
-        disciplineId: selectedDisciplineId,
-        filteredHighlights: activeCvHighlights
-      });
-      setCoverLetterText(fallbackDraft);
-      try {
-        localStorage.setItem('careerace_tailored_cover_letter', fallbackDraft);
-        syncCandidateDataToCloud({ coverLetter: fallbackDraft });
-      } catch {}
-      toast.info('Synthesized letter via sovereign role engine.', { id: toastId });
-    } finally {
-      setIsGenerating(false);
-    }
   }
 
   function handleCopy() {
@@ -982,8 +892,8 @@ function CoverLetterStudioContent() {
               </div>
 
               {/* Action Toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-border w-full">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
                     size="sm"

@@ -33,6 +33,7 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { label: 'Copilot', href: '/dashboard?tab=overview', icon: Bot },
   { label: 'Resumes', href: '/dashboard?tab=resumes', icon: FileText },
+  { label: 'Cover Letter', href: '/cover_letter', icon: Mail },
   { label: 'Job Board', href: '/application_board', icon: Briefcase },
 ]
 

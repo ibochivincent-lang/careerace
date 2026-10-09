@@ -3539,6 +3539,18 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={triggerAutoApplyCycle}
+                    disabled={autoApplyRunning}
+                    className="gap-1.5 text-xs font-semibold h-8 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
+                    title="Scan verified corporate contacts for target role opening"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span>{autoApplyRunning ? 'Scanning...' : 'Match Opening'}</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setSamplePreviewModalOpen(true)}
                     className="gap-1.5 text-xs font-semibold h-8 px-3 border-border hover:bg-muted text-foreground cursor-pointer"
                     title="Preview full rendered email layout, headers, and attachments"
@@ -5140,12 +5152,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </div>
 
                       {/* Middle: Location & Workplace */}
-                      <div className="text-[11px] sm:text-xs text-muted-foreground shrink-0 md:min-w-[180px] lg:min-w-[220px]">
+                      <div className="text-[11px] sm:text-xs text-muted-foreground truncate md:shrink-0 md:min-w-[180px] lg:min-w-[220px]">
                         <span>{job.location}</span>
                       </div>
 
                       {/* Right: Actions */}
-                      <div className="flex flex-wrap items-center justify-between md:justify-end gap-1.5 sm:gap-2 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-border/40">
+                      <div className="w-full md:w-auto flex flex-wrap items-center justify-between md:justify-end gap-1.5 sm:gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-border/40 max-w-full">
                         <span className="text-[11px] sm:text-xs text-muted-foreground font-mono w-9 sm:w-10 text-left md:text-right">
                           {job.postedDate}
                         </span>
@@ -5163,7 +5175,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
                         {/* Applied Tab vs Discovery Actions */}
                         {isApplied ? (
-                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 max-w-full">
                             {/* Follow-up Generator Button */}
                             <Button
                               variant="outline"
