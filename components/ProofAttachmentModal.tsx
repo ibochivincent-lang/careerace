@@ -237,7 +237,7 @@ export function ProofAttachmentModal({
                   <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 break-all bg-emerald-500/10 p-2 rounded-lg">
                     <span className="font-semibold block text-[10px] uppercase text-muted-foreground">Walrus Blob ID:</span>
                     <a
-                      href={existingProof.walrusUrl || `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${existingProof.blobId}`}
+                      href={existingProof.walrusUrl || `https://aggregator.walrus-mainnet.walrus.space/v1/blobs/${existingProof.blobId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:underline inline-flex items-center gap-1"

@@ -122,7 +122,7 @@ test("Direct Walrus: archives chat session directly, updates vault record, and r
     channel: "overview",
     messages: [
       { role: "user", content: "Direct Walrus decentralized vault test turn" },
-      { role: "assistant", content: "Stored permanently on Walrus Testnet without API key bottlenecks." },
+      { role: "assistant", content: "Stored permanently on Walrus Mainnet without API key bottlenecks." },
     ],
   });
 

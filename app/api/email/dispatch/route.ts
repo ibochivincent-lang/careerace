@@ -234,7 +234,7 @@ export async function POST(req: Request) {
       dkimStatus: result.provider === 'brevo'
         ? 'PASS (RFC 6376 aligned via Brevo)'
         : 'PASS (RFC 6376 aligned via Resend)',
-      walrusVerificationUrl: walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : null,
+      walrusVerificationUrl: walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : null,
       attachmentsCount: attachedCount,
       attachments: attachments || [],
       message: `Live application successfully transmitted to ${to} via ${providerLabel}. Sovereign Walrus memory permanently recorded.`

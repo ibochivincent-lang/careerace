@@ -276,7 +276,7 @@ export default function ProgressPage() {
               <ShieldCheck className="w-4 h-4 text-amber-500" />
             </div>
             <div className="text-xl font-bold font-mono">AES-256-GCM</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Walrus Testnet Blobs</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Walrus Mainnet Blobs</p>
           </Card>
         </div>
 

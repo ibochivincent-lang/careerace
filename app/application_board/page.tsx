@@ -2562,7 +2562,7 @@ export default function ApplicationBoardPage() {
     const candidatePhone = activeProfileData?.phone || ''
     const candidateRole = selectedVersionMeta?.role || activeProfileData?.target_roles?.[0] || targetRoleInput || 'Applicant'
     const walrusBlobId = selectedVersionMeta?.blobId || ''
-    const walrusUrl = walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : 'https://careerace.online'
+    const walrusUrl = walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : 'https://careerace.online'
 
     const topSkills = activeProfileData?.skills?.slice(0, 5).join(', ') || 'Systems Engineering, Operational Diagnostics, Technical Rigor'
     const recentExp = activeProfileData?.work_experience?.[0]
@@ -2583,7 +2583,7 @@ export default function ApplicationBoardPage() {
 
     const cvCredentialBlock = cvSourceType === 'uploaded' && originalCvFileName
       ? `\n\nAttached Primary Resume:\n• [ATTACHED CV] ${originalCvFileName}`
-      : `\n\nWalrus Sovereign Portfolio & Verified Snapshot:\n${walrusUrl}\nWalrus Credential ID: ${walrusBlobId || 'Anchored on Walrus Testnet'}`
+      : `\n\nWalrus Sovereign Portfolio & Verified Snapshot:\n${walrusUrl}\nWalrus Credential ID: ${walrusBlobId || 'Anchored on Walrus Mainnet'}`
 
     let tailoredCoverLetter = ''
     try {
@@ -2776,7 +2776,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       const walrusBlobId = selectedVersionMeta?.blobId || ''
       const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
       const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
-      const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+      const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
       const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
       const res = await fetch('/api/email/dispatch', {
@@ -2900,7 +2900,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
       const walrusBlobId = selectedVersionMeta?.blobId || ''
       const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
       const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
-      const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+      const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
       const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
       const res = await fetch('/api/email/dispatch', {
@@ -2977,7 +2977,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
       const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
       const primaryCvUrl = cvSourceType === 'walrus' 
-        ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) 
+        ? (walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : undefined) 
         : uploadedDocuments[0]?.walrusUrl
       const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
@@ -3037,7 +3037,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
         : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
       const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
       const primaryCvUrl = cvSourceType === 'walrus' 
-        ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) 
+        ? (walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : undefined) 
         : uploadedDocuments[0]?.walrusUrl
       const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
@@ -3112,7 +3112,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     const walrusBlobId = selectedVersionMeta?.blobId || ''
     const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
     const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
-    const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+    const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
     const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
     let currentAppliedList = [...appliedJobs]
@@ -3293,7 +3293,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
     const walrusBlobId = selectedVersionMeta?.blobId || ''
     const primaryCvName = cvSourceType === 'walrus' ? `${candidateName.replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (uploadedDocuments[0]?.name || `${candidateName.replace(/\s+/g, '_')}_CV.pdf`)
     const primaryCvSize = selectedVersionMeta?.fileSize || uploadedDocuments[0]?.size || 245000
-    const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/testnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
+    const primaryCvUrl = cvSourceType === 'walrus' ? (walrusBlobId ? `https://walruscan.com/mainnet/blob/${walrusBlobId}` : undefined) : uploadedDocuments[0]?.walrusUrl
     const passportUrl = `https://careerace.online/verify?applicant=${encodeURIComponent(candidateName)}`
 
     let smtpConfig: any = { provider: 'sovereign_relay' }
@@ -4532,7 +4532,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         </Badge>
                       </div>
                       <p className="text-[10px] text-muted-foreground font-mono">
-                        Blob URL: {selectedVersionMeta?.blobId ? `https://walruscan.com/testnet/blob/${selectedVersionMeta.blobId}` : 'https://careerace.online/verify'}
+                        Blob URL: {selectedVersionMeta?.blobId ? `https://walruscan.com/mainnet/blob/${selectedVersionMeta.blobId}` : 'https://careerace.online/verify'}
                       </p>
                     </div>
 
@@ -4631,7 +4631,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
 
                           {selectedVersionMeta?.blobId && (
                             <div className="pt-1 text-[10px] text-slate-600 dark:text-slate-400 font-mono truncate">
-                              Walrus Explorer: <span className="text-emerald-600 underline">https://walruscan.com/testnet/blob/{selectedVersionMeta.blobId}</span>
+                              Walrus Explorer: <span className="text-emerald-600 underline">https://walruscan.com/mainnet/blob/{selectedVersionMeta.blobId}</span>
                             </div>
                           )}
 

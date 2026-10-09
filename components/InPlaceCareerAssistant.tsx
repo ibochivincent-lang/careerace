@@ -4240,7 +4240,7 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                   </Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground font-mono">
-                  Blob URL: https://walruscan.com/testnet/blob/careerace_active_snapshot
+                  Blob URL: https://walruscan.com/mainnet/blob/careerace_active_snapshot
                 </p>
               </div>
 

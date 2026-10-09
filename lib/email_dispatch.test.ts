@@ -300,7 +300,7 @@ test("Email Dispatch: buildApplicationEmailHtml produces Image 2 branded templat
         name: "STCW_Safety_Certificate.pdf",
         size: 180000,
         blobId: "0x89ab12cd",
-        url: "https://walruscan.com/testnet/blob/0x89ab12cd",
+        url: "https://walruscan.com/mainnet/blob/0x89ab12cd",
       },
     ],
   });
@@ -323,7 +323,7 @@ test("Email Dispatch: buildApplicationEmailHtml produces Image 2 branded templat
   assert.ok(html.includes("Ibochi_Vincent_CV.pdf"));
   assert.ok(html.includes("Download CV"));
   assert.ok(html.includes("STCW_Safety_Certificate.pdf"));
-  assert.ok(html.includes("walruscan.com/testnet/blob/0x434f860c82"));
+  assert.ok(html.includes("walruscan.com/mainnet/blob/0x434f860c82"));
 
   // 4. Primary Green CTA button
   assert.ok(html.includes("View Verified Candidate Passport"));

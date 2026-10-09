@@ -52,9 +52,9 @@ export interface WalrusConsoleStatus {
 }
 
 export const DIRECT_WALRUS_PUBLISHER_URL =
-  process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-testnet.walrus.space";
+  process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-mainnet.walrus.space";
 export const DIRECT_WALRUS_AGGREGATOR_URL =
-  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-testnet.walrus.space";
+  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
 
 const WALRUS_CONSOLE_BASE_URL =
   process.env.WALRUS_CONSOLE_BASE_URL || "https://api.console.walrus.xyz/api/v1";

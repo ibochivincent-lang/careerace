@@ -149,7 +149,7 @@ if (!authorized) return NextResponse.json({ error: "Forbidden" }, { status: 403 
       bestFor: 'Heterogeneous workloads, specialized pipelines, external services',
       careerAceUsage: 'Decoupled external micro-engines: Resend Email Worker, Walrus Aggregator, Sui Fullnode RPC.',
       codeSnippet: `// CareerAce External Micro-Service Dispatch:
-await fetch("https://publisher.walrus-testnet.walrus.space/v1/blobs", {
+await fetch("https://publisher.walrus-mainnet.walrus.space/v1/blobs", {
   method: "PUT",
   body: payloadStream
 });`,

@@ -192,7 +192,7 @@ export function WalrusVersionModal({
                     </Button>
 
                     <a
-                      href={ver.walrusUrl || `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${ver.blobId}`}
+                      href={ver.walrusUrl || `https://aggregator.walrus-mainnet.walrus.space/v1/blobs/${ver.blobId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 h-7 px-2 text-[11px] rounded-md border border-border text-muted-foreground hover:text-foreground bg-background hover:bg-muted/40 transition-colors"
@@ -226,7 +226,7 @@ export function WalrusVersionModal({
 
         {/* Modal Footer */}
         <div className="p-3 px-5 border-t border-border/80 bg-muted/20 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>Decentralized blobs stored on Walrus testnet.</span>
+          <span>Decentralized blobs stored on Walrus mainnet.</span>
           <Button variant="outline" size="sm" onClick={onClose} className="h-7 text-xs">
             Done
           </Button>

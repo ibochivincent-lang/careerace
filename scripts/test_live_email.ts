@@ -43,21 +43,21 @@ My verified credentials and technical portfolio are registered through the Caree
     walrusBlobId: "0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
     primaryCvName: `${candidateName.replace(/\s+/g, "_")}_Resume.pdf`,
     primaryCvSize: 245000,
-    primaryCvUrl: "https://walruscan.com/testnet/blob/0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
+    primaryCvUrl: "https://walruscan.com/mainnet/blob/0x434f860c828dc4320be447975b8283d7c5786c4a08b9ddc8f88540d9ea69aa00",
     attachments: [
       {
         id: "att_stcw",
         name: "STCW_Maritime_Safety_Certification.pdf",
         size: 184000,
         blobId: "0x89ab12cd34ef5678",
-        url: "https://walruscan.com/testnet/blob/0x89ab12cd34ef5678",
+        url: "https://walruscan.com/mainnet/blob/0x89ab12cd34ef5678",
       },
       {
         id: "att_transcripts",
         name: "Engineering_Degree_Transcript_Official.pdf",
         size: 420000,
         blobId: "0x1234abcd5678ef90",
-        url: "https://walruscan.com/testnet/blob/0x1234abcd5678ef90",
+        url: "https://walruscan.com/mainnet/blob/0x1234abcd5678ef90",
       },
     ],
   });

@@ -43,7 +43,7 @@ export interface AnchorCredentialParams {
 
 const SUI_TESTNET_EXPLORER = "https://suiscan.xyz/testnet/tx";
 const WALRUS_AGGREGATOR =
-  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-testnet.walrus.space";
+  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
 const SUI_NETWORK = process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet";
 
 /**

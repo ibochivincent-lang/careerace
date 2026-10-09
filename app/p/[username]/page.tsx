@@ -125,7 +125,7 @@ export default async function PublicProfilePage({ params }: Props) {
       : ['Technical Architecture', 'System Design', 'Strategic Execution', 'Domain Leadership', 'Problem Solving'])
 
   const walrusBlobId = suinsPassport?.walrusBlobId || null
-  const walrusUrl = suinsPassport?.walrusUrl || (walrusBlobId ? `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${walrusBlobId}` : null)
+  const walrusUrl = suinsPassport?.walrusUrl || (walrusBlobId ? `https://aggregator.walrus-mainnet.walrus.space/v1/blobs/${walrusBlobId}` : null)
   const onchainAnchors = suinsPassport?.onchainAnchors || []
   const starScore = suinsPassport?.starScore || 9.1
   const displayDomain = boundDomain || suinsPassport?.domain || (decodedUsername.endsWith('.sui') ? decodedUsername : `${decodedUsername.toLowerCase().replace(/[^a-z0-9]/g, '')}.sui`)
@@ -305,7 +305,7 @@ export default async function PublicProfilePage({ params }: Props) {
                   {walrusBlobId && (
                     <>
                       <a
-                        href={`https://aggregator.walrus-testnet.walrus.space/v1/blobs/${walrusBlobId}`}
+                        href={`https://aggregator.walrus-mainnet.walrus.space/v1/blobs/${walrusBlobId}`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline"
@@ -314,7 +314,7 @@ export default async function PublicProfilePage({ params }: Props) {
                       </a>
                       <span className="text-muted-foreground">&bull;</span>
                       <a
-                        href={`https://walruscan.com/testnet/blob/${walrusBlobId}`}
+                        href={`https://walruscan.com/mainnet/blob/${walrusBlobId}`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline"
@@ -401,12 +401,12 @@ export default async function PublicProfilePage({ params }: Props) {
             <h3 className="font-bold text-sm">Decentralized Storage &amp; Cryptographic Proofs</h3>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl">
-            This candidate passport is authenticated against decentralized storage nodes on Walrus Testnet and resolved via Sui Name Service (SuiNS).
+            This candidate passport is authenticated against decentralized storage nodes on Walrus Mainnet and resolved via Sui Name Service (SuiNS).
             The candidate holds sovereign ownership of their data. Claims cannot be altered by centralized third parties.
           </p>
           <div className="pt-2 flex flex-wrap gap-4 text-[11px] font-mono text-muted-foreground">
             <span>Name Service: SuiNS (.sui)</span>
-            <span>Storage: Walrus Testnet Blobs</span>
+            <span>Storage: Walrus Mainnet Blobs</span>
             <span>Identity: Sui zkLogin Address</span>
             <span>Encryption: AES-256-GCM / PBKDF2</span>
           </div>

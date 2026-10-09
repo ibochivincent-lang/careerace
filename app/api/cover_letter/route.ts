@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       : `Throughout my career, I have focused on solving high-stakes technical bottlenecks with verifiable execution.`;
 
     const walrusAttestationLine = walrusBlobId
-      ? `My verified work attestations and cryptographic portfolio are permanently anchored on Mysten Labs Walrus storage at: https://walruscan.com/testnet/blob/${walrusBlobId}`
+      ? `My verified work attestations and cryptographic portfolio are permanently anchored on Mysten Labs Walrus storage at: https://walruscan.com/mainnet/blob/${walrusBlobId}`
       : `My verified credentials and technical portfolio are registered through the CareerAce sovereign proof network.`;
 
     const todayDate = new Date().toLocaleDateString('en-US', {

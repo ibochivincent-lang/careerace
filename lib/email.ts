@@ -583,7 +583,7 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
   const passportUrl =
     options.passportUrl ||
     (options.walrusBlobId
-      ? `https://walruscan.com/testnet/blob/${options.walrusBlobId}`
+      ? `https://walruscan.com/mainnet/blob/${options.walrusBlobId}`
       : "https://careerace.online/verify");
 
   const primaryCvName =
@@ -594,7 +594,7 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
   const primaryCvUrl =
     options.primaryCvUrl ||
     (options.walrusBlobId
-      ? `https://walruscan.com/testnet/blob/${options.walrusBlobId}`
+      ? `https://walruscan.com/mainnet/blob/${options.walrusBlobId}`
       : passportUrl);
 
   const walrusBlobId = options.walrusBlobId || "";
@@ -608,7 +608,7 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
             const downloadUrl =
               att.url ||
               (att.blobId
-                ? `https://walruscan.com/testnet/blob/${att.blobId}`
+                ? `https://walruscan.com/mainnet/blob/${att.blobId}`
                 : passportUrl);
             return `
               <div style="background:#ffffff; border:1px solid #bbf7d0; border-radius:8px; padding:10px 14px; margin-bottom:8px; box-shadow:0 1px 2px rgba(0,0,0,0.02);">
@@ -766,7 +766,7 @@ export function buildApplicationEmailHtml(options: ApplicationEmailBuildOptions)
                     walrusBlobId
                       ? `
                   <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #dcfce7;font-size:10.5px;color:#475569;font-family:'SFMono-Regular',Consolas,Liberation Mono,Menlo,monospace;">
-                    Walrus Blob: <a href="https://walruscan.com/testnet/blob/${walrusBlobId}" target="_blank" style="color:#16a34a;text-decoration:underline;">walruscan.com/testnet/blob/${walrusBlobId.slice(0, 10)}...${walrusBlobId.slice(-8)}</a>
+                    Walrus Blob: <a href="https://walruscan.com/mainnet/blob/${walrusBlobId}" target="_blank" style="color:#16a34a;text-decoration:underline;">walruscan.com/mainnet/blob/${walrusBlobId.slice(0, 10)}...${walrusBlobId.slice(-8)}</a>
                   </div>`
                       : ""
                   }

@@ -158,7 +158,7 @@ Respond with JSON only.`;
 
     // Mint / Store encrypted Soulbound Credential to Walrus Protocol
     let walrusBlobId = `walrus-stcw-${sha256Digest.slice(0, 24)}`;
-    let walrusUrl = `https://walruscan.com/testnet/blob/${walrusBlobId}`;
+    let walrusUrl = `https://walruscan.com/mainnet/blob/${walrusBlobId}`;
 
     try {
       const bufferToUpload = Buffer.from(rawPayload, "utf-8");
@@ -171,9 +171,9 @@ Respond with JSON only.`;
       walrusBlobId = uploadRes.blobId;
       walrusUrl = uploadRes.walrusUrl;
     } catch (_walrusErr) {
-      // If Walrus publisher testnet is temporarily rate limited, retain deterministic testnet reference
-      walrusBlobId = `walrus-testnet-${sha256Digest.slice(0, 32)}`;
-      walrusUrl = `https://walruscan.com/testnet/blob/${walrusBlobId}`;
+      // If Walrus publisher mainnet is temporarily rate limited, retain deterministic reference
+      walrusBlobId = `walrus-mainnet-${sha256Digest.slice(0, 32)}`;
+      walrusUrl = `https://walruscan.com/mainnet/blob/${walrusBlobId}`;
     }
 
     const finalVerification: MaritimeVerificationResult = {

@@ -38,7 +38,7 @@ export interface SuinsCandidatePassport {
 
 const SUI_NETWORK = process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet";
 const WALRUS_AGGREGATOR =
-  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-testnet.walrus.space";
+  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://careerace.online";
 
 /**

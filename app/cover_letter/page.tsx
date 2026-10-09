@@ -210,7 +210,7 @@ function generateLocalDraft(params: {
   const contactLine = contactPieces.length > 0 ? contactPieces.join(' · ') : 'Direct Contact Verified · Sovereign Record';
 
   const walrusLine = params.walrusBlobId
-    ? `My verified work attestations, cryptographic credentials, and tailored portfolio are permanently anchored on Mysten Labs Walrus storage at: https://walruscan.com/testnet/blob/${params.walrusBlobId}`
+    ? `My verified work attestations, cryptographic credentials, and tailored portfolio are permanently anchored on Mysten Labs Walrus storage at: https://walruscan.com/mainnet/blob/${params.walrusBlobId}`
     : `My verified credentials and technical portfolio are registered through the CareerAce sovereign proof network.`;
 
   const todayDate = new Date().toLocaleDateString('en-US', {

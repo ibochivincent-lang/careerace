@@ -128,7 +128,7 @@ export default function SettingsPage() {
       setVaultStats({
         anchoredCount: anchored || 14,
         versionsCount: versions || 3,
-        lastSync: 'Walrus Testnet Epoch 12',
+        lastSync: 'Walrus Mainnet Epoch 12',
       })
     } catch {}
   }, [])
@@ -621,14 +621,14 @@ export default function SettingsPage() {
               <Layers className="w-4 h-4 text-primary" />
               <h2 className="font-bold text-sm text-foreground">Storage Protocol Settings</h2>
             </div>
-            <span className="text-[11px] font-mono text-muted-foreground">Testnet</span>
+            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">Mainnet</span>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-3 text-xs">
             <div className="p-3 rounded-lg border bg-card/60 space-y-1">
               <span className="text-muted-foreground text-[11px] font-medium">Publisher Endpoint</span>
               <span className="font-mono text-xs font-semibold block text-foreground truncate">
-                https://publisher.walrus-testnet.walrus.space
+                https://publisher.walrus-mainnet.walrus.space
               </span>
             </div>
             <div className="p-3 rounded-lg border bg-card/60 space-y-1">

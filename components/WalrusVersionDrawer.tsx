@@ -85,7 +85,7 @@ export function WalrusVersionDrawer({
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Immutable encrypted snapshots stored on Mysten Labs Walrus testnet.
+              Immutable encrypted snapshots stored on Mysten Labs Walrus mainnet.
             </p>
           </div>
         </div>
@@ -192,7 +192,7 @@ export function WalrusVersionDrawer({
                   </Button>
 
                   <a
-                    href={ver.walrusUrl || `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${ver.blobId}`}
+                    href={ver.walrusUrl || `https://aggregator.walrus-mainnet.walrus.space/v1/blobs/${ver.blobId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 h-7 px-2 text-[11px] rounded-md border border-border text-muted-foreground hover:text-foreground bg-background hover:bg-muted/40 transition-colors"

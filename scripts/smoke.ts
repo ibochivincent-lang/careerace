@@ -107,7 +107,7 @@ function freshClient(namespace: string) {
   return build(namespace);
 }
 
-const AGGREGATOR = process.env.WALRUS_AGGREGATOR ?? "https://aggregator.walrus-testnet.walrus.space/v1/blobs";
+const AGGREGATOR = process.env.WALRUS_AGGREGATOR ?? "https://aggregator.walrus-mainnet.walrus.space/v1/blobs";
 const blobLink = (id: string) => `${AGGREGATOR}/${id}`;
 
 /** Every assertion, and every blob this run put on Walrus, for PROOF.md. */

@@ -12,9 +12,9 @@
 import crypto from "node:crypto";
 
 const WALRUS_TESTNET_PUBLISHER =
-  process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-testnet.walrus.space";
+  process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-mainnet.walrus.space";
 const WALRUS_TESTNET_AGGREGATOR =
-  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-testnet.walrus.space";
+  process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
 
 const DEFAULT_EPOCHS = 5;
 

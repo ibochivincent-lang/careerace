@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
       uploadResult = await uploadEncryptedResumeToWalrus(bundleBuffer, address, fileName, 5);
     } catch (walrusErr: any) {
       console.warn("Encrypted Walrus upload failed, attempting direct unencrypted fallback to publisher:", walrusErr);
-      const WALRUS_TESTNET_PUBLISHER =
-        process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-testnet.walrus.space";
-      const resp = await fetch(`${WALRUS_TESTNET_PUBLISHER}/v1/blobs?epochs=5`, {
+      const WALRUS_PUBLISHER =
+        process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-mainnet.walrus.space";
+      const resp = await fetch(`${WALRUS_PUBLISHER}/v1/blobs?epochs=5`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: bundleBuffer,
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         suiObjectId: data.newlyCreated?.blobObject?.id || "",
         epochs: 5,
         encrypted: false,
-        walrusUrl: `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`,
+        walrusUrl: `https://aggregator.walrus-mainnet.walrus.space/v1/blobs/${blobId}`,
         sha256Digest: "",
       };
     }

@@ -204,8 +204,8 @@ export function LivePdfPreview({
     if (!activeBlobId) return;
     const isRealBlob = !activeBlobId.startsWith("walrus-");
     const walrusVerifyUrl = isRealBlob
-      ? `https://walruscan.com/testnet/blob/${activeBlobId}`
-      : `https://aggregator.walrus-testnet.walrus.space/v1/${activeBlobId}`;
+      ? `https://walruscan.com/mainnet/blob/${activeBlobId}`
+      : `https://aggregator.walrus-mainnet.walrus.space/v1/${activeBlobId}`;
 
     QRCode.toDataURL(walrusVerifyUrl, {
       margin: 1,
@@ -609,7 +609,7 @@ export function LivePdfPreview({
                 <div>
                   <div style="font-weight: bold; text-transform: uppercase;">Walrus Verifiable Credential</div>
                   <div>Blob ID: ${activeBlobId ? `${activeBlobId.slice(0, 16)}...${activeBlobId.slice(-8)}` : "Verified On-chain"}</div>
-                  <div style="font-size: 6.5pt; color: #64748b;">Cryptographically sealed &amp; anchored on Mysten Walrus Testnet</div>
+                  <div style="font-size: 6.5pt; color: #64748b;">Cryptographically sealed &amp; anchored on Mysten Walrus Mainnet</div>
                 </div>
               </div>
               <div style="text-align: right;">

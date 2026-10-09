@@ -247,8 +247,8 @@ Detailed test outputs, memory boundary verification, and framework matrices are 
 - **Build Command**: `npm run build`
 - **Environment Variables**:
   - `NEXT_PUBLIC_APP_URL=https://careerace.online`
-  - `WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space`
-  - `WALRUS_AGGREGATOR_URL=https://aggregator.walrus-testnet.walrus.space`
+  - `WALRUS_PUBLISHER_URL=https://publisher.walrus-mainnet.walrus.space`
+  - `WALRUS_AGGREGATOR_URL=https://aggregator.walrus-mainnet.walrus.space`
   - `SUI_NETWORK=testnet`
   - `SUI_RPC_URL=https://fullnode.testnet.sui.io:443`
   - `RESEND_API_KEY` (and optional `RESEND_API_KEY_2`, `BREVO_API_KEY`, `SENDGRID_API_KEY`)
