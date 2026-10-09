@@ -4877,10 +4877,10 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
               </div>
 
               {/* 5 Filter Dropdowns (Roles, Seniority / Maritime Ranks, Companies, Countries, Workplaces) */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Filter 1: Roles */}
-                  <div className="relative">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-2.5 pt-1">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+                  {/* Filter 1: Roles (Disciplines) */}
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={selectedRole}
                       onChange={(e) => {
@@ -4889,7 +4889,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           setCustomRoleInput('')
                         }
                       }}
-                      className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
+                      className="appearance-none w-full sm:w-auto h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer truncate"
                     >
                       {DISCIPLINE_CATEGORIES.map((cat) => (
                         <option key={cat.id} value={cat.id}>
@@ -4900,33 +4900,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     <ChevronDown className="w-3 h-3 absolute right-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   </div>
 
-                  {/* Custom Role / Sector Input (when 'others' is selected) */}
-                  {selectedRole === 'others' && (
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={customRoleInput}
-                        onChange={(e) => setCustomRoleInput(e.target.value)}
-                        placeholder="Type custom discipline or sector..."
-                        className="h-8 pl-3 pr-7 rounded-lg border border-primary/40 bg-card text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-52 shadow-xs"
-                      />
-                      {customRoleInput && (
-                        <button
-                          onClick={() => setCustomRoleInput('')}
-                          className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Filter 2: Seniority & Maritime Ranks (Cadet, Junior, Officer, Senior, Chief/Superintendent, Executive) */}
-                  <div className="relative">
+                  {/* Filter 2: Seniority & Maritime Ranks */}
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={selectedSeniority}
                       onChange={(e) => setSelectedSeniority(e.target.value)}
-                      className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
+                      className="appearance-none w-full sm:w-auto h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer truncate"
                     >
                       <option value="all">All seniority & ranks</option>
                       <option value="intern_cadet">Intern / Cadet / Trainee</option>
@@ -4939,12 +4918,33 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     <ChevronDown className="w-3 h-3 absolute right-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   </div>
 
+                  {/* Custom Role / Sector Input (when 'others' is selected) */}
+                  {selectedRole === 'others' && (
+                    <div className="relative col-span-2 sm:col-span-1 w-full sm:w-auto">
+                      <input
+                        type="text"
+                        value={customRoleInput}
+                        onChange={(e) => setCustomRoleInput(e.target.value)}
+                        placeholder="Type custom discipline or sector..."
+                        className="h-8 pl-3 pr-7 rounded-lg border border-primary/40 bg-card text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-52 shadow-xs"
+                      />
+                      {customRoleInput && (
+                        <button
+                          onClick={() => setCustomRoleInput('')}
+                          className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Filter 3: Companies */}
-                  <div className="relative">
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={selectedCompany}
                       onChange={(e) => setSelectedCompany(e.target.value)}
-                      className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
+                      className="appearance-none w-full sm:w-auto h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer truncate"
                     >
                       <option value="all">All companies</option>
                       {uniqueCompanies.map((c) => (
@@ -4956,12 +4956,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     <ChevronDown className="w-3 h-3 absolute right-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   </div>
 
-                  {/* Filter 4: Countries (Nigeria, Remote, US, UK, Netherlands, Norway, Germany, France, Canada, International) */}
-                  <div className="relative">
+                  {/* Filter 4: Countries */}
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={selectedCountry}
                       onChange={(e) => setSelectedCountry(e.target.value)}
-                      className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
+                      className="appearance-none w-full sm:w-auto h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer truncate"
                     >
                       <option value="all">All countries</option>
                       <option value="ng">Nigeria</option>
@@ -4978,12 +4978,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     <ChevronDown className="w-3 h-3 absolute right-2.5 top-2.5 text-muted-foreground pointer-events-none" />
                   </div>
 
-                  {/* Filter 5: Workplaces (Remote, Hybrid, On-site, Offshore / Vessel) */}
-                  <div className="relative">
+                  {/* Filter 5: Workplaces */}
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={selectedWorkplace}
                       onChange={(e) => setSelectedWorkplace(e.target.value)}
-                      className="appearance-none h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer"
+                      className="appearance-none w-full sm:w-auto h-8 pl-3 pr-7 rounded-lg border border-border bg-card text-xs font-medium text-foreground hover:bg-muted/30 focus:outline-none cursor-pointer truncate"
                     >
                       <option value="all">All workplaces</option>
                       <option value="remote">Remote</option>
@@ -5001,7 +5001,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                     size="sm"
                     disabled={isSyncingLiveApis}
                     onClick={handleSyncLiveApis}
-                    className="h-8 px-2.5 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 cursor-pointer"
+                    className="w-full sm:w-auto h-8 px-2.5 text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 gap-1.5 cursor-pointer justify-center"
                     title="Fetch fresh verified roles from Remotive, Jobicy, and open APIs"
                   >
                     <RotateCcw className={`w-3 h-3 ${isSyncingLiveApis ? 'animate-spin' : ''}`} />
@@ -5026,7 +5026,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         setSelectedWorkplace('all')
                         setSearchQuery('')
                       }}
-                      className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1 cursor-pointer"
+                      className="col-span-2 sm:col-span-1 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-1 cursor-pointer py-1 sm:py-0"
                     >
                       Reset filters
                     </button>
