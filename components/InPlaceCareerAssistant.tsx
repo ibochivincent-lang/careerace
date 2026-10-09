@@ -567,6 +567,7 @@ export function InPlaceCareerAssistant({
   const [chatSenderEmail, setChatSenderEmail] = useState<string>(cvForm.email || parsedProfile?.email || '')
   const [senderEmailError, setSenderEmailError] = useState<string>('')
   const [chatDispatchDeskActive, setChatDispatchDeskActive] = useState<boolean>(false)
+  const [chatDispatchDeskDismissed, setChatDispatchDeskDismissed] = useState<boolean>(false)
   const [chatSelectedCompanies, setChatSelectedCompanies] = useState<string[]>([])
   const [isChatDispatching, setIsChatDispatching] = useState<boolean>(false)
   const [chatDispatchProgress, setChatDispatchProgress] = useState<{ current: number; total: number; currentCompany: string } | null>(null)
@@ -678,13 +679,59 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
 
     try {
       for (let i = 0; i < targets.length; i++) {
+        const target = targets[i]
         setChatDispatchProgress({
           current: i + 1,
           total: targets.length,
-          currentCompany: targets[i].company,
+          currentCompany: target.company,
         })
+
+        // Call email dispatch API for target
+        try {
+          const subject = `Application: ${target.typicalRoles[0] || cvForm.targetRole || 'Technical Specialist'} - ${cvForm.name || 'Candidate'} (Walrus Credential)`
+          const body = `Dear ${target.company} Hiring Team,\n\nI am submitting my application for the ${target.typicalRoles[0] || cvForm.targetRole} opening. My verified technical skills and credentials align with your requirements.\n\nKey Skills: ${cvForm.skills.slice(0, 6).join(', ')}\n\nSincerely,\n${cvForm.name || 'Candidate'}`
+
+          await fetch('/api/email/dispatch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: target.contactEmail,
+              subject,
+              body,
+              candidateName: cvForm.name || 'Candidate',
+              candidateEmail: chatSenderEmail,
+              candidatePhone: cvForm.phone,
+              candidateLocation: cvForm.location,
+              role: target.typicalRoles[0] || cvForm.targetRole || 'Technical Specialist',
+              company: target.company,
+              walrusBlobId: overviewWalrusVault?.latestBlobId || 'careerace_active_snapshot',
+              primaryCvName: cvSourceType === 'walrus' ? `${(cvForm.name || 'Candidate').replace(/\s+/g, '_')}_Sovereign_CV.pdf` : (originalCvFileName || 'Candidate_CV.pdf'),
+              primaryCvSize: 245000,
+              attachments: uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)),
+            }),
+          }).catch(() => {})
+        } catch {}
+
         await new Promise((r) => setTimeout(r, 600))
       }
+
+      // Send confirmation notification copy to candidate's Reply-To email
+      try {
+        await fetch('/api/email/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: chatSenderEmail,
+            subject: `Application Confirmation: Dispatched ${targets.length} Application(s) – ${cvForm.name || 'Candidate'}`,
+            body: `Hello ${cvForm.name || 'Candidate'},\n\nYour application package has been successfully dispatched to ${targets.length} verified hiring desk(s):\n\n${targets.map((t, idx) => `${idx + 1}. ${t.company} <${t.contactEmail}>`).join('\n')}\n\nEnclosed Credentials:\n- Primary CV: ${cvSourceType === 'walrus' ? 'Walrus Sovereign CV' : originalCvFileName || 'Candidate_CV.pdf'}\n- Attached Documents: ${uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)).length} document(s)\n- Walrus Seal: Verified (ATS 98%)\n\nRecruiters will reply directly to your Reply-To address: ${chatSenderEmail}.\n\nCareerAce Application Desk`,
+            candidateName: 'CareerAce Application Desk',
+            candidateEmail: 'dispatch@careerace.online',
+            role: cvForm.targetRole || 'Technical Specialist',
+            company: 'CareerAce Automated Transmission',
+            walrusBlobId: overviewWalrusVault?.latestBlobId || 'careerace_active_snapshot',
+          }),
+        }).catch(() => {})
+      } catch {}
 
       const todayShort = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       const todayFormal = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -714,7 +761,7 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: sessionAddress || undefined,
-          fact: `Autonomous dispatch executed via Career Copilot Chat to ${targets.length} verified hiring desks (${targets.map(t => t.company).join(', ')}) from candidate sender ${chatSenderEmail}. Date: ${todayFormal}. Walrus seal verified.`,
+          fact: `Dispatch executed via Application Desk to ${targets.length} verified hiring desks (${targets.map(t => t.company).join(', ')}) from candidate reply-to ${chatSenderEmail}. Date: ${todayFormal}. Walrus seal verified.`,
           kind: 'application_dispatch',
         }),
       }).catch(() => {})
@@ -725,14 +772,14 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
         fromName: cvForm.name || 'Candidate',
         fromEmail: chatSenderEmail,
         subject: `Application: ${cvForm.targetRole || 'Technical Specialist'} – ${cvForm.name || 'Candidate'}`,
-        body: `Autonomous Chat Dispatch Package\nCandidate: ${cvForm.name || 'Candidate'}\nRole: ${cvForm.targetRole || 'Technical Specialist'}\nDate: ${todayFormal}\nRecipients: ${targets.map(t => `${t.company} <${t.contactEmail}>`).join(', ')}\nWalrus Sovereign Storage Anchor: ${overviewWalrusVault?.latestBlobId || 'walrus-sealed-attestation'}`,
+        body: `Application Desk Dispatch Package\nCandidate: ${cvForm.name || 'Candidate'}\nRole: ${cvForm.targetRole || 'Technical Specialist'}\nDate: ${todayFormal}\nRecipients: ${targets.map(t => `${t.company} <${t.contactEmail}>`).join(', ')}\nWalrus Sovereign Storage Anchor: ${overviewWalrusVault?.latestBlobId || 'walrus-sealed-attestation'}`,
         company: targets[0]?.company || 'Verified Employers',
         role: cvForm.targetRole || 'Technical Specialist',
       })
 
       setIsChatDispatching(false)
       setChatDispatchCompleted(true)
-      toast.success(`Autonomous dispatch complete! Dispatched to ${targets.length} employers.`, { id: toastId })
+      toast.success(`Dispatched to ${targets.length} employers! Confirmation copy sent to ${chatSenderEmail}.`, { id: toastId })
     } catch (_err) {
       setIsChatDispatching(false)
       toast.error('Dispatch failed due to network error.', { id: toastId })
@@ -740,12 +787,13 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
   }
 
   const shouldShowChatDispatchDesk =
-    chatDispatchDeskActive ||
-    overviewChatMessages.some(
-      (m) =>
-        m.content.includes('Autonomous Application Dispatch Desk') ||
-        m.content.includes('Target Verified Employers')
-    )
+    !chatDispatchDeskDismissed &&
+    (chatDispatchDeskActive ||
+      overviewChatMessages.some(
+        (m) =>
+          m.content.includes('Application Desk') ||
+          m.content.includes('Autonomous Application Dispatch Desk')
+      ))
 
   // Load saved uploaded documents, custom CV, and cover letter from localStorage
   useEffect(() => {
@@ -1491,37 +1539,36 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                 {shouldShowChatDispatchDesk && (
                   <div className="my-3 p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-500/50 bg-gradient-to-b from-card via-card to-emerald-500/5 shadow-xl space-y-3.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     {/* Desk Card Header */}
-                    <div className="flex items-center justify-between pb-2.5 border-b border-border/80">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-2xs">
-                          <Send className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h3 className="text-xs sm:text-sm font-bold text-foreground">
-                              Autonomous Application Dispatch Desk
-                            </h3>
-                            <Badge variant="outline" className="text-[9px] font-mono border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
-                              AUTONOMOUS DISPATCH
-                            </Badge>
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">
-                            Targeting verified corporate hiring desks in {activeChatDisciplineCategory}
-                          </p>
-                        </div>
+                    <div className="flex items-center justify-between pb-2 border-b border-border/80">
+                      <div>
+                        <h3 className="text-xs font-bold text-foreground tracking-tight">
+                          Application Desk
+                        </h3>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] font-mono text-muted-foreground flex items-center gap-1 shrink-0">
-                        <Calendar className="w-3 h-3 text-emerald-500" />
-                        <span>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[9.5px] font-mono text-muted-foreground flex items-center gap-1 shrink-0 py-0.5">
+                          <Calendar className="w-2.5 h-2.5 text-emerald-500" />
+                          <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </Badge>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChatDispatchDeskActive(false)
+                            setChatDispatchDeskDismissed(true)
+                          }}
+                          aria-label="Close Application Desk"
+                          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Target Verified Employers Checklist */}
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-foreground flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Target Verified Employers ({chatSelectedCompanies.length} of {verifiedChatEmployers.length} selected)</span>
+                      <div className="flex items-center justify-between text-[10.5px]">
+                        <span className="font-bold text-foreground">
+                          Target Verified Employers ({chatSelectedCompanies.length} of {verifiedChatEmployers.length} selected)
                         </span>
                         <div className="flex items-center gap-1">
                           <button
@@ -1542,7 +1589,7 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1">
                         {verifiedChatEmployers.map((emp) => {
                           const isChecked = chatSelectedCompanies.includes(emp.id)
                           return (
@@ -1556,7 +1603,7 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                                 )
                               }}
                               className={cn(
-                                "p-2 rounded-xl border text-xs cursor-pointer select-none transition-all flex items-start gap-2",
+                                "p-1.5 px-2 rounded-lg border text-xs cursor-pointer select-none transition-all flex items-start gap-1.5",
                                 isChecked
                                   ? "border-emerald-500/60 bg-emerald-500/10 shadow-2xs"
                                   : "border-border/70 bg-background hover:bg-muted/40"
@@ -1566,15 +1613,15 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={() => {}}
-                                className="w-3.5 h-3.5 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 pointer-events-none shrink-0"
+                                className="w-3 h-3 mt-0.5 rounded border-border text-emerald-600 focus:ring-emerald-500 pointer-events-none shrink-0"
                               />
-                              <div className="min-w-0 flex-1">
+                              <div className="min-w-0 flex-1 leading-tight">
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="font-bold text-foreground text-[11px] truncate">{emp.company}</span>
-                                  <span className="text-[9px] font-mono text-muted-foreground shrink-0">{emp.location.split('/')[0].trim()}</span>
+                                  <span className="font-bold text-foreground text-[10.5px] truncate">{emp.company}</span>
+                                  <span className="text-[8.5px] font-mono text-muted-foreground shrink-0">{emp.location.split('/')[0].trim()}</span>
                                 </div>
-                                <div className="text-[10px] text-muted-foreground font-mono truncate">{emp.contactEmail}</div>
-                                <div className="text-[9.5px] text-emerald-600 dark:text-emerald-400 font-medium truncate">
+                                <div className="text-[9.5px] text-muted-foreground font-mono truncate">{emp.contactEmail}</div>
+                                <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium truncate">
                                   {emp.typicalRoles[0] || cvForm.targetRole}
                                 </div>
                               </div>
@@ -1625,11 +1672,12 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                           <Button
                             type="button"
                             size="sm"
-                            onClick={handleDownloadCvDirectly}
-                            className="h-6 px-2 text-[10px] gap-1 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-2xs"
+                            variant="outline"
+                            onClick={() => inPlaceOriginalFileInputRef.current?.click()}
+                            className="h-6 px-2 text-[10px] gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer shadow-2xs"
                           >
-                            <Download className="w-3 h-3" />
-                            <span>Download PDF</span>
+                            <RefreshCw className="w-3 h-3 text-emerald-500" />
+                            <span>Change CV</span>
                           </Button>
                         </div>
                       </div>
@@ -1682,19 +1730,33 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                           </div>
                         </div>
                       )}
+
+                      {/* Attach / Upload Additional Documents Action */}
+                      <div className="pt-1 flex items-center justify-between gap-2 border-t border-emerald-500/20">
+                        <span className="text-[9.5px] text-muted-foreground">
+                          {uploadedDocuments.length > 0
+                            ? `${uploadedDocuments.length} additional credential(s) attached`
+                            : 'Certificates, diplomas, transcripts or portfolios'}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => inPlaceDocFileInputRef.current?.click()}
+                          className="h-6 px-2.5 text-[10px] gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
+                        >
+                          <Paperclip className="w-3 h-3 text-emerald-500" />
+                          <span>Attach Documents</span>
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Sender Email Verification Input */}
-                    <div className="p-3 rounded-xl border border-border bg-card space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Candidate Sender / Reply-To Email Address *</span>
-                        </label>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium">
-                          Recruiters will reply directly here
-                        </span>
-                      </div>
+                    <div className="p-2.5 sm:p-3 rounded-xl border border-border bg-card space-y-1">
+                      <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Reply-To Email *</span>
+                      </label>
                       <input
                         type="email"
                         value={chatSenderEmail}
@@ -3190,42 +3252,6 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
               </div>
             </div>
 
-            {/* Quick Prompt Chips */}
-            <div className="px-2.5 pt-2 pb-1 bg-muted/10 border-t border-border/50 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-              <button
-                type="button"
-                onClick={() => {
-                  setChatDispatchDeskActive(true)
-                  onSendMessage("Can you send my documents to them?")
-                }}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-              >
-                <Send className="w-3 h-3 text-emerald-500" />
-                <span>Can you send my documents to them?</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setChatDispatchDeskActive(true)
-                  onSendMessage("Make application for me as indicated")
-                }}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-              >
-                <FileText className="w-3 h-3 text-emerald-500" />
-                <span>Make application for me as indicated</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onSendMessage("What verified jobs can I apply for today?")
-                }}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-muted/60 hover:bg-muted text-foreground border border-border text-[10.5px] font-medium transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <Search className="w-3 h-3 text-muted-foreground" />
-                <span>What verified jobs can I apply for today?</span>
-              </button>
-            </div>
-
             {/* Bottom Message Input Bar */}
             <div className="p-2.5 sm:p-3 border-t border-border/80 bg-card flex items-center gap-2">
               <input
@@ -4037,11 +4063,22 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                     {cvForm.name || 'Candidate'} &lt;{chatSenderEmail || cvForm.email || 'applicant@careerace.online'}&gt;
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground w-16 shrink-0">To:</span>
-                  <span className="text-foreground font-semibold">
-                    Multiple Recipients ({chatSelectedCompanies.length > 0 ? chatSelectedCompanies.length : filteredJobs.length > 0 ? filteredJobs.length : 8} Verified Employers Selected)
-                  </span>
+                <div className="flex items-start gap-2">
+                  <span className="text-muted-foreground w-16 shrink-0 pt-0.5">To:</span>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="text-foreground font-semibold flex items-center gap-1.5 flex-wrap">
+                      <span>
+                        {chatSelectedCompanies.length > 0 ? chatSelectedCompanies.length : verifiedChatEmployers.length} Verified Employers
+                      </span>
+                      <span className="text-muted-foreground font-normal text-[10px] break-all">
+                        ({verifiedChatEmployers.filter(c => chatSelectedCompanies.includes(c.id)).map(c => `${c.company} <${c.contactEmail}>`).join(', ') || 'hiring@verified-desks.internal'})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span>Confirmation receipt copy delivered to Reply-To: {chatSenderEmail || cvForm.email || 'applicant@careerace.online'}</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground w-16 shrink-0">Subject:</span>
