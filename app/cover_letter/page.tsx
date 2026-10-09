@@ -682,21 +682,21 @@ function CoverLetterStudioContent() {
         </div>
 
         {/* 1. DISCIPLINE & TARGET ROLE SELECTOR */}
-        <Card className="p-4 sm:p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-border/70">
-            <h2 className="text-sm font-bold text-foreground">Discipline and Target Role Selector</h2>
+        <Card className="p-3 sm:p-5 border border-border shadow-xs rounded-xl sm:rounded-2xl bg-card space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-border/70">
+            <h2 className="text-xs sm:text-sm font-bold text-foreground">Discipline and Target Role Selector</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
             {/* Discipline Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground block">
+            <div className="space-y-1 sm:space-y-1.5">
+              <label className="text-[11px] sm:text-xs font-semibold text-muted-foreground block">
                 Target Discipline
               </label>
               <select
                 value={selectedDisciplineId}
                 onChange={(e) => handleSelectDiscipline(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                className="w-full h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
               >
                 {DISCIPLINE_DEFINITIONS.map((def) => (
                   <option key={def.id} value={def.id}>
@@ -707,8 +707,8 @@ function CoverLetterStudioContent() {
             </div>
 
             {/* Target Role Dropdown */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground block">
+            <div className="space-y-1 sm:space-y-1.5">
+              <label className="text-[11px] sm:text-xs font-semibold text-muted-foreground block">
                 Calibrated Target Role
               </label>
               <select
@@ -724,7 +724,7 @@ function CoverLetterStudioContent() {
                     handleSelectRole(val);
                   }
                 }}
-                className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                className="w-full h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
               >
                 <optgroup label={activeDiscipline.name}>
                   {activeDiscipline.roles.map((r) => (
@@ -741,7 +741,7 @@ function CoverLetterStudioContent() {
           {/* Custom Role Input field (visible if custom role selected or entered) */}
           {(customRoleInput || !activeDiscipline.roles.includes(targetRole)) && (
             <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="text-xs font-semibold text-muted-foreground shrink-0">
+              <div className="text-[11px] sm:text-xs font-semibold text-muted-foreground shrink-0">
                 Custom Role Title:
               </div>
               <input
@@ -749,7 +749,7 @@ function CoverLetterStudioContent() {
                 value={customRoleInput || targetRole}
                 onChange={(e) => handleCustomRoleChange(e.target.value)}
                 placeholder={`e.g. ${activeDiscipline.defaultRole}`}
-                className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="flex-1 h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               <Button
                 type="button"
@@ -759,7 +759,7 @@ function CoverLetterStudioContent() {
                   setCustomRoleInput('');
                   handleSelectRole(activeDiscipline.defaultRole);
                 }}
-                className="text-xs h-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="text-xs h-8 sm:h-9 text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 Reset to Calibrated Role
               </Button>
@@ -768,25 +768,25 @@ function CoverLetterStudioContent() {
         </Card>
 
         {/* Main 2-Column Split: Intelligence Engine & Editor */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6">
           {/* Left Column (5 Cols): Role Intelligence Parameters & Company Selector */}
-          <div className="lg:col-span-5 space-y-5">
-            <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
-                <h2 className="font-bold text-sm text-foreground">Target Role Intelligence</h2>
+          <div className="lg:col-span-5 space-y-3 sm:space-y-5">
+            <Card className="p-3 sm:p-5 border border-border shadow-xs rounded-xl sm:rounded-2xl bg-card space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-border">
+                <h2 className="font-bold text-xs sm:text-sm text-foreground">Target Role Intelligence</h2>
                 <Badge variant="secondary" className="text-[10px] font-mono">
                   {roleScope.discipline}
                 </Badge>
               </div>
 
               {/* Company Picker & Custom Input (Real-time dynamic calibration, NO EMOJIS) */}
-              <div className="space-y-3.5 text-xs">
+              <div className="space-y-2.5 sm:space-y-3.5 text-xs">
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  <label className="text-[11px] sm:text-xs font-semibold text-muted-foreground block mb-1">
                     Target Company
                   </label>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5 sm:gap-2">
                     {/* Select from discipline corporate directory */}
                     {availableCompanies.length > 0 && (
                       <select
@@ -801,7 +801,7 @@ function CoverLetterStudioContent() {
                             toast.info(`Calibrated to verified employer: ${val}`);
                           }
                         }}
-                        className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                        className="w-full h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                       >
                         <option value="general_batch">General Application (Dear Hiring Team - Batch Ready)</option>
                         <optgroup label={`Verified ${activeDiscipline.name} Employers`}>
@@ -821,14 +821,14 @@ function CoverLetterStudioContent() {
                       value={targetCompany}
                       onChange={(e) => handleCompanyChange(e.target.value)}
                       placeholder="e.g. Maersk, Chevron Shipping, Stolt Tankers (or leave empty for general)"
-                      className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
                 </div>
 
                 {/* Active Target Role Display */}
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  <label className="text-[11px] sm:text-xs font-semibold text-muted-foreground block mb-1">
                     Target Role Title
                   </label>
                   <input
@@ -836,13 +836,13 @@ function CoverLetterStudioContent() {
                     value={customRoleInput.trim() || targetRole}
                     onChange={(e) => handleCustomRoleChange(e.target.value)}
                     placeholder="e.g. Engine Cadet / Trainee Marine Engineer"
-                    className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                    className="w-full h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
                   />
                 </div>
 
                 {/* Job Description Optional Scope */}
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  <label className="text-[11px] sm:text-xs font-semibold text-muted-foreground block mb-1">
                     Job Description or Specific Scope (Optional)
                   </label>
                   <textarea
@@ -850,7 +850,7 @@ function CoverLetterStudioContent() {
                     onChange={(e) => setJobDescription(e.target.value)}
                     rows={2}
                     placeholder="Paste specific job posting requirements or leave blank for autonomous discipline extraction..."
-                    className="w-full p-2.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-relaxed"
+                    className="w-full p-2 sm:p-2.5 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -858,12 +858,12 @@ function CoverLetterStudioContent() {
           </div>
 
           {/* Right Column (7 Cols): Generated Cover Letter Viewer & Toolbar */}
-          <div className="lg:col-span-7 space-y-4">
-            <Card className="p-5 border border-border shadow-xs rounded-2xl bg-card space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+          <div className="lg:col-span-7 space-y-3 sm:space-y-4">
+            <Card className="p-3 sm:p-5 border border-border shadow-xs rounded-xl sm:rounded-2xl bg-card space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 sm:pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-emerald-500" />
-                  <h3 className="font-bold text-sm text-foreground">Tailored Sovereign Cover Letter</h3>
+                  <h3 className="font-bold text-xs sm:text-sm text-foreground">Tailored Sovereign Cover Letter</h3>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30 bg-emerald-500/10 font-mono">
@@ -885,84 +885,37 @@ function CoverLetterStudioContent() {
                       localStorage.setItem('careerace_tailored_cover_letter', e.target.value);
                     } catch {}
                   }}
-                  rows={20}
-                  className="w-full p-4 rounded-xl border border-border bg-background text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
+                  rows={12}
+                  className="w-full sm:min-h-[380px] p-2.5 sm:p-4 rounded-lg sm:rounded-xl border border-border bg-background text-[11px] sm:text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-y shadow-inner"
                   placeholder="Your tailored cover letter will render here..."
                 />
               </div>
 
               {/* Action Toolbar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-border w-full">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCopy}
-                    className="text-xs gap-1.5 h-9 border-border text-foreground hover:bg-muted cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Copied to Clipboard</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Copy Letter</span>
-                      </>
-                    )}
-                  </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2 pt-2 sm:pt-3 border-t border-border w-full">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAnchorToWalrusVault}
+                  disabled={isSavingToWalrus}
+                  className="w-full sm:w-auto text-xs gap-1.5 h-8 sm:h-9 px-3 sm:px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs cursor-pointer justify-center"
+                  title="Cryptographically seal this tailored cover letter into Walrus Sovereign Memory"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>{isSavingToWalrus ? 'Anchoring...' : 'Anchor to Walrus Vault'}</span>
+                </Button>
 
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDownload}
-                    className="text-xs gap-1.5 h-9 border-border text-foreground hover:bg-muted cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>Download (.TXT)</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDownloadEml}
-                    className="text-xs gap-1.5 h-9 border-border text-foreground hover:bg-muted cursor-pointer"
-                    title="Download RFC-compliant .eml message file for verifiable offline records"
-                  >
-                    <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>Download (.EML)</span>
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAnchorToWalrusVault}
-                    disabled={isSavingToWalrus}
-                    className="text-xs gap-1.5 h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs cursor-pointer"
-                    title="Cryptographically seal this tailored cover letter into Walrus Sovereign Memory"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>{isSavingToWalrus ? 'Anchoring...' : 'Anchor to Walrus Vault'}</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleGoToAutoApply}
-                    className="text-xs gap-1.5 h-9 bg-foreground text-background hover:bg-foreground/90 font-semibold shadow-xs cursor-pointer"
-                    title="Send this tailored cover letter via Job Board Auto-Apply"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Batch Apply on Job Board</span>
-                    <ArrowRight className="w-3 h-3 ml-0.5" />
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleGoToAutoApply}
+                  className="w-full sm:w-auto text-xs gap-1.5 h-8 sm:h-9 px-3 sm:px-4 bg-foreground text-background hover:bg-foreground/90 font-semibold shadow-xs cursor-pointer justify-center"
+                  title="Send this tailored cover letter via Job Board Auto-Apply"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Batch Apply on Job Board</span>
+                  <ArrowRight className="w-3 h-3 ml-0.5" />
+                </Button>
               </div>
             </Card>
           </div>

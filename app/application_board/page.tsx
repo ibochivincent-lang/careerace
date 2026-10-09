@@ -5232,7 +5232,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             className="h-7 sm:h-8 text-[11px] sm:text-xs gap-1 sm:gap-1.5 px-2.5 sm:px-3 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 font-medium cursor-pointer"
                           >
                             <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                            <span>Applied</span>
+                            <span>Mark Applied</span>
                           </Button>
                         )}
 
