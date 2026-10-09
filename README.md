@@ -15,6 +15,10 @@
 **Repository:** [https://github.com/ibochivincent-lang/careerace](https://github.com/ibochivincent-lang/careerace)  
 **Stack:** Next.js 16 (Turbopack), React 19, TypeScript 5 (Strict), Tailwind CSS v4, Google Gemini AI Engine, Walrus Protocol, Sui Blockchain, Mysten Labs SDK, Google zkLogin, SuiNS.
 
+<p align="center">
+  <img src="public/careerace_overview.jpg" alt="Career Ace: Autonomous AI Career Copilot & Decentralized Vault" width="100%" style="border-radius: 12px;" />
+</p>
+
 ---
 
 ## Hackathon Submission Overview
