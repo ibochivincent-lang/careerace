@@ -324,7 +324,7 @@ export default async function PublicProfilePage({ params }: Props) {
                     </>
                   )}
                   <a
-                    href={`https://suiscan.xyz/testnet/account/${walletAddress}`}
+                    href={`https://suiscan.xyz/${process.env.NEXT_PUBLIC_SUI_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'}/account/${walletAddress}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline ml-auto"

@@ -41,10 +41,12 @@ export interface AnchorCredentialParams {
   metadata?: Record<string, any>;
 }
 
-const SUI_TESTNET_EXPLORER = "https://suiscan.xyz/testnet/tx";
+const SUI_NETWORK = process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet";
+const SUI_EXPLORER_BASE =
+  SUI_NETWORK === "mainnet" ? "https://suiscan.xyz/mainnet/tx" : "https://suiscan.xyz/testnet/tx";
+const SUI_TESTNET_EXPLORER = SUI_EXPLORER_BASE;
 const WALRUS_AGGREGATOR =
   process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
-const SUI_NETWORK = process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet";
 
 /**
  * Resolves the server-side relayer/issuer keypair for signing Sui anchor transactions.

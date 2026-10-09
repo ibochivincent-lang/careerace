@@ -37,6 +37,11 @@ export interface SuinsCandidatePassport {
 }
 
 const SUI_NETWORK = process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet";
+const SUI_RPC_URL =
+  process.env.SUI_RPC_URL ||
+  (SUI_NETWORK === "mainnet"
+    ? "https://fullnode.mainnet.sui.io:443"
+    : "https://fullnode.testnet.sui.io:443");
 const WALRUS_AGGREGATOR =
   process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://careerace.online";
@@ -126,7 +131,7 @@ export async function resolveSuinsToAddress(domain: string): Promise<string | nu
 
   // 3. Optional on-chain fallback: Try Sui Fullnode RPC suix_resolveNameServiceAddress
   try {
-    const rpcRes = await fetch("https://fullnode.testnet.sui.io:443", {
+    const rpcRes = await fetch(SUI_RPC_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

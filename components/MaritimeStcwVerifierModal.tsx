@@ -275,7 +275,7 @@ export function MaritimeStcwVerifierModal({
                       <ShieldCheck className="w-3.5 h-3.5" />
                       Soulbound Walrus Credential Minted
                     </span>
-                    <span>Epoch 10 · Sui Testnet</span>
+                    <span>Epoch 10 · Walrus Mainnet</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-0.5">

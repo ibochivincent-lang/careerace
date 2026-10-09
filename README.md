@@ -5,7 +5,7 @@
 [![Walrus Mainnet Certified](https://img.shields.io/badge/Walrus_Mainnet-15_Blobs_Certified-059669?style=for-the-badge&logo=blockchaindotcom&logoColor=white)](WALRUS_MAINNET_PROOF.md)
 [![Sui Network](https://img.shields.io/badge/Sui_Network-zkLogin_%26_SuiNS-4C82FB?style=for-the-badge&logo=sui&logoColor=white)](https://sui.io)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16_Turbopack-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
-[![Tests Passing](https://img.shields.io/badge/Automated_Tests-119%2F119_Passing-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/ibochivincent-lang/careerace)
+[![Tests Passing](https://img.shields.io/badge/Automated_Tests-193%2F193_Passing-10B981?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/ibochivincent-lang/careerace)
 [![Memory Evaluation](https://img.shields.io/badge/Memory_QA-15%2F15_Framework_Pass-059669?style=for-the-badge&logo=probot&logoColor=white)](CHATBOT_MEMORY_EVALUATION.md)
 [![Zero Mock Data](https://img.shields.io/badge/Zero_Mock_Data-100%25_Verified_Contacts-3B82F6?style=for-the-badge)](https://careerace.online)
 
@@ -184,7 +184,7 @@ Decentralized Data: Walrus Protocol (Mysten Labs), Memwal Relayer
 Blockchain:         Sui Network (Testnet & Mainnet), Sui Move, SuiNS, Enoki zkLogin
 Document Engine:    PDFParse, Mammoth (DOCX), OpenXML Spec, JSON Resume Schema v1.0.0
 Email Relay:        Resend API (multi-key rotation), Brevo API, SendGrid API, RFC 5322 EML, RFC 5545 ICS
-Testing Suite:      Node.js 20 Native Test Runner (Zero Bloat), 109 Tests Passing
+Testing Suite:      Node.js 20+ Native Test Runner (Zero Bloat), 193 Tests Passing across 11 suites
 ```
 
 ---
@@ -222,7 +222,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Career Ace maintains an automated test suite verifying CV parsing, credential gating, SuiNS normalization, Walrus anchoring, ATS scoring, multi-provider email cascades, RFC 5322 EML generation, RFC 5545 calendar generation, and the **15-section Chatbot Memory Evaluation & QA Checklist** (Tests A through J):
 
 ```bash
-# Run full automated test suite (119 tests across 9 test suites)
+# Run full automated test suite (193 tests across 11 test suites)
 npm test
 
 # Run dedicated Chatbot Memory QA evaluation suite (Tests A-J)
@@ -231,7 +231,7 @@ node --test --experimental-strip-types lib/chatbot_memory_qa.test.ts
 # Run TypeScript static type checking (0 errors)
 npx tsc --noEmit
 
-# Run Next.js production build verification (57 routes compiled)
+# Run Next.js production build verification (62 routes compiled)
 npm run build
 ```
 

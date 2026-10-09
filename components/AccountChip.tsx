@@ -255,7 +255,7 @@ export function AccountChip({ address: propAddress, className }: AccountChipProp
               )}
 
               <a
-                href={`https://suiscan.xyz/testnet/account/${currentAddress}`}
+                href={`https://suiscan.xyz/${process.env.NEXT_PUBLIC_SUI_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'}/account/${currentAddress}`}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => setOpen(false)}

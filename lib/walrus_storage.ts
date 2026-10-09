@@ -11,9 +11,9 @@
 
 import crypto from "node:crypto";
 
-const WALRUS_TESTNET_PUBLISHER =
+const WALRUS_PUBLISHER =
   process.env.WALRUS_PUBLISHER_URL || "https://publisher.walrus-mainnet.walrus.space";
-const WALRUS_TESTNET_AGGREGATOR =
+const WALRUS_AGGREGATOR =
   process.env.WALRUS_AGGREGATOR_URL || "https://aggregator.walrus-mainnet.walrus.space";
 
 const DEFAULT_EPOCHS = 5;
@@ -101,7 +101,7 @@ export async function uploadEncryptedResumeToWalrus(
   const sha256Digest = crypto.createHash("sha256").update(fileBuffer).digest("hex");
   const encrypted = encryptDocument(fileBuffer, candidateAddress);
 
-  const publisherUrl = `${WALRUS_TESTNET_PUBLISHER}/v1/blobs?epochs=${epochs}`;
+  const publisherUrl = `${WALRUS_PUBLISHER}/v1/blobs?epochs=${epochs}`;
 
   const response = await fetch(publisherUrl, {
     method: "PUT",
@@ -139,7 +139,7 @@ export async function uploadEncryptedResumeToWalrus(
     throw new Error("Walrus publisher returned response without blobId");
   }
 
-  const walrusUrl = `${WALRUS_TESTNET_AGGREGATOR}/v1/blobs/${blobId}`;
+  const walrusUrl = `${WALRUS_AGGREGATOR}/v1/blobs/${blobId}`;
 
   return {
     blobId,
@@ -158,7 +158,7 @@ export async function fetchAndDecryptResumeFromWalrus(
   blobId: string,
   candidateAddress: string
 ): Promise<Buffer> {
-  const aggregatorUrl = `${WALRUS_TESTNET_AGGREGATOR}/v1/blobs/${blobId}`;
+  const aggregatorUrl = `${WALRUS_AGGREGATOR}/v1/blobs/${blobId}`;
   const response = await fetch(aggregatorUrl);
 
   if (!response.ok) {
@@ -181,7 +181,7 @@ export async function uploadPublicProofToWalrus(
   epochs: number = DEFAULT_EPOCHS
 ): Promise<WalrusBlobUploadResult> {
   const sha256Digest = crypto.createHash("sha256").update(fileBuffer).digest("hex");
-  const publisherUrl = `${WALRUS_TESTNET_PUBLISHER}/v1/blobs?epochs=${epochs}`;
+  const publisherUrl = `${WALRUS_PUBLISHER}/v1/blobs?epochs=${epochs}`;
 
   const response = await fetch(publisherUrl, {
     method: "PUT",
@@ -217,7 +217,7 @@ export async function uploadPublicProofToWalrus(
     throw new Error("Walrus publisher returned response without blobId");
   }
 
-  const walrusUrl = `${WALRUS_TESTNET_AGGREGATOR}/v1/blobs/${blobId}`;
+  const walrusUrl = `${WALRUS_AGGREGATOR}/v1/blobs/${blobId}`;
 
   return {
     blobId,

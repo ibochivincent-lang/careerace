@@ -24,7 +24,7 @@ All tests execute in the automated test suite [`lib/chatbot_memory_qa.test.ts`](
 | **Section 12** | Durability & Concurrency | PASS | [`lib/copilot_intelligence.ts`](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/lib/copilot_intelligence.ts): `Promise.allSettled` | QA Test D (`lib/chatbot_memory_qa.test.ts`) |
 | **Section 13** | Sovereign CV & Credential Recall | PASS | [`lib/cv_parser.ts`](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/lib/cv_parser.ts), [`lib/walrus_anchor.ts`](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/lib/walrus_anchor.ts) | CV parser & anchor test suites |
 | **Section 14** | Application Counter & Tally Math | PASS | [`lib/copilot_intelligence.ts`](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/lib/copilot_intelligence.ts): `appliedJobs` count | QA Test I (`lib/chatbot_memory_qa.test.ts`) |
-| **Section 15** | Automated Test Suite Coverage | PASS | [`lib/chatbot_memory_qa.test.ts`](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/lib/chatbot_memory_qa.test.ts) (10/10 PASS) | 119/119 total repo tests passing |
+| **Section 15** | Automated Test Suite Coverage | PASS | [`lib/chatbot_memory_qa.test.ts`](file:///c:/Users/User/.gemini/antigravity-ide/scratch/careerace/lib/chatbot_memory_qa.test.ts) (10/10 PASS) | 193/193 total repo tests passing |
 
 ---
 
@@ -137,7 +137,7 @@ Run the dedicated chatbot memory test suite:
 node --test --experimental-strip-types lib/chatbot_memory_qa.test.ts
 ```
 
-Run the complete repository verification suite (119 automated tests):
+Run the complete repository verification suite (193 automated tests):
 ```bash
 npm test
 ```

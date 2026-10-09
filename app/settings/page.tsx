@@ -442,7 +442,7 @@ export default function SettingsPage() {
                   )}
                 </Button>
                 <a
-                  href={`https://suiscan.xyz/testnet/account/${sessionAddress}`}
+                  href={`https://suiscan.xyz/${process.env.NEXT_PUBLIC_SUI_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'}/account/${sessionAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline px-2 h-7"

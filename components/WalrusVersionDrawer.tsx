@@ -149,7 +149,7 @@ export function WalrusVersionDrawer({
                     </span>
                     {ver.suiTxDigest && (
                       <a
-                        href={ver.suiExplorerUrl || `https://suiscan.xyz/testnet/tx/${ver.suiTxDigest}`}
+                        href={ver.suiExplorerUrl || `https://suiscan.xyz/${process.env.NEXT_PUBLIC_SUI_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'}/tx/${ver.suiTxDigest}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 font-medium text-sky-600 dark:text-sky-400 hover:underline"
