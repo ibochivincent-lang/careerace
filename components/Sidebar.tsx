@@ -15,7 +15,7 @@ import {
   Bell,
   FileText,
   Mail,
-  Cpu,
+  Bot,
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { ThemeToggle } from './ThemeToggle'
@@ -31,9 +31,8 @@ function SidebarContent() {
   const [comingSoonFeature, setComingSoonFeature] = useState<ComingSoonFeature | null>(null)
 
   const MAIN_NAV = [
-    { label: 'Overview', href: '/dashboard?tab=overview', icon: LayoutDashboard, active: pathname === '/dashboard' && currentTab === 'overview' },
+    { label: 'Career Copilot', href: '/dashboard?tab=overview', icon: Bot, active: pathname === '/dashboard' && currentTab === 'overview' },
     { label: 'Resume', href: '/dashboard?tab=resumes', icon: FileText, active: pathname === '/dashboard' && (currentTab === 'resumes' || currentTab === 'tailored') },
-    { label: 'Cover Letters', href: '/cover_letter', icon: Mail, active: pathname.startsWith('/cover_letter') || (pathname === '/dashboard' && currentTab === 'cover_letters') },
     { label: 'Job Board', href: '/application_board', icon: Briefcase, active: pathname.startsWith('/application_board') },
   ]
 

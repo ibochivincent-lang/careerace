@@ -137,6 +137,13 @@ function DashboardContent() {
   const searchParams = useSearchParams()
   const activeTab = searchParams.get('tab') || 'overview'
 
+  // Redirect legacy cover_letters tab to overview (where Cover Letter Studio is integrated into Copilot)
+  useEffect(() => {
+    if (activeTab === 'cover_letters') {
+      router.replace('/dashboard?tab=overview')
+    }
+  }, [activeTab, router])
+
   // Candidate CV File Attachment state - Starts clean with NO mock data
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatFileInputRef = useRef<HTMLInputElement>(null)

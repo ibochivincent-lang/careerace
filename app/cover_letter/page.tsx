@@ -271,6 +271,11 @@ function CoverLetterStudioContent() {
   const [coverLetterText, setCoverLetterText] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
+  // Consolidated into Career Copilot overview tab per user architecture
+  useEffect(() => {
+    router.replace('/dashboard?tab=overview');
+  }, [router]);
+
   // Active discipline definition
   const activeDiscipline = useMemo(() => {
     return DISCIPLINE_DEFINITIONS.find((d) => d.id === selectedDisciplineId) || DISCIPLINE_DEFINITIONS[0];

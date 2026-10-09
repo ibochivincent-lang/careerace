@@ -192,6 +192,44 @@ export function isBulkDispatchRequest(query: string): boolean {
 }
 
 /**
+ * Checks if candidate is asking to send their documents or make application via chat
+ */
+export function isDocumentsDispatchRequest(query: string): boolean {
+  if (!query) return false;
+  const lower = query.toLowerCase().trim();
+  const typoFixed = correctTypographicalErrors(lower).corrected.toLowerCase();
+
+  return (
+    typoFixed.includes("send my documents to them") ||
+    typoFixed.includes("send my document to them") ||
+    typoFixed.includes("send my documents") ||
+    typoFixed.includes("send my document") ||
+    typoFixed.includes("can you send my documents") ||
+    typoFixed.includes("can you send my document") ||
+    typoFixed.includes("can i send my documents") ||
+    typoFixed.includes("can i send my document") ||
+    typoFixed.includes("make application for me as indicated") ||
+    typoFixed.includes("make application for me") ||
+    typoFixed.includes("can you make application for me") ||
+    typoFixed.includes("make application") ||
+    typoFixed.includes("send my application") ||
+    typoFixed.includes("send applications through chat") ||
+    typoFixed.includes("send application through chat") ||
+    typoFixed.includes("send documents through chat") ||
+    typoFixed.includes("send document through chat") ||
+    typoFixed.includes("apply for me") ||
+    typoFixed.includes("can you apply for me") ||
+    typoFixed.includes("dispatch my documents") ||
+    typoFixed.includes("dispatch my document") ||
+    typoFixed.includes("dispatch my cv") ||
+    typoFixed.includes("send my cv to them") ||
+    typoFixed.includes("send my cv") ||
+    typoFixed.includes("send my resume to them") ||
+    typoFixed.includes("send my resume")
+  );
+}
+
+/**
  * Detects which discipline tracks candidate is qualified for based on CV profile,
  * Walrus versions, and stored memory facts.
  */
@@ -401,6 +439,53 @@ export async function handleAutonomousConversationalDispatch(
     lastAssistant.includes("dispatch bulk");
 
   const detectedTracks = detectCandidateDisciplines(cvProfile, walrusVersions);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STAGE 2.5: CAN YOU SEND MY DOCUMENTS / MAKE APPLICATION FOR ME INQUIRY
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (isDocumentsDispatchRequest(cleanQuery)) {
+    let activeTrack = detectedTracks[0];
+    for (const track of DISCIPLINE_TRACKS) {
+      if (lastAssistant.includes(track.name.toLowerCase()) || lastAssistant.includes(track.category.toLowerCase())) {
+        activeTrack = track;
+        break;
+      }
+    }
+
+    const topJobs = getTopJobsForDiscipline(activeTrack.category, 10);
+    const primaryJob = topJobs[0];
+    const walrusBlobId = walrusVersions[0]?.blobId || `walrus-vault-${candidateAddress.slice(0, 10)}`;
+    const sample = synthesizeSampleApplication(primaryJob, candidateName, getSkillsForTrack(activeTrack, effectiveSkills), walrusBlobId);
+
+    const jobListMarkdown = topJobs
+      .map((j, i) => `${i + 1}. **${j.typicalRoles[0]}** at **${j.company}** (${j.location}) — Recruiter: \`${j.contactEmail}\``)
+      .join("\n");
+
+    const todayDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    const reply =
+      `📄 **Autonomous Application Dispatch Desk**\n\n` +
+      `Yes! I can autonomously dispatch your verified credentials and application package to all **${topJobs.length} verified employers** in the **${activeTrack.name}** discipline.\n\n` +
+      `### 🏢 Target Verified Employers\n\n` +
+      `${jobListMarkdown}\n\n` +
+      `---\n\n` +
+      `### 📦 Verified Credential Package Ready for Dispatch\n` +
+      `• **Primary Curriculum Vitae:** \`${(candidateName || "Candidate").replace(/\\s+/g, "_")}_CV.pdf\` (Walrus Sovereign Anchor: \`${walrusBlobId}\`)\n` +
+      `• **Attestation Proof & Credentials:** Fully indexed in Walrus decentralized memory\n` +
+      `• **Application Cover Letter:** Tailored for ${sample.subject.replace('Application: ', '')} (Date: **${todayDate}**)\n` +
+      `• **Sender Email:** \`${candidateEmail}\` *(Please verify your sender address below before final dispatch)*\n\n` +
+      `---\n\n` +
+      `### 🚀 Next Steps (Two Options Available)\n` +
+      `1. **Preview Sample Dispatch:** Tap **"Preview Sample"** below to inspect the full RFC email preview with headers, cover letter, and verifiable attachments.\n` +
+      `2. **Send Application Dispatch:** Tap **"Send Application Dispatch"** to execute the autonomous batch dispatch to all ${topJobs.length} employers!`;
+
+    return {
+      handled: true,
+      reply,
+      selectedDiscipline: activeTrack.name,
+      stage: "sample_preview",
+    };
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // STAGE 3B: BULK DISPATCH REQUEST

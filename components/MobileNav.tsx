@@ -16,7 +16,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Bot
 } from 'lucide-react'
 import { cn } from './ui/utils'
 import { signOutClient, getClientSessionAddress } from '@/lib/client_auth'
@@ -30,10 +31,9 @@ interface NavItem {
 }
 
 const PRIMARY_NAV: NavItem[] = [
-  { label: 'Overview', href: '/dashboard?tab=overview', icon: LayoutDashboard },
+  { label: 'Copilot', href: '/dashboard?tab=overview', icon: Bot },
   { label: 'Resumes', href: '/dashboard?tab=resumes', icon: FileText },
-  { label: 'Cover Letters', href: '/cover_letter', icon: Mail },
-  { label: 'Jobs', href: '/application_board', icon: Briefcase },
+  { label: 'Job Board', href: '/application_board', icon: Briefcase },
 ]
 
 const MORE_NAV: NavItem[] = [

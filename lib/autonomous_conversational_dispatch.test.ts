@@ -215,3 +215,28 @@ test("End-to-End Integration: processCopilotQuery routes 'what jobs can i aplly 
   assert.match(reply, /Sample Application Email & Tailored Cover Letter/i);
   assert.match(reply, /send a sample email.*dispatch the bulk/i);
 });
+
+test("Criterion 6: Candidate asks 'can you send my documents to them' or 'make application for me as indicated' -> activates Autonomous Application Dispatch Desk with verified employers and credential package", async () => {
+  const query = "can you send my documents to them";
+  const candidateProfile = {
+    applicant_name: "Engineer Taylor Vance",
+    target_roles: ["Chief Marine Engineer"],
+    skills: ["STCW III/2", "Marine Propulsion", "Dynamic Positioning"],
+    email: "taylor.vance@example.com",
+  };
+
+  const res = await processCopilotQuery({
+    message: query,
+    address: "0xtaylor0000000000000000000000000000000001",
+    appliedJobs: [],
+    profile: candidateProfile,
+  });
+
+  const reply = res.reply || res.content;
+  assert.match(reply, /Autonomous Application Dispatch Desk/i);
+  assert.match(reply, /Target Verified Employers/i);
+  assert.match(reply, /Verified Credential Package Ready for Dispatch/i);
+  assert.match(reply, /Preview Sample Dispatch/i);
+  assert.match(reply, /Send Application Dispatch/i);
+});
+
