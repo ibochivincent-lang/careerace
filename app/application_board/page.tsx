@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Sparkles,
   ChevronDown,
+  ChevronUp,
   CheckCircle2,
   Clock,
   ArrowUpRight,
@@ -168,6 +169,8 @@ export interface AppliedJobRecord {
   followUpStatus?: 'pending' | 'due' | 'sent'
   followUpSentAt?: string
   notes?: string
+  recipientEmail?: string
+  dispatchedAt?: string
 }
 
 // Real live openings matching benchmark reference and maritime/tech sovereign employers
@@ -1828,6 +1831,7 @@ export default function ApplicationBoardPage() {
   const [deliverabilityGuideOpen, setDeliverabilityGuideOpen] = useState(false)
   const [previewLetterOpen, setPreviewLetterOpen] = useState(true)
   const [showCustomEmailInput, setShowCustomEmailInput] = useState(false)
+  const [isCredentialPackageCollapsed, setIsCredentialPackageCollapsed] = useState(false)
 
   // Auto-apply agent & DKIM/SMTP relay state
   const [autoApplyRunning, setAutoApplyRunning] = useState(false)
@@ -2431,9 +2435,18 @@ export default function ApplicationBoardPage() {
     return list
   }, [activeProfileData?.certifications, customAttachmentsList, uploadedDocuments])
 
-  // Filtered verified corporate hiring contacts
+  // Filtered verified corporate hiring contacts (Excludes already applied companies)
   const filteredCompanyContacts = useMemo(() => {
     return VERIFIED_COMPANY_HIRING_CONTACTS.filter((c) => {
+      // Exclude companies already applied to so they do not show again
+      const isAlreadyApplied = appliedJobs.some(
+        (a) =>
+          a.company?.toLowerCase().trim() === c.company?.toLowerCase().trim() ||
+          a.recipientEmail?.toLowerCase().trim() === c.contactEmail?.toLowerCase().trim() ||
+          (a as any).id === c.id
+      )
+      if (isAlreadyApplied) return false
+
       if (companyCategoryFilter !== 'all' && c.category !== companyCategoryFilter) {
         return false
       }
@@ -2446,7 +2459,7 @@ export default function ApplicationBoardPage() {
       }
       return true
     })
-  }, [companyCategoryFilter, companySearchQuery])
+  }, [companyCategoryFilter, companySearchQuery, appliedJobs])
 
   // Real file upload to Walrus & attached document manager
   async function handleDocumentUpload(fileList: FileList | File[] | null) {
@@ -3561,12 +3574,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           variant="outline"
                           onClick={() => {
                             const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
-                            setSelectedCompanyIds(eligible.slice(0, 10).map(c => c.id))
-                            toast.info('Selected 10 verified employers.')
+                            setSelectedCompanyIds(eligible.slice(0, 5).map(c => c.id))
+                            toast.info(`Selected ${Math.min(5, eligible.length)} verified employers.`)
                           }}
                           className="h-7 px-2.5 text-[11px] font-semibold border-border hover:bg-muted cursor-pointer"
                         >
-                          Select 10
+                          Select 5
                         </Button>
                         <Button
                           type="button"
@@ -3574,12 +3587,12 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                           variant="outline"
                           onClick={() => {
                             const eligible = filteredCompanyContacts.filter(c => !getCompanyCooldown(c.company)?.active)
-                            setSelectedCompanyIds(eligible.slice(0, 20).map(c => c.id))
-                            toast.info('Selected 20 verified employers.')
+                            setSelectedCompanyIds(eligible.slice(0, 10).map(c => c.id))
+                            toast.info(`Selected ${Math.min(10, eligible.length)} verified employers (Max 10).`)
                           }}
                           className="h-7 px-2.5 text-[11px] font-semibold border-border hover:bg-muted cursor-pointer"
                         >
-                          Select 20
+                          Select 10 (Max)
                         </Button>
                         {selectedCompanyIds.length > 0 && (
                           <Button
@@ -3813,18 +3826,58 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                 <div className="lg:col-span-7 space-y-4">
                   {/* Console Container */}
                   <div className="p-4 sm:p-5 rounded-xl border border-border bg-card space-y-4 shadow-xs">
-                    {/* ── APPLICATION CREDENTIAL PACKAGE (COMPACT & SELECTABLE) ── */}
-                    <div className="p-3 sm:p-3.5 rounded-xl border border-border/80 bg-card/70 space-y-2.5 shadow-xs">
-                      {/* Header */}
-                      <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                        <div className="flex items-center gap-1.5">
-                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                          <h4 className="text-xs font-bold text-foreground">Application Credential Package</h4>
+                    {/* ── APPLICATION CREDENTIAL PACKAGE (COMPACT, SELECTABLE & COLLAPSIBLE) ── */}
+                    {isCredentialPackageCollapsed ? (
+                      <div
+                        onClick={() => setIsCredentialPackageCollapsed(false)}
+                        className="p-2.5 sm:p-3 bg-card border border-border/80 rounded-xl flex items-center justify-between gap-2 shadow-xs cursor-pointer hover:border-emerald-500/40 hover:bg-muted/20 transition-all"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                          <span className="text-xs font-bold text-foreground">Application Credential Package</span>
+                          <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">
+                            · {cvSourceType === 'walrus' ? 'Walrus Sovereign CV' : 'Uploaded Custom CV'}
+                            {uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)).length > 0 &&
+                              ` · ${uploadedDocuments.filter((d) => selectedAttachments.includes(d.id)).length} Attached Document(s)`}
+                          </span>
                         </div>
-                        <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                          {cvSourceType === 'walrus' ? 'Primary: Walrus Sovereign CV' : 'Primary: Uploaded CV'}
-                        </Badge>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Badge variant="outline" className="text-[9.5px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                            Ready
+                          </Badge>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                          >
+                            <span>Expand</span>
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
+                    ) : (
+                      <div className="p-3 sm:p-3.5 rounded-xl border border-border/80 bg-card/70 space-y-2.5 shadow-xs">
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                          <div className="flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                            <h4 className="text-xs font-bold text-foreground">Application Credential Package</h4>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                              {cvSourceType === 'walrus' ? 'Primary: Walrus Sovereign CV' : 'Primary: Uploaded CV'}
+                            </Badge>
+                            <button
+                              type="button"
+                              onClick={() => setIsCredentialPackageCollapsed(true)}
+                              className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer transition-colors"
+                              title="Collapse credential package for more space"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
 
                       {/* Select Primary CV Subtitle */}
                       <div className="flex items-center justify-between text-[11px]">
@@ -4120,6 +4173,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                         )}
                       </div>
                     </div>
+                  )}
 
                     {/* Dispatch Action Toolbar */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60">
@@ -4249,16 +4303,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                             <input
                               type="number"
                               min={1}
-                              max={eligible.length}
+                              max={Math.min(10, eligible.length)}
                               value={customBatchSizeInput}
                               onChange={(e) => {
                                 setCustomBatchSizeInput(e.target.value)
                                 const val = parseInt(e.target.value, 10)
-                                if (!isNaN(val) && val > 0) setBatchSize(Math.min(val, eligible.length))
+                                if (!isNaN(val) && val > 0) setBatchSize(Math.min(10, Math.min(val, eligible.length)))
                               }}
                               className="w-20 px-2 py-1 text-xs rounded-md border border-border bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             />
-                            <span className="text-[10px] text-muted-foreground">of {eligible.length} available</span>
+                            <span className="text-[10px] text-muted-foreground">Max 10 per batch ({eligible.length} available)</span>
                           </div>
                         </div>
 
