@@ -110,7 +110,7 @@ function MobileNavContent() {
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon className={cn('w-5 h-5 shrink-0 transition-transform', active && 'scale-110')} />
-                <span className="text-[10px] tracking-tight leading-none">{label}</span>
+                <span className="text-[10px] tracking-tight leading-none whitespace-nowrap truncate max-w-full">{label}</span>
                 {active && (
                   <span className="absolute top-1 w-6 h-0.5 rounded-full bg-primary" />
                 )}
@@ -136,7 +136,7 @@ function MobileNavContent() {
             ) : (
               <Menu className="w-5 h-5 shrink-0" />
             )}
-            <span className="text-[10px] tracking-tight leading-none">More</span>
+            <span className="text-[10px] tracking-tight leading-none whitespace-nowrap">More</span>
             {MORE_NAV.some((m) => isItemActive(m.href)) && (
               <span className="absolute top-1.5 right-3 w-1.5 h-1.5 rounded-full bg-primary" />
             )}

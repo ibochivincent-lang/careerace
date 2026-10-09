@@ -5034,7 +5034,7 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                 </div>
 
                 {/* Total Active Count Indicator & Dispatch Report Action */}
-                <div className="flex items-center gap-2.5 shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
                   {activeBoardTab === 'applied' && appliedJobs.length > 0 && (
                     <Button
                       size="sm"
@@ -5152,13 +5152,16 @@ ${candidateEmail}${candidatePhone ? ` | ${candidatePhone}` : ''}`
                       </div>
 
                       {/* Middle: Location & Workplace */}
-                      <div className="text-[11px] sm:text-xs text-muted-foreground truncate md:shrink-0 md:min-w-[180px] lg:min-w-[220px]">
-                        <span>{job.location}</span>
+                      <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs text-muted-foreground md:shrink-0 md:min-w-[180px] lg:min-w-[220px]">
+                        <span className="truncate">{job.location}</span>
+                        <span className="md:hidden font-mono shrink-0 whitespace-nowrap text-[10px] text-muted-foreground/80">
+                          {job.postedDate}
+                        </span>
                       </div>
 
                       {/* Right: Actions */}
                       <div className="w-full md:w-auto flex flex-wrap items-center justify-between md:justify-end gap-1.5 sm:gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-border/40 max-w-full">
-                        <span className="text-[11px] sm:text-xs text-muted-foreground font-mono w-9 sm:w-10 text-left md:text-right">
+                        <span className="hidden md:inline text-[11px] sm:text-xs text-muted-foreground font-mono shrink-0 whitespace-nowrap text-right">
                           {job.postedDate}
                         </span>
 

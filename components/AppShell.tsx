@@ -23,7 +23,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
       {/* Main Content Pane */}
       <div
         className={cn(
-          'flex-1 min-w-0 transition-all duration-300 pb-20 md:pb-0 flex flex-col w-full max-w-full overflow-x-hidden',
+          'flex-1 min-w-0 transition-all duration-300 pb-24 md:pb-0 flex flex-col w-full max-w-full overflow-x-hidden',
           collapsed ? 'md:ml-16' : 'md:ml-60'
         )}
       >

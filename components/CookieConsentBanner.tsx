@@ -154,7 +154,7 @@ export function CookieConsentBanner() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/60">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-border/60">
           <div className="flex items-center gap-2 text-[11px]">
             <Link href="/privacy" className="text-muted-foreground hover:text-foreground underline underline-offset-2">
               Privacy
@@ -173,14 +173,14 @@ export function CookieConsentBanner() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             {/* The Mandatory REJECT button */}
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={showPreferences ? handleSaveCustomPreferences : handleRejectNonEssential}
-              className="h-8 px-3 text-xs font-semibold border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs"
+              className="flex-1 sm:flex-initial h-8 px-3 text-xs font-semibold border-border hover:bg-muted text-foreground cursor-pointer shadow-2xs text-center justify-center"
             >
               {showPreferences ? 'Save Selected' : 'Reject Non-Essential'}
             </Button>
@@ -190,7 +190,7 @@ export function CookieConsentBanner() {
               type="button"
               size="sm"
               onClick={handleAcceptAll}
-              className="h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs gap-1"
+              className="flex-1 sm:flex-initial h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs gap-1 text-center justify-center"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Accept All</span>
