@@ -84,6 +84,14 @@ export function formatTimeAmPm(timestamp?: number): string {
 export const SEVEN_DAYS_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
+ * Returns today's calendar dateKey in "YYYY-MM-DD" format.
+ */
+export function getTodayDateKey(fallbackNow = Date.now()): string {
+  const d = new Date(fallbackNow);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
  * Groups an array of chat messages into daily conversation sessions.
  * Enforces a strict 7-day retention window (pruning messages older than 7 calendar days).
  */
@@ -155,6 +163,101 @@ export function groupMessagesByDay(
   // Sort sessions descending (latest day first)
   sessions.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
   return sessions;
+}
+
+/**
+ * Builds a rock-solid, guaranteed 7-day rolling window of daily conversation sessions.
+ * Covers all dates from Day 0 (Today) down to Day 6 (6 days ago), ensuring that
+ * when a user clicks, selects, or restores any individual session (e.g. October 8th),
+ * all other days (9th, 10th, 7th, 6th, etc.) NEVER disappear from the archive list.
+ */
+export function buildRollingSevenDaySessions(
+  userMessages: DailyChatMessage[] = [],
+  customDailyMap: Record<string, DailyChatMessage[]> = {},
+  candidateName = "Candidate",
+  targetRole = "Technical Specialist",
+  fallbackNow = Date.now()
+): DailyConversationSession[] {
+  const cutoff = fallbackNow - SEVEN_DAYS_RETENTION_MS;
+  const now = new Date(fallbackNow);
+  const sampleHistorical = getSampleHistoricalSessions(candidateName, targetRole);
+  const sampleMap = new Map<string, DailyConversationSession>();
+  for (const s of sampleHistorical) {
+    sampleMap.set(s.dateKey, s);
+  }
+
+  // 1. Group direct user messages by day
+  const directSessions = groupMessagesByDay(userMessages, fallbackNow);
+  const sessionMap = new Map<string, DailyConversationSession>();
+  for (const s of directSessions) {
+    sessionMap.set(s.dateKey, s);
+  }
+
+  // 2. Incorporate custom daily mapped messages (e.g. from local storage vaults)
+  for (const [dateKey, msgs] of Object.entries(customDailyMap)) {
+    if (!Array.isArray(msgs) || msgs.length === 0) continue;
+    const subSessions = groupMessagesByDay(msgs, fallbackNow);
+    const found = subSessions.find((s) => s.dateKey === dateKey);
+    if (found) {
+      const existing = sessionMap.get(dateKey);
+      if (!existing || found.messageCount >= existing.messageCount) {
+        sessionMap.set(dateKey, found);
+      }
+    }
+  }
+
+  // 3. For all 7 calendar days (daysAgo 0 through 6), guarantee each day exists
+  const finalSessions: DailyConversationSession[] = [];
+
+  for (let daysAgo = 0; daysAgo < 7; daysAgo++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - daysAgo);
+    d.setHours(12, 0, 0, 0);
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    if (sessionMap.has(dateKey)) {
+      finalSessions.push(sessionMap.get(dateKey)!);
+    } else if (sampleMap.has(dateKey)) {
+      finalSessions.push(sampleMap.get(dateKey)!);
+    } else {
+      // Day 0 (Today) fallback if user hasn't chatted yet today
+      const info = formatDayLabel(dateKey);
+      const isToday = daysAgo === 0;
+      const isYesterday = daysAgo === 1;
+      const baseTs = isToday ? fallbackNow : d.getTime();
+
+      const defaultMsgs: DailyChatMessage[] = [
+        {
+          role: "assistant",
+          content: isToday
+            ? `CareerAce Sovereign Copilot online. I am synced with your Walrus Memory vault. Ask me anything about matching roles, ATS optimization, or your credentials!`
+            : `CareerAce Sovereign Copilot conversation session recorded for ${info.title}.`,
+          timestamp: baseTs,
+          channel: "overview",
+        },
+      ];
+
+      finalSessions.push({
+        dateKey,
+        dateLabel: info.label,
+        dateTitle: info.title,
+        isToday,
+        isYesterday,
+        messageCount: defaultMsgs.length,
+        turnCount: 1,
+        firstQuery: isToday ? "CareerAce Sovereign Copilot Consultation" : "Career Guidance & Alignment",
+        firstTimestamp: baseTs,
+        lastTimestamp: baseTs,
+        walrusSealed: true,
+        messages: defaultMsgs,
+      });
+    }
+  }
+
+  // Filter by retention cutoff and sort descending (newest first)
+  const retained = finalSessions.filter((s) => s.lastTimestamp >= cutoff);
+  retained.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+  return retained;
 }
 
 /**

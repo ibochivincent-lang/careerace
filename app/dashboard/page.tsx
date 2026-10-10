@@ -1711,6 +1711,9 @@ function DashboardContent() {
               onSendMessage={handleSendOverviewMessage}
               isSendingMessage={isOverviewSending}
               onRestoreChatMessages={setOverviewChatMessages}
+              onStartNewConversation={() => {
+                setOverviewChatMessages([FRESH_OVERVIEW_WELCOME_MESSAGE])
+              }}
             />
           </motion.div>
         )}

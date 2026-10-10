@@ -6,6 +6,8 @@ import {
   searchConversationSessions,
   formatTranscriptToMarkdown,
   getSampleHistoricalSessions,
+  buildRollingSevenDaySessions,
+  getTodayDateKey,
   type DailyChatMessage,
 } from "./conversation_history.ts";
 
@@ -107,3 +109,45 @@ test("Daily Conversation History: formats day labels accurately", () => {
   assert.equal(info.isYesterday, false);
   assert.ok(info.label.startsWith("Today"));
 });
+
+test("Daily Conversation History: buildRollingSevenDaySessions preserves all 7 calendar days even when selecting or restoring individual day", () => {
+  const now = Date.now();
+  const todayKey = getTodayDateKey(now);
+
+  // User only has a single message from 2 days ago (e.g. October 8)
+  const twoDaysAgoTs = now - 2 * 24 * 60 * 60 * 1000;
+  const singleDayMessages: DailyChatMessage[] = [
+    {
+      role: "user",
+      content: "Can I get a full list of jobs I applied for?",
+      timestamp: twoDaysAgoTs,
+    },
+    {
+      role: "assistant",
+      content: "Here are all your sovereign applications.",
+      timestamp: twoDaysAgoTs + 5000,
+    },
+  ];
+
+  const rollingSessions = buildRollingSevenDaySessions(
+    singleDayMessages,
+    {},
+    "Candidate",
+    "Specialist",
+    now
+  );
+
+  assert.equal(rollingSessions.length, 7, "Must contain all 7 days in the rolling retention window");
+
+  const todaySession = rollingSessions.find((s) => s.isToday);
+  assert.ok(todaySession, "Today (Day 0) must NEVER disappear when selecting/restoring past day");
+  assert.equal(todaySession.dateKey, todayKey);
+
+  const yesterdaySession = rollingSessions.find((s) => s.isYesterday);
+  assert.ok(yesterdaySession, "Yesterday (Day 1) must be preserved");
+
+  const twoDaysAgoSession = rollingSessions.find((s) => !s.isToday && !s.isYesterday && s.messages.some((m) => m.content.includes("full list of jobs")));
+  assert.ok(twoDaysAgoSession, "Past session must contain the user messages");
+  assert.equal(twoDaysAgoSession.messages.length, 2);
+});
+

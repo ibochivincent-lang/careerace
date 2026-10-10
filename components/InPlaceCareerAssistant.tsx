@@ -28,12 +28,14 @@ import {
 } from '@/lib/career_advisory'
 import { isDocumentsDispatchRequest } from '@/lib/autonomous_conversational_dispatch'
 import {
-  groupMessagesByDay,
+  buildRollingSevenDaySessions,
+  getTodayDateKey,
+  formatDayLabel,
   searchConversationSessions,
   formatTranscriptToMarkdown,
-  getSampleHistoricalSessions,
   formatTimeAmPm,
   type DailyConversationSession,
+  type DailyChatMessage,
 } from '@/lib/conversation_history'
 
 export interface InPlaceCareerAssistantProps {
@@ -55,6 +57,7 @@ export interface InPlaceCareerAssistantProps {
   onSendMessage: (overrideText?: string) => Promise<void>
   isSendingMessage: boolean
   onRestoreChatMessages?: (messages: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: number }>) => void
+  onStartNewConversation?: () => void
 }
 
 // Top level modes: Only AI Copilot and In-Place CV Builder (NO cluttered 6-pill row!)
@@ -273,6 +276,7 @@ export function InPlaceCareerAssistant({
   onSendMessage,
   isSendingMessage,
   onRestoreChatMessages,
+  onStartNewConversation,
 }: InPlaceCareerAssistantProps) {
   const router = useRouter()
   // Primary view: AI Copilot vs In-Place CV Builder
@@ -282,6 +286,7 @@ export function InPlaceCareerAssistant({
   const [copilotModule, setCopilotModule] = useState<InCopilotModule>(null)
 
   const [chatInput, setChatInput] = useState('')
+  const chatInputRef = useRef<HTMLInputElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
@@ -599,25 +604,50 @@ export function InPlaceCareerAssistant({
   const [conversationHistoryOpen, setConversationHistoryOpen] = useState<boolean>(false)
   const [historySearchQuery, setHistorySearchQuery] = useState<string>('')
   const [selectedHistoryDateKey, setSelectedHistoryDateKey] = useState<string | null>(null)
+  const [activeViewingDateKey, setActiveViewingDateKey] = useState<string | null>(null)
   const [historyFilterTab, setHistoryFilterTab] = useState<'all' | 'today' | 'yesterday' | 'archive'>('all')
   const [isCopiedTranscript, setIsCopiedTranscript] = useState<boolean>(false)
+  const [dailyHistoryVault, setDailyHistoryVault] = useState<Record<string, DailyChatMessage[]>>({})
 
-  // Daily conversation sessions grouped by calendar date (7-day rolling window)
+  // Hydrate persistent daily sessions vault from local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = JSON.parse(localStorage.getItem('careerace_daily_sessions_vault') || '{}')
+        if (stored && typeof stored === 'object') {
+          setDailyHistoryVault(stored)
+        }
+      } catch {}
+    }
+  }, [])
+
+  // Sync today's active conversation into the daily vault whenever messages update
+  useEffect(() => {
+    if (overviewChatMessages.length > 0 && typeof window !== 'undefined') {
+      const todayKey = getTodayDateKey()
+      // Only write to today's bucket if not explicitly viewing an older historical date
+      if (!activeViewingDateKey || activeViewingDateKey === todayKey) {
+        setDailyHistoryVault((prev) => {
+          const next = { ...prev, [todayKey]: overviewChatMessages as DailyChatMessage[] }
+          try {
+            localStorage.setItem('careerace_daily_sessions_vault', JSON.stringify(next))
+          } catch {}
+          return next
+        })
+      }
+    }
+  }, [overviewChatMessages, activeViewingDateKey])
+
+  // Guaranteed 7-day rolling window of daily conversation sessions (Today, Yesterday & 5 Archive Days).
+  // Ensures that selecting or restoring any day (e.g. 8th) never causes the 9th, 10th or any other day to disappear!
   const computedDailySessions = useMemo<DailyConversationSession[]>(() => {
-    let sessions = groupMessagesByDay(overviewChatMessages)
-    const sampleHistorical = getSampleHistoricalSessions(
+    return buildRollingSevenDaySessions(
+      overviewChatMessages as DailyChatMessage[],
+      dailyHistoryVault,
       cvForm.name || parsedProfile?.applicant_name || 'Candidate',
       cvForm.targetRole || 'Technical Specialist'
     )
-    if (sessions.length === 0) {
-      return sampleHistorical
-    }
-    const existingDateKeys = new Set(sessions.map((s) => s.dateKey))
-    const missingHistorical = sampleHistorical.filter((s) => !existingDateKeys.has(s.dateKey))
-    sessions = [...sessions, ...missingHistorical]
-    sessions.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
-    return sessions
-  }, [overviewChatMessages, cvForm.name, cvForm.targetRole, parsedProfile?.applicant_name])
+  }, [overviewChatMessages, dailyHistoryVault, cvForm.name, cvForm.targetRole, parsedProfile?.applicant_name])
 
   const filteredDailySessions = useMemo(() => {
     let list = computedDailySessions
@@ -640,11 +670,104 @@ export function InPlaceCareerAssistant({
   }, [selectedHistoryDateKey, computedDailySessions, filteredDailySessions])
 
   const handleRestoreDailySession = (session: DailyConversationSession) => {
+    const todayKey = getTodayDateKey()
+    // 1. Safely lock today's current messages into vault so Today is never lost
+    if ((!activeViewingDateKey || activeViewingDateKey === todayKey) && overviewChatMessages.length > 0) {
+      const nextVault = { ...dailyHistoryVault, [todayKey]: overviewChatMessages as DailyChatMessage[] }
+      setDailyHistoryVault(nextVault)
+      try {
+        localStorage.setItem('careerace_daily_sessions_vault', JSON.stringify(nextVault))
+      } catch {}
+    }
+
+    // 2. Also ensure this restored session is cached in vault under its dateKey
+    if (session.messages.length > 0) {
+      setDailyHistoryVault((prev) => {
+        const next = { ...prev, [session.dateKey]: session.messages }
+        try {
+          localStorage.setItem('careerace_daily_sessions_vault', JSON.stringify(next))
+        } catch {}
+        return next
+      })
+    }
+
+    // 3. Mark activeViewingDateKey so the UI knows we are viewing an archive session
+    setActiveViewingDateKey(session.dateKey)
+
     if (onRestoreChatMessages) {
       onRestoreChatMessages(session.messages)
     }
-    toast.success(`Restored conversation from ${session.dateLabel} into active chat!`)
+    toast.success(`Loaded conversation from ${session.dateLabel} into active chat!`)
     setConversationHistoryOpen(false)
+  }
+
+  const handleReturnToTodaySession = () => {
+    const todayKey = getTodayDateKey()
+    const todayMsgs = dailyHistoryVault[todayKey]
+    setActiveViewingDateKey(null)
+    if (todayMsgs && todayMsgs.length > 0) {
+      if (onRestoreChatMessages) {
+        onRestoreChatMessages(todayMsgs)
+      }
+    } else {
+      if (onRestoreChatMessages) {
+        onRestoreChatMessages([
+          {
+            role: 'assistant',
+            content: `CareerAce Sovereign Copilot online. I am synced with your Walrus Memory vault. Ask me anything about matching roles, ATS optimization, or your credentials!`,
+            timestamp: Date.now(),
+          }
+        ])
+      }
+    }
+    toast.success("Returned to Today's active chat session.")
+  }
+
+  const handleStartNewConversation = () => {
+    const todayKey = getTodayDateKey()
+    // If there were messages in active chat, save them before clearing
+    if (overviewChatMessages.length > 1) {
+      try {
+        const currentVault = { ...dailyHistoryVault }
+        currentVault[activeViewingDateKey || todayKey] = overviewChatMessages as DailyChatMessage[]
+        localStorage.setItem('careerace_daily_sessions_vault', JSON.stringify(currentVault))
+        setDailyHistoryVault(currentVault)
+      } catch {}
+    }
+
+    setActiveViewingDateKey(null)
+    const freshMessages: Array<{ role: 'user' | 'assistant'; content: string; timestamp?: number }> = [
+      {
+        role: 'assistant',
+        content: `CareerAce Sovereign Copilot online. I am synced with your Walrus Memory vault. Ask me anything about matching roles, ATS optimization, or your credentials!`,
+        timestamp: Date.now(),
+      }
+    ]
+
+    if (onRestoreChatMessages) {
+      onRestoreChatMessages(freshMessages)
+    }
+    if (onStartNewConversation) {
+      onStartNewConversation()
+    }
+
+    // Update today's bucket with the fresh session
+    setDailyHistoryVault((prev) => {
+      const next = { ...prev, [todayKey]: freshMessages as DailyChatMessage[] }
+      try {
+        localStorage.setItem('careerace_daily_sessions_vault', JSON.stringify(next))
+      } catch {}
+      return next
+    })
+
+    setConversationHistoryOpen(false)
+    toast.success('Started a new conversation! Previous session is preserved in history.')
+
+    setTimeout(() => {
+      if (chatInputRef.current) {
+        chatInputRef.current.focus()
+      }
+    }, 150)
   }
 
   const handleExportDailyTranscript = (session: DailyConversationSession) => {
@@ -1527,6 +1650,18 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
               )}
             </button>
 
+            {/* Start New Conversation Quick Action */}
+            <button
+              type="button"
+              onClick={handleStartNewConversation}
+              title="Start a fresh new conversation (current session preserved in history)"
+              className="h-5.5 px-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+            >
+              <Plus className="w-2.5 h-2.5" />
+              <span className="hidden sm:inline">New Chat</span>
+              <span className="sm:hidden">New</span>
+            </button>
+
             {/* Two-Way Toggle on the same straight line (Smaller as requested) */}
             <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border/60 shrink-0">
               <button
@@ -1632,21 +1767,59 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
             {/* Chat Messages Feed (if no inline module active) */}
             {!copilotModule && (
               <div ref={chatContainerRef} className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-2.5 text-[10px] sm:text-xs">
-                {/* Daily Conversation Sovereign Archive Banner */}
-                <div className="flex items-center justify-between p-1.5 px-2 rounded-lg border border-border/70 bg-muted/20 text-[9px] text-muted-foreground shadow-2xs">
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <Clock className="w-3 h-3 text-emerald-500 shrink-0" />
-                    <span className="truncate">Daily conversations indexed in Walrus Sovereign Memory</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setConversationHistoryOpen(true)}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 shrink-0 cursor-pointer text-[9px]"
-                  >
-                    <span>View History ({computedDailySessions.length})</span>
-                    <ChevronRight className="w-2.5 h-2.5" />
-                  </button>
-                </div>
+                {/* Active Historical Viewing Banner or Daily Archive Banner */}
+                {activeViewingDateKey ? (
+                  <div className="flex items-center justify-between p-1.5 px-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[9px] text-amber-700 dark:text-amber-300 shadow-2xs">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <Clock className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span className="truncate">
+                        Viewing Archived Session: <strong>{formatDayLabel(activeViewingDateKey).label}</strong>
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleReturnToTodaySession}
+                        className="px-2 py-0.5 rounded text-[8.5px] font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 transition-colors cursor-pointer"
+                      >
+                        Return to Today
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleStartNewConversation}
+                        className="px-2 py-0.5 rounded text-[8.5px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer flex items-center gap-0.5"
+                      >
+                        <Plus className="w-2.5 h-2.5" />
+                        <span>New Chat</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-1.5 px-2 rounded-lg border border-border/70 bg-muted/20 text-[9px] text-muted-foreground shadow-2xs">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <Clock className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span className="truncate">Daily conversations indexed in Walrus Sovereign Memory</span>
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setConversationHistoryOpen(true)}
+                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer text-[9px]"
+                      >
+                        <span>History ({computedDailySessions.length})</span>
+                        <ChevronRight className="w-2.5 h-2.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleStartNewConversation}
+                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-0.5 cursor-pointer text-[9px]"
+                      >
+                        <Plus className="w-2.5 h-2.5" />
+                        <span>New Chat</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {overviewChatMessages.map((msg, i) => (
                   <div
                     key={i}
@@ -3392,6 +3565,7 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
             {/* Bottom Message Input Bar */}
             <div className="p-2.5 sm:p-3 border-t border-border/80 bg-card flex items-center gap-2">
               <input
+                ref={chatInputRef}
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -5145,13 +5319,24 @@ CareerAce Verified Candidate`}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setConversationHistoryOpen(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleStartNewConversation}
+                  className="h-6 px-2 sm:px-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[8px] gap-1 shadow-xs cursor-pointer rounded-lg"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                  <span>Start New Conversation</span>
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setConversationHistoryOpen(false)}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Filter Pills & Search Input Toolbar (Very small font) */}
@@ -5331,6 +5516,16 @@ CareerAce Verified Candidate`}
                         >
                           <Download className="w-2 h-2 text-emerald-500" />
                           <span>Export .md</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleStartNewConversation}
+                          className="h-5 px-1.5 text-[7px] gap-0.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer shadow-2xs font-semibold"
+                        >
+                          <Plus className="w-2 h-2" />
+                          <span>New Conversation</span>
                         </Button>
                         <Button
                           type="button"
