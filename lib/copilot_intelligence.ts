@@ -886,7 +886,52 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
     (lowerLatest.includes("yesterday") || lowerLatest.includes("yesterdays")) &&
     (lowerLatest.includes("how many") || lowerLatest.includes("job") || lowerLatest.includes("apply") || lowerLatest.includes("applied") || lowerLatest.includes("application"));
 
+  const isHowToApplyToCompanies =
+    (lowerLatest.includes("how can i apply") ||
+     lowerLatest.includes("how do i apply") ||
+     lowerLatest.includes("how to apply") ||
+     lowerLatest.includes("can i apply") ||
+     lowerLatest.includes("where can i apply") ||
+     lowerLatest.includes("way to apply") ||
+     lowerLatest.includes("steps to apply")) &&
+    (lowerLatest.includes("company") ||
+     lowerLatest.includes("companies") ||
+     lowerLatest.includes("job") ||
+     lowerLatest.includes("jobs") ||
+     lowerLatest.includes("role") ||
+     lowerLatest.includes("roles"));
+
+  const isFullAppliedListQuery =
+    lowerLatest.includes("full list") ||
+    lowerLatest.includes("full data") ||
+    lowerLatest.includes("complete list") ||
+    lowerLatest.includes("all jobs") ||
+    lowerLatest.includes("all companies") ||
+    lowerLatest.includes("all the jobs") ||
+    lowerLatest.includes("all the companies") ||
+    lowerLatest.includes("companies i applied") ||
+    lowerLatest.includes("companies i have applied") ||
+    lowerLatest.includes("jobs i applied") ||
+    lowerLatest.includes("jobs i have applied") ||
+    lowerLatest.includes("roles i applied") ||
+    lowerLatest.includes("what companies did i apply") ||
+    lowerLatest.includes("which companies did i apply") ||
+    lowerLatest.includes("what companies have i applied") ||
+    lowerLatest.includes("companies did i apply") ||
+    lowerLatest.includes("companies have i applied") ||
+    lowerLatest.includes("where did i apply") ||
+    lowerLatest.includes("list of companies") ||
+    lowerLatest.includes("list companies") ||
+    lowerLatest.includes("applied companies") ||
+    lowerLatest.includes("companies applied") ||
+    lowerLatest.includes("show me all jobs") ||
+    lowerLatest.includes("show all jobs") ||
+    lowerLatest.includes("show all companies") ||
+    lowerLatest.includes("show me all companies") ||
+    (lowerLatest.includes("list") && (lowerLatest.includes("applied") || lowerLatest.includes("companies") || lowerLatest.includes("jobs")));
+
   const isShowJobNames =
+    isFullAppliedListQuery ||
     lowerLatest.includes("show me the names") ||
     lowerLatest.includes("names of the jobs") ||
     lowerLatest.includes("names of jobs") ||
@@ -1375,26 +1420,99 @@ export async function processCopilotQuery(body: CopilotQueryParams): Promise<Cop
         `From our count, you were able to apply to 0 jobs yesterday (${utcYesterday.label}).\n\n` +
         `If you want, I can show you the names of the jobs you applied for across all dates (total tracked: ${appliedJobs.length}), or you can head over to the **Application Board** to discover new verified openings.`;
     }
-  } else if (isShowJobNames) {
+  } else if (isHowToApplyToCompanies) {
+    directReply =
+      `**How to Apply to Companies on CareerAce:**\n\n` +
+      `You can apply to verified corporate employers and job openings through three seamless methods:\n\n` +
+      `1. **Application Board (Discovery):**\n` +
+      `   • Navigate to the **Application Board** tab.\n` +
+      `   • Filter verified companies by Discipline (Software, Marine, IT, AI, Product), Seniority, and Country.\n` +
+      `   • Review open positions and click **Mark Applied** or **Apply** to record and dispatch your application.\n\n` +
+      `2. **Decentralized Walrus One-Click Dispatch:**\n` +
+      `   • Generate your tailored CV and Cover Letter in **Resume Studio** & **Cover Letter Studio**.\n` +
+      `   • Dispatches automatically bundle your verified credentials, generating an RFC-compliant dispatch receipt (.eml) and sending to the verified recruiter email.\n\n` +
+      `3. **Autonomous Copilot Dispatch:**\n` +
+      `   • Simply prompt me here: *"Apply to 5 marine engineering companies"* or *"Dispatch my application to Paystack"*.\n` +
+      `   • CareerAce will autonomously process your applications, log each company to your Application Board, and initiate 7-day follow-up reminders.\n\n` +
+      (appliedJobs.length > 0
+        ? `You currently have **${appliedJobs.length} company application(s)** tracked on your board. Say *"show full list of companies I applied for"* to review them anytime.`
+        : `Head over to the **Application Board** to discover verified companies and start applying today!`);
+  } else if (isShowJobNames || isFullAppliedListQuery) {
     if (appliedJobs.length > 0) {
-      const jobList = appliedJobs
-        .map((j: any, i: number) => {
-          const dateStr = j.appliedAt ? (typeof j.appliedAt === "string" ? j.appliedAt : new Date(j.appliedAt).toLocaleDateString()) : "Recently";
-          return `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}** (Applied: ${dateStr})`;
-        })
-        .join("\n");
+      const now = Date.now();
+      let jobListText = "";
+
+      if (appliedJobs.length <= 10) {
+        jobListText = appliedJobs
+          .map((j: any, i: number) => {
+            const dateStr = j.appliedAt
+              ? (typeof j.appliedAt === "string" ? j.appliedAt.slice(0, 10) : new Date(j.appliedAt).toLocaleDateString())
+              : "Recently";
+            const appTime = j.appliedTimestamp || (j.appliedAt ? new Date(j.appliedAt).getTime() : now);
+            const daysAgo = Math.max(0, Math.floor((now - appTime) / (1000 * 60 * 60 * 24)));
+            const followUpStatus = daysAgo >= 7
+              ? " [Follow-Up Due]"
+              : ` [Follow-up in ${7 - daysAgo}d]`;
+            const contact = j.recipientEmail || j.contactEmail || j.email || "Corporate Hiring Desk";
+            return `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**\n   • Applied Date: ${dateStr}\n   • Contact Desk: ${contact}\n   • Status: ${j.followUpStatus || "Applied"}${followUpStatus}`;
+          })
+          .join("\n\n");
+      } else {
+        const first10 = appliedJobs.slice(0, 10);
+        const remaining = appliedJobs.slice(10);
+
+        const first10Text = first10
+          .map((j: any, i: number) => {
+            const dateStr = j.appliedAt
+              ? (typeof j.appliedAt === "string" ? j.appliedAt.slice(0, 10) : new Date(j.appliedAt).toLocaleDateString())
+              : "Recently";
+            const appTime = j.appliedTimestamp || (j.appliedAt ? new Date(j.appliedAt).getTime() : now);
+            const daysAgo = Math.max(0, Math.floor((now - appTime) / (1000 * 60 * 60 * 24)));
+            const followUpStatus = daysAgo >= 7
+              ? " [Follow-Up Due]"
+              : ` [Follow-up in ${7 - daysAgo}d]`;
+            const contact = j.recipientEmail || j.contactEmail || j.email || "Corporate Hiring Desk";
+            return `${i + 1}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**\n   • Applied Date: ${dateStr}\n   • Contact Desk: ${contact}\n   • Status: ${j.followUpStatus || "Applied"}${followUpStatus}`;
+          })
+          .join("\n\n");
+
+        const remainingText = remaining
+          .map((j: any, i: number) => {
+            const dateStr = j.appliedAt
+              ? (typeof j.appliedAt === "string" ? j.appliedAt.slice(0, 10) : new Date(j.appliedAt).toLocaleDateString())
+              : "Recently";
+            const appTime = j.appliedTimestamp || (j.appliedAt ? new Date(j.appliedAt).getTime() : now);
+            const daysAgo = Math.max(0, Math.floor((now - appTime) / (1000 * 60 * 60 * 24)));
+            const followUpStatus = daysAgo >= 7
+              ? " [Follow-Up Due]"
+              : ` [Follow-up in ${7 - daysAgo}d]`;
+            const contact = j.recipientEmail || j.contactEmail || j.email || "Corporate Hiring Desk";
+            return `${i + 11}. **${j.jobTitle || j.role || j.title || "Target Role"}** at **${j.company || "Company"}**\n   • Applied Date: ${dateStr}\n   • Contact Desk: ${contact}\n   • Status: ${j.followUpStatus || "Applied"}${followUpStatus}`;
+          })
+          .join("\n\n");
+
+        jobListText =
+          `**Here are the first 10 available:**\n\n${first10Text}\n\n` +
+          `**Here are the next ${remaining.length} applied roles & companies:**\n\n${remainingText}`;
+      }
+
       const followUpScan = scanApplicationsForFollowUp(appliedJobs, address, currentName);
       const followUpNotice = followUpScan.dueCount > 0
         ? `\n\n💡 **Autonomous Follow-Up Notice:** You have **${followUpScan.dueCount} application(s)** that have passed 7 days without a recruiter response. I have drafted a polite follow-up inquiry referencing your submission digest \`${followUpScan.duePackages[0].submissionDigest}\`. Say *"draft follow-up"* to review or send it.`
         : "";
 
       directReply =
-        `Here are the verified jobs you have applied for from your sovereign application log:\n\n${jobList}\n\n` +
-        `You can track the 7-day follow-up status for each of these on the **Application Board**.\n\n${followUpNotice}`.trim();
+        `**Full Sovereign Applications Log (${appliedJobs.length} Verified Roles & Companies Tracked):**\n\n` +
+        `${jobListText}\n\n` +
+        `All applications are synchronized with your **Application Board** and decentralized Walrus memory.${followUpNotice}`.trim();
     } else {
       directReply =
-        `You have no tracked job applications yet.\n\n` +
-        `Visit the **Application Board** to explore verified corporate openings across Software, Engineering, Maritime, AI, and Product Management. When you dispatch an application, CareerAce automatically tracks it and triggers a 7-day follow-up reminder.`;
+        `**Tracked Applications: 0 Companies / Roles Recorded**\n\n` +
+        `You currently have no tracked job or company applications recorded on your sovereign application board.\n\n` +
+        `**How to Apply to Companies:**\n` +
+        `1. Visit the **Application Board** to explore verified corporate openings across Software, Engineering, Maritime, AI, and Product Management.\n` +
+        `2. Click **Mark Applied** or use one-click dispatch to submit your application.\n` +
+        `3. When you dispatch an application, CareerAce automatically logs the company, title, date, and triggers a 7-day follow-up reminder.`;
     }
   } else if (isTodayJobs) {
     const todayApplied = appliedJobs.filter((a: any) => {

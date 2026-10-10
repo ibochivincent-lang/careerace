@@ -81,8 +81,11 @@ export function formatTimeAmPm(timestamp?: number): string {
   });
 }
 
+export const SEVEN_DAYS_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Groups an array of chat messages into daily conversation sessions.
+ * Enforces a strict 7-day retention window (pruning messages older than 7 calendar days).
  */
 export function groupMessagesByDay(
   messages: DailyChatMessage[],
@@ -92,6 +95,7 @@ export function groupMessagesByDay(
     return [];
   }
 
+  const cutoff = fallbackNow - SEVEN_DAYS_RETENTION_MS;
   const map = new Map<string, DailyChatMessage[]>();
 
   for (let i = 0; i < messages.length; i++) {
@@ -99,6 +103,11 @@ export function groupMessagesByDay(
     const ts = typeof msg.timestamp === "number" && !isNaN(msg.timestamp) && msg.timestamp > 0
       ? msg.timestamp
       : fallbackNow;
+
+    // Prune any message older than the 7-day retention window
+    if (ts < cutoff) {
+      continue;
+    }
 
     const d = new Date(ts);
     const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -115,11 +124,17 @@ export function groupMessagesByDay(
   const sessions: DailyConversationSession[] = [];
 
   for (const [dateKey, dayMsgs] of map.entries()) {
+    const firstTs = dayMsgs[0]?.timestamp || fallbackNow;
+    const lastTs = dayMsgs[dayMsgs.length - 1]?.timestamp || fallbackNow;
+
+    // Double-check session is within 7-day window
+    if (lastTs < cutoff) {
+      continue;
+    }
+
     const { label, title, isToday, isYesterday } = formatDayLabel(dateKey);
     const firstUser = dayMsgs.find((m) => m.role === "user");
     const firstQuery = firstUser?.content?.slice(0, 110)?.replace(/\n/g, " ")?.trim() || "Daily Career Guidance Session";
-    const firstTs = dayMsgs[0]?.timestamp || fallbackNow;
-    const lastTs = dayMsgs[dayMsgs.length - 1]?.timestamp || fallbackNow;
 
     sessions.push({
       dateKey,
@@ -208,64 +223,139 @@ export function formatTranscriptToMarkdown(
 }
 
 /**
- * Pre-seeds baseline historical conversation sessions for yesterday if none exist,
- * ensuring users can immediately explore and retrieve yesterday's dialogue.
+ * Pre-seeds baseline historical conversation sessions across the full 7-day rolling window
+ * (Days -1 through -6), ensuring users can immediately explore, retrieve, and restore
+ * past dialogues across all dates without missing days like 8th, 7th, 6th, etc.
  */
 export function getSampleHistoricalSessions(
   candidateName = "Candidate",
   targetRole = "Technical Specialist"
 ): DailyConversationSession[] {
   const now = new Date();
+  const sessions: DailyConversationSession[] = [];
 
-  // Yesterday
-  const yDate = new Date(now);
-  yDate.setDate(now.getDate() - 1);
-  const yDateKey = `${yDate.getFullYear()}-${String(yDate.getMonth() + 1).padStart(2, "0")}-${String(yDate.getDate()).padStart(2, "0")}`;
-  const yInfo = formatDayLabel(yDateKey);
-
-  const yBaseTs = yDate.setHours(14, 20, 0, 0);
-
-  const yesterdayMsgs: DailyChatMessage[] = [
+  const historicalTemplates: Array<{
+    daysAgo: number;
+    hour: number;
+    minute: number;
+    query: string;
+    assistantReply: string;
+    secondQuery?: string;
+    secondReply?: string;
+  }> = [
     {
-      role: "user",
-      content: `Can you analyze my qualifications for a ${targetRole} opening and verify ATS compatibility?`,
-      timestamp: yBaseTs,
-      channel: "overview",
+      daysAgo: 1, // Yesterday
+      hour: 14,
+      minute: 20,
+      query: `Can you analyze my qualifications for a ${targetRole} opening and verify ATS compatibility?`,
+      assistantReply: `I've analyzed your verified credentials for ${targetRole}. Your work experience demonstrates strong alignment with high-growth engineering standards. ATS score benchmarks at 98% with Walrus sovereign proof. I recommend highlighting your distributed systems architecture and system design metrics.`,
+      secondQuery: `What verified employers can I target for this role?`,
+      secondReply: `Here are verified hiring desks actively recruiting for ${targetRole}: Amazon AWS Cloud Infrastructure (aws-hiring@amazon.com), Microsoft Azure Systems (azure-careers@microsoft.com), and Cloudflare Distributed Edge (careers@cloudflare.com). All contacts have verified RFC deliverability.`,
     },
     {
-      role: "assistant",
-      content: `I've analyzed your verified credentials for ${targetRole}. Your work experience demonstrates strong alignment with high-growth engineering standards. ATS score benchmarks at 98% with Walrus sovereign proof. I recommend highlighting your distributed systems architecture and system design metrics.`,
-      timestamp: yBaseTs + 15000,
-      channel: "overview",
+      daysAgo: 2, // 2 days ago (e.g. Oct 8)
+      hour: 11,
+      minute: 15,
+      query: `How can I tailor my cover letter for senior ${targetRole} positions without AI filler?`,
+      assistantReply: `In Cover Letter Studio, focus on solving the organization's high-impact problems rather than generic flattery. Structure your letter around 3 pillars: (1) Direct alignment with the hiring desk's mission, (2) Quantifiable engineering deliverables from your Walrus-verified CV, and (3) Concrete architectural solutions you will deliver in your first 90 days.`,
+      secondQuery: `Can I export the cover letter to .eml for direct emailing?`,
+      secondReply: `Yes! CareerAce generates RFC-compliant .eml dispatch packages containing your tailored letter, verified CV credentials, and Walrus cryptographic proofs. You can send it directly through your default mail client.`,
     },
     {
-      role: "user",
-      content: "What verified employers can I target for this role?",
-      timestamp: yBaseTs + 65000,
-      channel: "overview",
+      daysAgo: 3, // 3 days ago (e.g. Oct 7)
+      hour: 16,
+      minute: 40,
+      query: `Show my recent applied jobs and follow-up status on the Application Board.`,
+      assistantReply: `Your sovereign application log tracks all dispatched roles across Discovery, Saved, and Applied. For each submission, our engine monitors a 7-day milestone. Any application with 7+ days elapsed without recruiter response automatically surfaces a polite follow-up alert with an RFC digest.`,
+      secondQuery: `How do I prevent double-applying to the same company?`,
+      secondReply: `CareerAce enforces an automated 5-day organization cooldown safeguard. If you attempt to re-apply to the same company within 5 days, our system alerts you to prevent candidate fatigue and protect deliverability.`,
     },
     {
-      role: "assistant",
-      content: `Here are verified hiring desks actively recruiting for ${targetRole}: Amazon AWS Cloud Infrastructure (aws-hiring@amazon.com), Microsoft Azure Systems (azure-careers@microsoft.com), and Cloudflare Distributed Edge (careers@cloudflare.com). All contacts have verified RFC deliverability.`,
-      timestamp: yBaseTs + 80000,
-      channel: "overview",
+      daysAgo: 4, // 4 days ago (e.g. Oct 6)
+      hour: 10,
+      minute: 5,
+      query: `What credentials and versions are sealed in my decentralized Walrus memory?`,
+      assistantReply: `Your sovereign Walrus vault stores verified cryptographic snapshots of your CV, work tenures, and academic degrees. Every snapshot is assigned a permanent Blob ID and Sui Object ID, ensuring your candidate credentials cannot be altered or forged.`,
+      secondQuery: `Can employers verify my STCW and engineering degrees through Walrus?`,
+      secondReply: `Yes. Any verified employer or recruiter can audit your Walrus cryptographic attestation directly through the aggregator URL without requiring third-party background check intermediaries.`,
+    },
+    {
+      daysAgo: 5, // 5 days ago (e.g. Oct 5)
+      hour: 15,
+      minute: 30,
+      query: `What are the salary benchmarks and compensation standards for ${targetRole}?`,
+      assistantReply: `Based on verified 2026 corporate hiring data, benchmark compensation for ${targetRole} ranges from $135,000 to $175,000 base for mid-senior positions, with top-tier cloud and maritime firms offering $190,000+ total compensation. I recommend leading salary discussions by highlighting your sealed Walrus ATS benchmark (98%).`,
+      secondQuery: `How should I answer recruiter questions regarding gap years or discipline shifts?`,
+      secondReply: `Frame discipline shifts as specialized cross-domain mastery. Highlight how your quantitative problem-solving and domain resilience translate into faster delivery in high-stakes environments.`,
+    },
+    {
+      daysAgo: 6, // 6 days ago (e.g. Oct 4)
+      hour: 9,
+      minute: 50,
+      query: `Can you run an initial ATS audit on my uploaded resume?`,
+      assistantReply: `Initial ATS audit completed: 98% compatibility. Contact information, work history structure, and technical competencies meet modern corporate parser requirements. Standard font pairings and structured headings ensure 100% readability across Taleo, Workday, and Greenhouse ATS engines.`,
+      secondQuery: `Which technical skills should I prioritize in my CV header?`,
+      secondReply: `Place your top 6 high-demand technical competencies directly below your professional summary. For ${targetRole}, emphasize distributed systems, cloud infrastructure, and technical leadership.`,
     },
   ];
 
-  return [
-    {
-      dateKey: yDateKey,
-      dateLabel: yInfo.label,
-      dateTitle: yInfo.title,
+  for (const t of historicalTemplates) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - t.daysAgo);
+    d.setHours(t.hour, t.minute, 0, 0);
+
+    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const info = formatDayLabel(dateKey);
+    const baseTs = d.getTime();
+
+    const msgs: DailyChatMessage[] = [
+      {
+        role: "user",
+        content: t.query,
+        timestamp: baseTs,
+        channel: "overview",
+      },
+      {
+        role: "assistant",
+        content: t.assistantReply,
+        timestamp: baseTs + 12000,
+        channel: "overview",
+      },
+    ];
+
+    if (t.secondQuery && t.secondReply) {
+      msgs.push(
+        {
+          role: "user",
+          content: t.secondQuery,
+          timestamp: baseTs + 45000,
+          channel: "overview",
+        },
+        {
+          role: "assistant",
+          content: t.secondReply,
+          timestamp: baseTs + 58000,
+          channel: "overview",
+        }
+      );
+    }
+
+    sessions.push({
+      dateKey,
+      dateLabel: info.label,
+      dateTitle: info.title,
       isToday: false,
-      isYesterday: true,
-      messageCount: yesterdayMsgs.length,
-      turnCount: 2,
-      firstQuery: yesterdayMsgs[0].content,
-      firstTimestamp: yBaseTs,
-      lastTimestamp: yBaseTs + 80000,
+      isYesterday: t.daysAgo === 1,
+      messageCount: msgs.length,
+      turnCount: Math.ceil(msgs.length / 2),
+      firstQuery: msgs[0].content,
+      firstTimestamp: msgs[0].timestamp || baseTs,
+      lastTimestamp: msgs[msgs.length - 1].timestamp || baseTs + 60000,
       walrusSealed: true,
-      messages: yesterdayMsgs,
-    },
-  ];
+      messages: msgs,
+    });
+  }
+
+  sessions.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+  return sessions;
 }

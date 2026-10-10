@@ -26,6 +26,7 @@ export interface ChatMessageRecord {
 
 const HISTORY_STORE_FILE = path.join(process.cwd(), ".chat_history.json");
 const MAX_MESSAGES_PER_USER = 100;
+export const SEVEN_DAYS_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 // In-memory cache for sub-millisecond retrieval
 const memoryCache = new Map<string, ChatMessageRecord[]>();
@@ -77,6 +78,7 @@ export function normalizeHistoryAddress(address?: string | null): string {
 
 /**
  * Retrieves the full chat history for a candidate address (synchronous).
+ * Strictly filters out any message older than the 7-day retention window.
  */
 export function getChatHistory(
   rawAddress?: string | null,
@@ -85,12 +87,15 @@ export function getChatHistory(
   loadFromDisk();
   const address = normalizeHistoryAddress(rawAddress);
   const userMessages = memoryCache.get(address) || [];
+  const cutoff = Date.now() - SEVEN_DAYS_RETENTION_MS;
+
+  const retained = userMessages.filter((m) => m.timestamp >= cutoff);
 
   if (!channel || channel === "all") {
-    return userMessages;
+    return retained;
   }
 
-  return userMessages.filter((m) => !m.channel || m.channel === channel);
+  return retained.filter((m) => !m.channel || m.channel === channel);
 }
 
 /**

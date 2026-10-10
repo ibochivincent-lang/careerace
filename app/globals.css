@@ -346,5 +346,12 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* ── Mobile viewport word break & overflow protection ── */
+  .break-word-safe {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
 }
 

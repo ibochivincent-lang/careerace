@@ -191,12 +191,16 @@ function FormattedChatMessage({
   textSizeClass?: string
 }) {
   if (role === 'user') {
-    return <div className={cn('whitespace-pre-wrap leading-snug', textSizeClass)}>{content}</div>
+    return (
+      <div className={cn('whitespace-pre-wrap leading-snug break-words [overflow-wrap:anywhere] max-w-full min-w-0 overflow-hidden', textSizeClass)}>
+        {content}
+      </div>
+    )
   }
 
   const lines = content.split('\n')
   return (
-    <div className={cn('space-y-1 leading-snug', textSizeClass)}>
+    <div className={cn('space-y-1 leading-snug break-words [overflow-wrap:anywhere] max-w-full min-w-0 overflow-hidden', textSizeClass)}>
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
           return <div key={lineIdx} className="h-0.5" />
@@ -217,19 +221,19 @@ function FormattedChatMessage({
           const token = match[0]
           if (token.startsWith('***') && token.endsWith('***')) {
             parts.push(
-              <strong key={match.index} className="font-bold text-foreground">
+              <strong key={match.index} className="font-bold text-foreground break-words [overflow-wrap:anywhere]">
                 <em>{token.slice(3, -3)}</em>
               </strong>
             )
           } else if (token.startsWith('**') && token.endsWith('**')) {
             parts.push(
-              <strong key={match.index} className="font-bold text-foreground">
+              <strong key={match.index} className="font-bold text-foreground break-words [overflow-wrap:anywhere]">
                 {token.slice(2, -2)}
               </strong>
             )
           } else if (token.startsWith('*') && token.endsWith('*')) {
             parts.push(
-              <em key={match.index} className="italic text-foreground/90">
+              <em key={match.index} className="italic text-foreground/90 break-words [overflow-wrap:anywhere]">
                 {token.slice(1, -1)}
               </em>
             )
@@ -243,14 +247,14 @@ function FormattedChatMessage({
 
         if (bulletMatch) {
           return (
-            <div key={lineIdx} className="flex items-start gap-1.5 pl-0.5">
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-0.5 max-w-full min-w-0">
               <span className="text-emerald-500 font-bold shrink-0 mt-0.5">•</span>
-              <div className="flex-1">{parts}</div>
+              <div className="flex-1 break-words [overflow-wrap:anywhere] min-w-0">{parts}</div>
             </div>
           )
         }
 
-        return <div key={lineIdx}>{parts}</div>
+        return <div key={lineIdx} className="break-words [overflow-wrap:anywhere] min-w-0">{parts}</div>
       })}
     </div>
   )
@@ -598,7 +602,7 @@ export function InPlaceCareerAssistant({
   const [historyFilterTab, setHistoryFilterTab] = useState<'all' | 'today' | 'yesterday' | 'archive'>('all')
   const [isCopiedTranscript, setIsCopiedTranscript] = useState<boolean>(false)
 
-  // Daily conversation sessions grouped by calendar date
+  // Daily conversation sessions grouped by calendar date (7-day rolling window)
   const computedDailySessions = useMemo<DailyConversationSession[]>(() => {
     let sessions = groupMessagesByDay(overviewChatMessages)
     const sampleHistorical = getSampleHistoricalSessions(
@@ -608,10 +612,9 @@ export function InPlaceCareerAssistant({
     if (sessions.length === 0) {
       return sampleHistorical
     }
-    const hasYesterday = sessions.some((s) => s.isYesterday)
-    if (!hasYesterday && sampleHistorical.some((s) => s.isYesterday)) {
-      sessions = [...sessions, ...sampleHistorical.filter((s) => s.isYesterday)]
-    }
+    const existingDateKeys = new Set(sessions.map((s) => s.dateKey))
+    const missingHistorical = sampleHistorical.filter((s) => !existingDateKeys.has(s.dateKey))
+    sessions = [...sessions, ...missingHistorical]
     sessions.sort((a, b) => b.lastTimestamp - a.lastTimestamp)
     return sessions
   }, [overviewChatMessages, cvForm.name, cvForm.targetRole, parsedProfile?.applicant_name])
@@ -1658,7 +1661,7 @@ Cryptographic Verification: SHA-256 PASSED · ATS SCORE 98%
                     )}
 
                     <div
-                      className={`max-w-[88%] sm:max-w-[78%] p-2.5 rounded-xl text-[10px] sm:text-[11px] leading-snug ${
+                      className={`max-w-[88%] sm:max-w-[78%] p-2.5 rounded-xl text-[10px] sm:text-[11px] leading-snug break-words [overflow-wrap:anywhere] min-w-0 max-w-full overflow-hidden ${
                         msg.role === 'assistant'
                           ? 'bg-muted/40 border border-border/80 text-foreground shadow-2xs'
                           : 'bg-emerald-600 text-white font-medium shadow-xs'
@@ -5249,20 +5252,20 @@ CareerAce Verified Candidate`}
                         key={session.dateKey}
                         onClick={() => setSelectedHistoryDateKey(session.dateKey)}
                         className={cn(
-                          'p-2 rounded-lg border cursor-pointer select-none transition-all space-y-1 text-left',
+                          'p-1.5 rounded-lg border cursor-pointer select-none transition-all space-y-0.5 text-left',
                           isSelected
                             ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/30'
                             : 'border-border/70 bg-card hover:bg-muted/40'
                         )}
                       >
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-bold text-foreground text-[9.5px] truncate">
+                          <span className="font-bold text-foreground text-[8px] sm:text-[8.5px] truncate">
                             {session.dateLabel}
                           </span>
                           <Badge
                             variant={session.isToday ? 'default' : 'secondary'}
                             className={cn(
-                              'text-[7.5px] font-mono py-0 h-3.5 px-1 shrink-0',
+                              'text-[6.5px] font-mono py-0 h-3 px-1 shrink-0',
                               session.isToday ? 'bg-emerald-600 text-white' : ''
                             )}
                           >
@@ -5270,14 +5273,14 @@ CareerAce Verified Candidate`}
                           </Badge>
                         </div>
 
-                        <p className="text-[8.5px] text-muted-foreground line-clamp-2 leading-tight">
+                        <p className="text-[7px] sm:text-[7.5px] text-muted-foreground line-clamp-1 leading-tight">
                           {session.firstQuery}
                         </p>
 
-                        <div className="flex items-center justify-between pt-0.5 text-[7.5px] text-muted-foreground font-mono">
+                        <div className="flex items-center justify-between pt-0.5 text-[6.5px] text-muted-foreground font-mono">
                           <span>{formatTimeAmPm(session.firstTimestamp)}</span>
                           <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
-                            <ShieldCheck className="w-2.5 h-2.5" />
+                            <ShieldCheck className="w-2 h-2" />
                             <span>Walrus Sealed</span>
                           </span>
                         </div>
@@ -5292,17 +5295,17 @@ CareerAce Verified Candidate`}
                 {activeSelectedSession ? (
                   <>
                     {/* Transcript Toolbar (Very small font) */}
-                    <div className="px-3 py-2 border-b border-border/80 bg-muted/20 flex items-center justify-between gap-1.5 flex-wrap shrink-0">
+                    <div className="px-2.5 py-1.5 border-b border-border/80 bg-muted/20 flex items-center justify-between gap-1.5 flex-wrap shrink-0">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-[10px] font-bold text-foreground truncate">
+                          <h4 className="text-[8.5px] sm:text-[9px] font-bold text-foreground truncate">
                             {activeSelectedSession.dateTitle}
                           </h4>
-                          <Badge variant="outline" className="text-[7.5px] font-mono border-emerald-500/40 text-emerald-600 py-0 h-3.5 px-1">
+                          <Badge variant="outline" className="text-[6.5px] font-mono border-emerald-500/40 text-emerald-600 py-0 h-3 px-1">
                             {activeSelectedSession.turnCount} Turn{activeSelectedSession.turnCount !== 1 ? 's' : ''}
                           </Badge>
                         </div>
-                        <p className="text-[8px] text-muted-foreground font-mono">
+                        <p className="text-[7px] text-muted-foreground font-mono">
                           {formatTimeAmPm(activeSelectedSession.firstTimestamp)} – {formatTimeAmPm(activeSelectedSession.lastTimestamp)}
                         </p>
                       </div>
@@ -5314,9 +5317,9 @@ CareerAce Verified Candidate`}
                           size="sm"
                           variant="ghost"
                           onClick={() => handleCopyDailyTranscript(activeSelectedSession)}
-                          className="h-5.5 px-1.5 text-[8.5px] gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                          className="h-5 px-1.5 text-[7px] gap-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
                         >
-                          <Copy className="w-2.5 h-2.5" />
+                          <Copy className="w-2 h-2" />
                           <span>{isCopiedTranscript ? 'Copied' : 'Copy'}</span>
                         </Button>
                         <Button
@@ -5324,45 +5327,45 @@ CareerAce Verified Candidate`}
                           size="sm"
                           variant="outline"
                           onClick={() => handleExportDailyTranscript(activeSelectedSession)}
-                          className="h-5.5 px-1.5 text-[8.5px] gap-1 border-border text-foreground hover:bg-muted cursor-pointer shadow-2xs"
+                          className="h-5 px-1.5 text-[7px] gap-0.5 border-border text-foreground hover:bg-muted cursor-pointer shadow-2xs"
                         >
-                          <Download className="w-2.5 h-2.5 text-emerald-500" />
+                          <Download className="w-2 h-2 text-emerald-500" />
                           <span>Export .md</span>
                         </Button>
                         <Button
                           type="button"
                           size="sm"
                           onClick={() => handleRestoreDailySession(activeSelectedSession)}
-                          className="h-5.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[8.5px] gap-1 shadow-xs cursor-pointer"
+                          className="h-5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[7px] gap-0.5 shadow-xs cursor-pointer"
                         >
-                          <RotateCcw className="w-2.5 h-2.5" />
+                          <RotateCcw className="w-2 h-2" />
                           <span>Restore to Active Chat</span>
                         </Button>
                       </div>
                     </div>
 
                     {/* Transcript Message Feed (Very small font) */}
-                    <div className="flex-1 p-2.5 sm:p-3 overflow-y-auto space-y-2 text-[8.5px]">
+                    <div className="flex-1 p-2 sm:p-2.5 overflow-y-auto space-y-1.5 text-[7.5px] sm:text-[8px]">
                       {activeSelectedSession.messages.map((m, idx) => (
                         <div
                           key={idx}
                           className={cn(
-                            'p-2 rounded-lg border space-y-1 text-left',
+                            'p-1.5 rounded-lg border space-y-0.5 text-left',
                             m.role === 'user'
                               ? 'border-emerald-500/30 bg-emerald-500/5 text-foreground'
                               : 'border-border/80 bg-muted/20 text-foreground'
                           )}
                         >
-                          <div className="flex items-center justify-between text-[8px] text-muted-foreground font-mono border-b border-border/40 pb-0.5">
+                          <div className="flex items-center justify-between text-[7px] text-muted-foreground font-mono border-b border-border/40 pb-0.5">
                             <span className="font-bold flex items-center gap-1 text-foreground">
                               {m.role === 'user' ? (
                                 <>
-                                  <User className="w-2.5 h-2.5 text-emerald-500" />
+                                  <User className="w-2 h-2 text-emerald-500" />
                                   <span>{cvForm.name || 'Candidate'}</span>
                                 </>
                               ) : (
                                 <>
-                                  <Bot className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                  <Bot className="w-2 h-2 text-emerald-600 dark:text-emerald-400" />
                                   <span>CareerAce Copilot</span>
                                 </>
                               )}
@@ -5370,7 +5373,7 @@ CareerAce Verified Candidate`}
                             <span>{formatTimeAmPm(m.timestamp)}</span>
                           </div>
                           <div className="pt-0.5">
-                            <FormattedChatMessage content={m.content} role={m.role} textSizeClass="text-[8.5px] sm:text-[9px] leading-relaxed" />
+                            <FormattedChatMessage content={m.content} role={m.role} textSizeClass="text-[7.5px] sm:text-[8px] leading-snug" />
                           </div>
                         </div>
                       ))}
@@ -5378,9 +5381,9 @@ CareerAce Verified Candidate`}
                   </>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-muted-foreground space-y-1.5">
-                    <Clock className="w-6 h-6 opacity-40 text-emerald-500" />
-                    <p className="text-[11px] font-semibold text-foreground">No session selected</p>
-                    <p className="text-[9px] max-w-xs">Select any daily session from the list to preview the transcript or restore it to your active chat.</p>
+                    <Clock className="w-5 h-5 opacity-40 text-emerald-500" />
+                    <p className="text-[10px] font-semibold text-foreground">No session selected</p>
+                    <p className="text-[8px] max-w-xs">Select any daily session from the list to preview the transcript or restore it to your active chat.</p>
                   </div>
                 )}
               </div>

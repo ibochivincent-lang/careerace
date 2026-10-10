@@ -50,12 +50,12 @@ function getGreeting(): string {
 // Formatted Chat Message component that renders bold, italics, bullets, and numbered items cleanly without raw asterisks
 function FormattedChatMessage({ content, role }: { content: string; role: 'user' | 'assistant' }) {
   if (role === 'user') {
-    return <div className="whitespace-pre-wrap text-[10px] sm:text-[11px] leading-snug">{content}</div>
+    return <div className="whitespace-pre-wrap text-[10px] sm:text-[11px] leading-snug break-words [overflow-wrap:anywhere] max-w-full min-w-0 overflow-hidden">{content}</div>
   }
 
   const lines = content.split('\n')
   return (
-    <div className="space-y-1 leading-snug text-[10px] sm:text-[11px]">
+    <div className="space-y-1 leading-snug text-[10px] sm:text-[11px] break-words [overflow-wrap:anywhere] max-w-full min-w-0 overflow-hidden">
       {lines.map((line, lineIdx) => {
         if (!line.trim()) {
           return <div key={lineIdx} className="h-0.5" />
@@ -77,19 +77,19 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
           const token = match[0]
           if (token.startsWith('***') && token.endsWith('***')) {
             parts.push(
-              <strong key={match.index} className="font-bold text-foreground">
+              <strong key={match.index} className="font-bold text-foreground break-words [overflow-wrap:anywhere]">
                 <em>{token.slice(3, -3)}</em>
               </strong>
             )
           } else if (token.startsWith('**') && token.endsWith('**')) {
             parts.push(
-              <strong key={match.index} className="font-bold text-foreground">
+              <strong key={match.index} className="font-bold text-foreground break-words [overflow-wrap:anywhere]">
                 {token.slice(2, -2)}
               </strong>
             )
           } else if (token.startsWith('*') && token.endsWith('*')) {
             parts.push(
-              <em key={match.index} className="italic text-foreground/90">
+              <em key={match.index} className="italic text-foreground/90 break-words [overflow-wrap:anywhere]">
                 {token.slice(1, -1)}
               </em>
             )
@@ -105,16 +105,16 @@ function FormattedChatMessage({ content, role }: { content: string; role: 'user'
           const prefix = bulletMatch![2]
           const isNumber = /^\d+\./.test(prefix)
           return (
-            <div key={lineIdx} className="flex items-start gap-1.5 pl-0.5 my-0.5">
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-0.5 my-0.5 max-w-full min-w-0">
               <span className={isNumber ? "font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[10px] shrink-0" : "text-emerald-500 font-bold shrink-0 text-[10px]"}>
                 {prefix}
               </span>
-              <div className="flex-1 text-[10px] sm:text-[11px]">{parts}</div>
+              <div className="flex-1 text-[10px] sm:text-[11px] break-words [overflow-wrap:anywhere] min-w-0">{parts}</div>
             </div>
           )
         }
 
-        return <div key={lineIdx}>{parts}</div>
+        return <div key={lineIdx} className="break-words [overflow-wrap:anywhere] min-w-0">{parts}</div>
       })}
     </div>
   )
@@ -2018,7 +2018,7 @@ function DashboardContent() {
                               )}
 
                               <div
-                                className={`max-w-[88%] p-2 rounded-xl text-[10px] sm:text-[11px] leading-snug ${
+                                className={`max-w-[88%] p-2 rounded-xl text-[10px] sm:text-[11px] leading-snug break-words [overflow-wrap:anywhere] min-w-0 max-w-full overflow-hidden ${
                                   msg.role === 'assistant'
                                     ? 'bg-muted/40 border border-border/80 text-foreground'
                                     : 'bg-emerald-600 text-white font-medium shadow-xs'
@@ -2053,15 +2053,15 @@ function DashboardContent() {
                         </div>
 
                         {/* Interactive Assistant Quick Actions (Calibration & Polish) */}
-                        <div className="px-3 py-2 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                        <div className="px-3 py-2 bg-muted/20 border-t border-border/60 flex flex-wrap gap-1 max-h-28 overflow-y-auto max-w-full overflow-hidden">
                           {SUGGESTED_COPILOT_ACTIONS.map((action, idx) => (
                             <button
                               key={idx}
                               type="button"
                               onClick={() => handleExecuteCopilotAction(action)}
-                              className="text-[10px] px-2 py-0.5 rounded-md border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left cursor-pointer"
+                              className="text-[10px] px-2 py-0.5 rounded-md border border-border/80 bg-background hover:bg-emerald-500/10 hover:border-emerald-500/40 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1 font-medium text-left cursor-pointer max-w-full truncate"
                             >
-                              <span>{action.label}</span>
+                              <span className="truncate">{action.label}</span>
                               <ArrowRight className="w-2.5 h-2.5 text-emerald-500 opacity-70 shrink-0" />
                             </button>
                           ))}

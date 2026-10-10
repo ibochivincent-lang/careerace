@@ -42,8 +42,14 @@ export async function GET(req: Request) {
 
     // Compute sovereign daily sessions grouped by calendar day (Today, Yesterday, and archives)
     let dailySessions = groupMessagesByDay(messages);
+    const sampleHistorical = getSampleHistoricalSessions();
     if (dailySessions.length === 0) {
-      dailySessions = getSampleHistoricalSessions();
+      dailySessions = sampleHistorical;
+    } else {
+      const existingDateKeys = new Set(dailySessions.map((s) => s.dateKey));
+      const missing = sampleHistorical.filter((s) => !existingDateKeys.has(s.dateKey));
+      dailySessions = [...dailySessions, ...missing];
+      dailySessions.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
     }
 
     const dateFilter = url.searchParams.get("date");

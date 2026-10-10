@@ -225,3 +225,55 @@ test("Copilot Intelligence: 'Recalibrate my CV' conversational ATS optimization"
   assert.ok(result.extracted_profile);
 });
 
+test("Copilot Intelligence: 'give me full list of jobs' returns complete applied data", async () => {
+  const sampleApplied = [
+    { jobTitle: "Senior DevOps Engineer", company: "Cloudflare", appliedAt: "2026-10-09" },
+    { jobTitle: "Marine Propulsion Specialist", company: "Maersk", appliedAt: "2026-10-08" },
+    { jobTitle: "Lead Systems Architect", company: "Paystack", appliedAt: "2026-10-07" },
+  ];
+
+  const result = await processCopilotQuery({
+    message: "give me full list of jobs",
+    address: "0xapplied_full_list_01",
+    appliedJobs: sampleApplied,
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /Cloudflare/i);
+  assert.match(reply, /Maersk/i);
+  assert.match(reply, /Paystack/i);
+  assert.match(reply, /Senior DevOps Engineer/i);
+  assert.match(reply, /Marine Propulsion Specialist/i);
+});
+
+test("Copilot Intelligence: 'the companies I applied for' returns all applied corporate entities", async () => {
+  const sampleApplied = [
+    { jobTitle: "Distributed Backend Engineer", company: "Flutterwave", appliedAt: "2026-10-10" },
+    { jobTitle: "Naval Architect", company: "Genesis Offshore", appliedAt: "2026-10-09" },
+  ];
+
+  const result = await processCopilotQuery({
+    message: "the companies I applied for",
+    address: "0xapplied_companies_02",
+    appliedJobs: sampleApplied,
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /Flutterwave/i);
+  assert.match(reply, /Genesis Offshore/i);
+  assert.match(reply, /Full Sovereign Applications Log/i);
+});
+
+test("Copilot Intelligence: 'how can I apply to companies' provides actionable guidance", async () => {
+  const result = await processCopilotQuery({
+    message: "how can I apply to companies",
+    address: "0xhow_to_apply_03",
+    appliedJobs: [],
+  });
+
+  const reply = result.reply || result.content;
+  assert.match(reply, /How to Apply to Companies/i);
+  assert.match(reply, /Application Board/i);
+  assert.match(reply, /One-Click Dispatch/i);
+});
+

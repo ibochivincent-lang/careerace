@@ -57,13 +57,35 @@ test("Daily Conversation History: correctly groups messages into day sessions", 
 
 test("Daily Conversation History: searches sessions across queries and keywords", () => {
   const sessions = getSampleHistoricalSessions("Alex Candidate", "Cloud Engineer");
-  assert.equal(sessions.length, 1);
+  assert.equal(sessions.length, 6, "Should pre-seed 6 historical daily sessions covering Days -1 through -6");
 
   const matched = searchConversationSessions(sessions, "amazon");
   assert.equal(matched.length, 1, "Should find session mentioning amazon");
 
   const none = searchConversationSessions(sessions, "nonexistentquery123");
   assert.equal(none.length, 0, "Should return empty array when no keyword matches");
+});
+
+test("Daily Conversation History: strictly prunes messages older than 7 calendar days", () => {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  const validMessage: DailyChatMessage = {
+    role: "user",
+    content: "Valid 3-day old question",
+    timestamp: now - 3 * dayMs,
+  };
+
+  const oldMessage: DailyChatMessage = {
+    role: "user",
+    content: "Expired 9-day old question that should be pruned",
+    timestamp: now - 9 * dayMs,
+  };
+
+  const sessions = groupMessagesByDay([validMessage, oldMessage], now);
+  assert.equal(sessions.length, 1, "Only the 3-day session should survive retention");
+  assert.ok(sessions[0].firstQuery.includes("Valid 3-day old question"));
+  assert.equal(sessions[0].messages.length, 1);
 });
 
 test("Daily Conversation History: formats transcript into clean markdown", () => {

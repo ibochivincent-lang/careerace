@@ -66,7 +66,21 @@ export const INTENT_TAXONOMY: Record<string, IntentCategory> = {
       "recruiter response",
       "follow up",
       "applications submitted",
-      "pending follow-up"
+      "pending follow-up",
+      "full list of jobs",
+      "full list of companies",
+      "companies i applied for",
+      "companies i applied",
+      "companies i applied to",
+      "what companies did i apply to",
+      "what companies have i applied to",
+      "how can i apply to companies",
+      "how to apply to companies",
+      "all companies i applied to",
+      "all jobs i applied to",
+      "jobs i applied for",
+      "list of companies",
+      "list of companies i applied for"
     ]
   },
   "Personalized Job Discovery & Matching": {
@@ -1449,6 +1463,22 @@ export function generateIntentMemoryResponse(
     case "Application Tracker, History & Follow-ups": {
       const lowerQuery = rawQuery.toLowerCase();
       const isAskingYesterday = lowerQuery.includes("yesterday");
+      const isHowToApply =
+        (lowerQuery.includes("how can i apply") || lowerQuery.includes("how do i apply") || lowerQuery.includes("how to apply") || lowerQuery.includes("can i apply") || lowerQuery.includes("steps to apply")) &&
+        (lowerQuery.includes("company") || lowerQuery.includes("companies") || lowerQuery.includes("job") || lowerQuery.includes("jobs"));
+
+      if (isHowToApply) {
+        return (
+          `**How to Apply to Companies & Track Submissions**\n\n` +
+          `You can apply to verified companies and job openings through three seamless methods:\n\n` +
+          `1. **Application Board (Discovery):** Browse verified corporate openings across Software, Engineering, Maritime, AI, and Product. Click **Mark Applied** or **Apply** to record and dispatch your application.\n` +
+          `2. **Decentralized One-Click Dispatch:** Dispatches automatically attach your Walrus-sealed credentials and send an RFC-compliant dispatch package (.eml) to the verified corporate hiring desk.\n` +
+          `3. **Autonomous Copilot Dispatch:** Prompt me here: *"Apply to 5 marine engineering companies"* or *"Dispatch my application to Paystack"*.\n\n` +
+          (appliedJobs.length > 0
+            ? `You currently have **${appliedJobs.length} company application(s)** tracked on your board. Ask *"show full list of companies I applied for"* to review them anytime.`
+            : `Head over to the **Application Board** to discover verified companies and start applying today!`)
+        );
+      }
 
       if (isAskingYesterday) {
         if (yesterdayApplied.length > 0) {
@@ -1472,7 +1502,7 @@ export function generateIntentMemoryResponse(
       if (appliedJobs.length === 0) {
         return (
           `**Application Tracker & 7-Day Follow-ups**\n\n` +
-          `You have no tracked job applications yet.\n\n` +
+          `You have no tracked job or company applications yet.\n\n` +
           `When you apply to jobs through our Universal Application Board, CareerAce automatically:\n` +
           `• Records the company, role, and submission date to your sovereign log\n` +
           `• Generates an RFC-compliant .eml dispatch receipt\n` +
@@ -1481,23 +1511,77 @@ export function generateIntentMemoryResponse(
         );
       }
 
-      const recentList = appliedJobs
-        .slice(0, 6)
-        .map((j, i) => {
-          const dateStr = j.appliedAt
-            ? typeof j.appliedAt === "string"
-              ? j.appliedAt.slice(0, 10)
-              : new Date(j.appliedAt).toLocaleDateString()
-            : "Recently";
-          const followUpDays = j.followUpDaysLeft !== undefined ? ` (Follow-up in ${j.followUpDaysLeft}d)` : "";
-          return `${i + 1}. **${j.jobTitle || j.role || "Target Role"}** at **${j.company || "Company"}** — *${dateStr}*${followUpDays}`;
-        })
-        .join("\n");
+      const isAskingFullList =
+        lowerQuery.includes("full list") ||
+        lowerQuery.includes("full data") ||
+        lowerQuery.includes("all jobs") ||
+        lowerQuery.includes("all companies") ||
+        lowerQuery.includes("companies i applied") ||
+        lowerQuery.includes("companies i have applied") ||
+        lowerQuery.includes("what companies did i apply") ||
+        lowerQuery.includes("list of companies") ||
+        lowerQuery.includes("all the companies") ||
+        lowerQuery.includes("complete list") ||
+        lowerQuery.includes("show all");
+
+      let formattedList = "";
+      if (isAskingFullList || appliedJobs.length <= 10) {
+        if (appliedJobs.length <= 10) {
+          formattedList = appliedJobs
+            .map((j, i) => {
+              const dateStr = j.appliedAt
+                ? typeof j.appliedAt === "string"
+                  ? j.appliedAt.slice(0, 10)
+                  : new Date(j.appliedAt).toLocaleDateString()
+                : "Recently";
+              const followUpDays = j.followUpDaysLeft !== undefined ? ` (Follow-up in ${j.followUpDaysLeft}d)` : "";
+              return `${i + 1}. **${j.jobTitle || j.role || "Target Role"}** at **${j.company || "Company"}** — *${dateStr}*${followUpDays}`;
+            })
+            .join("\n");
+        } else {
+          const first10 = appliedJobs.slice(0, 10).map((j, i) => {
+            const dateStr = j.appliedAt
+              ? typeof j.appliedAt === "string"
+                ? j.appliedAt.slice(0, 10)
+                : new Date(j.appliedAt).toLocaleDateString()
+              : "Recently";
+            const followUpDays = j.followUpDaysLeft !== undefined ? ` (Follow-up in ${j.followUpDaysLeft}d)` : "";
+            return `${i + 1}. **${j.jobTitle || j.role || "Target Role"}** at **${j.company || "Company"}** — *${dateStr}*${followUpDays}`;
+          }).join("\n");
+
+          const nextBatch = appliedJobs.slice(10).map((j, i) => {
+            const dateStr = j.appliedAt
+              ? typeof j.appliedAt === "string"
+                ? j.appliedAt.slice(0, 10)
+                : new Date(j.appliedAt).toLocaleDateString()
+              : "Recently";
+            const followUpDays = j.followUpDaysLeft !== undefined ? ` (Follow-up in ${j.followUpDaysLeft}d)` : "";
+            return `${i + 11}. **${j.jobTitle || j.role || "Target Role"}** at **${j.company || "Company"}** — *${dateStr}*${followUpDays}`;
+          }).join("\n");
+
+          formattedList =
+            `**Here are the first 10 available:**\n\n${first10}\n\n` +
+            `**Here are the next ${appliedJobs.length - 10} applied roles & companies:**\n\n${nextBatch}`;
+        }
+      } else {
+        formattedList = appliedJobs
+          .slice(0, 10)
+          .map((j, i) => {
+            const dateStr = j.appliedAt
+              ? typeof j.appliedAt === "string"
+                ? j.appliedAt.slice(0, 10)
+                : new Date(j.appliedAt).toLocaleDateString()
+              : "Recently";
+            const followUpDays = j.followUpDaysLeft !== undefined ? ` (Follow-up in ${j.followUpDaysLeft}d)` : "";
+            return `${i + 1}. **${j.jobTitle || j.role || "Target Role"}** at **${j.company || "Company"}** — *${dateStr}*${followUpDays}`;
+          })
+          .join("\n");
+      }
 
       return (
         `**Sovereign Application Tracker & Milestones**\n\n` +
         `You have **${appliedJobs.length} total application(s)** tracked in your sovereign vault:\n\n` +
-        `${recentList}\n\n` +
+        `${formattedList}\n\n` +
         `• **7-Day Follow-up Engine:** Active reminder badges on the **Application Board** inform you when to send professional recruiter check-ins.\n` +
         `• **Status Tracking:** Monitor each submission across Applied, Interviewing, and Offered stages directly on your board.`
       );
